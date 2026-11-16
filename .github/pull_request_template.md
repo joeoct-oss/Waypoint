@@ -12,6 +12,7 @@ Closes #
 
 ## Checklist
 
-- [ ] Labels copied from the issue (type, area, priority, test)
+- [ ] `scripts/lint.sh` passes (strict SwiftLint and swift-format, see #70); required before review
+- [ ] Labels copied from the issue (type, area, priority, test, runs)
 - [ ] Public symbols documented in DocC
 - [ ] CHANGELOG updated under Unreleased
