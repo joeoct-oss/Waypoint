@@ -1,0 +1,28 @@
+name: Bug
+description: Something does not work as designed.
+labels: ["type:fix"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the example app branch and flow if it shows there.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: iOS 17.5 simulator, Xcode 26.1, Waypoint 0.x
+  - type: textarea
+    id: test
+    attributes:
+      label: Failing test
+      description: The unit or UI test that will reproduce this before the fix.
