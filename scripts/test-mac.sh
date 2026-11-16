@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+#
+#  test-mac.sh
+#  Waypoint
+#
+#  Created by Yousef Mohamed <52625092+JoeOCT91@users.noreply.github.com>.
+#  Copyright © 2026 Yousef Mohamed. MIT License.
+#
+# Runs every test layer on a Mac: the package unit tests on the host, then all
+# unit test targets on the project simulator (including UIKit-only tests), then
+# the example app's UI tests once the example app exists.
+#
+# Usage: scripts/test-mac.sh
+# Environment: WAYPOINT_SIMULATOR overrides the simulator name (default waypoint-01).
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+SIMULATOR_NAME="${WAYPOINT_SIMULATOR:-waypoint-01}"
+
+# Prints the UDID of the named simulator, creating it on the newest iOS runtime
+# with the newest iPhone device type when it does not exist yet.
+simulator_udid() {
+    local udid
+    udid=$(xcrun simctl list devices available -j |
+        /usr/bin/python3 -c 'import json,sys; name=sys.argv[1]; d=json.load(sys.stdin)["devices"]; print(next((x["udid"] for r in d.values() for x in r if x["name"]==name), ""))' "$SIMULATOR_NAME")
+    if [[ -n "$udid" ]]; then
+        echo "$udid"
+        return
+    fi
+    local runtime device_type
+    runtime=$(xcrun simctl list runtimes available -j |
+        /usr/bin/python3 -c 'import json,sys; r=[x for x in json.load(sys.stdin)["runtimes"] if x["platform"]=="iOS"]; r.sort(key=lambda x: [int(p) for p in x["version"].split(".")]); print(r[-1]["identifier"] if r else "")')
+    if [[ -z "$runtime" ]]; then
+        echo "error: no iOS simulator runtime installed (Xcode > Settings > Components)" >&2
+        exit 1
+    fi
+    device_type=$(xcrun simctl list runtimes available -j |
+        /usr/bin/python3 -c '
+import json, re, sys
+rid = sys.argv[1]
+runtime = next(x for x in json.load(sys.stdin)["runtimes"] if x["identifier"] == rid)
+phones = [x for x in runtime.get("supportedDeviceTypes", []) if x.get("productFamily") == "iPhone"]
+def rank(t):
+    m = re.search(r"iPhone (\d+)", t["name"])
+    return (int(m.group(1)) if m else 0, "Pro" in t["name"], "Max" not in t["name"])
+print(max(phones, key=rank)["identifier"] if phones else "")' "$runtime")
+    echo "Creating simulator $SIMULATOR_NAME ($device_type, $runtime)" >&2
+    xcrun simctl create "$SIMULATOR_NAME" "$device_type" "$runtime"
+}
+
+echo "==> swift test (macOS host)"
+swift test
+
+UDID=$(simulator_udid)
+DESTINATION="platform=iOS Simulator,id=$UDID"
+
+echo "==> xcodebuild test Waypoint-Package on $SIMULATOR_NAME"
+xcodebuild test -quiet -scheme Waypoint-Package -destination "$DESTINATION"
+
+if [[ -d Example ]]; then
+    echo "==> xcodebuild test example app on $SIMULATOR_NAME"
+    xcodebuild test -quiet \
+        -project Example/WaypointExample.xcodeproj \
+        -scheme WaypointExample \
+        -destination "$DESTINATION"
+else
+    echo "==> Example app not present yet (#3); skipping UI tests"
+fi
+
+echo "All Mac tests passed."

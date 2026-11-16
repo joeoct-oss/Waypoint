@@ -26,7 +26,7 @@ struct LinuxBehaviourTests {
         }
         model.title = "Changed"
 
-        #expect(fired.count == 1)
+        #expect(fired.calls == 1)
     }
 
     @Test
@@ -41,7 +41,7 @@ struct LinuxBehaviourTests {
         }
         model.count += 1
 
-        #expect(fired.count == 0)
+        #expect(fired.calls == 0)
     }
 
     @Test
