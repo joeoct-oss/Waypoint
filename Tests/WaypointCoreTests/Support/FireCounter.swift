@@ -14,7 +14,7 @@ final class FireCounter: @unchecked Sendable {
     private var value = 0
 
     /// The number of calls so far.
-    var count: Int {
+    var calls: Int {
         lock.withLock { value }
     }
 

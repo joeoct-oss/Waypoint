@@ -20,7 +20,12 @@ let package = Package(
         .target(name: "Waypoint", dependencies: ["WaypointCore"]),
         // UIKit renderer. Its files are wrapped in `#if canImport(UIKit)`, so it compiles empty on Linux.
         .target(name: "WaypointUIKit", dependencies: ["WaypointCore"]),
-        .testTarget(name: "WaypointCoreTests", dependencies: ["WaypointCore"]),
+        // Shared fixtures for the test targets. Internal test code, not a product.
+        .target(name: "WaypointTestSupport", dependencies: ["WaypointCore"], path: "Tests/WaypointTestSupport"),
+        .testTarget(name: "WaypointCoreTests", dependencies: ["WaypointCore", "WaypointTestSupport"]),
+        // Renderer tests compile empty where SwiftUI or UIKit is missing, like the renderers themselves.
+        .testTarget(name: "WaypointTests", dependencies: ["Waypoint", "WaypointTestSupport"]),
+        .testTarget(name: "WaypointUIKitTests", dependencies: ["WaypointUIKit", "WaypointTestSupport"]),
     ],
     swiftLanguageModes: [.v6]
 )
