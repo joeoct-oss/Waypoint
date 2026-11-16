@@ -1,3 +1,11 @@
+//
+//  WaypointCoreInfo.swift
+//  Waypoint
+//
+//  Created by Yousef Mohamed <52625092+JoeOCT91@users.noreply.github.com>.
+//  Copyright © 2026 Yousef Mohamed. MIT License.
+//
+
 // WaypointCore is the UI-agnostic navigation state engine behind Waypoint.
 //
 // It imports only Foundation and Observation, so it builds and runs its tests on Linux.
