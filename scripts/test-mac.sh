@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+#
+#  test-mac.sh
+#  Waypoint
+#
+#  Created by Yousef Mohamed <52625092+JoeOCT91@users.noreply.github.com>.
+#  Copyright © 2026 Yousef Mohamed. MIT License.
+#
 # Runs every test layer on a Mac: the package unit tests on the host, then all
 # unit test targets on the project simulator (including UIKit-only tests), then
 # the example app's UI tests once the example app exists.
