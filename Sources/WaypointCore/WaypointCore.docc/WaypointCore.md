@@ -8,4 +8,13 @@ WaypointCore holds navigation state as plain, observable Swift values: stacks, p
 
 ## Topics
 
-The topics are filled in when the public API is designed.
+### Essentials
+
+- <doc:Routes>
+- <doc:NavigationState>
+
+### Navigating
+
+- <doc:StackNavigation>
+- <doc:Presentation>
+- <doc:Tabs>
