@@ -1,0 +1,51 @@
+name: Task
+description: A planned piece of work for a checkpoint.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        After creating the issue, add one `type:`, at least one `area:`, one `priority:` and at least one `test:` label, then set the milestone and the board's Checkpoint field. See the workflow doc in Waypoint-planning (`docs/workflow.md`).
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What this task delivers and why it matters.
+    validations:
+      required: true
+  - type: input
+    id: plan
+    attributes:
+      label: Plan
+      description: Link to plans/<issue-number>-<slug>.md in JoeOCT91/Waypoint-planning, or "not written yet", or "not needed" with a reason.
+      placeholder: https://github.com/JoeOCT91/Waypoint-planning/blob/HEAD/plans/12-example.md
+    validations:
+      required: true
+  - type: dropdown
+    id: checkpoint
+    attributes:
+      label: Checkpoint
+      options:
+        - C0 Project setup
+        - C1 API designed
+        - C2 Core navigation
+        - C3 Presentation and tabs
+        - C4 Deep links and UIKit
+        - C5 Example app and quality
+        - C6 1.0 release
+        - Not decided yet
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Tests
+      description: Unit tests to write first, and UI test scenarios (branch and flow). Write "None, because ..." if not needed.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Acceptance criteria a reviewer can check.
+    validations:
+      required: true
