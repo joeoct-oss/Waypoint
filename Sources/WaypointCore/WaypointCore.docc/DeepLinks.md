@@ -161,6 +161,8 @@ extension NavigationFallback {
 
 ### The link inbox
 
+The app coordinator owns the inbox through its `links` property, and the renderers wire it up when they draw the coordinator. The app coordinator sets `isReady` once the app can navigate, for example after login. See <doc:RootSwitching>.
+
 ```swift
 /// The one place every link source sends to.
 @MainActor

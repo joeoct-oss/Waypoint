@@ -68,6 +68,23 @@ Draw it:
 WaypointStack(ShopCoordinator())
 ```
 
+A whole app keeps its navigation in an app coordinator: the root (login or the main tabs), the tabs, its child coordinators and incoming links. The `App` only hands it to Waypoint:
+
+```swift
+@main
+struct ShopApp: App {
+    @State private var app = AppCoordinator()
+
+    var body: some Scene {
+        WindowGroup {
+            WaypointRoot(app)
+        }
+    }
+}
+```
+
+Screens report what happened, such as "logged in", and the app coordinator decides where to go. The SwiftUI example flows show the whole `AppCoordinator`.
+
 And test it without drawing anything:
 
 ```swift

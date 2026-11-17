@@ -96,18 +96,6 @@ They are thin, read the router from the environment, and hold no state of their 
     public var projectedValue: Binding<Tab> { get }
 }
 
-/// Switches the app's root.
-///
-/// Conformances:
-/// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
-/// - `Root: Hashable`, to compare roots.
-/// - `Root: Codable`, so the current root is saved and restored.
-/// - `Root: Sendable`, so root events can leave the main actor.
-@propertyWrapper public struct SwitchRoot<Root: Hashable & Codable & Sendable>: DynamicProperty {
-    public init(_ root: Root.Type)
-    public var wrappedValue: SwitchRootAction<Root> { get }
-}
-
 @MainActor public struct DismissFlowAction {
     @discardableResult public func callAsFunction() -> NavigationOutcome
 }
@@ -116,13 +104,6 @@ They are thin, read the router from the environment, and hold no state of their 
 ///   it.
 @MainActor public struct FinishFlowAction<Output: Sendable> {
     public func callAsFunction(_ output: Output)
-}
-/// Conformances:
-/// - `Root: Hashable`, to compare roots.
-/// - `Root: Codable`, so the current root is saved and restored.
-/// - `Root: Sendable`, so root events can leave the main actor.
-@MainActor public struct SwitchRootAction<Root: Hashable & Codable & Sendable> {
-    @discardableResult public func callAsFunction(to root: Root) -> NavigationOutcome
 }
 ```
 
@@ -137,5 +118,7 @@ struct ProductView: View {
     }
 }
 ```
+
+There is no wrapper for switching the app's root. That decision belongs to the app coordinator: a login screen reports that the user logged in, and the coordinator switches. See <doc:ExampleFlows>.
 
 The types are checked by the compiler. Whether a matching router is above the view can only be checked at run time. If none is, the wrapper reports an issue that names the view and the fix, shows the debug placeholder, and does nothing in release builds. `@Environment(StackRouter.self)` also works if you prefer the router itself.

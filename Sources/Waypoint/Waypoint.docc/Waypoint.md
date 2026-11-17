@@ -14,6 +14,8 @@ WaypointStack { HomeView() }
     .destination(CartRoute.self) { _ in CartView() }
 ```
 
+A whole app starts from an app coordinator drawn by `WaypointRoot(app)`. See <doc:ExampleFlows>.
+
 Routes, routers, outcomes and everything that isn't SwiftUI are documented in the `WaypointCore` catalog.
 
 ## Topics
