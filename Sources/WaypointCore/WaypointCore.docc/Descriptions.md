@@ -50,7 +50,7 @@ Routers and coordinators don't conform. Their state lives on the main actor, whi
 
 | Value | `description` |
 |---|---|
-| A route | `ProductRoute(id: <private>)`, `CartRoute`, `CheckoutStep.payment` |
+| A route | `ProductRoute(id: <private>)`, `CartRoute`, `CheckoutStep.payment`, `PaymentRoute.card(id: <private>)` |
 | A route with `publicLogFields = ["id"]` | `ProductRoute(id: 42)` |
 | `StackState` | `[ProductListRoute(category: <private>), ProductRoute(id: <private>)]` |
 | `TabState` | `[home, *shop, profile]`, where `*` marks the selected tab |

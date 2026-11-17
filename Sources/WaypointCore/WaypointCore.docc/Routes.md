@@ -59,6 +59,11 @@ public protocol Route: Hashable, Codable, Sendable {
     /// Keys this route type had before it was renamed or moved, so state
     /// saved by older versions still decodes. Default: none.
     static var formerRouteKeys: [RouteKey] { get }
+
+    /// Fields of this route that may appear in logs and descriptions
+    /// unredacted. Default: none. For an enum case with one unlabelled
+    /// value, list the case name.
+    static var publicLogFields: Set<String> { get }
 }
 
 extension Route {
@@ -179,8 +184,9 @@ Routers, state, events and snapshots hold routes of many types, so they store th
 /// Conformances:
 /// - `Hashable`, so paths can be compared and searched.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Codable`, so navigation state that holds it can be saved and restored.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct AnyRoute: Hashable, Sendable, NavigationDescribable {
+public struct AnyRoute: Hashable, Sendable, Codable, NavigationDescribable {
     /// Wraps a route.
     public init<R: Route>(_ route: R)
 
@@ -202,6 +208,14 @@ public struct AnyRoute: Hashable, Sendable, NavigationDescribable {
 
 Decoding an `AnyRoute` needs to know which concrete type a key stands for. Registering a destination for a route type also registers it for decoding, so most apps never touch the registry.
 
+An erased route is saved as its key and its value, such as `{"route": "Shop.ProductRoute", "value": {"id": 42}}`. Encoding needs nothing else. Decoding reads the registry from the decoder's `userInfo`:
+
+```swift
+let decoder = JSONDecoder()
+decoder.userInfo[.routeRegistry] = registry
+let state = try decoder.decode(StackState.self, from: data)
+```
+
 ```swift
 /// Maps route keys to route types, so erased routes can be encoded and decoded.
 ///
@@ -218,10 +232,28 @@ public struct RouteRegistry: Sendable {
     /// local type reports `unstableRouteKey`.
     public mutating func register<R: Route>(_ type: R.Type)
 
+    /// Problems found while registering, in the order they were found.
+    public private(set) var problems: [RouteDecodingError]
+
+    /// Every registered route type, once each.
+    public var registeredTypes: [any Route.Type] { get }
+
+    /// Whether this route type is registered under its current key.
+    public func isRegistered<R: Route>(_ type: R.Type) -> Bool
+
+    /// The route type for a current or former key.
+    public func type(for key: RouteKey) -> (any Route.Type)?
+
     /// Encodes a route with its key.
     public func encode(_ route: AnyRoute, to encoder: any Encoder) throws
+
     /// Decodes a route by its key, or throws `RouteDecodingError`.
     public func decode(from decoder: any Decoder) throws -> AnyRoute
+}
+
+extension CodingUserInfoKey {
+    /// Where a decoder finds the registry it needs to decode `AnyRoute` values.
+    public static let routeRegistry: CodingUserInfoKey
 }
 
 /// Why an erased route could not be decoded.
