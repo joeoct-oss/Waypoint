@@ -44,9 +44,10 @@ class SpikeTestCase: XCTestCase {
     }
 
     func swipeBack() {
-        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.5))
+        // Start on the screen edge itself: iOS 17 ignores a drag that starts a few points in.
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
         let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5))
-        start.press(forDuration: 0.05, thenDragTo: end)
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .fast, thenHoldForDuration: 0)
         settle()
     }
 
