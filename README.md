@@ -102,6 +102,13 @@ func selectingAProductPushesIt() {
 
 A route with no destination never crashes. Debug builds show a screen that names the route and the fix, and release builds refuse the push.
 
+A call that can't be done, such as going back to a screen that isn't in the stack, never crashes either. It reports an issue with your file and line, and you can say what to do instead:
+
+```swift
+router.popTo(CartRoute.self, else: .popToRoot)
+```
+
+
 ## Products
 
 | Product | What it is | Runs on |

@@ -57,7 +57,7 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable> {
     ///
     /// Returns `.alreadyThere` if it is selected, and `.failed` with
     /// `unknownTab` if it is not one of `tabs` and no fallback applies.
-    @discardableResult public func select(_ tab: Tab) -> NavigationOutcome
+    @discardableResult public func select(_ tab: Tab, else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     /// The stack router of one tab. Its flow is named after the tab. A tab
     /// that isn't one of `tabs` gets a router outside the tree, whose calls
@@ -68,7 +68,7 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable> {
     ///
     /// If the selected tab is removed, the first tab is selected and the
     /// removed tab's stack is released.
-    @discardableResult public func setTabs(_ tabs: [Tab]) -> NavigationOutcome
+    @discardableResult public func setTabs(_ tabs: [Tab], else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     // Presenting above the whole tab container: `present`, `dismiss`,
     // `dismissAll` and `presentationDefaults`, as on StackRouter.

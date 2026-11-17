@@ -30,7 +30,7 @@ extension StackRouter {
     /// If a flow is already presented, returns `.failed` with
     /// `alreadyPresenting` unless a fallback says otherwise.
     @discardableResult
-    public func present<R: Route>(_ route: R, style: PresentationStyle = .sheet) -> NavigationOutcome
+    public func present<R: Route>(_ route: R, style: PresentationStyle = .sheet, else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     /// The router of the presented flow, if any.
     public var presented: StackRouter? { get }
@@ -38,13 +38,13 @@ extension StackRouter {
     /// Dismisses the flow this router presents.
     ///
     /// Returns `.alreadyThere` when nothing is presented.
-    @discardableResult public func dismiss() -> NavigationOutcome
+    @discardableResult public func dismiss(else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     /// Dismisses every flow presented above this router.
-    @discardableResult public func dismissAll() -> NavigationOutcome
+    @discardableResult public func dismissAll(else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     /// Asks whoever presented this router's flow to dismiss it.
-    @discardableResult public func dismissFlow() -> NavigationOutcome
+    @discardableResult public func dismissFlow(else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     /// Default presentation options for this router and its children.
     public var presentationDefaults: PresentationDefaults { get set }
