@@ -7,6 +7,11 @@ Keep one stack per tab, and switch tabs from code or a deep link.
 `TabRouter` owns a tab container. Each tab has its own child router, so every tab keeps its own stack when the user switches away and back.
 
 ```swift
+// Conformances:
+// - `String` raw value: gives each case a readable name in logs and saved state.
+// - `Hashable`, required by `TabRouter`, which selects and compares tabs.
+// - `Codable`, required by `TabRouter`, which saves and restores the selection with the tree.
+// - `Sendable`, required by `TabRouter`, so events that name the tab can leave the main actor.
 enum MainTab: String, Hashable, Codable, Sendable {
     case home
     case shop
@@ -17,6 +22,8 @@ let tabs = TabRouter(tabs: [.home, .shop, .profile], selection: .home)
 tabs.select(.shop)
 tabs.router(for: .shop).push(ProductRoute(id: 42))
 ```
+
+Tab types need `Hashable`, `Codable` and `Sendable`. See <doc:WhyTheseConformances>.
 
 When the user taps a tab, the renderer reports it, and the selection changes like any other change, with `origin: .user`.
 
@@ -29,6 +36,11 @@ Navigation methods return a `NavigationOutcome` and take an optional fallback, f
 ///
 /// `Tab` is usually an app enum. Its raw value or `Codable` form is what
 /// snapshots and logs show.
+///
+/// Conformances:
+/// - `Tab: Hashable`, to select and compare tabs.
+/// - `Tab: Codable`, so the selection is saved and restored.
+/// - `Tab: Sendable`, so tab events can leave the main actor.
 @MainActor @Observable
 public final class TabRouter<Tab: Hashable & Codable & Sendable> {
     /// Creates a tab container. `selection` must be one of `tabs`.

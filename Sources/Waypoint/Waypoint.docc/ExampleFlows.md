@@ -11,10 +11,19 @@ These five flows cover what most apps need. They build on each other: the app st
 The root router holds which flow is showing. Logging in switches the whole screen and releases the login flow.
 
 ```swift
+// Conformances:
+// - `Hashable`, required by `RootRouter`, which compares roots to know when to switch.
+// - `Codable`, required by `RootRouter`, which saves and restores the current root with the tree.
+// - `Sendable`, required by `RootRouter`, so events that name the root can leave the main actor.
 enum AppRoot: Hashable, Codable, Sendable {
     case login
     case main
 }
+// Conformances:
+// - `String` raw value: gives each case a readable name in logs and saved state.
+// - `Hashable`, required by `TabRouter`, which selects and compares tabs.
+// - `Codable`, required by `TabRouter`, which saves and restores the selection with the tree.
+// - `Sendable`, required by `TabRouter`, so events that name the tab can leave the main actor.
 enum MainTab: String, Hashable, Codable, Sendable {
     case home
     case shop
@@ -67,6 +76,9 @@ struct MainTabsView: View {
 One route type per screen, one registration line each. The product route can also be opened from a link.
 
 ```swift
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
+// - `DeepLinkable`, so it can be opened from a URL.
 struct ProductRoute: Route, DeepLinkable {
     typealias Flow = ShopCoordinator
     let id: Int
@@ -75,10 +87,15 @@ struct ProductRoute: Route, DeepLinkable {
     init(link: DeepLinkParameters) throws { id = try link.int("id") }
 }
 
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
 struct CartRoute: Route {
     typealias Flow = ShopCoordinator
 }
 
+// Conformances:
+// - `SwiftUIStackCoordinator`, so `WaypointStack` can draw it.
+// - `NavigationFlow`, so routes can name it as their flow.
 final class ShopCoordinator: SwiftUIStackCoordinator, NavigationFlow {
     let router: StackRouter
     init(router: StackRouter) { self.router = router }
@@ -102,6 +119,9 @@ final class ShopCoordinator: SwiftUIStackCoordinator, NavigationFlow {
 The filter flow ends with a value. The user can also swipe it away, which gives `.cancelled`. Either way, the result arrives exactly once.
 
 ```swift
+// Conformances:
+// - `SwiftUIStackCoordinator`, so `WaypointStack` can draw it.
+// - `FlowFinishing`, so it can hand a result back to whoever started it.
 final class FilterCoordinator: SwiftUIStackCoordinator, FlowFinishing {
     typealias Output = ProductFilter
     let router = StackRouter()

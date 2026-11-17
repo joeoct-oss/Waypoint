@@ -20,6 +20,11 @@ root.restore(from: data)
 
 ```swift
 /// A versioned copy of the navigation tree.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Codable`, so it can be saved, restored and logged.
+/// - `Equatable`, so tests and the router can compare values.
 public struct NavigationSnapshot: Sendable, Codable, Equatable {
     public static let currentVersion: Int
     public let version: Int
@@ -36,6 +41,10 @@ extension RootRouter {
 }
 
 /// What a restore did.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so tests and the router can compare values.
 public enum RestoreOutcome: Sendable, Equatable {
     case restored
     /// Part of the tree could not be restored. The issues say what was dropped.

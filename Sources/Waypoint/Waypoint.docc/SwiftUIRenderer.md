@@ -12,6 +12,9 @@ The renderer keeps no navigation state of its own. It mirrors the router's path 
 
 ```swift
 /// A navigation stack driven by a `StackRouter`.
+///
+/// Conformances:
+/// - `Root: View`: the stack's first screen.
 public struct WaypointStack<Root: View>: View {
     /// Creates a stack with its own router.
     public init(@ViewBuilder root: () -> Root)
@@ -45,6 +48,10 @@ Use `WaypointLink` for a tappable row that pushes a route. It calls `router.push
 
 ```swift
 /// A button that pushes a route onto the nearest Waypoint stack.
+///
+/// Conformances:
+/// - `Label: View`: what SwiftUI shows.
+/// - `R: Route`: the route type this works with.
 public struct WaypointLink<Label: View, R: Route>: View {
     public init(_ route: R, @ViewBuilder label: () -> Label)
 }
@@ -62,6 +69,9 @@ A coordinator gives a flow its root screen and its destinations in one place.
 
 ```swift
 /// A stack coordinator that draws with SwiftUI.
+///
+/// Conformances:
+/// - `StackCoordinator`: it adds screen building to a stack coordinator.
 public protocol SwiftUIStackCoordinator: StackCoordinator {
     associatedtype RootView: View
     associatedtype Body: Destinations
@@ -70,6 +80,11 @@ public protocol SwiftUIStackCoordinator: StackCoordinator {
 }
 
 /// Registers one route type's screen inside a coordinator.
+///
+/// Conformances:
+/// - `Destinations`, so it can be listed in a coordinator's destinations.
+/// - `R: Route`: the route type this works with.
+/// - `Content: View`: what SwiftUI shows.
 public struct Destination<R: Route, Content: View>: Destinations {
     public init(_ type: R.Type, @ViewBuilder _ content: @escaping (R) -> Content)
     public init(_ type: R.Type, @ViewBuilder _ content: @escaping (R, StackNavigator) -> Content)
@@ -90,6 +105,8 @@ extension WaypointStack {
 ```
 
 ```swift
+// Conformances:
+// - `SwiftUIStackCoordinator`, so `WaypointStack` can draw it.
 final class ShopCoordinator: SwiftUIStackCoordinator {
     let router = StackRouter()
 
@@ -131,6 +148,12 @@ WaypointStack { HomeView() }
 
 ```swift
 /// A tab view driven by a `TabRouter`. Each tab gets its own stack.
+///
+/// Conformances:
+/// - `Tab: Hashable`, to select and compare tabs.
+/// - `Tab: Codable`, so the selection is saved and restored.
+/// - `Tab: Sendable`, so tab events can leave the main actor.
+/// - `Content: View`: what SwiftUI shows.
 public struct WaypointTabs<Tab: Hashable & Codable & Sendable, Content: View>: View {
     public init(_ router: TabRouter<Tab>, @ViewBuilder content: @escaping (Tab) -> Content)
 }
@@ -149,6 +172,12 @@ A `switch` over your own tab enum is fine here: it lists the tabs once, in one p
 
 ```swift
 /// Draws whichever root a `RootRouter` is showing.
+///
+/// Conformances:
+/// - `Root: Hashable`, to compare roots.
+/// - `Root: Codable`, so the current root is saved and restored.
+/// - `Root: Sendable`, so root events can leave the main actor.
+/// - `Content: View`: what SwiftUI shows.
 public struct WaypointRoot<Root: Hashable & Codable & Sendable, Content: View>: View {
     public init(_ router: RootRouter<Root>, @ViewBuilder content: @escaping (Root) -> Content)
 }

@@ -11,3 +11,4 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - API design articles in the `WaypointCore` DocC catalog: Routes, Navigation state, Stack navigation, Presentation (with app-chosen sheet sizes) and Tabs. Signatures only; the API is implemented in later issues. (#42)
 - API design articles for coordinators and child flows, root switching, events and logging, guards, deep links, state restoration, concurrency, and testing your navigation. Signatures only. (#43)
 - DocC catalogs for the `Waypoint` (SwiftUI) and `WaypointUIKit` products, with renderer API articles, navigating from views and view models, and five example flows in each renderer. Signatures only. (#44)
+- Every type in the API articles lists its conformances with a reason for each, and a new "Why these conformances" article explains `Hashable`, `Codable`, `Sendable`, `Equatable` and `AnyObject`. (#8)

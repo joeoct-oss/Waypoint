@@ -39,6 +39,9 @@ A route with no destination never crashes. Debug builds push a "No destination f
 
 ```swift
 /// A stack coordinator that draws with UIKit.
+///
+/// Conformances:
+/// - `StackCoordinator`: it adds screen building to a stack coordinator.
 @MainActor
 public protocol UIKitStackCoordinator: StackCoordinator {
     /// The flow's first screen.
@@ -48,6 +51,9 @@ public protocol UIKitStackCoordinator: StackCoordinator {
 }
 
 /// Registers one route type's view controller inside a coordinator.
+///
+/// Conformances:
+/// - `R: Route`: the route type this works with.
 public struct UIKitDestination<R: Route> {
     public init(_ type: R.Type, _ make: @escaping @MainActor (R) -> UIViewController)
     public init(_ type: R.Type, _ make: @escaping @MainActor (R, StackNavigator) -> UIViewController)
@@ -60,6 +66,8 @@ extension WaypointNavigationController {
 ```
 
 ```swift
+// Conformances:
+// - `UIKitStackCoordinator`, so `WaypointNavigationController` can draw it.
 final class ShopCoordinator: UIKitStackCoordinator {
     let router = StackRouter()
 
@@ -84,6 +92,11 @@ Sheet sizes come from the presentation's `SheetOptions` and map to `UISheetPrese
 
 ```swift
 /// A tab bar controller driven by a `TabRouter`.
+///
+/// Conformances:
+/// - `Tab: Hashable`, to select and compare tabs.
+/// - `Tab: Codable`, so the selection is saved and restored.
+/// - `Tab: Sendable`, so tab events can leave the main actor.
 @MainActor
 public final class WaypointTabBarController<Tab: Hashable & Codable & Sendable>: UITabBarController {
     /// `make` builds each tab's controller once, usually a `WaypointNavigationController`
@@ -93,6 +106,11 @@ public final class WaypointTabBarController<Tab: Hashable & Codable & Sendable>:
 
 /// A container that shows whichever root a `RootRouter` is showing,
 /// with a cross-fade when it switches.
+///
+/// Conformances:
+/// - `Root: Hashable`, to compare roots.
+/// - `Root: Codable`, so the current root is saved and restored.
+/// - `Root: Sendable`, so root events can leave the main actor.
 @MainActor
 public final class WaypointRootViewController<Root: Hashable & Codable & Sendable>: UIViewController {
     public init(router: RootRouter<Root>, make: @escaping @MainActor (Root) -> UIViewController)

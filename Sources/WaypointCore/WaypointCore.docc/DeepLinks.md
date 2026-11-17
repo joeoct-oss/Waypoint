@@ -7,6 +7,9 @@ Turn URLs, push taps and shortcuts into navigation, applied in one step.
 Most links name one screen. The route declares its own URL patterns, and registering its destination registers them, so no handler is needed:
 
 ```swift
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
+// - `DeepLinkable`, so it can be opened from a URL.
 struct ProductRoute: Route, DeepLinkable {
     let id: Int
     static let patterns: [URLPattern] = ["/product/:id/:slug?", "/p/:id"]
@@ -20,6 +23,9 @@ Every link source sends to one `LinkInbox`. The inbox holds a link until the app
 
 ```swift
 /// A route that can be opened from a URL.
+///
+/// Conformances:
+/// - `Route`, so it can be pushed, presented and saved.
 public protocol DeepLinkable: Route {
     /// The URL paths that open this route. Hosts and schemes are set once in `LinkDomains`.
     static var patterns: [URLPattern] { get }
@@ -35,12 +41,20 @@ extension DeepLinkable {
 /// A URL path pattern, such as `"/product/:id/:slug?"`.
 ///
 /// `:name` captures a segment, and a trailing `?` makes it optional.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Hashable`, so duplicate patterns can be found.
+/// - `ExpressibleByStringLiteral`, so it can be written as a string literal.
 public struct URLPattern: Sendable, Hashable, ExpressibleByStringLiteral {
     public init(_ pattern: String)
     public func match(_ url: URL) -> DeepLinkParameters?
 }
 
 /// Values captured from a URL, read with clear errors.
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct DeepLinkParameters: Sendable {
     public func string(_ name: String) throws -> String
     public func int(_ name: String) throws -> Int
@@ -48,6 +62,10 @@ public struct DeepLinkParameters: Sendable {
     public func query(_ name: String) -> String?
 }
 
+/// Conformances:
+/// - `Error`, so it can be thrown.
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so tests and the router can compare values.
 public enum DeepLinkError: Error, Sendable, Equatable {
     case noMatch(URL)
     case missingParameter(String)
@@ -73,31 +91,60 @@ matcher.register("/shop/featured/:id") { link in
 
 ```swift
 /// Steps over the navigation tree, applied as one transaction.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so tests and the router can compare values.
 public struct NavigationPlan: Sendable, Equatable {
     public init(@NavigationPlanBuilder _ steps: () throws -> [NavigationStep]) rethrows
 }
 
 /// Steps, written as small values inside a plan.
+///
+/// Conformances:
+/// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
+/// - `Root: Hashable`, to compare roots.
+/// - `Root: Codable`, so the current root is saved and restored.
+/// - `Root: Sendable`, so root events can leave the main actor.
 public struct SwitchRoot<Root: Hashable & Codable & Sendable>: NavigationPlanStep {
     public init(_ root: Root)
 }
+/// Conformances:
+/// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
+/// - `Tab: Hashable`, to select and compare tabs.
+/// - `Tab: Codable`, so the selection is saved and restored.
+/// - `Tab: Sendable`, so tab events can leave the main actor.
 public struct SelectTab<Tab: Hashable & Codable & Sendable>: NavigationPlanStep {
     public init(_ tab: Tab)
 }
+/// Conformances:
+/// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
+/// - `Tab: Hashable`, to select and compare tabs.
+/// - `Tab: Codable`, so the selection is saved and restored.
+/// - `Tab: Sendable`, so tab events can leave the main actor.
 public struct SetPath<Tab: Hashable & Codable & Sendable>: NavigationPlanStep {
     public init(in tab: Tab, @RoutePathBuilder _ routes: () throws -> [AnyRoute]) rethrows
 }
+/// Conformances:
+/// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
 public struct Push: NavigationPlanStep {
     public init<R: Route>(_ route: R)
 }
+/// Conformances:
+/// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
 public struct Present: NavigationPlanStep {
     public init<R: Route>(_ route: R, style: PresentationStyle = .sheet)
 }
+/// Conformances:
+/// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
 public struct DismissAll: NavigationPlanStep {
     public init()
 }
 
 /// Matches URLs to plans. Registering a `DeepLinkable` destination fills it.
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct DeepLinkMatcher: Sendable {
     public init()
     public mutating func register<R: DeepLinkable>(_ type: R.Type)
@@ -130,11 +177,17 @@ public final class LinkInbox {
 }
 
 /// The hosts and schemes this app answers, set once.
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct LinkDomains: Sendable {
     public init(hosts: Set<String>, schemes: Set<String> = [], trackingParameters: Set<String> = [])
 }
 
 /// How the inbox treats links. Every value has a default you can change.
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct LinkPolicy: Sendable {
     /// A newer link replaces one that is waiting. Default: `.latestOnly`.
     public var pendingLimit: PendingLimit

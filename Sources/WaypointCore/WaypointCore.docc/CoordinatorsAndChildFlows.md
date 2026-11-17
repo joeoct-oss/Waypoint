@@ -9,6 +9,8 @@ A coordinator is your own object that owns one router, the flow's dependencies a
 Coordinators are optional. A plain stack with a few `.destination` lines needs none. Add one when a flow has logic or dependencies worth keeping in one place.
 
 ```swift
+// Conformances:
+// - `StackCoordinator`: it adds screen building to a stack coordinator.
 final class ShopCoordinator: StackCoordinator {
     let router = StackRouter()
     let catalog: CatalogService
@@ -24,6 +26,9 @@ The renderer products add the parts that build screens: SwiftUI views or UIKit v
 
 ```swift
 /// App code that owns one stack flow.
+///
+/// Conformances:
+/// - `AnyObject`, because a coordinator is one shared object that owns its router.
 @MainActor
 public protocol StackCoordinator: AnyObject {
     /// The router this coordinator owns.
@@ -31,6 +36,9 @@ public protocol StackCoordinator: AnyObject {
 }
 
 /// App code that owns a tab container.
+///
+/// Conformances:
+/// - `AnyObject`, because a coordinator is one shared object that owns its router.
 @MainActor
 public protocol TabCoordinator: AnyObject {
     associatedtype Tab: Hashable & Codable & Sendable
@@ -38,6 +46,9 @@ public protocol TabCoordinator: AnyObject {
 }
 
 /// A flow that ends with a value for whoever started it.
+///
+/// Conformances:
+/// - `AnyObject`, because the flow is one object that ends once.
 @MainActor
 public protocol FlowFinishing: AnyObject {
     /// What the flow hands back, such as a picked address.
@@ -53,9 +64,14 @@ public protocol FlowFinishing: AnyObject {
 A coordinator can be its own `NavigationFlow`. Routes then name it as their flow, and the coordinator gets a scoped handle for free. A separate empty `enum ShopFlow: NavigationFlow { }` works just as well. Neither is required.
 
 ```swift
+// Conformances:
+// - `StackCoordinator`: it adds screen building to a stack coordinator.
+// - `NavigationFlow`, so routes can name it as their flow.
 final class ShopCoordinator: StackCoordinator, NavigationFlow {
     ...
 }
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
 struct CartRoute: Route {
     typealias Flow = ShopCoordinator
 }
@@ -80,6 +96,10 @@ case .cancelled: break   // the user swiped the sheet away
 
 ```swift
 /// How a child flow ended.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Value: Sendable`, because the result travels from the child flow to the task that awaits it.
 public enum FlowResult<Value: Sendable>: Sendable {
     case finished(Value)
     case cancelled
@@ -126,6 +146,9 @@ extension StackRouter {
 }
 
 /// What every router has in common.
+///
+/// Conformances:
+/// - `AnyObject`, because every router is one shared object in the tree.
 @MainActor
 public protocol NavigationRouter: AnyObject {
     var flowID: FlowID { get }

@@ -55,6 +55,11 @@ extension StackRouter {
 
 ```swift
 /// How a flow is presented.
+///
+/// Conformances:
+/// - `Hashable`, so presentations can be compared.
+/// - `Codable`, so it can be saved, restored and logged.
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct PresentationStyle: Hashable, Codable, Sendable {
     /// A sheet that uses the router's default sheet options. Large unless changed.
     public static var sheet: PresentationStyle { get }
@@ -76,6 +81,11 @@ Sheet sizes are plain values in the navigation state. That means a restored or d
 
 ```swift
 /// One size a sheet can rest at.
+///
+/// Conformances:
+/// - `Hashable`, so detents can be compared and kept in sets.
+/// - `Codable`, so it can be saved, restored and logged.
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public enum SheetDetent: Hashable, Codable, Sendable {
     case medium
     case large
@@ -88,6 +98,11 @@ public enum SheetDetent: Hashable, Codable, Sendable {
 }
 
 /// Options for a sheet.
+///
+/// Conformances:
+/// - `Hashable`, so presentations can be compared.
+/// - `Codable`, so it can be saved, restored and logged.
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct SheetOptions: Hashable, Codable, Sendable {
     public init(
         detents: [SheetDetent] = [.large],
@@ -118,6 +133,9 @@ Nothing is fixed. Set a default once for a flow or the whole app, and a single c
 
 ```swift
 /// Default options for presentations from a router and its children.
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct PresentationDefaults: Sendable {
     /// Used by `.sheet` when a call doesn't pass its own options.
     public var sheet: SheetOptions
