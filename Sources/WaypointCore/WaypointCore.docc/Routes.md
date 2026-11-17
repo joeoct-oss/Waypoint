@@ -12,6 +12,7 @@ A route is a value that names one screen and carries its inputs. Waypoint uses o
 struct ProductRoute: Route {
     let id: Int
 }
+
 // Conformances:
 // - `Route`, so it can be pushed, presented and saved.
 struct CartRoute: Route { }
@@ -94,6 +95,7 @@ enum ShopFlow: NavigationFlow { }
 struct CartRoute: Route {
     typealias Flow = ShopFlow
 }
+
 // Conformances:
 // - `Route`, so it can be pushed, presented and saved.
 struct HelpRoute: Route { }   // unscoped

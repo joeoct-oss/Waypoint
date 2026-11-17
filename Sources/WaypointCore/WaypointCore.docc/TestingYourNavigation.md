@@ -114,6 +114,7 @@ public struct StrictMode: Sendable {
         case failed
         case recovered
     }
+
     /// Default: `[.failed]`.
     public init(failOn: Set<Trigger> = [.failed])
 }
