@@ -78,7 +78,8 @@ Tabs, stacks and the root are still restored.
 
 ### Restore never crashes
 
-- A route that no longer decodes, because it was renamed or removed, cuts its stack at the last route that does. Set `routeKey` before renaming a route type to keep old snapshots working.
+- A route that no longer decodes, because it was renamed or removed, cuts its stack at the last route that does. When you rename a route type or move it to another module, list its old key in `formerRouteKeys` to keep old snapshots working. See <doc:Routes#Route-keys>.
+- A route of a `private` or local type is not saved, because its key changes between builds. The stack is cut before it, and Waypoint reports `unstableRouteKey` at launch.
 - A flow that no longer exists is dropped.
 - A snapshot from an unknown version is refused, and the outcome is `.failed`.
 
