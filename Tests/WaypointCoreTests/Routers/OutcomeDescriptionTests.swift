@@ -34,7 +34,8 @@ struct OutcomeDescriptionTests {
     @Test
     func issueDescriptionNamesFlowAndCallSite() {
         #expect(issue.description == "routeNotInPath flow=shop at=ShopCoordinator.swift:42")
-        #expect(issue.debugDescription == "routeNotInPath flow=shop at=ShopCoordinator.swift:42\n  HomeRoute is not in the path [].")
+        let expected = "routeNotInPath flow=shop at=ShopCoordinator.swift:42\n  HomeRoute is not in the path []."
+        #expect(issue.debugDescription == expected)
     }
 
     @Test
@@ -46,10 +47,23 @@ struct OutcomeDescriptionTests {
 
     @Test
     func issuesCompareByCallSite() {
-        let other = NavigationIssue(kind: .routeNotInPath, flow: FlowID("shop"), message: issue.message, file: "Shop/ShopCoordinator.swift", line: 43)
+        let same = NavigationIssue(
+            kind: .routeNotInPath,
+            flow: FlowID("shop"),
+            message: issue.message,
+            file: "Shop/ShopCoordinator.swift",
+            line: 42
+        )
+        let other = NavigationIssue(
+            kind: .routeNotInPath,
+            flow: FlowID("shop"),
+            message: issue.message,
+            file: "Shop/ShopCoordinator.swift",
+            line: 43
+        )
 
         #expect(issue != other)
-        #expect(issue == NavigationIssue(kind: .routeNotInPath, flow: FlowID("shop"), message: issue.message, file: "Shop/ShopCoordinator.swift", line: 42))
+        #expect(issue == same)
     }
 
     @Test

@@ -110,7 +110,8 @@ struct StackReducerTests {
     func setPathReplacesAndReportsReplaced() {
         let result = reduce([home], .setPath([product1, product2]))
 
-        #expect(result == .changed(StackState(path: [product1, product2]), [.replaced(from: [home], to: [product1, product2])]))
+        let expected = StackState(path: [product1, product2])
+        #expect(result == .changed(expected, [.replaced(from: [home], to: [product1, product2])]))
     }
 
     @Test
@@ -125,7 +126,8 @@ struct StackReducerTests {
 
         let result = StackReducer.reduce(state, .push(product1), rootRoute: nil)
 
-        #expect(result == .changed(StackState(path: [home, product1], presentation: presentation), [.pushed([product1])]))
+        let expected = StackState(path: [home, product1], presentation: presentation)
+        #expect(result == .changed(expected, [.pushed([product1])]))
     }
 
     // Reduces a command on a stack with this path and no root route.

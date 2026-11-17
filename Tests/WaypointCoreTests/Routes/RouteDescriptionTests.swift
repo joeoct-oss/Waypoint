@@ -39,7 +39,8 @@ struct RouteDescriptionTests {
         let route = AnyRoute(SearchRoute(id: 42, query: "shoes"))
         let empty = AnyRoute(SearchRoute(id: 1, query: nil))
 
-        #expect(route.debugDescription(revealingPrivateValues: true) == #"RouteFixtures.SearchRoute(id: 42, query: "shoes")"#)
+        let revealed = route.debugDescription(revealingPrivateValues: true)
+        #expect(revealed == #"RouteFixtures.SearchRoute(id: 42, query: "shoes")"#)
         #expect(empty.debugDescription(revealingPrivateValues: true) == "RouteFixtures.SearchRoute(id: 1, query: nil)")
         #expect(route.debugDescription == route.description)
     }
@@ -57,7 +58,8 @@ struct RouteDescriptionTests {
 
         #expect(card.description == "RouteFixtures.PaymentRoute.card(id: <private>, nickname: <private>)")
         #expect(voucher.description == "RouteFixtures.PaymentRoute.voucher(<private>)")
-        #expect(voucher.debugDescription(revealingPrivateValues: true) == #"RouteFixtures.PaymentRoute.voucher("SAVE10")"#)
+        let revealed = voucher.debugDescription(revealingPrivateValues: true)
+        #expect(revealed == #"RouteFixtures.PaymentRoute.voucher("SAVE10")"#)
     }
 
     @Test

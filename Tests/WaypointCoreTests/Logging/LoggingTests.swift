@@ -249,7 +249,14 @@ struct LoggingTests {
         await withTaskGroup(of: Void.self) { group in
             for index in 0..<50 {
                 group.addTask {
-                    handler.log(LogMessage(level: .info, category: .navigation, text: "\(index)", file: #fileID, line: #line))
+                    let message = LogMessage(
+                        level: .info,
+                        category: .navigation,
+                        text: "\(index)",
+                        file: #fileID,
+                        line: #line
+                    )
+                    handler.log(message)
                 }
             }
         }

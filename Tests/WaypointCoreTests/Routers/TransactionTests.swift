@@ -34,11 +34,12 @@ struct TransactionTests {
         let main = router.flowID
         #expect(outcome == .applied)
         #expect(router.state.path == [AnyRoute(ProductRoute(id: 1)), AnyRoute(ProductRoute(id: 2))])
-        #expect(applied.values == [[
+        let expected = [
             AppliedChange(flow: main, change: .popped([AnyRoute(HomeRoute())])),
             AppliedChange(flow: main, change: .pushed([AnyRoute(ProductRoute(id: 1))])),
             AppliedChange(flow: main, change: .pushed([AnyRoute(ProductRoute(id: 2))])),
-        ]])
+        ]
+        #expect(applied.values == [expected])
     }
 
     @Test
@@ -155,9 +156,10 @@ struct TransactionTests {
             guard once.claim() else {
                 return
             }
-            inner.record(router.transaction {
+            let outcome = router.transaction {
                 $0.push(SettingsRoute())
-            })
+            }
+            inner.record(outcome)
         }
 
         router.push(HomeRoute())

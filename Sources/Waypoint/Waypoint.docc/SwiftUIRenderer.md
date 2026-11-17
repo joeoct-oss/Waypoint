@@ -113,12 +113,20 @@ final class ShopCoordinator: SwiftUIStackCoordinator {
     let router = StackRouter()
 
     var root: some View {
-        ProductListView(onSelect: { self.router.push(ProductRoute(id: $0)) })
+        ProductListView(onSelect: { self.showProduct(id: $0) })
     }
 
     var destinations: some Destinations {
-        Destination(ProductRoute.self) { ProductView(id: $0.id, onBuy: { self.router.push(CartRoute()) }) }
+        Destination(ProductRoute.self) { ProductView(id: $0.id, onBuy: { self.showCart() }) }
         Destination(CartRoute.self) { _ in CartView() }
+    }
+
+    func showProduct(id: Int) {
+        router.push(ProductRoute(id: id))
+    }
+
+    func showCart() {
+        router.push(CartRoute())
     }
 }
 

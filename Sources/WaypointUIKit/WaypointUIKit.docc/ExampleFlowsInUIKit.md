@@ -129,8 +129,14 @@ final class ShopCoordinator: UIKitStackCoordinator, NavigationFlow {
     }
 
     func makeRootViewController() -> UIViewController {
-        ProductListViewController(onSelect: { [router] in router.push(ProductRoute(id: $0)) },
-                                  onFilter: { [weak self] in self?.showFilters() })
+        ProductListViewController(
+            onSelect: { [weak self] in self?.showProduct(id: $0) },
+            onFilter: { [weak self] in self?.showFilters() }
+        )
+    }
+
+    func showProduct(id: Int) {
+        router.push(ProductRoute(id: id))
     }
 }
 ```

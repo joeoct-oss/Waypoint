@@ -99,7 +99,9 @@ public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribabl
         let node = Self.describe(root, revealingPrivateValues)
         let presentedFlows = presented.keys.sorted { $0.name < $1.name }
         let presentedTrees = presentedFlows.compactMap { flow in
-            presented[flow].map { "presented(\(flow)) \($0.debugDescription(revealingPrivateValues: revealingPrivateValues))" }
+            presented[flow].map { tree in
+                "presented(\(flow)) \(tree.debugDescription(revealingPrivateValues: revealingPrivateValues))"
+            }
         }
         return ([node] + presentedTrees).joined(separator: " + ")
     }

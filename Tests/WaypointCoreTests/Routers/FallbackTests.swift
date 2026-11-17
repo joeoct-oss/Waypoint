@@ -247,7 +247,8 @@ struct FallbackTests {
         router.popTo(SettingsRoute())
         child.push(HomeRoute())
 
-        #expect(outcomes.values == ["applied", "recovered notEnoughRoutes by=popToRoot", "failed routeNotInPath", "ignored"])
+        let expected = ["applied", "recovered notEnoughRoutes by=popToRoot", "failed routeNotInPath", "ignored"]
+        #expect(outcomes.values == expected)
     }
 
     @Test
