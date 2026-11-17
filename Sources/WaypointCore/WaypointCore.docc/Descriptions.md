@@ -58,7 +58,7 @@ Routers and coordinators don't conform. Their state lives on the main actor, whi
 | `Presentation` | `sheet FilterRoute flow=filter` |
 | `NavigationChange` | `pushed [ProductRoute(id: <private>)]`, `popped [CartRoute]`, `tabSelected home -> shop`, `dismissed flow=filter` |
 | `NavigationEvent` | `pushed [ProductRoute(id: <private>)] flow=shop origin=user tx=12` |
-| `NavigationOutcome` | `applied`, `alreadyThere`, `recovered routeNotInPath by=popToRoot`, `failed routeNotInPath` |
+| `NavigationOutcome` | `applied`, `alreadyThere`, `queued`, `ignored`, `recovered routeNotInPath by=popToRoot`, `failed routeNotInPath` |
 | `NavigationIssue` | `routeNotInPath flow=shop at=ShopCoordinator.swift:42` |
 | `NavigationFailure` | `failed routeNotInPath flow=shop at=ShopCoordinator.swift:42 fallback=popToRoot fallbackIssue=emptyPath` |
 | `NavigationFallback` | `popToRoot`, `custom(showHome)` |
