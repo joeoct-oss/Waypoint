@@ -11,6 +11,7 @@ A guard checks a change before the router applies it. Typical uses are asking th
 // - `NavigationGuard`, so a router asks it before each change.
 final class LoginGuard: NavigationGuard {
     let session: Session
+
     init(session: Session) {
         self.session = session
     }
@@ -50,6 +51,7 @@ public struct NavigationRequest: Sendable {
     public let flow: FlowID
     public let change: NavigationChange
     public let origin: NavigationOrigin
+
     /// Whether the change shows a route of type `R`.
     public func targets<R: Route>(_ type: R.Type) -> Bool
 }

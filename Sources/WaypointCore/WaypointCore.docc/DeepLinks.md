@@ -13,6 +13,7 @@ Most links name one screen. The route declares its own URL patterns, and registe
 struct ProductRoute: Route, DeepLinkable {
     let id: Int
     static let patterns: [URLPattern] = ["/product/:id/:slug?", "/p/:id"]
+
     init(link: DeepLinkParameters) throws {
         id = try link.int("id")
     }
@@ -31,6 +32,7 @@ Every link source sends to one `LinkInbox`. The inbox holds a link until the app
 public protocol DeepLinkable: Route {
     /// The URL paths that open this route. Hosts and schemes are set once in `LinkDomains`.
     static var patterns: [URLPattern] { get }
+
     /// Builds the route from the matched values.
     init(link: DeepLinkParameters) throws
 }
@@ -50,6 +52,7 @@ extension DeepLinkable {
 /// - `ExpressibleByStringLiteral`, so it can be written as a string literal.
 public struct URLPattern: Sendable, Hashable, ExpressibleByStringLiteral {
     public init(_ pattern: String)
+
     public func match(_ url: URL) -> DeepLinkParameters?
 }
 
@@ -112,6 +115,7 @@ public struct NavigationPlan: Sendable, Equatable, NavigationDescribable {
 public struct SwitchRoot<Root: Hashable & Codable & Sendable>: NavigationPlanStep {
     public init(_ root: Root)
 }
+
 /// Conformances:
 /// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
 /// - `Tab: Hashable`, to select and compare tabs.
@@ -120,6 +124,7 @@ public struct SwitchRoot<Root: Hashable & Codable & Sendable>: NavigationPlanSte
 public struct SelectTab<Tab: Hashable & Codable & Sendable>: NavigationPlanStep {
     public init(_ tab: Tab)
 }
+
 /// Conformances:
 /// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
 /// - `Tab: Hashable`, to select and compare tabs.
@@ -128,16 +133,19 @@ public struct SelectTab<Tab: Hashable & Codable & Sendable>: NavigationPlanStep 
 public struct SetPath<Tab: Hashable & Codable & Sendable>: NavigationPlanStep {
     public init(in tab: Tab, @RoutePathBuilder _ routes: () throws -> [AnyRoute]) rethrows
 }
+
 /// Conformances:
 /// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
 public struct Push: NavigationPlanStep {
     public init<R: Route>(_ route: R)
 }
+
 /// Conformances:
 /// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
 public struct Present: NavigationPlanStep {
     public init<R: Route>(_ route: R, style: PresentationStyle = .sheet)
 }
+
 /// Conformances:
 /// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
 public struct DismissAll: NavigationPlanStep {
@@ -150,6 +158,7 @@ public struct DismissAll: NavigationPlanStep {
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct DeepLinkMatcher: Sendable {
     public init()
+
     public mutating func register<R: DeepLinkable>(_ type: R.Type)
     public mutating func register(_ pattern: URLPattern,
                                   _ plan: @escaping @Sendable (DeepLinkParameters) throws -> NavigationPlan)

@@ -19,6 +19,7 @@ enum AppRoot: Hashable, Codable, Sendable {
     case login
     case main
 }
+
 // Conformances:
 // - `String` raw value: gives each case a readable name in logs and saved state.
 // - `Hashable`, required by `TabRouter`, which selects and compares tabs.
@@ -133,9 +134,11 @@ struct ProductRoute: Route, DeepLinkable {
     typealias Flow = ShopCoordinator
     let id: Int
     static let pattern: URLPattern = "/product/:id"
+
     init(id: Int) {
         self.id = id
     }
+
     init(link: DeepLinkParameters) throws {
         id = try link.int("id")
     }
@@ -152,6 +155,7 @@ struct CartRoute: Route {
 // - `NavigationFlow`, so routes can name it as their flow.
 final class ShopCoordinator: SwiftUIStackCoordinator, NavigationFlow {
     let router: StackRouter
+
     init(router: StackRouter) {
         self.router = router
     }
@@ -205,6 +209,7 @@ Inside the filter screen, a view can end the flow without a closure:
 ```swift
 struct FilterView: View {
     @FinishFlow(FilterCoordinator.self) private var finish
+
     var body: some View {
         Button("Apply") { finish(ProductFilter.default) }
     }

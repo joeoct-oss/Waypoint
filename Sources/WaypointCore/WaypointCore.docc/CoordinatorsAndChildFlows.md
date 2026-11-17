@@ -14,6 +14,7 @@ Coordinators are optional. A plain stack with a few `.destination` lines needs n
 final class ShopCoordinator: StackCoordinator {
     let router = StackRouter()
     let catalog: CatalogService
+
     init(catalog: CatalogService) {
         self.catalog = catalog
     }
@@ -103,6 +104,7 @@ A coordinator can be its own `NavigationFlow`. Routes then name it as their flow
 final class ShopCoordinator: StackCoordinator, NavigationFlow {
     ...
 }
+
 // Conformances:
 // - `Route`, so it can be pushed, presented and saved.
 struct CartRoute: Route {
@@ -189,6 +191,7 @@ public protocol NavigationRouter: AnyObject {
     var flowID: FlowID { get }
     var parent: (any NavigationRouter)? { get }
     var children: [any NavigationRouter] { get }
+
     func debugTree() -> String
 }
 ```
