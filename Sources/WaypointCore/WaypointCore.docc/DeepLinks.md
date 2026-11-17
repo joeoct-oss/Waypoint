@@ -95,7 +95,8 @@ matcher.register("/shop/featured/:id") { link in
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
-public struct NavigationPlan: Sendable, Equatable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct NavigationPlan: Sendable, Equatable, NavigationDescribable {
     public init(@NavigationPlanBuilder _ steps: () throws -> [NavigationStep]) rethrows
 }
 

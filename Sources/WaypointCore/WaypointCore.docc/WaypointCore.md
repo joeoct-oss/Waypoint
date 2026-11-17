@@ -31,6 +31,7 @@ WaypointCore holds navigation state as plain, observable Swift values: stacks, p
 ### Seeing and testing what happened
 
 - <doc:EventsAndLogging>
+- <doc:Descriptions>
 - <doc:TestingYourNavigation>
 
 ### Rules

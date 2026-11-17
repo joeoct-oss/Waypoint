@@ -22,7 +22,8 @@ router.debugTree()
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
-public struct NavigationEvent: Sendable, Equatable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct NavigationEvent: Sendable, Equatable, NavigationDescribable {
     public let flow: FlowID
     public let change: NavigationChange
     public let origin: NavigationOrigin
@@ -35,7 +36,8 @@ public struct NavigationEvent: Sendable, Equatable {
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
-public enum NavigationOrigin: Sendable, Equatable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public enum NavigationOrigin: Sendable, Equatable, NavigationDescribable {
     /// App code called a router or a handle.
     case app
     /// The user swiped back, dragged a sheet down or tapped a tab.
@@ -49,7 +51,8 @@ public enum NavigationOrigin: Sendable, Equatable {
 /// Conformances:
 /// - `Hashable`, to group the events of one transaction.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-public struct TransactionID: Hashable, Sendable { }
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct TransactionID: Hashable, Sendable, NavigationDescribable { }
 ```
 
 ### Observers
@@ -167,6 +170,8 @@ let root = RootRouter(AppRoot.login, logging: .init(minimumLevel: .debug, reveal
 let root = RootRouter(AppRoot.login)
 #endif
 ```
+
+Values in log lines use their `NavigationDescribable` descriptions, so every Waypoint line has the same searchable `key=value` shape, and route fields print as `<private>` unless they are in `publicLogFields`. With `revealsPrivateValues` on, the logger uses the revealing form instead. See <doc:Descriptions>.
 
 Issues are logged in the `issues` category: a recovered call at `.error`, and a failed call at `.fault`, each with the file and line of the call.
 

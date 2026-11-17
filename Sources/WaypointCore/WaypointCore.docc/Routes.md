@@ -115,8 +115,8 @@ Routers, state, events and snapshots hold routes of many types, so they store th
 /// Conformances:
 /// - `Hashable`, so paths can be compared and searched.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `CustomStringConvertible`, for readable logs and test failures.
-public struct AnyRoute: Hashable, Sendable, CustomStringConvertible {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct AnyRoute: Hashable, Sendable, NavigationDescribable {
     /// Wraps a route.
     public init<R: Route>(_ route: R)
 
@@ -129,8 +129,8 @@ public struct AnyRoute: Hashable, Sendable, CustomStringConvertible {
     /// Whether the wrapped route is of type `R`.
     public func `is`<R: Route>(_ type: R.Type) -> Bool
 
-    /// A readable description, such as `ProductRoute(id: 42)`.
-    public var description: String { get }
+    // `description` is the route key and its fields, private by default,
+    // such as `ProductRoute(id: <private>)`. See <doc:Descriptions>.
 }
 ```
 
@@ -162,7 +162,8 @@ public struct RouteRegistry: Sendable {
 /// - `Error`, so it can be thrown.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
-public enum RouteDecodingError: Error, Sendable, Equatable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public enum RouteDecodingError: Error, Sendable, Equatable, NavigationDescribable {
     case unknownRouteKey(String)
     case invalidPayload(routeKey: String)
     case duplicateRouteKey(String)

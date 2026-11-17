@@ -144,7 +144,8 @@ router.transaction {
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
-public enum NavigationOutcome: Sendable, Equatable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public enum NavigationOutcome: Sendable, Equatable, NavigationDescribable {
     /// The call did what it says.
     case applied
     /// The state already matched. Nothing changed and nothing is reported.
@@ -185,8 +186,8 @@ The built-in defaults change nothing unless the intent is clear. Popping more ro
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
-/// - `CustomStringConvertible`, for readable logs and test failures.
-public struct NavigationIssue: Sendable, Equatable, CustomStringConvertible {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
     /// Conformances:
     /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
     /// - `Hashable`, because it is the key of `FallbackPolicy`.
@@ -217,7 +218,8 @@ public struct NavigationIssue: Sendable, Equatable, CustomStringConvertible {
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so outcomes that carry it can be compared in tests.
-public enum NavigationFallback: Sendable, Equatable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
     case none
     case popToRoot
     /// For `popTo` a route value: push it instead.
@@ -242,8 +244,8 @@ public struct FallbackPolicy: Sendable {
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
-/// - `CustomStringConvertible`, for readable logs and test failures.
-public struct NavigationFailure: Sendable, Equatable, CustomStringConvertible {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct NavigationFailure: Sendable, Equatable, NavigationDescribable {
     public let issue: NavigationIssue
     public let fallbackIssue: NavigationIssue?
 }
