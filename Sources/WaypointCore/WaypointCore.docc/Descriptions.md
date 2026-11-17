@@ -44,9 +44,9 @@ Routers and coordinators don't conform. Their state lives on the main actor, whi
 
 ### The format
 
-- `description` is one line. It starts with a fixed word: a case name, a route key or a flow name. Then come `key=value` pairs. Lists are `[a, b]`, and a change from one value to another is `a -> b`.
+- `description` is one line. It starts with a fixed word: a case name, a route's type name or a flow name. Then come `key=value` pairs. Lists are `[a, b]`, and a change from one value to another is `a -> b`.
 - `debugDescription` starts with the `description` and adds detail, such as an issue's message or the whole tree.
-- Routes print by their `routeKey`, so renaming a type doesn't change your logs.
+- Routes print by their key's `typeName`, the key without its module, such as `ProductRoute`. Saved snapshots and decoding errors use the full key, such as `Shop.ProductRoute`.
 
 | Value | `description` |
 |---|---|
@@ -63,7 +63,7 @@ Routers and coordinators don't conform. Their state lives on the main actor, whi
 | `NavigationFailure` | `failed routeNotInPath flow=shop at=ShopCoordinator.swift:42 fallback=popToRoot fallbackIssue=emptyPath` |
 | `NavigationFallback` | `popToRoot`, `custom(showHome)` |
 | `NavigationTree` | `root(main) > tabs[home, *shop, profile] > stack[ProductListRoute(category: <private>)] + sheet[FilterRoute]` |
-| `RouteDecodingError` | `unknownRouteKey key=OldProductRoute` |
+| `RouteDecodingError` | `unknownRouteKey key=Shop.OldProductRoute` |
 | `RestoreOutcome` | `restored`, `partial issues=2`, `failed reason="unknown version 3"` |
 | `NavigationSnapshot` | `snapshot version=1 flows=4` |
 

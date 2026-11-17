@@ -56,17 +56,79 @@ public protocol Route: Hashable, Codable, Sendable {
     /// `FlowNavigator<Flow>`.
     associatedtype Flow: NavigationFlow = AnyFlow
 
-    /// The stable name used when this route is saved, logged or decoded.
-    ///
-    /// Defaults to the type name. Override it before renaming a type, so
-    /// saved navigation state keeps decoding.
-    static var routeKey: String { get }
+    /// Keys this route type had before it was renamed or moved, so state
+    /// saved by older versions still decodes. Default: none.
+    static var formerRouteKeys: [RouteKey] { get }
 }
 
 extension Route {
-    public static var routeKey: String { get }
+    /// This route type's key, from its module and type name.
+    public static var routeKey: RouteKey { get }
 }
 ```
+
+### Route keys
+
+Waypoint saves each route with a key, and reads the key back to find the route's type. The key is the route's module and type name, such as `Shop.ProductRoute`, so you never write one:
+
+```swift
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
+struct ProductRoute: Route {
+    let id: Int
+}
+
+// Saved as Shop.ProductRoute, logged as ProductRoute(id: <private>).
+```
+
+Two routes can't share a key, because Swift doesn't allow two types with the same full name. Routes with the same name in two feature modules get two keys, such as `Shop.DetailRoute` and `Account.DetailRoute`.
+
+When you rename a route type, or move it to another module, list its old key so navigation state saved by older versions still restores:
+
+```swift
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
+struct ProductRoute: Route {
+    static let formerRouteKeys = [RouteKey("Shop.ProductDetailRoute")]
+
+    let id: Int
+}
+```
+
+You don't need to work out the old key. If you forget, the first restore after the rename logs `unknownRouteKey key=Shop.ProductDetailRoute` with the exact line to add.
+
+Waypoint checks every key when the app starts, while the root router registers its destinations:
+
+- A former key that belongs to another route reports `duplicateRouteKey` with both type names. The current key wins.
+- A `private`, `fileprivate` or local route type reports `unstableRouteKey`, because its name changes between builds. It works on screen but is not saved. Make it `internal` or wider.
+- An empty or malformed former key reports `invalidRouteKey`.
+
+Each one fails loudly in development, never crashes in release, and fails the test in `WaypointTesting` strict mode.
+
+```swift
+/// The stable name of a route type, used when a route is saved, decoded or logged.
+///
+/// Conformances:
+/// - `Hashable`, so the registry can look up a route type by its key.
+/// - `Codable`, so saved navigation state stores the key as a plain string.
+/// - `Sendable`, so keys can leave the main actor in events, logs and snapshots.
+/// - `NavigationDescribable`, so logs and test failures print it in the shared format.
+public struct RouteKey: Hashable, Codable, Sendable, NavigationDescribable {
+    /// The key of a route type: its module and type name, such as `Shop.ProductRoute`.
+    public init<R: Route>(_ type: R.Type)
+
+    /// A key written out, for `formerRouteKeys` only.
+    public init(_ rawValue: String)
+
+    /// The full key, such as `Shop.ProductRoute`.
+    public var rawValue: String { get }
+
+    /// The key without its module, such as `ProductRoute`. Logs print this.
+    public var typeName: String { get }
+}
+```
+
+`RouteKey` can't be written as a bare string literal, so a key is never mixed up with another string, and the one place you write one, `formerRouteKeys`, stands out in review.
 
 ### Scoping routes to a flow
 
@@ -122,8 +184,8 @@ public struct AnyRoute: Hashable, Sendable, NavigationDescribable {
     /// Wraps a route.
     public init<R: Route>(_ route: R)
 
-    /// The wrapped route's `routeKey`.
-    public var routeKey: String { get }
+    /// The wrapped route's key.
+    public var routeKey: RouteKey { get }
 
     /// The wrapped route as `R`, or `nil` if it is another type.
     public func `as`<R: Route>(_ type: R.Type) -> R?
@@ -131,7 +193,7 @@ public struct AnyRoute: Hashable, Sendable, NavigationDescribable {
     /// Whether the wrapped route is of type `R`.
     public func `is`<R: Route>(_ type: R.Type) -> Bool
 
-    // `description` is the route key and its fields, private by default,
+    // `description` is the route's type name and its fields, private by default,
     // such as `ProductRoute(id: <private>)`. See <doc:Descriptions>.
 }
 ```
@@ -148,10 +210,11 @@ Decoding an `AnyRoute` needs to know which concrete type a key stands for. Regis
 public struct RouteRegistry: Sendable {
     public init()
 
-    /// Registers a route type under its `routeKey`.
+    /// Registers a route type under its `routeKey` and its `formerRouteKeys`.
     ///
-    /// Registering the same type twice does nothing. Registering a different
-    /// type under a key that is already taken reports `duplicateRouteKey`.
+    /// Registering the same type twice does nothing. A former key that
+    /// belongs to another type reports `duplicateRouteKey`, and a private or
+    /// local type reports `unstableRouteKey`.
     public mutating func register<R: Route>(_ type: R.Type)
 
     public func encode(_ route: AnyRoute, to encoder: any Encoder) throws
@@ -166,9 +229,11 @@ public struct RouteRegistry: Sendable {
 /// - `Equatable`, so tests and the router can compare values.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public enum RouteDecodingError: Error, Sendable, Equatable, NavigationDescribable {
-    case unknownRouteKey(String)
-    case invalidPayload(routeKey: String)
-    case duplicateRouteKey(String)
+    case unknownRouteKey(RouteKey)
+    case invalidPayload(RouteKey)
+    case duplicateRouteKey(RouteKey, types: [String])
+    case unstableRouteKey(RouteKey)
+    case invalidRouteKey(String)
 }
 ```
 
