@@ -127,7 +127,8 @@ struct RouteTests {
         let error = RouteDecodingError.unknownRouteKey(RouteKey("Shop.OldProductRoute"))
 
         #expect(error.description == "unknownRouteKey key=Shop.OldProductRoute")
-        #expect(error.debugDescription.contains(#"add RouteKey("Shop.OldProductRoute") to the new type's formerRouteKeys"#))
+        let hint = #"add RouteKey("Shop.OldProductRoute") to the new type's formerRouteKeys"#
+        #expect(error.debugDescription.contains(hint))
     }
 
     @Test

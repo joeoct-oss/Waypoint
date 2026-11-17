@@ -165,8 +165,10 @@ final class ShopCoordinator: SwiftUIStackCoordinator, NavigationFlow {
     let router: StackRouter
 
     var root: some View {
-        ProductListView(onSelect: { self.router.push(ProductRoute(id: $0)) },
-                        onFilter: { self.showFilters() })
+        ProductListView(
+            onSelect: { self.showProduct(id: $0) },
+            onFilter: { self.showFilters() }
+        )
     }
 
     var destinations: some Destinations {
@@ -178,6 +180,10 @@ final class ShopCoordinator: SwiftUIStackCoordinator, NavigationFlow {
 
     init(router: StackRouter) {
         self.router = router
+    }
+
+    func showProduct(id: Int) {
+        router.push(ProductRoute(id: id))
     }
 }
 ```

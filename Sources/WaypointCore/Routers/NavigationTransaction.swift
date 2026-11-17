@@ -233,7 +233,8 @@ public struct NavigationTransaction {
             return NavigationTransaction(store: store, missing: notTabsDraft(tab))
         }
         guard let stack = tabs.currentRouter(for: tab) else {
-            return NavigationTransaction(store: store, missing: tabs.draft(.unknownTab(DescriptionFormat.name(of: tab))))
+            let draft = tabs.draft(.unknownTab(DescriptionFormat.name(of: tab)))
+            return NavigationTransaction(store: store, missing: draft)
         }
         return NavigationTransaction(store: store, target: stack)
     }
@@ -295,7 +296,11 @@ public struct NavigationTransaction {
 
     /// The issue for a step on a value that names no router.
     private func missingDraft() -> IssueDraft {
-        missingTarget ?? IssueDraft(kind: .noRouterInScope, flow: FlowID("unknown"), message: "This transaction names no router.")
+        missingTarget ?? IssueDraft(
+            kind: .noRouterInScope,
+            flow: FlowID("unknown"),
+            message: "This transaction names no router."
+        )
     }
 
     /// The issue for a stack step on a container.

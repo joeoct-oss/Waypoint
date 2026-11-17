@@ -76,7 +76,8 @@ struct StateTests {
         #expect(filter.description == "sheet SettingsRoute flow=filter")
         #expect(cover.description == "fullScreenCover flow=login")
         #expect(PresentationStyle.sheet(detents: [.medium, .large]).description == "sheet(detents: [medium, large])")
-        #expect(PresentationStyle.sheet(detents: [.fraction(0.5), .height(200)]).description == "sheet(detents: [fraction(0.5), height(200.0)])")
+        let sized = PresentationStyle.sheet(detents: [.fraction(0.5), .height(200)])
+        #expect(sized.description == "sheet(detents: [fraction(0.5), height(200.0)])")
         #expect(FlowID("shop").description == "shop")
     }
 
@@ -86,23 +87,25 @@ struct StateTests {
 
         #expect(NavigationChange.pushed([product]).description == "pushed [ProductRoute(id: <private>)]")
         #expect(NavigationChange.popped([AnyRoute(HomeRoute())]).description == "popped [HomeRoute]")
-        #expect(NavigationChange.replaced(from: [], to: [product]).description == "replaced [] -> [ProductRoute(id: <private>)]")
+        let replaced = NavigationChange.replaced(from: [], to: [product])
+        #expect(replaced.description == "replaced [] -> [ProductRoute(id: <private>)]")
         #expect(NavigationChange.tabSelected(from: "home", to: "shop").description == "tabSelected home -> shop")
         #expect(NavigationChange.dismissed(FlowID("filter")).description == "dismissed flow=filter")
         #expect(NavigationChange.presented(filter).description == "presented sheet SettingsRoute flow=filter")
-        #expect(NavigationChange.pushed([product]).debugDescription(revealingPrivateValues: true) == "pushed [ProductRoute(id: 4)]")
+        let pushed = NavigationChange.pushed([product])
+        #expect(pushed.debugDescription(revealingPrivateValues: true) == "pushed [ProductRoute(id: 4)]")
     }
 
     @Test
     func treeDescription() {
-        let shop = NavigationTree(root: .stack(FlowID("shop"), StackState(path: [AnyRoute(ProductRoute(id: 1))], presentation: filter)))
-        let tree = NavigationTree(
-            root: .root(FlowID("app"), current: "main", child: NavigationTree(
-                root: .tabs(FlowID("main"), selection: "shop", tabs: ["shop": shop])
-            ))
-        )
+        let shopState = StackState(path: [AnyRoute(ProductRoute(id: 1))], presentation: filter)
+        let shop = NavigationTree(root: .stack(FlowID("shop"), shopState))
+        let main = NavigationTree(root: .tabs(FlowID("main"), selection: "shop", tabs: ["shop": shop]))
+        let tree = NavigationTree(root: .root(FlowID("app"), current: "main", child: main))
 
-        #expect(tree.description == "root(app) current=main > tabs(main) selection=shop > stack(shop)[ProductRoute(id: <private>)] + sheet SettingsRoute flow=filter")
+        let expected = "root(app) current=main > tabs(main) selection=shop > "
+            + "stack(shop)[ProductRoute(id: <private>)] + sheet SettingsRoute flow=filter"
+        #expect(tree.description == expected)
     }
 
     // Encodes and decodes a value with a registry that knows the shared routes.

@@ -50,7 +50,8 @@ struct PresentationAndTabReducerTests {
 
         let result = PresentationReducer.reduce(tabs, .present(sheet))
 
-        #expect(result == .changed(TabState(tabs: [.home, .shop], selection: .home, presentation: sheet), [.presented(sheet)]))
+        let expected = TabState(tabs: [MainTab.home, .shop], selection: .home, presentation: sheet)
+        #expect(result == .changed(expected, [.presented(sheet)]))
     }
 
     @Test
