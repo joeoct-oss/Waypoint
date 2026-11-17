@@ -6,6 +6,21 @@ What each protocol on a route, tab or root type is for, and what breaks without 
 
 Every type in these articles lists its conformances and gives a reason for each one. Most of your own types need the same three, and this page explains them once.
 
+### Conformances that travel together
+
+Many types need the same set for the same reasons, so Waypoint names each set once. A type then lists one name, and its reasons are written in one place:
+
+| Name | Kind | Is | For |
+|---|---|---|---|
+| `NavigationValue` | Type alias | `Hashable & Codable & Sendable` | Values the navigation keeps and looks up: `FlowID`, `RouteKey`, `AnyRoute`, `PresentationStyle`, `SheetOptions`, `SheetDetent` |
+| `NavigationRecord` | Type alias | `Sendable & Equatable & NavigationDescribable` | Values the navigation reports: changes, outcomes, issues, failures, fallbacks, events and plans |
+| `NavigationStateValue` | Type alias | `NavigationRecord & Codable` | The parts of the navigation state: `StackState`, `TabState`, `Presentation`, `NavigationTree` |
+| `Route` | Protocol | `NavigationValue` and a route key | Your route types |
+| `NavigationTab` | Protocol | `NavigationValue` | Your tab types |
+| `NavigationRoot` | Protocol | `NavigationValue` | Your root types |
+
+A type alias works like `Codable`: it is only a name for the protocols together, so it costs nothing and a type that already has them conforms without saying so. Waypoint uses aliases for its own value types. Your own types use protocols: you say what a type is for in one word, `enum MainTab: NavigationTab`, the compiler names that word when something is missing, and Waypoint can add defaults to it later.
+
 | Conformance | Needed by | Why | Without it |
 |---|---|---|---|
 | `Hashable` | Routes, tab types, root types | The router compares values: is this route already on top, which tab is selected, has the root changed. Paths are searched, and flows and tabs are used as dictionary keys. | `popTo`, `contains` and tab selection can't find anything, and the type doesn't compile as a route. |
@@ -30,15 +45,14 @@ The compiler synthesizes all three for a struct or enum whose stored values alre
 
 ### Your tab and root types
 
-`TabRouter` and `RootRouter` require `Hashable & Codable & Sendable` for the same reasons. A `String` raw value is optional, and it gives each case a readable name in logs and saved state.
+Tab types conform to `NavigationTab`, and root types to `NavigationRoot`. Both are `Hashable`, `Codable` and `Sendable` for the same reasons as routes. A `String` raw value is optional, and it gives each case a readable name in logs and saved state.
 
 ```swift
 // Conformances:
 // - `String` raw value: gives each case a readable name in logs and saved state.
-// - `Hashable`, required by `TabRouter`, which selects and compares tabs.
-// - `Codable`, required by `TabRouter`, which saves and restores the selection with the tree.
-// - `Sendable`, required by `TabRouter`, so events that name the tab can leave the main actor.
-enum MainTab: String, Hashable, Codable, Sendable {
+// - `NavigationTab`, so `TabRouter` can select and compare tabs, save and restore the selection,
+//   and name tabs in events off the main actor.
+enum MainTab: String, NavigationTab {
     case home
     case shop
     case profile

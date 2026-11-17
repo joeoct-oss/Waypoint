@@ -23,14 +23,13 @@ import Observation
 /// show.
 ///
 /// Conformances:
-/// - `Tab: Hashable`, to select and compare tabs.
-/// - `Tab: Codable`, so the selection is saved and restored.
-/// - `Tab: Sendable`, so tab events can leave the main actor.
+/// - `Tab: NavigationTab`, the app's tab type, which is selected and compared, saved and restored,
+///   and named in events off the main actor.
 /// - `NavigationRouter`, so it takes part in the router tree.
 /// - `Observable`, so renderers and views redraw when the state changes.
 @MainActor
 @Observable
-public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRouter {
+public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// What a tab router shows: its state, the router of the flow presented above it, and each
     /// tab's router.
     struct Snapshot {

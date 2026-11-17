@@ -12,21 +12,19 @@ The app coordinator owns the app's navigation: the root router, the tabs, the sh
 
 ```swift
 // Conformances:
-// - `Hashable`, required by `RootRouter`, which compares roots to know when to switch.
-// - `Codable`, required by `RootRouter`, which saves and restores the current root with the tree.
-// - `Sendable`, required by `RootRouter`, so events that name the root can leave the main actor.
-enum AppRoot: Hashable, Codable, Sendable {
+// - `NavigationRoot`, so `RootRouter` can compare roots to know when to switch, save and restore
+//   the current root, and name it in events off the main actor.
+enum AppRoot: NavigationRoot {
     case login
     case main
 }
 
 // Conformances:
 // - `String` raw value: gives each case a readable name in logs and saved state.
-// - `Hashable`, required by `TabRouter`, which selects and compares tabs.
-// - `Codable`, required by `TabRouter`, which saves and restores the selection with the tree.
-// - `Sendable`, required by `TabRouter`, so events that name the tab can leave the main actor.
+// - `NavigationTab`, so `TabRouter` can select and compare tabs, save and restore the selection,
+//   and name tabs in events off the main actor.
 // - `CaseIterable`, so `TabRouter` shows every tab without a list.
-enum MainTab: String, Hashable, Codable, Sendable, CaseIterable {
+enum MainTab: String, NavigationTab, CaseIterable {
     case home
     case shop
     case profile

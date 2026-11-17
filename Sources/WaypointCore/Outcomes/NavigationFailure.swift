@@ -10,10 +10,8 @@
 /// the fallback and its issue.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct NavigationFailure: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public struct NavigationFailure: NavigationRecord {
     /// Why the call failed.
     public let issue: NavigationIssue
 

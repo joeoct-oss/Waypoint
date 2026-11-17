@@ -11,10 +11,8 @@
 /// Routers emit applied changes as events, and tests can compare them.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public enum NavigationChange: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public enum NavigationChange: NavigationRecord {
     /// Routes were pushed, bottom first.
     case pushed([AnyRoute])
     /// Routes were popped, bottom first.

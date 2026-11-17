@@ -19,11 +19,9 @@
 /// name a type.
 ///
 /// Conformances:
-/// - `Hashable`, so paths can be compared and searched.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Codable`, so navigation state that holds it can be saved and restored.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct AnyRoute: Hashable, Sendable, Codable, NavigationDescribable {
+public struct AnyRoute: NavigationValue, NavigationDescribable {
     /// The wrapped route.
     package let base: any Route
 

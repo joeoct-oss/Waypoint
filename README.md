@@ -108,10 +108,9 @@ The app coordinator owns the app's navigation. Each `case` makes one named call,
 
 ```swift
 // Conformances:
-// - `Hashable`, required by `RootRouter`, which compares roots to know when to switch.
-// - `Codable`, required by `RootRouter`, which saves and restores the current root with the tree.
-// - `Sendable`, required by `RootRouter`, so events that name the root can leave the main actor.
-enum AppRoot: Hashable, Codable, Sendable {
+// - `NavigationRoot`, so `RootRouter` can compare roots to know when to switch, save and restore
+//   the current root, and name it in events off the main actor.
+enum AppRoot: NavigationRoot {
     case login
     case main
 }

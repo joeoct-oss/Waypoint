@@ -12,10 +12,8 @@
 ///
 /// Conformances:
 /// - `Error`, so it can be thrown.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public enum RouteDecodingError: Error, Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public enum RouteDecodingError: Error, NavigationRecord {
     /// No registered route type has this key, current or former.
     case unknownRouteKey(RouteKey)
     /// The key is known, but the saved value no longer decodes as that type, such as a removed

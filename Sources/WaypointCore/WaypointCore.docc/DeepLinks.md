@@ -100,10 +100,8 @@ let matcher = DeepLinkMatcher()
 /// Steps over the navigation tree, applied as one transaction.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct NavigationPlan: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public struct NavigationPlan: NavigationRecord {
     public init(@NavigationPlanBuilder _ steps: () throws -> [NavigationStep]) rethrows
 }
 
@@ -111,28 +109,22 @@ public struct NavigationPlan: Sendable, Equatable, NavigationDescribable {
 ///
 /// Conformances:
 /// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
-/// - `Root: Hashable`, to compare roots.
-/// - `Root: Codable`, so the current root is saved and restored.
-/// - `Root: Sendable`, so root events can leave the main actor.
-public struct SwitchRoot<Root: Hashable & Codable & Sendable>: NavigationPlanStep {
+/// - `Root: NavigationRoot`, the app's root type.
+public struct SwitchRoot<Root: NavigationRoot>: NavigationPlanStep {
     public init(_ root: Root)
 }
 
 /// Conformances:
 /// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
-/// - `Tab: Hashable`, to select and compare tabs.
-/// - `Tab: Codable`, so the selection is saved and restored.
-/// - `Tab: Sendable`, so tab events can leave the main actor.
-public struct SelectTab<Tab: Hashable & Codable & Sendable>: NavigationPlanStep {
+/// - `Tab: NavigationTab`, the app's tab type.
+public struct SelectTab<Tab: NavigationTab>: NavigationPlanStep {
     public init(_ tab: Tab)
 }
 
 /// Conformances:
 /// - `NavigationPlanStep`, so it can be written inside a `NavigationPlan`.
-/// - `Tab: Hashable`, to select and compare tabs.
-/// - `Tab: Codable`, so the selection is saved and restored.
-/// - `Tab: Sendable`, so tab events can leave the main actor.
-public struct SetPath<Tab: Hashable & Codable & Sendable>: NavigationPlanStep {
+/// - `Tab: NavigationTab`, the app's tab type.
+public struct SetPath<Tab: NavigationTab>: NavigationPlanStep {
     public init(in tab: Tab, @RoutePathBuilder _ routes: () throws -> [AnyRoute]) rethrows
 }
 

@@ -94,10 +94,8 @@ They are thin, read the router from the environment, and hold no state of their 
 ///
 /// Conformances:
 /// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
-/// - `Tab: Hashable`, to select and compare tabs.
-/// - `Tab: Codable`, so the selection is saved and restored.
-/// - `Tab: Sendable`, so tab events can leave the main actor.
-@propertyWrapper public struct TabSelection<Tab: Hashable & Codable & Sendable>: DynamicProperty {
+/// - `Tab: NavigationTab`, the app's tab type.
+@propertyWrapper public struct TabSelection<Tab: NavigationTab>: DynamicProperty {
     public var wrappedValue: Tab { get nonmutating set }
     public var projectedValue: Binding<Tab> { get }
 

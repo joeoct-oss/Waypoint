@@ -6,15 +6,15 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import WaypointCore
+
 /// A shared test tab type for a three-tab app.
 ///
 /// Conformances:
 /// - `String` raw value: gives each case a readable name in logs and saved state.
-/// - `Hashable`, required by tab state, which selects and compares tabs.
-/// - `Codable`, required by tab state, which saves and restores the selection.
-/// - `Sendable`, required by tab state, so changes that name the tab can leave the main actor.
+/// - `NavigationTab`, so tab state and tab routers accept it.
 /// - `CaseIterable`, so a tab router can show every tab without listing them.
-package enum MainTab: String, Hashable, Codable, Sendable, CaseIterable {
+package enum MainTab: String, NavigationTab, CaseIterable {
     /// The home tab.
     case home
     /// The shop tab.

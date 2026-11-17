@@ -11,11 +11,9 @@
 /// Stays the same across restoration, so events and snapshots can refer to it.
 ///
 /// Conformances:
-/// - `Hashable`, to find flows in the tree and key dictionaries by flow.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct FlowID: Hashable, Codable, Sendable, NavigationDescribable {
+public struct FlowID: NavigationValue, NavigationDescribable {
     /// The flow's name, such as `shop`.
     public let name: String
 

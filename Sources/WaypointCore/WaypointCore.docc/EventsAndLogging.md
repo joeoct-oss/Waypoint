@@ -20,10 +20,8 @@ router.debugTree()
 /// One applied change, with where it came from.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct NavigationEvent: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public struct NavigationEvent: NavigationRecord {
     /// The flow that changed.
     public let flow: FlowID
     /// What changed.
@@ -37,10 +35,8 @@ public struct NavigationEvent: Sendable, Equatable, NavigationDescribable {
 /// Who asked for a change.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public enum NavigationOrigin: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public enum NavigationOrigin: NavigationRecord {
     /// App code called a router or a handle.
     case app
     /// The user swiped back, dragged a sheet down or tapped a tab.

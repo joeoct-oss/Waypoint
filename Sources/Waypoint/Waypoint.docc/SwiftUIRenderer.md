@@ -161,11 +161,9 @@ WaypointStack { HomeView() }
 /// A tab view driven by a `TabRouter`. Each tab gets its own stack.
 ///
 /// Conformances:
-/// - `Tab: Hashable`, to select and compare tabs.
-/// - `Tab: Codable`, so the selection is saved and restored.
-/// - `Tab: Sendable`, so tab events can leave the main actor.
+/// - `Tab: NavigationTab`, the app's tab type.
 /// - `Content: View`: what SwiftUI shows.
-public struct WaypointTabs<Tab: Hashable & Codable & Sendable, Content: View>: View {
+public struct WaypointTabs<Tab: NavigationTab, Content: View>: View {
     public init(_ router: TabRouter<Tab>, @ViewBuilder content: @escaping (Tab) -> Content)
 }
 
@@ -220,11 +218,9 @@ struct ShopApp: App {
 /// Draws whichever root a `RootRouter` is showing.
 ///
 /// Conformances:
-/// - `Root: Hashable`, to compare roots.
-/// - `Root: Codable`, so the current root is saved and restored.
-/// - `Root: Sendable`, so root events can leave the main actor.
+/// - `Root: NavigationRoot`, the app's root type.
 /// - `Content: View`: what SwiftUI shows.
-public struct WaypointRoot<Root: Hashable & Codable & Sendable, Content: View>: View {
+public struct WaypointRoot<Root: NavigationRoot, Content: View>: View {
     public init(_ router: RootRouter<Root>, @ViewBuilder content: @escaping (Root) -> Content)
 }
 ```

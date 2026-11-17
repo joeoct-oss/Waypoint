@@ -125,11 +125,9 @@ extension WaypointRootViewController {
 /// A tab bar controller driven by a `TabRouter`.
 ///
 /// Conformances:
-/// - `Tab: Hashable`, to select and compare tabs.
-/// - `Tab: Codable`, so the selection is saved and restored.
-/// - `Tab: Sendable`, so tab events can leave the main actor.
+/// - `Tab: NavigationTab`, the app's tab type.
 @MainActor
-public final class WaypointTabBarController<Tab: Hashable & Codable & Sendable>: UITabBarController {
+public final class WaypointTabBarController<Tab: NavigationTab>: UITabBarController {
     /// `make` builds each tab's controller once, usually a `WaypointNavigationController`
     /// for `router.router(for: tab)`, with its tab bar item set.
     public init(router: TabRouter<Tab>, make: @escaping @MainActor (Tab) -> UIViewController)
@@ -139,11 +137,9 @@ public final class WaypointTabBarController<Tab: Hashable & Codable & Sendable>:
 /// with a cross-fade when it switches.
 ///
 /// Conformances:
-/// - `Root: Hashable`, to compare roots.
-/// - `Root: Codable`, so the current root is saved and restored.
-/// - `Root: Sendable`, so root events can leave the main actor.
+/// - `Root: NavigationRoot`, the app's root type.
 @MainActor
-public final class WaypointRootViewController<Root: Hashable & Codable & Sendable>: UIViewController {
+public final class WaypointRootViewController<Root: NavigationRoot>: UIViewController {
     public init(router: RootRouter<Root>, make: @escaping @MainActor (Root) -> UIViewController)
 }
 ```

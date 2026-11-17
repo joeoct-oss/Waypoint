@@ -9,10 +9,10 @@
 /// A change to a tab container.
 ///
 /// Conformances:
-/// - `Tab: Hashable & Codable & Sendable`, the same tab types as `TabState`.
+/// - `Tab: NavigationTab`, the same tab types as `TabState`.
 /// - `Sendable`, so commands can be queued and logged.
 /// - `Equatable`, so tests can compare commands.
-enum TabCommand<Tab: Hashable & Codable & Sendable>: Sendable, Equatable {
+enum TabCommand<Tab: NavigationTab>: Sendable, Equatable {
     /// Select a tab.
     case select(Tab)
     /// Replace the list of tabs.
@@ -61,7 +61,7 @@ enum TabReducer {
     }
 
     /// `tabSelected` with both tabs named.
-    private static func selectionChange<Tab: Hashable>(from old: Tab, to new: Tab) -> NavigationChange {
+    private static func selectionChange<Tab: NavigationTab>(from old: Tab, to new: Tab) -> NavigationChange {
         .tabSelected(from: DescriptionFormat.name(of: old), to: DescriptionFormat.name(of: new))
     }
 }

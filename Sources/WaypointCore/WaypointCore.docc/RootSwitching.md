@@ -8,16 +8,15 @@ Apps replace their whole screen at a few moments: from launch to login, from log
 
 ```swift
 // Conformances:
-// - `Hashable`, required by `RootRouter`, which compares roots to know when to switch.
-// - `Codable`, required by `RootRouter`, which saves and restores the current root with the tree.
-// - `Sendable`, required by `RootRouter`, so events that name the root can leave the main actor.
-enum AppRoot: Hashable, Codable, Sendable {
+// - `NavigationRoot`, so `RootRouter` can compare roots to know when to switch, save and restore
+//   the current root, and name it in events off the main actor.
+enum AppRoot: NavigationRoot {
     case login
     case main
 }
 ```
 
-Root types need `Hashable`, `Codable` and `Sendable`. See <doc:WhyTheseConformances>.
+Root types conform to `NavigationRoot`, which is `Hashable`, `Codable` and `Sendable` under one name. See <doc:WhyTheseConformances>.
 
 ### The app coordinator decides
 
@@ -64,15 +63,20 @@ func loggingInShowsTheMainTabs() {
 ### The root router
 
 ```swift
+/// A root of the app, usually an app enum such as `AppRoot`.
+///
+/// Conformances:
+/// - `NavigationValue`, so roots can be compared to know when to switch, the current root is
+///   saved and restored, and it is named in events off the main actor.
+public protocol NavigationRoot: NavigationValue { }
+
 /// The owner of the app's top-level flow.
 ///
 /// Conformances:
 /// - `NavigationRouter`, so it takes part in the router tree.
-/// - `Root: Hashable`, to compare roots.
-/// - `Root: Codable`, so the current root is saved and restored.
-/// - `Root: Sendable`, so root events can leave the main actor.
+/// - `Root: NavigationRoot`, the app's root type.
 @MainActor @Observable
-public final class RootRouter<Root: Hashable & Codable & Sendable>: NavigationRouter {
+public final class RootRouter<Root: NavigationRoot>: NavigationRouter {
     /// The root that is showing.
     public var current: Root { get }
 
