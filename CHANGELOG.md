@@ -18,4 +18,5 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - UIKit: `UIKitRootCoordinator` gains `makeWindow(for:options:)` and `receive(_:)` forwards, so a scene delegate's lifecycle methods only hand the OS's input to the app coordinator. (#8)
 - Root coordinators build each root with `makeFlow(for:)` in both renderers. Examples give every `case` one call to a named function: `make…Flow()` builds a flow, `show…()` navigates. (#8)
 - New "Descriptions" article and `NavigationDescribable`: routes, state, events, outcomes, issues and snapshots print one stable, logfmt-style line, with route fields private unless listed in `publicLogFields`. (#8)
+- Every function, initializer, computed property and statement body in the API articles is on its own lines. (#8)
 - `README.md` with the Waypoint banner, a first look at the API, the products, requirements and links to every DocC article; an MIT `LICENSE`; and a complete `CONTRIBUTING.md` covering tests, code style, pull requests and merging. (#6)

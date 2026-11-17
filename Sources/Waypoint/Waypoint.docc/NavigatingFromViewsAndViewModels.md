@@ -20,7 +20,9 @@ The screen reports what happened, and whoever made it decides where to go:
 struct ProductView: View {
     let id: Int
     var onBuy: () -> Void
-    var body: some View { Button("Buy", action: onBuy) }
+    var body: some View {
+        Button("Buy", action: onBuy)
+    }
 }
 
 .destination(ProductRoute.self) { route in

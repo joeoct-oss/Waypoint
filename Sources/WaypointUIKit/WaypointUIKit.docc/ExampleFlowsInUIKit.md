@@ -109,7 +109,9 @@ extension AppCoordinator {
 // - `NavigationFlow`, so routes can name it as their flow.
 final class ShopCoordinator: UIKitStackCoordinator, NavigationFlow {
     let router: StackRouter
-    init(router: StackRouter) { self.router = router }
+    init(router: StackRouter) {
+        self.router = router
+    }
 
     func makeRootViewController() -> UIViewController {
         ProductListViewController(onSelect: { [router] in router.push(ProductRoute(id: $0)) },
@@ -135,7 +137,9 @@ The filter flow here is the SwiftUI `FilterCoordinator`, presented from UIKit. T
 extension ShopCoordinator {
     func showFilters() {
         router.present(FilterCoordinator(), style: .sheet(detents: [.medium, .large])) { [weak self] result in
-            if case .finished(let filter) = result { self?.apply(filter) }
+            if case .finished(let filter) = result {
+                self?.apply(filter)
+            }
         }
     }
 }

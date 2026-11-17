@@ -110,7 +110,9 @@ Several routes of different types can be pushed or set at once with a result bui
 router.setPath {
     ProductListRoute(category: "shoes")
     ProductRoute(id: 42)
-    if showReviews { ReviewsRoute(productID: 42) }
+    if showReviews {
+        ReviewsRoute(productID: 42)
+    }
 }
 
 /// Builds a path from routes of any type.
@@ -286,8 +288,12 @@ public struct FlowNavigator<Flow: NavigationFlow> {
 @Observable @MainActor
 final class ProductModel {
     private let navigation: FlowNavigator<ShopFlow>
-    init(navigation: FlowNavigator<ShopFlow>) { self.navigation = navigation }
+    init(navigation: FlowNavigator<ShopFlow>) {
+        self.navigation = navigation
+    }
 
-    func buy() { navigation.push(CartRoute()) }
+    func buy() {
+        navigation.push(CartRoute())
+    }
 }
 ```

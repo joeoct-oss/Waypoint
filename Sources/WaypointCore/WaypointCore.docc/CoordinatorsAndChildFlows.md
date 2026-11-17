@@ -14,9 +14,13 @@ Coordinators are optional. A plain stack with a few `.destination` lines needs n
 final class ShopCoordinator: StackCoordinator {
     let router = StackRouter()
     let catalog: CatalogService
-    init(catalog: CatalogService) { self.catalog = catalog }
+    init(catalog: CatalogService) {
+        self.catalog = catalog
+    }
 
-    func showProduct(_ id: Int) { router.push(ProductRoute(id: id)) }
+    func showProduct(_ id: Int) {
+        router.push(ProductRoute(id: id))
+    }
 }
 ```
 

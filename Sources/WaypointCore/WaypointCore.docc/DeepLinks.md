@@ -13,7 +13,9 @@ Most links name one screen. The route declares its own URL patterns, and registe
 struct ProductRoute: Route, DeepLinkable {
     let id: Int
     static let patterns: [URLPattern] = ["/product/:id/:slug?", "/p/:id"]
-    init(link: DeepLinkParameters) throws { id = try link.int("id") }
+    init(link: DeepLinkParameters) throws {
+        id = try link.int("id")
+    }
 }
 ```
 
