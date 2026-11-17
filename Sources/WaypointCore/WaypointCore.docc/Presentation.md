@@ -11,7 +11,7 @@ router.present(FilterRoute(), style: .sheet)
 router.dismiss()
 ```
 
-A sheet is large by default. Choose other sizes when you need them:
+A presented flow is named after its route, such as `settings` for `SettingsRoute`, with `-2`, `-3` added when the name is taken. A sheet is large by default. Choose other sizes when you need them:
 
 ```swift
 router.present(FilterRoute(), style: .sheet(detents: [.medium, .large]))
@@ -48,6 +48,9 @@ extension StackRouter {
 
     /// Default presentation options for this router and its children.
     public var presentationDefaults: PresentationDefaults { get set }
+
+    /// The sheet options a presentation uses: its own, or this router's defaults.
+    public func sheetOptions(for presentation: Presentation) -> SheetOptions
 }
 ```
 
@@ -173,9 +176,16 @@ Nothing is fixed. Set a default once for a flow or the whole app, and a single c
 ///
 /// Conformances:
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
-public struct PresentationDefaults: Sendable {
+/// - `Equatable`, so tests can compare defaults.
+public struct PresentationDefaults: Sendable, Equatable {
+    /// Creates defaults. Every argument has a default.
+    public init(sheet: SheetOptions = .default)
+
     /// Used by `.sheet` when a call doesn't pass its own options.
     public var sheet: SheetOptions
+
+    /// Large sheets that the user can swipe away.
+    public static var `default`: PresentationDefaults { get }
 }
 
 rootRouter.presentationDefaults.sheet = SheetOptions(detents: [.medium, .large])

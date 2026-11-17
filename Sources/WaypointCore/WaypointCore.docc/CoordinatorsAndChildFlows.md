@@ -191,6 +191,7 @@ public protocol NavigationRouter: AnyObject {
     var flowID: FlowID { get }
     var parent: (any NavigationRouter)? { get }
     var children: [any NavigationRouter] { get }
+    var isActive: Bool { get }
 
     func debugTree() -> String
 }

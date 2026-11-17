@@ -43,8 +43,9 @@ Navigation methods return a `NavigationOutcome` and take an optional fallback, f
 /// - `Tab: Sendable`, so tab events can leave the main actor.
 @MainActor @Observable
 public final class TabRouter<Tab: Hashable & Codable & Sendable> {
-    /// Creates a tab container. `selection` must be one of `tabs`.
-    public init(tabs: [Tab], selection: Tab)
+    /// Creates a tab container. `selection` should be one of `tabs`; if it
+    /// isn't, the first tab is selected. `flow` names the container.
+    public init(tabs: [Tab], selection: Tab, flow: FlowID = FlowID("tabs"))
 
     /// The current state. Change it only through the methods below.
     public private(set) var state: TabState<Tab>
@@ -58,7 +59,9 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable> {
     /// `unknownTab` if it is not one of `tabs` and no fallback applies.
     @discardableResult public func select(_ tab: Tab) -> NavigationOutcome
 
-    /// The stack router of one tab.
+    /// The stack router of one tab. Its flow is named after the tab. A tab
+    /// that isn't one of `tabs` gets a router outside the tree, whose calls
+    /// return `.ignored`.
     public func router(for tab: Tab) -> StackRouter
 
     /// Replaces the list of tabs.
