@@ -12,7 +12,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// Values change only through functions that guard the change (decision 0014).
+/// Values change only through functions that guard the change ("`let` by default" in CONTRIBUTING).
 @Suite("Guarded changes")
 @MainActor
 struct GuardedChangeTests {

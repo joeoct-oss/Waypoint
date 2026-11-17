@@ -44,6 +44,8 @@ extension View {
 
 A route with no destination never crashes. Debug builds show a "No destination for …" screen that names the route and the fix, and release builds refuse the push.
 
+> Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views.
+
 ### The Waypoint link
 
 Use `WaypointLink` for a tappable row that pushes a route. It calls `router.push`, so the push is recorded like any other.
@@ -191,22 +193,28 @@ public protocol SwiftUIRootCoordinator: RootCoordinator {
 }
 
 extension WaypointRoot {
-    /// Draws an app coordinator's flow.
+    /// Creates the app coordinator once for this window and draws its flow.
     ///
-    /// If the coordinator has a link inbox, URL opens, universal links and
-    /// user activities go to it, and its root router is attached.
-    public init<C: SwiftUIRootCoordinator>(_ coordinator: C) where Root == C.Root, Content == C.Content
+    /// Each window gets its own coordinator, so two windows on iPad never
+    /// share a stack, a link inbox or saved state. If the coordinator has a
+    /// link inbox, URL opens, universal links and user activities go to it,
+    /// and its root router is attached.
+    public init<C: SwiftUIRootCoordinator>(
+        _ makeCoordinator: @escaping @MainActor () -> C
+    ) where Root == C.Root, Content == C.Content
 }
 ```
+
+App-wide things, such as the signed-in session and the app's services, stay in the `App` and are passed to the coordinator when it is created. Only the navigation is per window.
 
 ```swift
 @main
 struct ShopApp: App {
-    @State private var app = AppCoordinator()
-
     var body: some Scene {
         WindowGroup {
-            WaypointRoot(app)
+            WaypointRoot {
+                AppCoordinator()
+            }
         }
     }
 }
@@ -227,7 +235,7 @@ public struct WaypointRoot<Root: NavigationRoot, Content: View>: View {
 
 ### Incoming links
 
-`WaypointRoot(app)` wires the app coordinator's inbox, so most apps never call this. It is for apps that draw a `RootRouter` directly:
+`WaypointRoot { AppCoordinator() }` wires the app coordinator's inbox, so most apps never call this. It is for apps that draw a `RootRouter` directly:
 
 ```swift
 extension View {

@@ -10,7 +10,7 @@ import Foundation
 import Testing
 import WaypointTestSupport
 
-/// Encodes and decodes a value, so the test proves the fixture is hashable, sendable and codable (decision 0003).
+/// Encodes and decodes a value, so the test proves the fixture is hashable, sendable and codable (see the Routes article).
 private func roundTrip<Value: Hashable & Sendable & Codable>(_ value: Value) throws -> Value {
     try JSONDecoder().decode(Value.self, from: JSONEncoder().encode(value))
 }

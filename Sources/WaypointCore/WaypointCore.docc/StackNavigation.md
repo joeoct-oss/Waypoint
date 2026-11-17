@@ -158,6 +158,8 @@ public final class StackRouter {
 }
 ```
 
+> Note: One push per tap is coming. A second push of the same route while the first one is still being shown will be skipped and return `.alreadyThere`, so a quick double tap pushes one screen. It will be on by default, and a router can turn it off.
+
 ### Building paths
 
 Several routes of different types can be pushed or set at once with a result builder. Conditions and loops work inside it.

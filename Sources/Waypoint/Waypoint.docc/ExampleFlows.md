@@ -32,11 +32,11 @@ enum MainTab: String, NavigationTab, CaseIterable {
 
 @main
 struct ShopApp: App {
-    @State private var app = AppCoordinator()
-
     var body: some Scene {
         WindowGroup {
-            WaypointRoot(app)
+            WaypointRoot {
+                AppCoordinator()
+            }
         }
     }
 }
@@ -250,4 +250,6 @@ let matcher = DeepLinkMatcher()
     }
 ```
 
-`WaypointRoot(app)` sends every link to the app coordinator's inbox. If the link arrives during login, it waits. When the app coordinator's `showMainFlow()` switches to the main flow and calls `links?.markReady()`, the link is applied in one step: the sheet closes, the shop tab is selected and the product is pushed, with one animation.
+`WaypointRoot` sends every link to the app coordinator's inbox. If the link arrives during login, it waits. When the app coordinator's `showMainFlow()` switches to the main flow and calls `links?.markReady()`, the link is applied in one step: the sheet closes, the shop tab is selected and the product is pushed, with one animation.
+
+This example holds every link until sign-in by marking the inbox ready in `showMainFlow()`. Per-link requirements, where the app coordinator holds only the links that need sign-in and saves them across relaunches, are coming; see the Deep links article in WaypointCore.

@@ -11,7 +11,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// Calls made while a change is applied are queued and run in order (decision 0013).
+/// Calls made while a change is applied are queued and run in order (see the Concurrency article).
 @Suite("Re-entrant calls")
 @MainActor
 struct ReentrancyTests {
