@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-// Settings: app preferences, and the Navigation Lab for trying every demo flow.
+// Settings: app preferences, and the Navigation Lab under Developer for trying every demo flow.
 struct SettingsView: View {
     let onShowLab: () -> Void
 
@@ -24,6 +24,8 @@ struct SettingsView: View {
                     Label("Navigation Lab", systemImage: "flask")
                 }
                 .accessibilityIdentifier(Identifiers.labButton)
+            } header: {
+                Text("Developer")
             } footer: {
                 Text("Try every navigation flow in SwiftUI and UIKit.")
             }

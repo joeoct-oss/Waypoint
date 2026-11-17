@@ -21,6 +21,7 @@ struct AccountView: View {
             }
             Section {
                 Button("Orders", systemImage: "shippingbox", action: onShowOrders)
+                    .accessibilityIdentifier(Identifiers.ordersButton)
                 Button("Settings", systemImage: "gearshape", action: onShowSettings)
                     .accessibilityIdentifier(Identifiers.settingsButton)
             }

@@ -9,7 +9,8 @@
 import SwiftUI
 
 // A stack of products: the shop or search at the root and a product pushed above it, with the filters
-// and the wish list as sheets. Add to cart reports to the main tabs, which open Cart; a guest's Sign in
+// and the wish list as sheets. Add to cart reports to the main tabs, which add the product to the cart and
+// open Cart; a guest's Sign in
 // reports to the app coordinator, which switches to the accounts flow.
 //
 // Conformances:
@@ -19,7 +20,7 @@ import SwiftUI
 final class ProductsCoordinator {
     private let start: ProductsStart
     private let membership: Membership
-    private let onShowCart: () -> Void
+    private let onAddToCart: (Product) -> Void
     private let onShowAccounts: () -> Void
     // `var` because `showProduct(_:)` pushes onto it, and `syncPath(_:)` takes the pops the stack makes
     // itself.
@@ -31,12 +32,12 @@ final class ProductsCoordinator {
     init(
         start: ProductsStart,
         membership: Membership,
-        onShowCart: @escaping () -> Void,
+        onAddToCart: @escaping (Product) -> Void,
         onShowAccounts: @escaping () -> Void
     ) {
         self.start = start
         self.membership = membership
-        self.onShowCart = onShowCart
+        self.onAddToCart = onAddToCart
         self.onShowAccounts = onShowAccounts
         path = []
         presentedSheet = nil
@@ -82,8 +83,8 @@ final class ProductsCoordinator {
         presentedSheet = .wishlist
     }
 
-    func showCart() {
-        onShowCart()
+    func addToCart(_ product: Product) {
+        onAddToCart(product)
     }
 
     func showAccounts() {
@@ -140,7 +141,7 @@ final class ProductsCoordinator {
         ProductDetailView(
             product: product,
             canBuy: membership == .member,
-            onAddToCart: { self.showCart() },
+            onAddToCart: { self.addToCart(product) },
             onSave: { self.showWishlist() }
         )
         .screenChrome(

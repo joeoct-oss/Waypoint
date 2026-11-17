@@ -29,6 +29,8 @@ struct ProductRow: View {
             .padding(.vertical, Spacing.extraSmall)
         }
         .foregroundStyle(Palette.text.color)
+        .accessibilityIdentifier(Identifiers.product(id: product.id))
+        .exampleRow()
     }
 
     private var titles: some View {

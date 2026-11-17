@@ -9,7 +9,8 @@
 import SwiftUI
 
 // What every screen shows around its content: the title, the kind when the screen belongs to one kind,
-// and the route trail.
+// and the route trail. A screen whose trail has one step is a root: it shows a large title and no trail,
+// since the trail would only repeat the title. A pushed screen shows its title inline, with the trail.
 //
 // From iOS 26 the system bars are Liquid Glass, so the chrome stays inside them: the trail is the
 // navigation bar's subtitle, the kind is a plain toolbar item that the bar draws in glass, and content
@@ -25,15 +26,23 @@ struct ScreenChrome: ViewModifier {
     let kind: FlowKind?
     let trail: [String]
 
-    private var trailText: String {
-        trail.joined(separator: " › ")
+    private var isRoot: Bool {
+        trail.count <= 1
     }
 
+    private var titleDisplayMode: NavigationBarItem.TitleDisplayMode {
+        isRoot ? .large : .inline
+    }
+
+    private var trailText: String {
+        isRoot ? "" : trail.joined(separator: " › ")
+    }
+
+    @ViewBuilder
     private var trailStrip: some View {
-        RouteTrail(steps: trail)
-            .padding(.horizontal, Spacing.large)
-            .padding(.vertical, Spacing.small)
-            .background(.bar, ignoresSafeAreaEdges: Self.trailBackdropEdges)
+        if !isRoot {
+            makeTrailStrip()
+        }
     }
 
     @ToolbarContentBuilder
@@ -59,8 +68,16 @@ struct ScreenChrome: ViewModifier {
         content
             .background(Palette.background.color)
             .navigationTitle(title)
+            .navigationBarTitleDisplayMode(titleDisplayMode)
             .navigationSubtitle(trailText)
             .toolbar { kindItem }
+    }
+
+    private func makeTrailStrip() -> some View {
+        RouteTrail(steps: trail)
+            .padding(.horizontal, Spacing.large)
+            .padding(.vertical, Spacing.small)
+            .background(.bar, ignoresSafeAreaEdges: Self.trailBackdropEdges)
     }
 
     private func makeClassicChrome(_ content: Content) -> some View {
@@ -68,6 +85,7 @@ struct ScreenChrome: ViewModifier {
             .safeAreaInset(edge: .top, spacing: 0) { trailStrip }
             .background(Palette.background.color)
             .navigationTitle(title)
+            .navigationBarTitleDisplayMode(titleDisplayMode)
             .toolbar { kindItem }
     }
 }

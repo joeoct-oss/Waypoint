@@ -9,7 +9,8 @@
 import SwiftUI
 
 // The Navigation Lab: one row per branch, each opening the five demo flows in both kinds. The screen
-// reports the branch the reader picks, and the account coordinator opens it.
+// reports the branch the reader picks, and the account coordinator opens it. The bar already shows the
+// Lab's name, so the list's header shows only its slogan.
 struct LabView: View {
     let onSelectBranch: (Branch) -> Void
 
@@ -28,15 +29,10 @@ struct LabView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: Spacing.extraSmall) {
-            Text("Navigation Lab")
-                .font(Typography.display)
-                .foregroundStyle(Palette.text.color)
-            slogan
-        }
-        .textCase(nil)
-        .padding(.bottom, Spacing.small)
-        .accessibilityElement(children: .combine)
+        slogan
+            .textCase(nil)
+            .padding(.bottom, Spacing.small)
+            .accessibilityElement(children: .combine)
     }
 
     private var slogan: some View {

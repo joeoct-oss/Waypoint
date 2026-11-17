@@ -9,10 +9,9 @@
 import SwiftUI
 
 // The first screen: the brand while the app starts. It reports when it is done, and the app coordinator
-// picks the next root.
+// picks the next root. The launch options set how long it stays.
 struct SplashView: View {
-    private static let duration = Duration.seconds(1)
-
+    let duration: Duration
     let onFinished: () -> Void
 
     var body: some View {
@@ -35,7 +34,7 @@ struct SplashView: View {
     }
 
     private func finish() async {
-        try? await Task.sleep(for: Self.duration)
+        try? await Task.sleep(for: duration)
         onFinished()
     }
 }

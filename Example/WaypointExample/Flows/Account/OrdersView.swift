@@ -20,6 +20,8 @@ struct OrdersView: View {
                 LabeledContent(order.productName, value: order.status)
             }
             .foregroundStyle(Palette.text.color)
+            .accessibilityIdentifier(Identifiers.order(id: order.id))
+            .exampleRow()
         }
         .exampleList()
     }

@@ -8,8 +8,9 @@
 
 import XCTest
 
-// Launches the example app for a UI test: from the splash, signed in, as a guest, or straight into the
-// Navigation Lab, one of its branches or one of its twenty entries.
+// Launches the example app for a UI test: from the splash (held longer when a test needs to see it),
+// signed in, as a guest, or straight into the Navigation Lab, one of its branches or one of its twenty
+// entries.
 enum ExampleApp {
     private static let yes = "YES"
 
@@ -20,7 +21,8 @@ enum ExampleApp {
         lab: Bool = false,
         branch: Branch? = nil,
         flow: ExampleFlow? = nil,
-        kind: FlowKind? = nil
+        kind: FlowKind? = nil,
+        splashSeconds: Int? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = arguments(
@@ -29,7 +31,8 @@ enum ExampleApp {
             lab: lab,
             branch: branch,
             flow: flow,
-            kind: kind
+            kind: kind,
+            splashSeconds: splashSeconds
         )
         app.launch()
         return app
@@ -41,7 +44,8 @@ enum ExampleApp {
         lab: Bool,
         branch: Branch?,
         flow: ExampleFlow?,
-        kind: FlowKind?
+        kind: FlowKind?,
+        splashSeconds: Int?
     ) -> [String] {
         let values = [
             (LaunchArgument.signedIn, signedIn ? yes : nil),
@@ -50,6 +54,7 @@ enum ExampleApp {
             (LaunchArgument.branch, branch?.rawValue),
             (LaunchArgument.flow, flow?.rawValue),
             (LaunchArgument.kind, kind?.rawValue),
+            (LaunchArgument.splashSeconds, splashSeconds.map(String.init)),
         ]
         return values.flatMap { argumentPair($0.0, $0.1) }
     }

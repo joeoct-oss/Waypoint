@@ -60,6 +60,10 @@ struct Product: Hashable, Identifiable {
         ),
     ]
 
+    static func total(of products: [Product]) -> Decimal {
+        products.reduce(0) { $0 + $1.price }
+    }
+
     let id: Int
     let name: String
     let price: Decimal

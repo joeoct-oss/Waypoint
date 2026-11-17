@@ -25,6 +25,7 @@ struct MainTabView: View {
     private func tabContent(for tab: MainTab) -> some View {
         main.makeTabFlow(for: tab)
             .tabItem { Label(tab.title, systemImage: tab.symbolName) }
+            .badge(main.badge(for: tab))
             .tag(tab)
     }
 }

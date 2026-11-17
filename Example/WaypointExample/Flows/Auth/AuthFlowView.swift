@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-// Draws the accounts flow's stack and its Forgot password sheet from their coordinator.
+// Draws the accounts flow's stack and its sheets from their coordinator.
 struct AuthFlowView: View {
     let auth: AuthCoordinator
 
@@ -17,8 +17,8 @@ struct AuthFlowView: View {
             auth.makeWelcomeFlow()
                 .navigationDestination(for: AuthScreen.self) { auth.makeDestination(for: $0) }
         }
-        .sheet(isPresented: Binding(reading: auth.isShowingForgotPassword, writing: auth.syncForgotPassword)) {
-            auth.makeForgotPasswordFlow()
+        .sheet(item: Binding(reading: auth.presentedSheet, writing: auth.syncSheet)) {
+            auth.makeSheetFlow(for: $0)
         }
     }
 }

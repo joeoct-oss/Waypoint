@@ -31,11 +31,12 @@ struct SignInView: View {
             }
             Section {
                 Button("Forgot password?", action: onForgotPassword)
+                    .accessibilityIdentifier(Identifiers.forgotPassword)
             }
         }
-        .scrollContentBackground(.hidden)
+        .exampleForm()
         .accessibilityIdentifier(Identifiers.signIn)
-        .safeAreaInset(edge: .bottom) { signInButton }
+        .bottomActionBar { signInButton }
     }
 
     private var header: some View {

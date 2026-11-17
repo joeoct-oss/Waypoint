@@ -8,69 +8,103 @@
 
 import SwiftUI
 
-// One step of creating an account: its fields, and Continue (or Create account on the last step). The
-// screen reports Continue, and the accounts coordinator pushes the next step or finishes.
+// One step of creating an account under the bar's Create account title: the step's own title, its fields,
+// and Continue (or Start shopping on the last step). The
+// fields write the coordinator's draft, so going back keeps what the reader typed. The screen reports
+// Continue and Read the terms, and the accounts coordinator decides what comes next.
 struct CreateAccountStepView: View {
     let step: CreateAccountStep
+    @Bindable var draft: SignUpDraft
     let onContinue: () -> Void
+    let onShowTerms: () -> Void
 
-    @State private var name = ""
-    @State private var email = ""
-    @State private var password = ""
-    @State private var likesLamps = true
-    @State private var likesPrints = false
+    private var canContinue: Bool {
+        switch step {
+        case .details:
+            return !draft.name.isEmpty && !draft.email.isEmpty
+        case .password:
+            return draft.canContinueFromPassword
+        case .checkEmail:
+            return true
+        }
+    }
 
     var body: some View {
         Form {
             fields
         }
-        .scrollContentBackground(.hidden)
-        .safeAreaInset(edge: .bottom) { continueButton }
+        .exampleForm()
+        .bottomActionBar { continueButton }
     }
 
     @ViewBuilder
     private var fields: some View {
         switch step {
-        case .name:
-            nameFields
-        case .credentials:
-            credentialFields
-        case .interests:
-            interestFields
+        case .details:
+            detailFields
+        case .password:
+            passwordFields
+        case .checkEmail:
+            checkEmailMessage
         }
     }
 
-    private var nameFields: some View {
+    private var detailFields: some View {
         Section {
-            TextField("Name", text: $name)
+            TextField("Name", text: $draft.name)
                 .textContentType(.name)
-        }
-    }
-
-    private var credentialFields: some View {
-        Section {
-            TextField("Email", text: $email)
+                .accessibilityIdentifier(Identifiers.signUpName)
+            TextField("Email", text: $draft.email)
                 .textContentType(.username)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
-            SecureField("Password", text: $password)
-                .textContentType(.newPassword)
+                .accessibilityIdentifier(Identifiers.signUpEmail)
+        } header: {
+            stepHeader
         }
     }
 
-    private var interestFields: some View {
+    private var passwordFields: some View {
         Section {
-            Toggle("Lamps and lights", isOn: $likesLamps)
-            Toggle("Prints and posters", isOn: $likesPrints)
+            SecureField("Password", text: $draft.password)
+                .textContentType(.newPassword)
+                .accessibilityIdentifier(Identifiers.signUpPassword)
+            Toggle("I accept the terms", isOn: $draft.acceptsTerms)
+                .accessibilityIdentifier(Identifiers.signUpAcceptTerms)
+            Button("Read the terms", action: onShowTerms)
+                .accessibilityIdentifier(Identifiers.signUpTerms)
+        } header: {
+            stepHeader
         }
+    }
+
+    private var checkEmailMessage: some View {
+        Section {
+            Label {
+                Text("We sent a link to \(draft.email). Open it any time to confirm your account.")
+            } icon: {
+                Image(systemName: "envelope.badge")
+            }
+        } header: {
+            stepHeader
+        }
+    }
+
+    private var stepHeader: some View {
+        Text(step.title)
+            .font(Typography.display)
+            .foregroundStyle(Palette.text.color)
+            .textCase(nil)
+            .padding(.bottom, Spacing.small)
     }
 
     private var continueButton: some View {
         PrimaryActionButton(
             title: step.actionTitle,
-            identifier: "auth.createAccount.continue",
+            identifier: Identifiers.signUpContinue,
             action: onContinue
         )
+        .disabled(!canContinue)
         .padding(Spacing.large)
     }
 }

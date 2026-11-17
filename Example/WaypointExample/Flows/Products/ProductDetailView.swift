@@ -29,7 +29,7 @@ struct ProductDetailView: View {
             }
             .padding(Spacing.large)
         }
-        .safeAreaInset(edge: .bottom) { bottomBar }
+        .bottomActionBar { bottomBar }
         .toolbar { saveItem }
     }
 
@@ -43,6 +43,7 @@ struct ProductDetailView: View {
     private var saveItem: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Button("Save", systemImage: "heart", action: onSave)
+                .accessibilityIdentifier(Identifiers.productSave)
         }
     }
 
@@ -58,7 +59,7 @@ struct ProductDetailView: View {
     private var addButton: some View {
         PrimaryActionButton(
             title: "Add to cart",
-            identifier: "product.addToCart",
+            identifier: Identifiers.addToCart,
             action: onAddToCart
         )
         .padding(Spacing.large)

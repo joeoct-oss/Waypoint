@@ -8,14 +8,17 @@
 
 import Foundation
 
-// What the launch arguments ask for: start signed in or as a guest, open the Navigation Lab, or open one of
-// its entries.
-// UI tests use them to start a journey or open any Lab entry directly.
+// What the launch arguments ask for: start signed in or as a guest, open the Navigation Lab, open one of
+// its entries, or keep the splash up longer. UI tests use them to start a journey or open any Lab entry
+// directly.
 struct LaunchOptions {
+    private static let defaultSplashDuration = Duration.seconds(1)
+
     let startMembership: Membership?
     let opensLab: Bool
     let branch: Branch?
     let entry: FlowEntry?
+    let splashDuration: Duration
 
     init(defaults: UserDefaults) {
         let branch = Self.value(Branch.self, for: .branch, in: defaults)
@@ -33,6 +36,7 @@ struct LaunchOptions {
             flow: flow,
             kind: kind
         )
+        splashDuration = Self.makeSplashDuration(in: defaults)
     }
 
     // Conformances:
@@ -55,6 +59,14 @@ struct LaunchOptions {
         return guest ? .guest : nil
     }
 
+    private static func makeSplashDuration(in defaults: UserDefaults) -> Duration {
+        let seconds = defaults.double(forKey: LaunchArgument.splashSeconds.rawValue)
+        guard seconds > 0 else {
+            return defaultSplashDuration
+        }
+        return .seconds(seconds)
+    }
+
     private static func makeEntry(
         branch: Branch?,
         flow: ExampleFlow?,
@@ -68,5 +80,6 @@ struct LaunchOptions {
             flow: flow,
             kind: kind
         )
+        splashDuration = Self.makeSplashDuration(in: defaults)
     }
 }

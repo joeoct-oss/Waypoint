@@ -14,10 +14,6 @@ struct CartView: View {
     let onCheckout: () -> Void
     let onShopMore: () -> Void
 
-    private var total: Decimal {
-        products.reduce(0) { $0 + $1.price }
-    }
-
     var body: some View {
         List {
             Section {
@@ -27,21 +23,22 @@ struct CartView: View {
             }
             Section {
                 LabeledContent("Total") {
-                    Text(total, format: .currency(code: "USD"))
+                    Text(Product.total(of: products), format: .currency(code: "USD"))
                 }
                 Button("Keep shopping", action: onShopMore)
             }
         }
         .exampleList()
-        .safeAreaInset(edge: .bottom) { checkoutButton }
+        .bottomActionBar { checkoutButton }
     }
 
     private var checkoutButton: some View {
         PrimaryActionButton(
             title: "Check out",
-            identifier: "cart.checkout",
+            identifier: Identifiers.checkout,
             action: onCheckout
         )
+        .disabled(products.isEmpty)
         .padding(Spacing.large)
     }
 }

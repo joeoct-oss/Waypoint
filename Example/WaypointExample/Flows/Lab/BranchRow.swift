@@ -20,6 +20,7 @@ struct BranchRow: View {
         }
         .foregroundStyle(Palette.text.color)
         .accessibilityIdentifier(Identifiers.branch(branch))
+        .exampleRow()
     }
 
     private var content: some View {

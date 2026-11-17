@@ -18,8 +18,8 @@ enum AuthScreen: Hashable {
         switch self {
         case .signIn:
             return "Sign in"
-        case .createAccount(let step):
-            return step.title
+        case .createAccount:
+            return "Create account"
         }
     }
 
@@ -39,27 +39,27 @@ enum AuthScreen: Hashable {
 // - `CaseIterable`, so each step knows the one after it and the trail can name the steps before it.
 // - `Hashable`, so a step can sit in the accounts flow's path.
 enum CreateAccountStep: CaseIterable, Hashable {
-    case name
-    case credentials
-    case interests
+    case details
+    case password
+    case checkEmail
 
     var title: String {
         switch self {
-        case .name:
-            return "Your name"
-        case .credentials:
-            return "Email and password"
-        case .interests:
-            return "What you like"
+        case .details:
+            return "Your details"
+        case .password:
+            return "Choose a password"
+        case .checkEmail:
+            return "Check your email"
         }
     }
 
     var actionTitle: String {
         switch self {
-        case .name, .credentials:
+        case .details, .password:
             return "Continue"
-        case .interests:
-            return "Create account"
+        case .checkEmail:
+            return "Start shopping"
         }
     }
 
@@ -78,13 +78,27 @@ enum CreateAccountStep: CaseIterable, Hashable {
 
     private var trailName: String {
         switch self {
-        case .name:
-            return "name"
-        case .credentials:
-            return "credentials"
-        case .interests:
-            return "interests"
+        case .details:
+            return "details"
+        case .password:
+            return "password"
+        case .checkEmail:
+            return "check email"
         }
+    }
+}
+
+// A sheet the accounts flow can present: Reset password over Sign in, or the terms over Choose a
+// password.
+//
+// Conformances:
+// - `Identifiable`, so `.sheet(item:)` can tell one sheet from the next.
+enum AuthSheet: Identifiable {
+    case resetPassword
+    case terms
+
+    var id: Self {
+        self
     }
 }
 

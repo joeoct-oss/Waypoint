@@ -67,7 +67,10 @@ final class AppCoordinator {
     }
 
     private func makeSplashFlow() -> some View {
-        SplashView(onFinished: { self.showStartFlow() })
+        SplashView(
+            duration: launch.splashDuration,
+            onFinished: { self.showStartFlow() }
+        )
     }
 
     private func makeAuthFlow(_ auth: AuthCoordinator) -> some View {

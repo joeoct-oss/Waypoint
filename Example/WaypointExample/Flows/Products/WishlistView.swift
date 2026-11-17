@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-// The wish list, as a sheet: the saved products, closed with Done.
+// The wish list, as a small sheet that can grow: the saved products, closed with Done.
 struct WishlistView: View {
     let products: [Product]
     let onDone: () -> Void
@@ -24,6 +24,7 @@ struct WishlistView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { doneItem }
         }
+        .accessibilityIdentifier(Identifiers.wishlist)
         .presentationDetents(WishlistDetents.all)
     }
 

@@ -8,8 +8,9 @@
 
 import SwiftUI
 
-// Checkout, presented full screen: delivery and payment, with Place order and Cancel.
+// Checkout, presented full screen: delivery, payment and the total, with Place order and Cancel.
 struct CheckoutView: View {
+    let products: [Product]
     let onPlaceOrder: () -> Void
     let onCancel: () -> Void
 
@@ -21,25 +22,29 @@ struct CheckoutView: View {
             }
             Section("Payment") {
                 LabeledContent("Card", value: "•••• 4242")
+                LabeledContent("Total") {
+                    Text(Product.total(of: products), format: .currency(code: "USD"))
+                }
             }
         }
-        .scrollContentBackground(.hidden)
+        .exampleForm()
         .toolbar { cancelItem }
-        .safeAreaInset(edge: .bottom) { placeOrderButton }
+        .bottomActionBar { placeOrderButton }
     }
 
     private var cancelItem: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel", action: onCancel)
+            Button("Cancel", systemImage: "xmark", action: onCancel)
         }
     }
 
     private var placeOrderButton: some View {
         PrimaryActionButton(
             title: "Place order",
-            identifier: "checkout.placeOrder",
+            identifier: Identifiers.placeOrder,
             action: onPlaceOrder
         )
+        .disabled(products.isEmpty)
         .padding(Spacing.large)
     }
 }

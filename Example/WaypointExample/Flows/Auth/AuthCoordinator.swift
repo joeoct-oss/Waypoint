@@ -9,8 +9,9 @@
 import SwiftUI
 
 // The accounts flow: Welcome at the root, with Sign in and the three steps of Create account pushed above
-// it, and Forgot password as a sheet over Sign in. Every way out (signing in, creating an account or
-// continuing as a guest) reports to the app coordinator, which switches the root once.
+// it, Reset password as a sheet over Sign in, and the terms as a sheet over Choose a password. The steps
+// share one draft, so going back keeps what the reader typed. Every way out (signing in, creating an
+// account or continuing as a guest) reports to the app coordinator, which switches the root once.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `AuthFlowView` redraws when the path or the sheet changes.
@@ -18,17 +19,19 @@ import SwiftUI
 @Observable
 final class AuthCoordinator {
     private let onFinish: (Membership) -> Void
+    private let draft: SignUpDraft
     // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the stack makes
     // itself.
     private(set) var path: [AuthScreen]
-    // `var` because `showForgotPassword()` and `dismissForgotPassword()` change it, and
-    // `syncForgotPassword(_:)` takes a swipe down.
-    private(set) var isShowingForgotPassword: Bool
+    // `var` because `showResetPassword()`, `showTerms()` and `dismissSheet()` change it, and `syncSheet(_:)`
+    // takes a swipe down.
+    private(set) var presentedSheet: AuthSheet?
 
     init(onFinish: @escaping (Membership) -> Void) {
         self.onFinish = onFinish
+        draft = SignUpDraft()
         path = []
-        isShowingForgotPassword = false
+        presentedSheet = nil
     }
 
     func makeWelcomeFlow() -> some View {
@@ -50,11 +53,14 @@ final class AuthCoordinator {
             )
     }
 
-    func makeForgotPasswordFlow() -> some View {
-        ForgotPasswordView(
-            onSent: { self.dismissForgotPassword() },
-            onCancel: { self.dismissForgotPassword() }
-        )
+    @ViewBuilder
+    func makeSheetFlow(for sheet: AuthSheet) -> some View {
+        switch sheet {
+        case .resetPassword:
+            makeResetPasswordFlow()
+        case .terms:
+            makeTermsFlow()
+        }
     }
 
     func showSignIn() {
@@ -62,27 +68,31 @@ final class AuthCoordinator {
     }
 
     func showCreateAccount() {
-        path.append(.createAccount(.name))
+        path.append(.createAccount(.details))
     }
 
-    func showForgotPassword() {
-        isShowingForgotPassword = true
+    func showResetPassword() {
+        presentedSheet = .resetPassword
+    }
+
+    func showTerms() {
+        presentedSheet = .terms
     }
 
     func finish(as membership: Membership) {
         onFinish(membership)
     }
 
-    func dismissForgotPassword() {
-        isShowingForgotPassword = false
+    func dismissSheet() {
+        presentedSheet = nil
     }
 
     func syncPath(_ newPath: [AuthScreen]) {
         path = newPath
     }
 
-    func syncForgotPassword(_ isShowing: Bool) {
-        isShowingForgotPassword = isShowing
+    func syncSheet(_ sheet: AuthSheet?) {
+        presentedSheet = sheet
     }
 
     @ViewBuilder
@@ -98,15 +108,28 @@ final class AuthCoordinator {
     private func makeSignInFlow() -> some View {
         SignInView(
             onSignIn: { self.finish(as: .member) },
-            onForgotPassword: { self.showForgotPassword() }
+            onForgotPassword: { self.showResetPassword() }
         )
     }
 
     private func makeCreateAccountFlow(_ step: CreateAccountStep) -> some View {
         CreateAccountStepView(
             step: step,
-            onContinue: { self.continueCreatingAccount(after: step) }
+            draft: draft,
+            onContinue: { self.continueCreatingAccount(after: step) },
+            onShowTerms: { self.showTerms() }
         )
+    }
+
+    private func makeResetPasswordFlow() -> some View {
+        ForgotPasswordView(
+            onDone: { self.dismissSheet() },
+            onCancel: { self.dismissSheet() }
+        )
+    }
+
+    private func makeTermsFlow() -> some View {
+        TermsView(onDone: { self.dismissSheet() })
     }
 
     private func continueCreatingAccount(after step: CreateAccountStep) {
