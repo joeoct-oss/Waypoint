@@ -33,7 +33,9 @@ public struct NavigationSnapshot: Sendable, Codable, Equatable, NavigationDescri
 }
 
 extension RootRouter {
+    /// The whole tree as a value you can save or compare.
     public func snapshot() -> NavigationSnapshot
+    /// The whole tree, encoded for saving.
     public func snapshotData() throws -> Data
 
     /// Rebuilds the tree in one transaction with `origin: .restoration`.
@@ -48,6 +50,7 @@ extension RootRouter {
 public struct RestoreOptions: Sendable {
     /// Whether sheets and full-screen covers come back. Default: `true`.
     public var includesPresentations: Bool
+    /// Restores everything, including presentations.
     public static var `default`: RestoreOptions { get }
 }
 
@@ -58,6 +61,7 @@ public struct RestoreOptions: Sendable {
 /// - `Equatable`, so tests and the router can compare values.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public enum RestoreOutcome: Sendable, Equatable, NavigationDescribable {
+    /// Everything came back.
     case restored
     /// Part of the tree could not be restored. The issues say what was dropped.
     case partial([NavigationIssue])

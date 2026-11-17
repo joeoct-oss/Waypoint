@@ -22,5 +22,6 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - `RouteKey`: a route's key is its module and type name, such as `Shop.ProductRoute`, so routes declare no keys and two routes can't share one. Renamed routes list old keys in `formerRouteKeys`. The registry reports `duplicateRouteKey`, `unstableRouteKey` and `invalidRouteKey` at launch, and logs print the key's `typeName`. (#8)
 - `SheetDetent.fitsContent` sizes a sheet to its content, up to `SheetOptions.fitsContentLimit` (default `.large`); taller content scrolls. (#8)
 - Calls made while a change is being applied are queued and run in order (`.queued`, `reentrantChange`, `reentrantLoop` after `maxQueuedChanges`). Navigators whose flow is gone do nothing (`.ignored`, `staleNavigator`, `isActive`). The Concurrency article explains both. (#8)
+- Every type in the API articles documents all of its members, not just some. (#8)
 - Every function, initializer, computed property and statement body in the API articles is on its own lines. (#8)
 - `README.md` with the Waypoint banner, a first look at the API, the products, requirements and links to every DocC article; an MIT `LICENSE`; and a complete `CONTRIBUTING.md` covering tests, code style, pull requests and merging. (#6)

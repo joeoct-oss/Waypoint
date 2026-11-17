@@ -122,7 +122,9 @@ public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribabl
         case tabs(FlowID, selection: String, tabs: [String: NavigationTree])
         case root(FlowID, current: String, child: NavigationTree?)
     }
+    /// The root flow and everything shown inside it.
     public var root: Node
+    /// The flows presented over this one, by the flow that presented them.
     public var presented: [FlowID: NavigationTree]
 }
 ```

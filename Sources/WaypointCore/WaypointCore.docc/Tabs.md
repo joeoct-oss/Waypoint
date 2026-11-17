@@ -70,7 +70,9 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable> {
     // Presenting above the whole tab container: `present`, `dismiss`,
     // `dismissAll` and `presentationDefaults`, as on StackRouter.
 
+    /// The flow this router drives.
     public var flowID: FlowID { get }
+    /// What to do when a call fails. Inherited by every tab's router.
     public var fallbackPolicy: FallbackPolicy { get set }
 }
 ```

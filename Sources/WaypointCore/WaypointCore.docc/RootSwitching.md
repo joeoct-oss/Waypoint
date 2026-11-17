@@ -85,7 +85,9 @@ public final class RootRouter<Root: Hashable & Codable & Sendable>: NavigationRo
     /// Called when a call fails and its fallback fails too, anywhere in the tree.
     public func onNavigationFailure(_ handler: @escaping @MainActor (NavigationFailure) -> Void)
 
+    /// What to do when a call fails. Inherited by every router below this one.
     public var fallbackPolicy: FallbackPolicy { get set }
+    /// Default options for presentations. Inherited by every router below this one.
     public var presentationDefaults: PresentationDefaults { get set }
 }
 ```

@@ -24,8 +24,11 @@ router.debugTree()
 /// - `Equatable`, so tests and the router can compare values.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public struct NavigationEvent: Sendable, Equatable, NavigationDescribable {
+    /// The flow that changed.
     public let flow: FlowID
+    /// What changed.
     public let change: NavigationChange
+    /// What caused the change.
     public let origin: NavigationOrigin
     /// Changes made in one transaction share an ID.
     public let transaction: TransactionID
@@ -42,7 +45,9 @@ public enum NavigationOrigin: Sendable, Equatable, NavigationDescribable {
     case app
     /// The user swiped back, dragged a sheet down or tapped a tab.
     case user
+    /// An incoming link.
     case deepLink
+    /// Restoring saved state.
     case restoration
     /// A fallback ran because the call that was asked for failed.
     case fallback

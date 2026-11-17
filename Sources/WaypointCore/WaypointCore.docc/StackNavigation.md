@@ -68,7 +68,9 @@ public final class StackRouter {
 
     // Reading
 
+    /// Whether the path contains this route.
     public func contains<R: Route>(_ route: R) -> Bool
+    /// The route of type `R` nearest the top of the path, or `nil`.
     public func last<R: Route>(_ type: R.Type) -> R?
 
     // Several changes as one
@@ -81,7 +83,9 @@ public final class StackRouter {
 
     // Place in the tree
 
+    /// The flow this router drives.
     public var flowID: FlowID { get }
+    /// The router that presented or contains this one, or `nil` for the root.
     public var parent: (any NavigationRouter)? { get }
 
     // Handles
@@ -210,11 +214,15 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
         case fallbackFailed
         case reentrantLoop
     }
+    /// What went wrong.
     public let kind: Kind
+    /// The flow the call was made on.
     public let flow: FlowID
     /// What went wrong and how to fix it.
     public let message: String
+    /// The file of the call.
     public let file: StaticString
+    /// The line of the call.
     public let line: UInt
 }
 
@@ -228,13 +236,17 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
 /// - `Equatable`, so outcomes that carry it can be compared in tests.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
+    /// Do nothing. The state stays as it was.
     case none
+    /// Pop the stack to its root screen.
     case popToRoot
     /// For `popTo` a route value: push it instead.
     case push
+    /// Dismiss everything presented over this flow.
     case dismissAll
     /// Dismisses everything and pops the root stack to its root screen.
     case resetToRoot
+    /// Run your own change. The name appears in logs and outcomes.
     case custom(_ name: String, @MainActor @Sendable (inout NavigationTransaction, NavigationIssue) -> Void)
 }
 
@@ -272,11 +284,17 @@ public struct StackNavigator {
     /// every call returns `.ignored`. See <doc:Concurrency>.
     public var isActive: Bool { get }
 
+    /// Pushes a route onto the stack.
     @discardableResult public func push<R: Route>(_ route: R) -> NavigationOutcome
+    /// Pops `count` screens.
     @discardableResult public func pop(count: Int = 1) -> NavigationOutcome
+    /// Pops back to the last screen showing this route.
     @discardableResult public func popTo<R: Route>(_ route: R) -> NavigationOutcome
+    /// Pops back to the stack's root screen.
     @discardableResult public func popToRoot() -> NavigationOutcome
+    /// Presents a route over this flow.
     @discardableResult public func present<R: Route>(_ route: R, style: PresentationStyle = .sheet) -> NavigationOutcome
+    /// Dismisses the flow this navigator belongs to.
     @discardableResult public func dismissFlow() -> NavigationOutcome
 }
 
@@ -289,7 +307,9 @@ public struct FlowNavigator<Flow: NavigationFlow> {
     /// Whether this navigator's flow is still in the tree.
     public var isActive: Bool { get }
 
+    /// Pushes a route of this flow.
     @discardableResult public func push<R: Route>(_ route: R) -> NavigationOutcome where R.Flow == Flow
+    /// Pops back to the last screen showing this route of this flow.
     @discardableResult public func popTo<R: Route>(_ route: R) -> NavigationOutcome where R.Flow == Flow
     // pop, popToRoot, present and dismissFlow as on StackNavigator
 

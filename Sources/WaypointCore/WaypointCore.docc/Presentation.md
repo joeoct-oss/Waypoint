@@ -88,7 +88,9 @@ Sheet sizes are plain values in the navigation state. That means a restored or d
 /// - `Codable`, so it can be saved, restored and logged.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public enum SheetDetent: Hashable, Codable, Sendable {
+    /// About half the available height.
     case medium
+    /// The full available height.
     case large
     /// A fraction of the available height, from 0 to 1.
     case fraction(Double)
@@ -107,6 +109,7 @@ public enum SheetDetent: Hashable, Codable, Sendable {
 /// - `Codable`, so it can be saved, restored and logged.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct SheetOptions: Hashable, Codable, Sendable {
+    /// Creates sheet options. Every argument has a default.
     public init(
         detents: [SheetDetent] = [.large],
         selectedDetent: SheetDetent? = nil,
