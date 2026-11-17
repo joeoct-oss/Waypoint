@@ -10,3 +10,4 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - `scripts/test-linux.sh` runs the core build and tests on Linux, after `scripts/check-core-imports.sh` checks that `WaypointCore` imports only Foundation, Observation and Synchronization. `CONTRIBUTING.md` explains how to run them. (#35)
 - API design articles in the `WaypointCore` DocC catalog: Routes, Navigation state, Stack navigation, Presentation (with app-chosen sheet sizes) and Tabs. Signatures only; the API is implemented in later issues. (#42)
 - API design articles for coordinators and child flows, root switching, events and logging, guards, deep links, state restoration, concurrency, and testing your navigation. Signatures only. (#43)
+- DocC catalogs for the `Waypoint` (SwiftUI) and `WaypointUIKit` products, with renderer API articles, navigating from views and view models, and five example flows in each renderer. Signatures only. (#44)
