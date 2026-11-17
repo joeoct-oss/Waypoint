@@ -18,9 +18,12 @@ import WaypointTestSupport
 struct GuardedChangeTests {
     @Test
     func sheetOptionsAreAlwaysValid() {
-        let options = SheetOptions(detents: [], selectedDetent: .medium, fitsContentLimit: .fitsContent)
+        let noDetents: [SheetDetent] = []
+        let large: [SheetDetent] = [.large]
 
-        #expect(options.detents == [.large])
+        let options = SheetOptions(detents: noDetents, selectedDetent: .medium, fitsContentLimit: .fitsContent)
+
+        #expect(options.detents == large)
         #expect(options.selectedDetent == nil)
         #expect(options.fitsContentLimit == .large)
     }
@@ -28,19 +31,21 @@ struct GuardedChangeTests {
     @Test
     func sheetOptionsChangeThroughWithFunctions() {
         let base = SheetOptions.default
+        let mediumAndLarge: [SheetDetent] = [.medium, .large]
+        let large: [SheetDetent] = [.large]
         let changed = base
-            .withDetents([.medium, .large], selected: .medium)
+            .withDetents(mediumAndLarge, selected: .medium)
             .withFitsContentLimit(.medium)
             .withDragIndicator(true)
             .withInteractiveDismiss(false)
 
         #expect(base == .default)
-        #expect(changed.detents == [.medium, .large])
+        #expect(changed.detents == mediumAndLarge)
         #expect(changed.selectedDetent == .medium)
         #expect(changed.fitsContentLimit == .medium)
         #expect(changed.showsDragIndicator == true)
         #expect(!changed.allowsInteractiveDismiss)
-        #expect(changed.withDetents([.large]).selectedDetent == nil)
+        #expect(changed.withDetents(large).selectedDetent == nil)
     }
 
     @Test
@@ -54,26 +59,29 @@ struct GuardedChangeTests {
 
     @Test
     func tabStateKeepsSelectionInTabs() throws {
-        let missing = TabState(tabs: [MainTab.home, .shop], selection: .profile)
-        let empty = TabState(tabs: [], selection: MainTab.shop)
+        let missing = TabState(tabs: MainTab.homeAndShop, selection: .profile)
+        let noTabs: [MainTab] = []
+        let shopOnly: [MainTab] = [.shop]
+        let empty = TabState(tabs: noTabs, selection: MainTab.shop)
         let json = Data(#"{"tabs":["home","shop"],"selection":"profile"}"#.utf8)
 
         #expect(missing.selection == .home)
-        #expect(empty.tabs == [.shop])
+        #expect(empty.tabs == shopOnly)
         #expect(try JSONDecoder().decode(TabState<MainTab>.self, from: json).selection == .home)
     }
 
     @Test
     func logConfigurationChangesThroughWithFunctions() {
         let base = LogConfiguration.default
+        let issuesOnly: Set<LogCategory> = [.issues]
         let changed = base
             .withMinimumLevel(.debug)
-            .withCategories([.issues])
+            .withCategories(issuesOnly)
             .withPrivateValuesRevealed(true)
 
         #expect(base.minimumLevel == .notice)
         #expect(changed.minimumLevel == .debug)
-        #expect(changed.categories == [.issues])
+        #expect(changed.categories == issuesOnly)
         #expect(changed.revealsPrivateValues)
     }
 
@@ -106,7 +114,8 @@ struct GuardedChangeTests {
         router.setMaxQueuedChanges(0)
 
         #expect(router.maxQueuedChanges == 32)
-        #expect(reported.values == [.invalidSetting])
+        let expectedKinds: [NavigationIssue.Kind] = [.invalidSetting]
+        #expect(reported.values == expectedKinds)
     }
 
     @Test
@@ -122,6 +131,7 @@ struct GuardedChangeTests {
 
         #expect(router.fallbackPolicy[.emptyPath] == nil)
         #expect(router.fallbackPolicy[.routeNotInPath] == .push)
-        #expect(reported.values == [.invalidSetting])
+        let expectedKinds: [NavigationIssue.Kind] = [.invalidSetting]
+        #expect(reported.values == expectedKinds)
     }
 }

@@ -89,6 +89,13 @@ swift-format formats the code and SwiftLint enforces the rules. Once the lint se
   )
   ```
 
+- **No collection literal inside a call's arguments.** Name an array, dictionary or set with `let` first, then pass the name, in tests too (`let expected = […]`, then `#expect(path == expected)`). `Package.swift` keeps SwiftPM's usual inline lists:
+
+  ```swift
+  let guestTabs: [MainTab] = [.home, .shop]
+  let tabs = TabRouter(tabs: guestTabs, selection: .home)
+  ```
+
 - **`let` by default** ([decision 0014](https://github.com/JoeOCT91/Waypoint-planning/blob/main/decisions/0014-immutability.md)). Value types (routes, state, options, configurations, events) have only `let` fields. A change makes a new value through a named function that checks it, such as `options.withDetents([.medium, .large])` or a reducer. Objects that own state over time, such as routers, keep it in as few `private` or `private(set)` `var`s as they need, and only their own named functions change them, such as `router.setFallback(.popToRoot, for: .routeNotInPath)`. There are no public settable properties, no mutable statics or globals, no `lazy var` and no `mutating` functions. Every remaining `var`, including a local one, says why in a comment that starts "`var` because". Computed properties, protocol requirements and property wrappers such as `@State` are not stored `var`s and need no reason.
 
   ```swift

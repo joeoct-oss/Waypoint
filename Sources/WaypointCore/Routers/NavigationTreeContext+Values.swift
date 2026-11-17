@@ -76,11 +76,12 @@ extension NavigationTreeContext {
 
         /// The same observers with one more failure handler.
         func addingFailureHandler(_ handler: @escaping (NavigationFailure) -> Void) -> Observers {
-            Observers(
+            let handlers = failureHandlers + [handler]
+            return Observers(
                 applied: applied,
                 reported: reported,
                 finished: finished,
-                failureHandlers: failureHandlers + [handler]
+                failureHandlers: handlers
             )
         }
     }
@@ -89,7 +90,8 @@ extension NavigationTreeContext {
     struct Turn {
         /// Nothing applied, nothing queued.
         static var idle: Turn {
-            Turn(isApplying: false, isDraining: false, queue: [], queuedCount: 0)
+            let emptyQueue: [() -> Void] = []
+            return Turn(isApplying: false, isDraining: false, queue: emptyQueue, queuedCount: 0)
         }
 
         /// Whether a transaction is being applied, including its observers.
@@ -116,7 +118,13 @@ extension NavigationTreeContext {
 
         /// The same turn with one more queued call.
         func enqueuing(_ call: @escaping () -> Void) -> Turn {
-            Turn(isApplying: isApplying, isDraining: isDraining, queue: queue + [call], queuedCount: queuedCount + 1)
+            let longerQueue = queue + [call]
+            return Turn(
+                isApplying: isApplying,
+                isDraining: isDraining,
+                queue: longerQueue,
+                queuedCount: queuedCount + 1
+            )
         }
 
         /// The same turn with another queue. The count of queued calls is kept.

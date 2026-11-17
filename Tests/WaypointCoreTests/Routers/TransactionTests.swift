@@ -32,14 +32,18 @@ struct TransactionTests {
         }
 
         let main = router.flowID
+        let home = [AnyRoute(HomeRoute())]
+        let first = [AnyRoute(ProductRoute(id: 1))]
+        let second = [AnyRoute(ProductRoute(id: 2))]
         #expect(outcome == .applied)
-        #expect(router.state.path == [AnyRoute(ProductRoute(id: 1)), AnyRoute(ProductRoute(id: 2))])
-        let expected = [
-            AppliedChange(flow: main, change: .popped([AnyRoute(HomeRoute())])),
-            AppliedChange(flow: main, change: .pushed([AnyRoute(ProductRoute(id: 1))])),
-            AppliedChange(flow: main, change: .pushed([AnyRoute(ProductRoute(id: 2))])),
+        #expect(router.state.path == first + second)
+        let expectedBatch = [
+            AppliedChange(flow: main, change: .popped(home)),
+            AppliedChange(flow: main, change: .pushed(first)),
+            AppliedChange(flow: main, change: .pushed(second)),
         ]
-        #expect(applied.values == [expected])
+        let expectedBatches = [expectedBatch]
+        #expect(applied.values == expectedBatches)
     }
 
     @Test
@@ -59,7 +63,8 @@ struct TransactionTests {
         }
 
         #expect(fired.calls == 1)
-        #expect(router.state.path == [AnyRoute(HomeRoute())])
+        let expectedPath = [AnyRoute(HomeRoute())]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test
@@ -77,7 +82,8 @@ struct TransactionTests {
         let issue = try #require(outcome.failure?.issue)
         #expect(issue.kind == .routeNotInPath)
         #expect(issue.line == line)
-        #expect(router.state.path == [AnyRoute(HomeRoute())])
+        let expectedPath = [AnyRoute(HomeRoute())]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test
@@ -97,7 +103,8 @@ struct TransactionTests {
         }
 
         let child = try #require(router.presented)
-        #expect(child.state.path == [AnyRoute(ProductRoute(id: 1))])
+        let expectedPath = [AnyRoute(ProductRoute(id: 1))]
+        #expect(child.state.path == expectedPath)
         #expect(child.isActive)
     }
 
@@ -118,7 +125,7 @@ struct TransactionTests {
 
     @Test
     func tabTransactionChangesTabsAndStacksTogether() {
-        let tabs = TabRouter(tabs: [MainTab.home, .shop], selection: .home)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
         tabs.present(SettingsRoute())
 
         let outcome = tabs.transaction {
@@ -133,7 +140,8 @@ struct TransactionTests {
         #expect(outcome == .applied)
         #expect(tabs.presented == nil)
         #expect(tabs.selection == .shop)
-        #expect(tabs.router(for: .shop).state.path == [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 42))])
+        let expectedPath = [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 42))]
+        #expect(tabs.router(for: .shop).state.path == expectedPath)
     }
 
     @Test
@@ -164,7 +172,9 @@ struct TransactionTests {
 
         router.push(HomeRoute())
 
-        #expect(inner.values == [.queued])
-        #expect(router.state.path == [AnyRoute(HomeRoute()), AnyRoute(SettingsRoute())])
+        let expectedOutcomes: [NavigationOutcome] = [.queued]
+        #expect(inner.values == expectedOutcomes)
+        let expectedPath = [AnyRoute(HomeRoute()), AnyRoute(SettingsRoute())]
+        #expect(router.state.path == expectedPath)
     }
 }

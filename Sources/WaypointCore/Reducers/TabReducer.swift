@@ -39,7 +39,8 @@ enum TabReducer {
         guard tab != state.selection else {
             return .unchanged
         }
-        return .changed(state.withSelection(tab), [selectionChange(from: state.selection, to: tab)])
+        let changes = [selectionChange(from: state.selection, to: tab)]
+        return .changed(state.withSelection(tab), changes)
     }
 
     /// Replaces the tabs. If the selected tab is removed, the first tab is selected.
@@ -52,9 +53,11 @@ enum TabReducer {
         }
         let next = state.withTabs(tabs)
         guard !tabs.contains(state.selection) else {
-            return .changed(next, [])
+            let noChanges: [NavigationChange] = []
+            return .changed(next, noChanges)
         }
-        return .changed(next, [selectionChange(from: state.selection, to: first)])
+        let changes = [selectionChange(from: state.selection, to: first)]
+        return .changed(next, changes)
     }
 
     /// `tabSelected` with both tabs named.

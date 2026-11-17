@@ -17,6 +17,8 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - The app's navigation now lives in an app coordinator (`RootCoordinator`, `SwiftUIRootCoordinator`, `UIKitRootCoordinator`), drawn by `WaypointRoot(app)` or `WaypointRootViewController(app)`. The README and the example flows lead with it, and the `@SwitchRoot` property wrapper is removed: screens report, the app coordinator switches the root. (#8)
 - UIKit: `UIKitRootCoordinator` gains `makeWindow(for:options:)` and `receive(_:)` forwards, so a scene delegate's lifecycle methods only hand the OS's input to the app coordinator. (#8)
 - Root coordinators build each root with `makeFlow(for:)` in both renderers. Examples give every `case` one call to a named function: `make…Flow()` builds a flow, `show…()` navigates. (#8)
+- `TabRouter(selection:)` for a `CaseIterable` tab type shows every case in declaration order; pass `tabs:` to show some of them or another order. (#8)
+- No array, dictionary or set literal is written inside a call's arguments in the code, tests and articles: each one is named with `let` first. (#8)
 - Wrapped calls in the code and the articles put each argument on its own line, with `)` alone on the last line, and coordinator closures call named functions such as `showProduct(id:)`. (#8)
 - New "Descriptions" article and `NavigationDescribable`: routes, state, events, outcomes, issues and snapshots print one stable, logfmt-style line, with route fields private unless listed in `publicLogFields`. (#8)
 - Examples in the API articles put a blank line between member groups, such as stored properties and the initializer, and around every member with a body. (#8)

@@ -25,14 +25,17 @@ struct ReentrancyTests {
                 return
             }
             inner.record(router.push(SettingsRoute()))
-            #expect(router.state.path == [AnyRoute(HomeRoute())])
+            let expectedPath = [AnyRoute(HomeRoute())]
+            #expect(router.state.path == expectedPath)
         }
 
         let outer = router.push(HomeRoute())
 
         #expect(outer == .applied)
-        #expect(inner.values == [.queued])
-        #expect(router.state.path == [AnyRoute(HomeRoute()), AnyRoute(SettingsRoute())])
+        let expectedOutcomes: [NavigationOutcome] = [.queued]
+        #expect(inner.values == expectedOutcomes)
+        let expectedPath2 = [AnyRoute(HomeRoute()), AnyRoute(SettingsRoute())]
+        #expect(router.state.path == expectedPath2)
     }
 
     @Test
@@ -52,8 +55,10 @@ struct ReentrancyTests {
 
         router.push(HomeRoute())
 
-        #expect(child.state.path == [AnyRoute(ProductRoute(id: 1)), AnyRoute(ProductRoute(id: 3))])
-        #expect(router.state.path == [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 2))])
+        let expectedPath = [AnyRoute(ProductRoute(id: 1)), AnyRoute(ProductRoute(id: 3))]
+        #expect(child.state.path == expectedPath)
+        let expectedPath2 = [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 2))]
+        #expect(router.state.path == expectedPath2)
     }
 
     @Test
@@ -73,7 +78,8 @@ struct ReentrancyTests {
 
         router.push(HomeRoute())
 
-        #expect(reported.values == [.routeNotInPath])
+        let expectedKinds: [NavigationIssue.Kind] = [.routeNotInPath]
+        #expect(reported.values == expectedKinds)
     }
 
     @Test

@@ -12,18 +12,30 @@ Keep one stack per tab, and switch tabs from code or a deep link.
 // - `Hashable`, required by `TabRouter`, which selects and compares tabs.
 // - `Codable`, required by `TabRouter`, which saves and restores the selection with the tree.
 // - `Sendable`, required by `TabRouter`, so events that name the tab can leave the main actor.
-enum MainTab: String, Hashable, Codable, Sendable {
+// - `CaseIterable`, so `TabRouter` shows every tab without a list.
+enum MainTab: String, Hashable, Codable, Sendable, CaseIterable {
     case home
     case shop
     case profile
 }
 
-let tabs = TabRouter(tabs: [.home, .shop, .profile], selection: .home)
+let tabs = TabRouter(selection: MainTab.home)
 tabs.select(.shop)
 tabs.router(for: .shop).push(ProductRoute(id: 42))
 ```
 
 Tab types need `Hashable`, `Codable` and `Sendable`. See <doc:WhyTheseConformances>.
+
+### Choosing the tabs
+
+A `CaseIterable` tab type shows every case, in the order the cases are declared. To show only some of them, or in another order, such as a tab that only signed-in users see, pass `tabs`:
+
+```swift
+let guestTabs: [MainTab] = [.home, .shop]
+let tabs = TabRouter(tabs: guestTabs, selection: .home)
+```
+
+A tab type that isn't `CaseIterable` always passes `tabs`.
 
 When the user taps a tab, the renderer reports it, and the selection changes like any other change, with `origin: .user`.
 
@@ -64,6 +76,14 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable> {
         flow: FlowID = FlowID("tabs"),
         popsToRootOnReselect: Bool = true
     )
+
+    /// Creates a tab container with every case of a `CaseIterable` tab type,
+    /// in the order the cases are declared.
+    public convenience init(
+        selection: Tab,
+        flow: FlowID = FlowID("tabs"),
+        popsToRootOnReselect: Bool = true
+    ) where Tab: CaseIterable
 
     /// Sets one kind's fallback for this container and everything inside it.
     public func setFallback(
@@ -115,5 +135,5 @@ tabs.transaction {
 Tapping the tab that is already selected pops its stack to the root, as system apps do. It is on by default, and you can turn it off when you create the container:
 
 ```swift
-let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home, popsToRootOnReselect: false)
+let tabs = TabRouter(selection: MainTab.home, popsToRootOnReselect: false)
 ```

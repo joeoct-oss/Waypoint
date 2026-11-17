@@ -51,7 +51,8 @@ struct LinuxBehaviourTests {
 
         model.push("detail")
 
-        #expect(model.stack == ["detail"])
+        let expectedStack = ["detail"]
+        #expect(model.stack == expectedStack)
     }
 
     @Test

@@ -22,7 +22,8 @@ struct RouteTests {
     func routesWithSameValuesAreEqual() {
         #expect(PaymentRoute.card(id: 1, nickname: "Work") == .card(id: 1, nickname: "Work"))
         #expect(PaymentRoute.card(id: 1, nickname: "Work") != .card(id: 2, nickname: "Work"))
-        #expect(Set([PaymentRoute.cash, .cash, .voucher("A")]).count == 2)
+        let payments: Set<PaymentRoute> = [.cash, .cash, .voucher("A")]
+        #expect(payments.count == 2)
     }
 
     @Test
@@ -89,7 +90,9 @@ struct RouteTests {
 
         let key = OrderRoute.routeKey
         let clashing = RouteFixtures.ClashingRoute.routeKey.rawValue
-        #expect(registry.problems == [.duplicateRouteKey(key, types: [key.rawValue, clashing])])
+        let types = [key.rawValue, clashing]
+        let expectedProblems: [RouteDecodingError] = [.duplicateRouteKey(key, types: types)]
+        #expect(registry.problems == expectedProblems)
         #expect(registry.type(for: key) == OrderRoute.self)
     }
 
@@ -97,7 +100,8 @@ struct RouteTests {
     func privateRouteReportsUnstableKey() {
         let registry = registeringHiddenRoute(in: RouteRegistry())
 
-        #expect(registry.problems == [.unstableRouteKey(hiddenRouteKey)])
+        let expectedProblems: [RouteDecodingError] = [.unstableRouteKey(hiddenRouteKey)]
+        #expect(registry.problems == expectedProblems)
         #expect(throws: RouteDecodingError.unstableRouteKey(hiddenRouteKey)) {
             try JSONEncoder().encode(hiddenRoute)
         }
@@ -108,7 +112,8 @@ struct RouteTests {
         let registry = RouteRegistry()
             .registering(RouteFixtures.EmptyFormerKeyRoute.self)
 
-        #expect(registry.problems == [.invalidRouteKey("")])
+        let expectedProblems: [RouteDecodingError] = [.invalidRouteKey("")]
+        #expect(registry.problems == expectedProblems)
         #expect(registry.isRegistered(RouteFixtures.EmptyFormerKeyRoute.self))
     }
 
@@ -135,7 +140,8 @@ struct RouteTests {
     func anyRouteEqualityRespectsType() {
         #expect(AnyRoute(OrderRoute(id: 1)) != AnyRoute(RouteFixtures.InvoiceRoute(id: 1)))
         #expect(AnyRoute(OrderRoute(id: 1)) == AnyRoute(OrderRoute(id: 1)))
-        #expect(Set([AnyRoute(OrderRoute(id: 1)), AnyRoute(OrderRoute(id: 1))]).count == 1)
+        let routes: Set<AnyRoute> = [AnyRoute(OrderRoute(id: 1)), AnyRoute(OrderRoute(id: 1))]
+        #expect(routes.count == 1)
     }
 
     @Test
@@ -151,12 +157,12 @@ struct RouteTests {
 
     @Test
     func registryDecodesRegisteredType() throws {
-        let original = AnyRoute(PaymentRoute.card(id: 3, nickname: "Travel"))
-        let data = try JSONEncoder().encode([original])
+        let original = [AnyRoute(PaymentRoute.card(id: 3, nickname: "Travel"))]
+        let data = try JSONEncoder().encode(original)
 
         let decoded = try decoder(registering: PaymentRoute.self).decode([AnyRoute].self, from: data)
 
-        #expect(decoded == [original])
+        #expect(decoded == original)
     }
 
     @Test

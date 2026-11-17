@@ -101,7 +101,8 @@ extension TransactionStore {
             let message = "The .push fallback only applies to popTo with a route value on a stack."
             return .failed(IssueDraft(kind: .fallbackFailed, flow: router.flowID, message: message))
         }
-        return stack.pushStep([route], in: self)
+        let routes = [route]
+        return stack.pushStep(routes, in: self)
     }
 
     /// Dismisses everything from the root, then pops the root's visible stack.

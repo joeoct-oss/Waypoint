@@ -65,10 +65,11 @@ struct LoggingTests {
     func disabledCategoryIsSkipped() {
         let handler = RecordingLogHandler()
         let router = StackRouter()
+        let presentationOnly: Set<LogCategory> = [.presentation]
         let configuration = LogConfiguration(
             handler: handler,
             minimumLevel: .debug,
-            categories: [.presentation],
+            categories: presentationOnly,
             format: .structured
         )
         router.setLogging(configuration)
@@ -76,21 +77,24 @@ struct LoggingTests {
         router.push(HomeRoute())
         router.present(SettingsRoute())
 
-        #expect(handler.messages.map(\.category) == [.presentation])
+        let expectedCategories: [LogCategory] = [.presentation]
+        #expect(handler.messages.map(\.category) == expectedCategories)
         #expect(handler.texts.first?.hasPrefix("presented ") == true)
     }
 
     @Test
     func changesAreLoggedAtInfoInTheirCategory() {
         let handler = RecordingLogHandler()
-        let tabs = TabRouter(tabs: [MainTab.home, .shop], selection: .home)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
         tabs.setLogging(LogConfiguration(handler: handler, minimumLevel: .info, format: .structured))
 
         tabs.select(.shop)
         tabs.router(for: .shop).push(HomeRoute())
 
-        #expect(handler.messages.map(\.level) == [.info, .info])
-        #expect(handler.messages.map(\.category) == [.tabs, .navigation])
+        let expectedLevels: [LogLevel] = [.info, .info]
+        #expect(handler.messages.map(\.level) == expectedLevels)
+        let expectedCategories: [LogCategory] = [.tabs, .navigation]
+        #expect(handler.messages.map(\.category) == expectedCategories)
         #expect(handler.texts.last?.hasSuffix(" flow=shop") == true)
     }
 
@@ -105,7 +109,8 @@ struct LoggingTests {
         child.push(HomeRoute())
 
         #expect(child.logging.minimumLevel == .info)
-        #expect(handler.texts == ["pushed [HomeRoute] flow=\(child.flowID)"])
+        let expectedTexts = ["pushed [HomeRoute] flow=\(child.flowID)"]
+        #expect(handler.texts == expectedTexts)
     }
 
     @Test
@@ -116,7 +121,8 @@ struct LoggingTests {
 
         router.push(ProductRoute(id: 7))
 
-        #expect(handler.texts == ["pushed [ProductRoute(id: <private>)] flow=main"])
+        let expectedTexts = ["pushed [ProductRoute(id: <private>)] flow=main"]
+        #expect(handler.texts == expectedTexts)
     }
 
     @Test
@@ -146,7 +152,8 @@ struct LoggingTests {
 
         router.push(ProductRoute(id: 7))
 
-        #expect(handler.texts == ["pushed [ProductRoute(id: 7)] flow=main"])
+        let expectedTexts = ["pushed [ProductRoute(id: 7)] flow=main"]
+        #expect(handler.texts == expectedTexts)
     }
 
     @Test
@@ -154,17 +161,19 @@ struct LoggingTests {
         let handler = RecordingLogHandler()
         let router = StackRouter()
         router.push(HomeRoute())
+        let navigationOnly: Set<LogCategory> = [.navigation]
         let configuration = LogConfiguration(
             handler: handler,
             minimumLevel: .info,
-            categories: [.navigation],
+            categories: navigationOnly,
             format: .structured
         )
         router.setLogging(configuration)
 
         router.popTo(SettingsRoute(), else: .popToRoot)
 
-        #expect(handler.texts == ["popped [HomeRoute] flow=main origin=fallback"])
+        let expectedTexts = ["popped [HomeRoute] flow=main origin=fallback"]
+        #expect(handler.texts == expectedTexts)
     }
 
     @Test
@@ -172,7 +181,8 @@ struct LoggingTests {
         let handler = RecordingLogHandler()
         let router = StackRouter()
         router.push(HomeRoute())
-        router.setLogging(LogConfiguration(handler: handler, categories: [.issues], format: .structured))
+        let issuesOnly: Set<LogCategory> = [.issues]
+        router.setLogging(LogConfiguration(handler: handler, categories: issuesOnly, format: .structured))
 
         let recoveredLine: UInt = #line + 1
         router.pop(count: 2)
@@ -181,8 +191,10 @@ struct LoggingTests {
 
         let messages = handler.messages
         try #require(messages.count == 2)
-        #expect(messages.map(\.level) == [.error, .fault])
-        #expect(messages.map(\.line) == [recoveredLine, failedLine])
+        let expectedLevels: [LogLevel] = [.error, .fault]
+        #expect(messages.map(\.level) == expectedLevels)
+        let expectedLines = [recoveredLine, failedLine]
+        #expect(messages.map(\.line) == expectedLines)
         #expect("\(messages[1].file)" == #fileID)
         #expect(messages[0].text.hasPrefix("notEnoughRoutes flow=main at=LoggingTests.swift:"))
         #expect(messages[1].text.contains("\n  "))
@@ -196,10 +208,11 @@ struct LoggingTests {
         let child = try #require(router.presented)
         router.dismiss()
         router.push(HomeRoute())
+        let navigationOnly: Set<LogCategory> = [.navigation]
         let configuration = LogConfiguration(
             handler: handler,
             minimumLevel: .debug,
-            categories: [.navigation],
+            categories: navigationOnly,
             format: .structured
         )
         router.setLogging(configuration)
@@ -234,8 +247,10 @@ struct LoggingTests {
 
         router.register(RouteFixtures.EmptyFormerKeyRoute.self)
 
-        #expect(handler.messages.map(\.level) == [.error])
-        #expect(handler.messages.map(\.category) == [.issues])
+        let expectedLevels: [LogLevel] = [.error]
+        #expect(handler.messages.map(\.level) == expectedLevels)
+        let expectedCategories: [LogCategory] = [.issues]
+        #expect(handler.messages.map(\.category) == expectedCategories)
     }
 
     @Test
@@ -252,7 +267,13 @@ struct LoggingTests {
 
         let first = LogInterval(name: "transaction", category: .navigation, id: 1)
         let second = LogInterval(name: "transaction", category: .navigation, id: 2)
-        #expect(handler.intervals == [.began(first), .ended(first), .began(second), .ended(second)])
+        let expectedIntervals: [RecordingLogHandler.IntervalEvent] = [
+            .began(first),
+            .ended(first),
+            .began(second),
+            .ended(second),
+        ]
+        #expect(handler.intervals == expectedIntervals)
     }
 
     @Test
@@ -260,7 +281,8 @@ struct LoggingTests {
         let handler = RecordingLogHandler()
         let router = StackRouter()
         router.push(HomeRoute())
-        router.setLogging(LogConfiguration(handler: handler, categories: [.issues], format: .structured))
+        let issuesOnly: Set<LogCategory> = [.issues]
+        router.setLogging(LogConfiguration(handler: handler, categories: issuesOnly, format: .structured))
 
         router.push(HomeRoute())
 

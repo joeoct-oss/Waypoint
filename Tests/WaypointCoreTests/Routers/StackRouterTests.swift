@@ -23,7 +23,8 @@ struct StackRouterTests {
         let outcome = router.push(ProductRoute(id: 1))
 
         #expect(outcome == .applied)
-        #expect(router.state.path == [AnyRoute(ProductRoute(id: 1))])
+        let expectedPath = [AnyRoute(ProductRoute(id: 1))]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test
@@ -33,7 +34,8 @@ struct StackRouterTests {
         router.push(ProductRoute(id: 1))
 
         #expect(router.pop() == .applied)
-        #expect(router.state.path == [AnyRoute(HomeRoute())])
+        let expectedPath = [AnyRoute(HomeRoute())]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test
@@ -72,7 +74,8 @@ struct StackRouterTests {
 
         #expect(outcome.failure?.issue.kind == .routeNotInPath)
         #expect(outcome.failure?.fallbackIssue == nil)
-        #expect(router.state.path == [AnyRoute(ProductRoute(id: 1))])
+        let expectedPath = [AnyRoute(ProductRoute(id: 1))]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test
@@ -112,7 +115,8 @@ struct StackRouterTests {
 
         #expect(outcome.failure?.issue.kind == .unregisteredRoute)
         #expect(router.push(HomeRoute()) == .applied)
-        #expect(router.state.path == [AnyRoute(HomeRoute())])
+        let expectedPath = [AnyRoute(HomeRoute())]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test

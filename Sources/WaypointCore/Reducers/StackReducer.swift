@@ -35,7 +35,7 @@ enum StackReducer {
     static func reduce(_ state: StackState, _ command: StackCommand, rootRoute: AnyRoute?) -> Reduction<StackState> {
         switch command {
         case .push(let route):
-            return push([route], onto: state)
+            return pushOne(route, onto: state)
         case .pushMany(let routes):
             return push(routes, onto: state)
         case .pop(let count):
@@ -54,7 +54,14 @@ enum StackReducer {
         guard !routes.isEmpty else {
             return .unchanged
         }
-        return .changed(state.withPath(state.path + routes), [.pushed(routes)])
+        let changes: [NavigationChange] = [.pushed(routes)]
+        return .changed(state.withPath(state.path + routes), changes)
+    }
+
+    /// Appends one route.
+    private static func pushOne(_ route: AnyRoute, onto state: StackState) -> Reduction<StackState> {
+        let routes = [route]
+        return push(routes, onto: state)
     }
 
     /// Removes the top `count` routes. Zero or less changes nothing.
@@ -92,7 +99,8 @@ enum StackReducer {
         guard path != state.path else {
             return .unchanged
         }
-        return .changed(state.withPath(path), [.replaced(from: state.path, to: path)])
+        let changes: [NavigationChange] = [.replaced(from: state.path, to: path)]
+        return .changed(state.withPath(path), changes)
     }
 
     /// Keeps the bottom `count` routes and reports the rest as popped.
@@ -100,7 +108,9 @@ enum StackReducer {
         guard count < state.path.count else {
             return .unchanged
         }
+        let kept = Array(state.path[..<count])
         let popped = Array(state.path[count...])
-        return .changed(state.withPath(Array(state.path[..<count])), [.popped(popped)])
+        let changes: [NavigationChange] = [.popped(popped)]
+        return .changed(state.withPath(kept), changes)
     }
 }

@@ -202,9 +202,9 @@ public final class StackRouter: NavigationRouter {
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
-        let erased = AnyRoute(route)
+        let routes = [AnyRoute(route)]
         return perform(file: file, line: line, fallback: fallback) { router, store in
-            router.pushStep([erased], in: store)
+            router.pushStep(routes, in: store)
         }
     }
 

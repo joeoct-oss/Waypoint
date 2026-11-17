@@ -68,14 +68,15 @@ struct ReadableLogTests {
         router.present(SettingsRoute())
         router.dismiss()
 
-        #expect(handler.texts == [
+        let expectedTexts = [
             "main       ▸ push Home",
             "main       ▸ push Product (…)",
             "main       ◂ back to Home (closed Product (…))",
             "main       ↻ set the stack to Settings",
             "main       ↑ present sheet settings: Settings",
             "main       ↓ dismiss settings",
-        ])
+        ]
+        #expect(handler.texts == expectedTexts)
     }
 
     @Test
@@ -89,21 +90,23 @@ struct ReadableLogTests {
         }
         router.popToRoot()
 
-        #expect(handler.texts == [
+        let expectedTexts = [
             "main       push Home > Product (…)",
             "main       back to the first screen (closed Home > Product (…))",
-        ])
+        ]
+        #expect(handler.texts == expectedTexts)
     }
 
     @Test
     func tabChangesNameBothTabs() {
         let handler = RecordingLogHandler()
-        let tabs = TabRouter(tabs: [MainTab.home, .shop], selection: .home)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
         tabs.setLogging(LogConfiguration(handler: handler, minimumLevel: .info))
 
         tabs.select(.shop)
 
-        #expect(handler.texts == ["tabs       ⇥ tab home → shop"])
+        let expectedTexts = ["tabs       ⇥ tab home → shop"]
+        #expect(handler.texts == expectedTexts)
     }
 
     @Test
@@ -115,12 +118,13 @@ struct ReadableLogTests {
         let line: UInt = #line + 1
         router.popTo(SettingsRoute(), else: .popToRoot)
 
-        #expect(handler.texts.suffix(2) == [
+        let expectedLastTexts = [
             "main       ⚠︎ recovered: can't go back to a screen that isn't in the stack\n"
                 + "             Settings is not in the path [Home]. Check contains(_:) first, or handle the .failed outcome.\n"
                 + "             at ReadableLogTests.swift:\(line)",
             "main       ◂ back to the first screen (closed Home) · by fallback",
-        ])
+        ]
+        #expect(handler.texts.suffix(2) == expectedLastTexts)
     }
 
     @Test
@@ -178,19 +182,20 @@ struct ReadableLogTests {
         router.push(HomeRoute())
 
         let texts = handler.texts.suffix(5).map { String($0.prefix(40)) }
-        #expect(texts == [
+        let expectedTexts = [
             "main       = already there (ReadableLogT",
             "settings   ∅ ignored: this flow is close",
             "main       ▸ push Home",
             "main       … queued until the current ch",
             "main       ◂ back to the first screen (c",
-        ])
+        ]
+        #expect(texts == expectedTexts)
     }
 
     @Test
     func changedStacksFollowEachChange() throws {
         let handler = RecordingLogHandler()
-        let tabs = TabRouter(tabs: [MainTab.home, .shop], selection: .home)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
         tabs.setLogging(LogConfiguration(handler: handler, minimumLevel: .info, treeLogging: .changedStacks))
 
         tabs.router(for: .shop).push(ProductRoute(id: 7))
@@ -198,11 +203,12 @@ struct ReadableLogTests {
         tabs.present(SettingsRoute())
 
         let stackLines = handler.texts.filter { $0.contains(" ≡ ") }
-        #expect(stackLines == [
+        let expectedStackLines = [
             "shop       ≡ Product (…)",
             "shop       ≡ Product (…)",
             "settings   ≡ Settings",
-        ])
+        ]
+        #expect(stackLines == expectedStackLines)
     }
 
     @Test
@@ -212,15 +218,16 @@ struct ReadableLogTests {
 
         router.push(HomeRoute())
 
-        #expect(handler.texts == [
+        let expectedTexts = [
             "main       ▸ push Home",
             "tree after the change:\nmain       Home",
-        ])
+        ]
+        #expect(handler.texts == expectedTexts)
     }
 
     @Test
     func debugTreeDrawsEveryFlow() throws {
-        let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .shop)
+        let tabs = TabRouter(selection: MainTab.shop)
         tabs.router(for: .shop).push(ProductRoute(id: 7))
         tabs.router(for: .shop).present(SettingsRoute())
         try #require(tabs.router(for: .shop).presented).push(HomeRoute())
@@ -253,10 +260,11 @@ struct ReadableLogTests {
         router.present(SettingsRoute())
         router.dismiss()
 
-        #expect(handler.texts == [
+        let expectedTexts = [
             "presented sheet SettingsRoute flow=settings presenter=main",
             "dismissed flow=settings presenter=main",
-        ])
+        ]
+        #expect(handler.texts == expectedTexts)
     }
 
     @Test

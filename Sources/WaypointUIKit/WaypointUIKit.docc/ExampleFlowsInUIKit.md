@@ -36,12 +36,15 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 // - `UIKitRootCoordinator`, so `WaypointRootViewController` can draw it.
 final class AppCoordinator: UIKitRootCoordinator {
     let router = RootRouter(AppRoot.login)
-    let links: LinkInbox? = LinkInbox(domains: LinkDomains(hosts: ["example.com"], schemes: ["myshop"]))
+    let links: LinkInbox?
     let tabs: TabRouter<MainTab>
     let shop: ShopCoordinator
 
     init() {
-        let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
+        let hosts: Set<String> = ["example.com"]
+        let schemes: Set<String> = ["myshop"]
+        let tabs = TabRouter(selection: MainTab.home)
+        self.links = LinkInbox(domains: LinkDomains(hosts: hosts, schemes: schemes))
         self.tabs = tabs
         self.shop = ShopCoordinator(router: tabs.router(for: .shop))
     }
@@ -150,7 +153,8 @@ The filter flow here is the SwiftUI `FilterCoordinator`, presented from UIKit. T
 ```swift
 extension ShopCoordinator {
     func showFilters() {
-        router.present(FilterCoordinator(), style: .sheet(detents: [.medium, .large])) { [weak self] result in
+        let detents: [SheetDetent] = [.medium, .large]
+        router.present(FilterCoordinator(), style: .sheet(detents: detents)) { [weak self] result in
             if case .finished(let filter) = result {
                 self?.apply(filter)
             }

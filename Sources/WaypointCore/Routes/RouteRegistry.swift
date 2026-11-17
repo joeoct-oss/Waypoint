@@ -66,7 +66,9 @@ public struct RouteRegistry: Sendable {
 
     /// Creates an empty registry.
     public init() {
-        self.init(entries: [:], problems: [])
+        let noEntries: [RouteKey: Entry] = [:]
+        let noProblems: [RouteDecodingError] = []
+        self.init(entries: noEntries, problems: noProblems)
     }
 
     /// A registry with these entries and problems.
@@ -167,10 +169,12 @@ public struct RouteRegistry: Sendable {
         let key = R.routeKey
         let unstable: [RouteDecodingError] = key.isStable ? [] : [.unstableRouteKey(key)]
         let duplicate: [RouteDecodingError] = entries[key].map { existing in
-            [.duplicateRouteKey(key, types: [String(reflecting: existing.type), key.rawValue])]
+            let types = [String(reflecting: existing.type), key.rawValue]
+            return [.duplicateRouteKey(key, types: types)]
         } ?? []
+        let added = [key: Entry(type: type, isCurrent: true)]
         return RouteRegistry(
-            entries: entries.merging([key: Entry(type: type, isCurrent: true)]) { _, new in new },
+            entries: entries.merging(added) { _, new in new },
             problems: problems + unstable + duplicate
         )
     }
@@ -178,13 +182,15 @@ public struct RouteRegistry: Sendable {
     /// The registry with a former key, unless it is malformed or already taken.
     private func withFormerKey<R: Route>(_ former: RouteKey, of type: R.Type) -> RouteRegistry {
         guard former.isWellFormed else {
-            return RouteRegistry(entries: entries, problems: problems + [.invalidRouteKey(former.rawValue)])
+            let invalid: [RouteDecodingError] = [.invalidRouteKey(former.rawValue)]
+            return RouteRegistry(entries: entries, problems: problems + invalid)
         }
         if let existing = entries[former] {
             return RouteRegistry(entries: entries, problems: problems + takenFormerKeyProblems(former, existing, type))
         }
+        let added = [former: Entry(type: type, isCurrent: false)]
         return RouteRegistry(
-            entries: entries.merging([former: Entry(type: type, isCurrent: false)]) { _, new in new },
+            entries: entries.merging(added) { _, new in new },
             problems: problems
         )
     }
@@ -198,7 +204,8 @@ public struct RouteRegistry: Sendable {
         guard existing.type != type else {
             return []
         }
-        return [.duplicateRouteKey(former, types: [String(reflecting: existing.type), R.routeKey.rawValue])]
+        let types = [String(reflecting: existing.type), R.routeKey.rawValue]
+        return [.duplicateRouteKey(former, types: types)]
     }
 }
 

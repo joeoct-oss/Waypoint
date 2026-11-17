@@ -14,7 +14,7 @@ import Observation
 /// away and back.
 ///
 /// ```swift
-/// let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
+/// let tabs = TabRouter(selection: MainTab.home)
 /// tabs.select(.shop)
 /// tabs.router(for: .shop).push(ProductRoute(id: 42))
 /// ```
@@ -190,7 +190,8 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
         self.flowID = tree.claimFlowName(flow.name)
         self.parentNode = nil
         self.popsToRootOnReselect = popsToRootOnReselect
-        self.committed = Snapshot(state: state, presented: nil, tabRouters: [:])
+        let noTabRouters: [Tab: StackRouter] = [:]
+        self.committed = Snapshot(state: state, presented: nil, tabRouters: noTabRouters)
         // The tab routers need `self` as their parent, so they are added once `self` exists.
         let routers = state.tabs.map { tab in
             (tab, makeTabRouter(for: tab, attached: true))

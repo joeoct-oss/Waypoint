@@ -63,7 +63,8 @@ struct PresentationRouterTests {
 
         child.push(ProductRoute(id: 3))
 
-        #expect(child.state.path == [AnyRoute(ProductRoute(id: 3))])
+        let expectedPath = [AnyRoute(ProductRoute(id: 3))]
+        #expect(child.state.path == expectedPath)
         #expect(router.state.path.isEmpty)
     }
 
@@ -122,26 +123,31 @@ struct PresentationRouterTests {
     @Test
     func presentationDefaultsAreInherited() throws {
         let router = StackRouter()
-        router.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
+        let detents: [SheetDetent] = [.medium, .large]
+        let defaults = PresentationDefaults(sheet: SheetOptions(detents: detents))
+        router.setPresentationDefaults(defaults)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
 
-        #expect(child.presentationDefaults.sheet.detents == [.medium, .large])
+        #expect(child.presentationDefaults.sheet.detents == detents)
         #expect(StackRouter().presentationDefaults.sheet == .default)
     }
 
     @Test
     func sheetOptionsFollowLookupOrder() throws {
         let router = StackRouter()
-        router.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium])))
+        let defaultDetents: [SheetDetent] = [.medium]
+        let ownDetents: [SheetDetent] = [.fitsContent]
+        let defaults = PresentationDefaults(sheet: SheetOptions(detents: defaultDetents))
+        router.setPresentationDefaults(defaults)
 
         router.present(SettingsRoute())
         let inherited = try #require(router.state.presentation)
         router.dismiss()
-        router.present(SettingsRoute(), style: .sheet(detents: [.fitsContent]))
+        router.present(SettingsRoute(), style: .sheet(detents: ownDetents))
         let own = try #require(router.state.presentation)
 
-        #expect(router.sheetOptions(for: inherited).detents == [.medium])
-        #expect(router.sheetOptions(for: own).detents == [.fitsContent])
+        #expect(router.sheetOptions(for: inherited).detents == defaultDetents)
+        #expect(router.sheetOptions(for: own).detents == ownDetents)
     }
 }

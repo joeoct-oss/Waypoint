@@ -66,9 +66,9 @@ public struct NavigationTransaction {
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
-        let erased = AnyRoute(route)
+        let routes = [AnyRoute(route)]
         return onStack(context(fallback, file, line)) { stack in
-            stack.pushStep([erased], in: store)
+            stack.pushStep(routes, in: store)
         }
     }
 

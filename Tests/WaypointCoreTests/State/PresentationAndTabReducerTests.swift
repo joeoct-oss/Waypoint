@@ -20,7 +20,8 @@ struct PresentationAndTabReducerTests {
     func presentSetsPresentation() {
         let result = PresentationReducer.reduce(StackState(), .present(sheet))
 
-        #expect(result == .changed(StackState(presentation: sheet), [.presented(sheet)]))
+        let changes: [NavigationChange] = [.presented(sheet)]
+        #expect(result == .changed(StackState(presentation: sheet), changes))
     }
 
     @Test
@@ -36,7 +37,8 @@ struct PresentationAndTabReducerTests {
     func dismissClearsPresentation() {
         let result = PresentationReducer.reduce(StackState(presentation: sheet), .dismiss)
 
-        #expect(result == .changed(StackState(), [.dismissed(FlowID("filter"))]))
+        let changes: [NavigationChange] = [.dismissed(FlowID("filter"))]
+        #expect(result == .changed(StackState(), changes))
     }
 
     @Test
@@ -46,68 +48,77 @@ struct PresentationAndTabReducerTests {
 
     @Test
     func presentationWorksOnTabState() {
-        let tabs = TabState(tabs: [MainTab.home, .shop], selection: .home)
+        let tabs = TabState(tabs: MainTab.homeAndShop, selection: .home)
 
         let result = PresentationReducer.reduce(tabs, .present(sheet))
 
-        let expected = TabState(tabs: [MainTab.home, .shop], selection: .home, presentation: sheet)
-        #expect(result == .changed(expected, [.presented(sheet)]))
+        let expected = TabState(tabs: MainTab.homeAndShop, selection: .home, presentation: sheet)
+        let changes: [NavigationChange] = [.presented(sheet)]
+        #expect(result == .changed(expected, changes))
     }
 
     @Test
     func selectTabChangesSelection() {
-        let state = TabState(tabs: [MainTab.home, .shop, .profile], selection: .home)
+        let state = TabState(tabs: MainTab.allCases, selection: .home)
 
         let result = TabReducer.reduce(state, .select(.shop))
 
-        let expected = TabState(tabs: [MainTab.home, .shop, .profile], selection: .shop)
-        #expect(result == .changed(expected, [.tabSelected(from: "home", to: "shop")]))
+        let expected = TabState(tabs: MainTab.allCases, selection: .shop)
+        let changes: [NavigationChange] = [.tabSelected(from: "home", to: "shop")]
+        #expect(result == .changed(expected, changes))
     }
 
     @Test
     func selectSelectedTabIsAlreadyThere() {
-        let state = TabState(tabs: [MainTab.home, .shop], selection: .home)
+        let state = TabState(tabs: MainTab.homeAndShop, selection: .home)
 
         #expect(TabReducer.reduce(state, .select(.home)) == .unchanged)
     }
 
     @Test
     func selectUnknownTabIsRejected() {
-        let state = TabState(tabs: [MainTab.home, .shop], selection: .home)
+        let state = TabState(tabs: MainTab.homeAndShop, selection: .home)
 
         #expect(TabReducer.reduce(state, .select(.profile)) == .rejected(.unknownTab("profile")))
     }
 
     @Test
     func setTabsKeepsSelectionWhenStillThere() {
-        let state = TabState(tabs: [MainTab.home, .shop], selection: .shop)
+        let state = TabState(tabs: MainTab.homeAndShop, selection: .shop)
 
-        let result = TabReducer.reduce(state, .setTabs([.shop, .profile]))
+        let newTabs: [MainTab] = [.shop, .profile]
 
-        #expect(result == .changed(TabState(tabs: [.shop, .profile], selection: .shop), []))
+        let result = TabReducer.reduce(state, .setTabs(newTabs))
+
+        let noChanges: [NavigationChange] = []
+        #expect(result == .changed(TabState(tabs: newTabs, selection: .shop), noChanges))
     }
 
     @Test
     func setTabsSelectsFirstWhenSelectionRemoved() {
-        let state = TabState(tabs: [MainTab.home, .shop], selection: .shop)
+        let state = TabState(tabs: MainTab.homeAndShop, selection: .shop)
 
-        let result = TabReducer.reduce(state, .setTabs([.home, .profile]))
+        let newTabs: [MainTab] = [.home, .profile]
 
-        let expected = TabState(tabs: [MainTab.home, .profile], selection: .home)
-        #expect(result == .changed(expected, [.tabSelected(from: "shop", to: "home")]))
+        let result = TabReducer.reduce(state, .setTabs(newTabs))
+
+        let expected = TabState(tabs: newTabs, selection: .home)
+        let changes: [NavigationChange] = [.tabSelected(from: "shop", to: "home")]
+        #expect(result == .changed(expected, changes))
     }
 
     @Test
     func setTabsToNoTabsIsRejected() {
-        let state = TabState(tabs: [MainTab.home], selection: .home)
+        let state = TabState(tabs: MainTab.homeAndShop, selection: .home)
+        let noTabs: [MainTab] = []
 
-        #expect(TabReducer.reduce(state, .setTabs([])) == .rejected(.noTabs))
+        #expect(TabReducer.reduce(state, .setTabs(noTabs)) == .rejected(.noTabs))
     }
 
     @Test
     func setSameTabsIsAlreadyThere() {
-        let state = TabState(tabs: [MainTab.home, .shop], selection: .home)
+        let state = TabState(tabs: MainTab.homeAndShop, selection: .home)
 
-        #expect(TabReducer.reduce(state, .setTabs([.home, .shop])) == .unchanged)
+        #expect(TabReducer.reduce(state, .setTabs(MainTab.homeAndShop)) == .unchanged)
     }
 }

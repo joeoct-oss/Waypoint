@@ -55,7 +55,8 @@ enum PresentationReducer {
         if let current = state.presentation {
             return .rejected(.alreadyPresenting(current.flow))
         }
-        return .changed(state.withPresentation(presentation), [.presented(presentation)])
+        let changes: [NavigationChange] = [.presented(presentation)]
+        return .changed(state.withPresentation(presentation), changes)
     }
 
     /// Clears the presentation.
@@ -63,6 +64,7 @@ enum PresentationReducer {
         guard let current = state.presentation else {
             return .unchanged
         }
-        return .changed(state.withPresentation(nil), [.dismissed(current.flow)])
+        let changes: [NavigationChange] = [.dismissed(current.flow)]
+        return .changed(state.withPresentation(nil), changes)
     }
 }

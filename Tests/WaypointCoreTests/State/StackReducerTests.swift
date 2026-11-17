@@ -24,110 +24,162 @@ struct StackReducerTests {
 
     @Test
     func pushAppendsRoute() {
-        let result = reduce([], .push(product1))
+        let empty: [AnyRoute] = []
+        let pushed = [product1]
 
-        #expect(result == .changed(StackState(path: [product1]), [.pushed([product1])]))
+        let result = reduce(empty, .push(product1))
+
+        let changes: [NavigationChange] = [.pushed(pushed)]
+        #expect(result == .changed(StackState(path: pushed), changes))
     }
 
     @Test
     func pushManyAppendsInOrder() {
-        let result = reduce([home], .pushMany([product1, product2]))
+        let path = [home]
+        let pushed = [product1, product2]
 
-        #expect(result == .changed(StackState(path: [home, product1, product2]), [.pushed([product1, product2])]))
+        let result = reduce(path, .pushMany(pushed))
+
+        let expected = StackState(path: path + pushed)
+        let changes: [NavigationChange] = [.pushed(pushed)]
+        #expect(result == .changed(expected, changes))
     }
 
     @Test
     func pushManyWithNoRoutesIsAlreadyThere() {
-        #expect(reduce([home], .pushMany([])) == .unchanged)
+        let path = [home]
+        let none: [AnyRoute] = []
+
+        #expect(reduce(path, .pushMany(none)) == .unchanged)
     }
 
     @Test
     func popRemovesLast() {
-        let result = reduce([home, product1], .pop(count: 1))
+        let kept = [home]
+        let popped = [product1]
 
-        #expect(result == .changed(StackState(path: [home]), [.popped([product1])]))
+        let result = reduce(kept + popped, .pop(count: 1))
+
+        let changes: [NavigationChange] = [.popped(popped)]
+        #expect(result == .changed(StackState(path: kept), changes))
     }
 
     @Test
     func popCountRemovesN() {
-        let result = reduce([home, product1, product2], .pop(count: 2))
+        let kept = [home]
+        let popped = [product1, product2]
 
-        #expect(result == .changed(StackState(path: [home]), [.popped([product1, product2])]))
+        let result = reduce(kept + popped, .pop(count: 2))
+
+        let changes: [NavigationChange] = [.popped(popped)]
+        #expect(result == .changed(StackState(path: kept), changes))
     }
 
     @Test
     func popOnEmptyPathIsRejected() {
-        #expect(reduce([], .pop(count: 1)) == .rejected(.emptyPath))
+        let empty: [AnyRoute] = []
+
+        #expect(reduce(empty, .pop(count: 1)) == .rejected(.emptyPath))
     }
 
     @Test
     func popTooManyIsRejectedWithCounts() {
-        #expect(reduce([home], .pop(count: 3)) == .rejected(.notEnoughRoutes(requested: 3, available: 1)))
+        let path = [home]
+
+        #expect(reduce(path, .pop(count: 3)) == .rejected(.notEnoughRoutes(requested: 3, available: 1)))
     }
 
     @Test
     func popZeroIsAlreadyThere() {
-        #expect(reduce([home], .pop(count: 0)) == .unchanged)
+        let path = [home]
+
+        #expect(reduce(path, .pop(count: 0)) == .unchanged)
     }
 
     @Test
     func popToRouteStopsAtLastMatch() {
-        let result = reduce([product1, settings, product1, product2], .popTo(product1))
+        let kept = [product1, settings, product1]
+        let popped = [product2]
 
-        #expect(result == .changed(StackState(path: [product1, settings, product1]), [.popped([product2])]))
+        let result = reduce(kept + popped, .popTo(product1))
+
+        let changes: [NavigationChange] = [.popped(popped)]
+        #expect(result == .changed(StackState(path: kept), changes))
     }
 
     @Test
     func popToMissingRouteIsRejected() {
-        #expect(reduce([home, product1], .popTo(settings)) == .rejected(.routeNotInPath(settings)))
+        let path = [home, product1]
+
+        #expect(reduce(path, .popTo(settings)) == .rejected(.routeNotInPath(settings)))
     }
 
     @Test
     func popToTopRouteIsAlreadyThere() {
-        #expect(reduce([home, product1], .popTo(product1)) == .unchanged)
+        let path = [home, product1]
+
+        #expect(reduce(path, .popTo(product1)) == .unchanged)
     }
 
     @Test
     func popToRootScreenPopsToRoot() {
-        let result = StackReducer.reduce(StackState(path: [product1, product2]), .popTo(home), rootRoute: home)
+        let popped = [product1, product2]
+        let empty: [AnyRoute] = []
 
-        #expect(result == .changed(StackState(path: []), [.popped([product1, product2])]))
+        let result = StackReducer.reduce(StackState(path: popped), .popTo(home), rootRoute: home)
+
+        let changes: [NavigationChange] = [.popped(popped)]
+        #expect(result == .changed(StackState(path: empty), changes))
     }
 
     @Test
     func popToRootEmptiesPath() {
-        let result = reduce([home, product1], .popToRoot)
+        let popped = [home, product1]
+        let empty: [AnyRoute] = []
 
-        #expect(result == .changed(StackState(path: []), [.popped([home, product1])]))
+        let result = reduce(popped, .popToRoot)
+
+        let changes: [NavigationChange] = [.popped(popped)]
+        #expect(result == .changed(StackState(path: empty), changes))
     }
 
     @Test
     func popToRootOnEmptyPathIsAlreadyThere() {
-        #expect(reduce([], .popToRoot) == .unchanged)
+        let empty: [AnyRoute] = []
+
+        #expect(reduce(empty, .popToRoot) == .unchanged)
     }
 
     @Test
     func setPathReplacesAndReportsReplaced() {
-        let result = reduce([home], .setPath([product1, product2]))
+        let old = [home]
+        let new = [product1, product2]
 
-        let expected = StackState(path: [product1, product2])
-        #expect(result == .changed(expected, [.replaced(from: [home], to: [product1, product2])]))
+        let result = reduce(old, .setPath(new))
+
+        let changes: [NavigationChange] = [.replaced(from: old, to: new)]
+        #expect(result == .changed(StackState(path: new), changes))
     }
 
     @Test
     func setPathToSamePathIsAlreadyThere() {
-        #expect(reduce([home, product1], .setPath([home, product1])) == .unchanged)
+        let path = [home, product1]
+
+        #expect(reduce(path, .setPath(path)) == .unchanged)
     }
 
     @Test
     func reducerKeepsPresentation() {
         let presentation = Presentation(style: .sheet, flow: FlowID("filter"))
-        let state = StackState(path: [home], presentation: presentation)
+        let path = [home]
+        let pushed = [product1]
+        let state = StackState(path: path, presentation: presentation)
 
         let result = StackReducer.reduce(state, .push(product1), rootRoute: nil)
 
-        let expected = StackState(path: [home, product1], presentation: presentation)
-        #expect(result == .changed(expected, [.pushed([product1])]))
+        let expected = StackState(path: path + pushed, presentation: presentation)
+        let changes: [NavigationChange] = [.pushed(pushed)]
+        #expect(result == .changed(expected, changes))
     }
 
     // Reduces a command on a stack with this path and no root route.
