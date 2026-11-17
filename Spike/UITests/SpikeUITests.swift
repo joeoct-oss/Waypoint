@@ -202,6 +202,39 @@ final class RapidTests: SpikeTestCase {
 
     func testRapidSwiftUI() { runRapid(tab: "SwiftUI A") }
     func testRapidUIKit() { runRapid(tab: "UIKit C") }
+
+    /// The second change is scheduled inside the app, 150 ms into the first animation,
+    /// so XCUITest's wait for idle can't separate the two.
+    func runMidTransition(tab: String) {
+        selectTab(tab)
+        tap("midPop")
+        settle()
+        record("pop 150 ms into pushToE")
+        XCTAssertEqual(navTitle, "D")
+        tap("popToRoot")
+        settle()
+        tap("midLink")
+        settle()
+        record("link 150 ms into pushToE")
+        XCTAssertEqual(navTitle, "B")
+        tap("popToRoot")
+        settle()
+        tap("midPresent")
+        settle()
+        record("present 150 ms into a push")
+        XCTAssertEqual(navTitle, "S")
+        swipeDownSheet()
+        record("after dismissing the sheet")
+        XCTAssertEqual(navTitle, "B")
+    }
+
+    func testMidTransitionSwiftUI() {
+        runMidTransition(tab: "SwiftUI A")
+    }
+
+    func testMidTransitionUIKit() {
+        runMidTransition(tab: "UIKit C")
+    }
 }
 
 final class ProbeTests: SpikeTestCase {

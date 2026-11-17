@@ -4,8 +4,20 @@ import SwiftUI
 /// the default mirrors the router into a NavigationPath with one navigationDestination per route type.
 let usesAnyRoutePath = ProcessInfo.processInfo.arguments.contains("-anyRoutePath")
 
+/// -noHold turns off the transition hold below, to show the iOS 17 problem.
+let usesTransitionHold = !ProcessInfo.processInfo.arguments.contains("-noHold")
+
 struct StackView: View {
     @Bindable var router: StackRouter
+
+    /// The path on screen. It follows `router.path`, but a change that lands while a
+    /// transition runs is held until the transition ends: iOS 17 drops it otherwise.
+    @State private var shown: [AnyRoute]?
+    @State private var lastApplied = Date.distantPast
+    @State private var pending = false
+
+    /// How long a push or pop transition runs.
+    private static let transition: TimeInterval = 0.6
 
     var body: some View {
         Group {
@@ -24,10 +36,38 @@ struct StackView: View {
                 }
             }
         }
+        .onChange(of: router.path) { _, _ in
+            scheduleApply()
+        }
         .sheet(item: sheetBinding) { presentation in
             switch presentation.host {
-            case .swiftUI: StackView(router: presentation.router)
-            case .uiKit: UIKitStack(router: presentation.router).ignoresSafeArea()
+            case .swiftUI:
+                StackView(router: presentation.router)
+            case .uiKit:
+                UIKitStack(router: presentation.router).ignoresSafeArea()
+            }
+        }
+    }
+
+    private var displayed: [AnyRoute] {
+        usesTransitionHold ? (shown ?? router.path) : router.path
+    }
+
+    /// Applies the router's path now, or when the running transition ends.
+    private func scheduleApply() {
+        guard usesTransitionHold else { return }
+        let wait = Self.transition - Date().timeIntervalSince(lastApplied)
+        if wait <= 0 {
+            shown = router.path
+            lastApplied = Date()
+        } else if !pending {
+            pending = true
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(wait))
+                pending = false
+                // The newest state, never a replay.
+                shown = router.path
+                lastApplied = Date()
             }
         }
     }
@@ -37,13 +77,16 @@ struct StackView: View {
         Binding(
             get: {
                 var path = NavigationPath()
-                for route in router.path { path.append(route.base) }
+                for route in displayed { path.append(route.base) }
                 return path
             },
             set: { newValue in
-                if newValue.count < router.path.count {
+                if newValue.count < displayed.count {
+                    if usesTransitionHold {
+                        shown = Array(displayed.prefix(newValue.count))
+                    }
                     router.rendererDidShow(count: newValue.count, source: "swiftui")
-                } else if newValue.count > router.path.count {
+                } else if newValue.count > displayed.count {
                     AppRouter.shared.note("unsupported user push (NavigationLink(value:))")
                 }
             }

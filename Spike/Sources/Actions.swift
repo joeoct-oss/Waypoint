@@ -26,5 +26,33 @@ struct SpikeAction: Identifiable {
         SpikeAction(id: "linkB") { _ in AppRouter.shared.open(URL(string: "spike://open?tab=b&path=B,C,D")!) },
         SpikeAction(id: "linkA") { _ in AppRouter.shared.open(URL(string: "spike://open?tab=a&path=B,C")!) },
         SpikeAction(id: "clearLog") { _ in AppRouter.shared.clearLog() },
+        // A second change lands 150 ms into the first change's animation.
+        SpikeAction(id: "midPop") { router in
+            all[1].run(router)
+            later {
+                router.pop()
+            }
+        },
+        SpikeAction(id: "midLink") { router in
+            all[1].run(router)
+            let tab = AppRouter.shared.selection.rawValue
+            later {
+                AppRouter.shared.open(URL(string: "spike://open?tab=\(tab)&path=B")!)
+            }
+        },
+        SpikeAction(id: "midPresent") { router in
+            all[0].run(router)
+            later {
+                router.present(.uiKit)
+            }
+        },
     ]
+
+    /// Runs `change` 150 ms from now on the main actor.
+    private static func later(_ change: @escaping @MainActor () -> Void) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(150))
+            change()
+        }
+    }
 }

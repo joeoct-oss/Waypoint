@@ -55,8 +55,10 @@ final class StackNavigationController: UINavigationController, UINavigationContr
         if let presentation = router.presented, presentedViewController == nil {
             let child: UIViewController =
                 switch presentation.host {
-                case .uiKit: StackNavigationController(router: presentation.router)
-                case .swiftUI: UIHostingController(rootView: StackView(router: presentation.router))
+                case .uiKit:
+                    StackNavigationController(router: presentation.router)
+                case .swiftUI:
+                    UIHostingController(rootView: StackView(router: presentation.router))
                 }
             child.presentationController?.delegate = self
             present(child, animated: animated)
