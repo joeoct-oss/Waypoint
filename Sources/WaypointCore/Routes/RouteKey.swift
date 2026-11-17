@@ -15,11 +15,10 @@
 /// `RouteKey` is not `ExpressibleByStringLiteral`, so a key is never mixed up with another string.
 ///
 /// Conformances:
-/// - `Hashable`, so the registry can look up a route type by its key.
-/// - `Codable`, so saved navigation state stores the key as a plain string.
-/// - `Sendable`, so keys can leave the main actor in events, logs and snapshots.
+/// - `NavigationValue`, so the registry can look up a route type by its key, saved state stores
+///   the key as a plain string, and keys can leave the main actor in events, logs and snapshots.
 /// - `NavigationDescribable`, so logs and test failures print it in the shared format.
-public struct RouteKey: Hashable, Codable, Sendable, NavigationDescribable {
+public struct RouteKey: NavigationValue, NavigationDescribable {
     /// The full key, such as `Shop.ProductRoute`.
     public let rawValue: String
 

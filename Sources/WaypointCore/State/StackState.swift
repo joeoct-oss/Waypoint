@@ -9,11 +9,8 @@
 /// The state of one navigation stack.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct StackState: Sendable, Equatable, Codable, NavigationDescribable {
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+public struct StackState: NavigationStateValue {
     /// The routes pushed above the stack's root screen, bottom first.
     ///
     /// The root screen belongs to the stack itself, not the path, as in

@@ -65,11 +65,9 @@ extension StackRouter {
 /// How a flow is presented.
 ///
 /// Conformances:
-/// - `Hashable`, so presentations can be compared.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescribable {
+public struct PresentationStyle: NavigationValue, NavigationDescribable {
     /// A sheet that uses the router's default sheet options. Large unless changed.
     public static var sheet: PresentationStyle { get }
     /// A full-screen cover.
@@ -98,11 +96,9 @@ Sheet sizes are plain values in the navigation state. That means a restored or d
 /// One size a sheet can rest at.
 ///
 /// Conformances:
-/// - `Hashable`, so detents can be compared and kept in sets.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
 /// - `CustomStringConvertible`, so presentation styles print their sizes as `[medium, large]`.
-public enum SheetDetent: Hashable, Codable, Sendable, CustomStringConvertible {
+public enum SheetDetent: NavigationValue, CustomStringConvertible {
     /// About half the available height.
     case medium
     /// The full available height.
@@ -120,10 +116,8 @@ public enum SheetDetent: Hashable, Codable, Sendable, CustomStringConvertible {
 /// Options for a sheet.
 ///
 /// Conformances:
-/// - `Hashable`, so presentations can be compared.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-public struct SheetOptions: Hashable, Codable, Sendable {
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+public struct SheetOptions: NavigationValue {
     /// A large sheet that the user can swipe away.
     public static var `default`: SheetOptions { get }
 

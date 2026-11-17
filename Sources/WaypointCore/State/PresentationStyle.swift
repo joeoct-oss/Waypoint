@@ -9,18 +9,15 @@
 /// How a flow is presented.
 ///
 /// Conformances:
-/// - `Hashable`, so presentations can be compared.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescribable {
+public struct PresentationStyle: NavigationValue, NavigationDescribable {
     /// The kinds of presentation.
     ///
     /// Conformances:
-    /// - `Hashable`, so styles can be compared.
-    /// - `Codable`, so the style is saved with the state.
-    /// - `Sendable`, so the style can leave the main actor.
-    private enum Kind: Hashable, Codable, Sendable {
+    /// - `NavigationValue`, so styles can be compared, saved with the state and sent off the main
+    ///   actor.
+    private enum Kind: NavigationValue {
         /// A sheet, with its own options or `nil` for the router's defaults.
         case sheet(SheetOptions?)
         /// A full-screen cover.

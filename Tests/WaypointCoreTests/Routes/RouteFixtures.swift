@@ -96,8 +96,8 @@ enum RouteFixtures {
     ///
     /// Conformances:
     /// - `Route`, so its key can be checked.
-    /// - `Value: Hashable & Codable & Sendable`, so the route stays a route.
-    struct Box<Value: Hashable & Codable & Sendable>: Route {
+    /// - `Value: NavigationValue`, so the route stays a route.
+    struct Box<Value: NavigationValue>: Route {
         /// The boxed value.
         let value: Value
     }

@@ -13,11 +13,9 @@
 /// own sheet sizes.
 ///
 /// Conformances:
-/// - `Hashable`, so detents can be compared and kept in sets.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
 /// - `CustomStringConvertible`, so presentation styles print their sizes as `[medium, large]`.
-public enum SheetDetent: Hashable, Codable, Sendable, CustomStringConvertible {
+public enum SheetDetent: NavigationValue, CustomStringConvertible {
     /// About half the available height.
     case medium
     /// The full available height.

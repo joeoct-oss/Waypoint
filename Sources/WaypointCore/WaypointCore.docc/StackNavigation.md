@@ -206,13 +206,13 @@ public struct NavigationTransaction {
     public var presented: NavigationTransaction? { get }
 
     /// Selects a tab, when the transaction's router is a tab container.
-    @discardableResult public func select<Tab: Hashable & Codable & Sendable>(
+    @discardableResult public func select<Tab: NavigationTab>(
         _ tab: Tab,
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
 
     /// The transaction on one tab's stack.
-    public func router<Tab: Hashable & Codable & Sendable>(for tab: Tab) -> NavigationTransaction
+    public func router<Tab: NavigationTab>(for tab: Tab) -> NavigationTransaction
 }
 ```
 
@@ -224,10 +224,8 @@ The tab methods are generic, so name the tab type once: `$0.select(MainTab.shop)
 /// What a navigation call did.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public enum NavigationOutcome: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public enum NavigationOutcome: NavigationRecord {
     /// The call did what it says.
     case applied
     /// The state already matched. Nothing changed and nothing is reported.
@@ -274,10 +272,8 @@ The built-in defaults change nothing unless the intent is clear. Popping more ro
 /// A navigation call that could not be done as asked.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public struct NavigationIssue: NavigationRecord {
     /// Conformances:
     /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
     /// - `Hashable`, because it is the key of `FallbackPolicy`.
@@ -317,10 +313,8 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
 /// also appears in logs and outcomes.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so outcomes that carry it can be compared in tests.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public enum NavigationFallback: NavigationRecord {
     /// Do nothing. The state stays as it was.
     case none
     /// Pop the stack to its root screen. On a tab container, pops the
@@ -349,10 +343,8 @@ public struct FallbackPolicy: Sendable {
 /// A call whose fallback also failed.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct NavigationFailure: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public struct NavigationFailure: NavigationRecord {
     /// Why the call failed.
     public let issue: NavigationIssue
     /// The fallback that ran and failed, or `nil` when no fallback ran.

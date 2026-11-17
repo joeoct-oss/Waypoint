@@ -208,9 +208,9 @@ public struct NavigationTransaction {
     /// container with that tab.
     ///
     /// Conformances:
-    /// - `Tab: Hashable & Codable & Sendable`, the tab types a `TabRouter` accepts.
+    /// - `Tab: NavigationTab`, the tab types a `TabRouter` accepts.
     @discardableResult
-    public func select<Tab: Hashable & Codable & Sendable>(
+    public func select<Tab: NavigationTab>(
         _ tab: Tab,
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
@@ -227,8 +227,8 @@ public struct NavigationTransaction {
     /// with that tab.
     ///
     /// Conformances:
-    /// - `Tab: Hashable & Codable & Sendable`, the tab types a `TabRouter` accepts.
-    public func router<Tab: Hashable & Codable & Sendable>(for tab: Tab) -> NavigationTransaction {
+    /// - `Tab: NavigationTab`, the tab types a `TabRouter` accepts.
+    public func router<Tab: NavigationTab>(for tab: Tab) -> NavigationTransaction {
         guard let tabs = target as? TabRouter<Tab> else {
             return NavigationTransaction(store: store, missing: notTabsDraft(tab))
         }
@@ -271,7 +271,7 @@ public struct NavigationTransaction {
     }
 
     /// Runs a step that needs a tab container of `Tab`.
-    private func onTabs<Tab: Hashable & Codable & Sendable>(
+    private func onTabs<Tab: NavigationTab>(
         of type: Tab.Type,
         _ context: FallbackContext,
         _ step: (TabRouter<Tab>) -> StepResult

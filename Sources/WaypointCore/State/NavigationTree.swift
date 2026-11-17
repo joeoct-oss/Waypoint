@@ -11,11 +11,8 @@
 /// Snapshots, deep link plans and debug output use this form.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribable {
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+public struct NavigationTree: NavigationStateValue {
     /// One flow in the tree.
     ///
     /// Conformances:

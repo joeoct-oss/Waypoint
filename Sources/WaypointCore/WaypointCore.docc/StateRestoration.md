@@ -61,10 +61,8 @@ public struct RestoreOptions: Sendable {
 /// What a restore did.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public enum RestoreOutcome: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public enum RestoreOutcome: NavigationRecord {
     /// Everything came back.
     case restored
     /// Part of the tree could not be restored. The issues say what was dropped.

@@ -18,10 +18,8 @@
 /// ```
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public enum NavigationOutcome: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public enum NavigationOutcome: NavigationRecord {
     /// The call did what it says.
     case applied
     /// The state already matched. Nothing changed and nothing is reported.

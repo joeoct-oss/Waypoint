@@ -20,10 +20,8 @@
 /// and outcomes.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so outcomes that carry it can be compared in tests.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public enum NavigationFallback: NavigationRecord {
     /// Do nothing. The outcome is `.failed`.
     case none
     /// Pop the stack to its root screen. On a tab container, pops the selected tab's stack.

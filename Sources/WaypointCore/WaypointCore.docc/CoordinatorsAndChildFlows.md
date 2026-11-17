@@ -46,7 +46,7 @@ public protocol StackCoordinator: AnyObject {
 /// - `AnyObject`, because a coordinator is one shared object that owns its router.
 @MainActor
 public protocol TabCoordinator: AnyObject {
-    associatedtype Tab: Hashable & Codable & Sendable
+    associatedtype Tab: NavigationTab
     var router: TabRouter<Tab> { get }
 }
 
@@ -77,7 +77,7 @@ An app with more than one root flow, such as login and the main tabs, keeps its 
 public protocol RootCoordinator: AnyObject {
     /// Conformances:
     /// - `Hashable`, `Codable` and `Sendable`, required by `RootRouter`.
-    associatedtype Root: Hashable & Codable & Sendable
+    associatedtype Root: NavigationRoot
 
     /// The router this coordinator owns.
     var router: RootRouter<Root> { get }

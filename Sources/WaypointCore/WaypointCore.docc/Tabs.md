@@ -9,11 +9,10 @@ Keep one stack per tab, and switch tabs from code or a deep link.
 ```swift
 // Conformances:
 // - `String` raw value: gives each case a readable name in logs and saved state.
-// - `Hashable`, required by `TabRouter`, which selects and compares tabs.
-// - `Codable`, required by `TabRouter`, which saves and restores the selection with the tree.
-// - `Sendable`, required by `TabRouter`, so events that name the tab can leave the main actor.
+// - `NavigationTab`, so `TabRouter` can select and compare tabs, save and restore the selection,
+//   and name tabs in events off the main actor.
 // - `CaseIterable`, so `TabRouter` shows every tab without a list.
-enum MainTab: String, Hashable, Codable, Sendable, CaseIterable {
+enum MainTab: String, NavigationTab, CaseIterable {
     case home
     case shop
     case profile
@@ -24,7 +23,7 @@ tabs.select(.shop)
 tabs.router(for: .shop).push(ProductRoute(id: 42))
 ```
 
-Tab types need `Hashable`, `Codable` and `Sendable`. See <doc:WhyTheseConformances>.
+Tab types conform to `NavigationTab`, which is `Hashable`, `Codable` and `Sendable` under one name. See <doc:WhyTheseConformances>.
 
 ### Choosing the tabs
 
@@ -44,17 +43,22 @@ When the user taps a tab, the renderer reports it, and the selection changes lik
 Navigation methods return a `NavigationOutcome` and take an optional fallback, file and line, left out here.
 
 ```swift
+/// A tab of a tab container, usually an app enum.
+///
+/// Conformances:
+/// - `NavigationValue`, so tabs can be selected and compared, the selection is saved and
+///   restored, and tabs are named in events off the main actor.
+public protocol NavigationTab: NavigationValue { }
+
 /// The owner of a tab container.
 ///
 /// `Tab` is usually an app enum. Its raw value or `Codable` form is what
 /// snapshots and logs show.
 ///
 /// Conformances:
-/// - `Tab: Hashable`, to select and compare tabs.
-/// - `Tab: Codable`, so the selection is saved and restored.
-/// - `Tab: Sendable`, so tab events can leave the main actor.
+/// - `Tab: NavigationTab`, the app's tab type.
 @MainActor @Observable
-public final class TabRouter<Tab: Hashable & Codable & Sendable> {
+public final class TabRouter<Tab: NavigationTab> {
     /// Whether tapping the selected tab pops its stack to the root. Default: `true`.
     public let popsToRootOnReselect: Bool
 

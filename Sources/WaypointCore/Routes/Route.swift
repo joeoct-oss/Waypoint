@@ -25,10 +25,9 @@
 /// key. See ``RouteKey``.
 ///
 /// Conformances:
-/// - `Hashable`, so the router can compare routes and find them in a path.
-/// - `Codable`, so routes can be saved, restored and built from links.
-/// - `Sendable`, so routes can be logged and tracked off the main actor.
-public protocol Route: Hashable, Codable, Sendable {
+/// - `NavigationValue`, so the router can compare routes and find them in a path, routes can be
+///   saved, restored and built from links, and they can be logged and tracked off the main actor.
+public protocol Route: NavigationValue {
     /// The flow this route belongs to.
     ///
     /// Leave it out and the route can be pushed onto any stack. Set it to restrict the route to

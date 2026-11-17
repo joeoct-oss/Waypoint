@@ -12,10 +12,8 @@
 /// ``PresentationDefaults``, and a single call can still choose its own options.
 ///
 /// Conformances:
-/// - `Hashable`, so presentations can be compared.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-public struct SheetOptions: Hashable, Codable, Sendable {
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+public struct SheetOptions: NavigationValue {
     /// A large sheet that the user can swipe away.
     public static var `default`: SheetOptions {
         SheetOptions()

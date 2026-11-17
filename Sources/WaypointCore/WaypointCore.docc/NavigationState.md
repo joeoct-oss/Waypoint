@@ -22,11 +22,8 @@ router.state.presentation // nil
 /// The state of one navigation stack.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct StackState: Sendable, Equatable, Codable, NavigationDescribable {
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+public struct StackState: NavigationStateValue {
     /// The routes pushed above the stack's root screen, bottom first.
     ///
     /// The root screen belongs to the stack itself, not the path, as in
@@ -46,11 +43,8 @@ A flow presents at most one child flow at a time. The presented flow can present
 /// A child flow shown modally above its parent.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct Presentation: Sendable, Equatable, Codable, NavigationDescribable {
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+public struct Presentation: NavigationStateValue {
     /// How the flow is shown.
     public let style: PresentationStyle
 
@@ -71,14 +65,9 @@ public struct Presentation: Sendable, Equatable, Codable, NavigationDescribable 
 /// `Tab` is usually an app enum, such as a `MainTab` with `home`, `shop` and `profile` cases.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `Tab: Hashable`, to select and compare tabs.
-/// - `Tab: Codable`, so the selection is saved and restored.
-/// - `Tab: Sendable`, so tab events can leave the main actor.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct TabState<Tab: Hashable & Codable & Sendable>: Sendable, Equatable, Codable, NavigationDescribable {
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+/// - `Tab: NavigationTab`, the app's tab type.
+public struct TabState<Tab: NavigationTab>: NavigationStateValue {
     /// The tabs, in display order.
     public let tabs: [Tab]
 
@@ -100,11 +89,9 @@ Each router has a stable `FlowID`. The erased form of the whole app's state is a
 /// Stays the same across restoration, so events and snapshots can refer to it.
 ///
 /// Conformances:
-/// - `Hashable`, to find flows in the tree and key dictionaries by flow.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct FlowID: Hashable, Codable, Sendable, NavigationDescribable {
+public struct FlowID: NavigationValue, NavigationDescribable {
     /// The flow's name. Saved as a plain string.
     public let name: String
 
@@ -115,11 +102,8 @@ public struct FlowID: Hashable, Codable, Sendable, NavigationDescribable {
 /// The erased navigation state of every flow, from the root down.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `Codable`, so it can be saved, restored and logged.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribable {
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+public struct NavigationTree: NavigationStateValue {
     /// Conformances:
     /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
     /// - `Equatable`, so tests and the router can compare values.
@@ -144,10 +128,8 @@ Every applied change is described by a value. Routers emit them as events, and t
 /// One change to the navigation state.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public enum NavigationChange: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public enum NavigationChange: NavigationRecord {
     case pushed([AnyRoute])
     case popped([AnyRoute])
     case replaced(from: [AnyRoute], to: [AnyRoute])

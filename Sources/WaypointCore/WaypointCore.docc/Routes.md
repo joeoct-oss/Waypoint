@@ -45,10 +45,8 @@ enum CheckoutStep: Route {
 /// `Codable` is required so routes can be restored and deep linked into.
 ///
 /// Conformances:
-/// - `Hashable`, so the router can compare routes and find them in a path.
-/// - `Codable`, so routes can be saved, restored and built from links.
-/// - `Sendable`, so routes can be logged and tracked off the main actor.
-public protocol Route: Hashable, Codable, Sendable {
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+public protocol Route: NavigationValue {
     /// The flow this route belongs to.
     ///
     /// Leave it out and the route can be pushed onto any stack. Set it to
@@ -114,11 +112,9 @@ Each one fails loudly in development, never crashes in release, and fails the te
 /// The stable name of a route type, used when a route is saved, decoded or logged.
 ///
 /// Conformances:
-/// - `Hashable`, so the registry can look up a route type by its key.
-/// - `Codable`, so saved navigation state stores the key as a plain string.
-/// - `Sendable`, so keys can leave the main actor in events, logs and snapshots.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
 /// - `NavigationDescribable`, so logs and test failures print it in the shared format.
-public struct RouteKey: Hashable, Codable, Sendable, NavigationDescribable {
+public struct RouteKey: NavigationValue, NavigationDescribable {
     /// The full key, such as `Shop.ProductRoute`.
     public var rawValue: String { get }
 
@@ -182,11 +178,9 @@ Routers, state, events and snapshots hold routes of many types, so they store th
 /// A route of any type, with its stable key.
 ///
 /// Conformances:
-/// - `Hashable`, so paths can be compared and searched.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Codable`, so navigation state that holds it can be saved and restored.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct AnyRoute: Hashable, Sendable, Codable, NavigationDescribable {
+public struct AnyRoute: NavigationValue, NavigationDescribable {
     /// The wrapped route's key.
     public var routeKey: RouteKey { get }
 
@@ -261,10 +255,8 @@ extension CodingUserInfoKey {
 ///
 /// Conformances:
 /// - `Error`, so it can be thrown.
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public enum RouteDecodingError: Error, Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public enum RouteDecodingError: Error, NavigationRecord {
     case unknownRouteKey(RouteKey)
     case invalidPayload(RouteKey)
     case duplicateRouteKey(RouteKey, types: [String])

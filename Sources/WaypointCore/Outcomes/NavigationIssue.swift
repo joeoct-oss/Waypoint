@@ -14,10 +14,8 @@
 /// Two issues are equal when every field is equal, including the file and line.
 ///
 /// Conformances:
-/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
-public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+public struct NavigationIssue: NavigationRecord {
     /// What kind of mistake an issue is.
     ///
     /// Conformances:

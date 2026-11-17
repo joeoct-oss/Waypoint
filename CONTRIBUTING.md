@@ -112,14 +112,15 @@ swift-format formats the code and SwiftLint enforces the rules. Once the lint se
 
   ```swift
   // Conformances:
-  // - `Hashable`, required by `RootRouter`, which compares roots to know when to switch.
-  // - `Codable`, required by `RootRouter`, which saves and restores the current root with the tree.
-  // - `Sendable`, required by `RootRouter`, so events that name the root can leave the main actor.
-  enum AppRoot: Hashable, Codable, Sendable {
+  // - `NavigationRoot`, so `RootRouter` can compare roots to know when to switch, save and
+  //   restore the current root, and name it in events off the main actor.
+  enum AppRoot: NavigationRoot {
       case login
       case main
   }
   ```
+
+  A set that many types share is listed by its one name: `NavigationValue`, `NavigationRecord` or `NavigationStateValue` for Waypoint's own value types, and `Route`, `NavigationTab` or `NavigationRoot` for an app's types. The set's own doc comment gives the reason for each part. See the "Why these conformances" article.
 
 - **Public symbols are documented in DocC.** A change to the public API updates its article too.
 
