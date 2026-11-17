@@ -9,9 +9,9 @@
 import SwiftUI
 
 // The app's navigation starts here (decision 0009). Each window makes its own app coordinator. It owns
-// the root: the splash, then the sign-in flow or the main tabs, and it switches between them when a flow
-// reports that the reader signed in or out. Screens report, coordinators decide: `make…Flow()` builds a
-// flow, `show…()` navigates.
+// the root: the splash, then the accounts flow or the main tabs, and it switches between them when a flow
+// reports that the reader signed in, chose to browse as a guest, or signed out. Screens report,
+// coordinators decide: `make…Flow()` builds a flow, `show…()` navigates.
 //
 // Until the SwiftUI renderer is built, coordinators keep plain SwiftUI state (a root, a path, a selected
 // tab, a presented sheet). Each piece is the seam for one Waypoint router: the root becomes a root router,
@@ -45,22 +45,23 @@ final class AppCoordinator {
     }
 
     func showStartFlow() {
-        if launch.startsSignedIn {
-            showMainFlow()
+        if let membership = launch.startMembership {
+            showMainFlow(as: membership)
         } else {
             showAuthFlow()
         }
     }
 
     func showAuthFlow() {
-        let auth = AuthCoordinator(onSignedIn: { [weak self] in self?.showMainFlow() })
+        let auth = AuthCoordinator(onFinish: { [weak self] in self?.showMainFlow(as: $0) })
         root = .auth(auth)
     }
 
-    func showMainFlow() {
+    func showMainFlow(as membership: Membership) {
         let main = MainCoordinator(
+            membership: membership,
             launch: launch,
-            onSignOut: { [weak self] in self?.showAuthFlow() }
+            onShowAccounts: { [weak self] in self?.showAuthFlow() }
         )
         root = .main(main)
     }

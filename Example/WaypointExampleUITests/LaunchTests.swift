@@ -17,22 +17,32 @@ final class LaunchTests: XCTestCase {
     private static let shopTitle = "Shop"
     private static let accountTitle = "Account"
 
-    func testLaunchShowsSplashThenSignIn() {
+    func testLaunchShowsSplashThenWelcome() {
         let app = ExampleApp.launch()
 
         let splash = app.descendants(matching: .any)[Identifiers.splash]
         XCTAssertTrue(splash.waitForExistence(timeout: Self.timeout))
-        XCTAssertTrue(app.buttons[Identifiers.signInButton].waitForExistence(timeout: Self.timeout))
+        XCTAssertTrue(app.buttons[Identifiers.welcomeSignIn].waitForExistence(timeout: Self.timeout))
     }
 
     func testSignInLandsOnShop() {
         let app = ExampleApp.launch()
-        let signIn = app.buttons[Identifiers.signInButton]
-        XCTAssertTrue(signIn.waitForExistence(timeout: Self.timeout))
 
-        signIn.tap()
+        tapWhenReady(app.buttons[Identifiers.welcomeSignIn])
+        tapWhenReady(app.buttons[Identifiers.signInButton])
 
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: Self.timeout))
+        XCTAssertTrue(app.tabBars.buttons[Self.accountTitle].exists)
+    }
+
+    func testGuestSeesShopAndSearchOnly() {
+        let app = ExampleApp.launch()
+
+        tapWhenReady(app.buttons[Identifiers.welcomeGuest])
+
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: Self.timeout))
+        XCTAssertFalse(app.tabBars.buttons[Self.accountTitle].exists)
+        XCTAssertTrue(app.buttons[Identifiers.guestSignIn].exists)
     }
 
     func testSettingsOpensNavigationLab() {

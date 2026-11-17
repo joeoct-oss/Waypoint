@@ -8,8 +8,9 @@
 
 import SwiftUI
 
-// A stack of products: the shop or search at the root, a product pushed above it, and the filter sheet
-// presented over the shop. Add to cart reports to the main tabs, which open Cart.
+// A stack of products: the shop or search at the root and a product pushed above it, with the filters
+// and the wish list as sheets. Add to cart reports to the main tabs, which open Cart; a guest's Sign in
+// reports to the app coordinator, which switches to the accounts flow.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the path or the sheet changes.
@@ -17,21 +18,28 @@ import SwiftUI
 @Observable
 final class ProductsCoordinator {
     private let start: ProductsStart
+    private let membership: Membership
     private let onShowCart: () -> Void
+    private let onShowAccounts: () -> Void
     // `var` because `showProduct(_:)` pushes onto it, and `syncPath(_:)` takes the pops the stack makes
     // itself.
     private(set) var path: [ProductScreen]
-    // `var` because `showFilters()` and `dismissFilters()` change it, and `syncFilters(_:)` takes a swipe down.
-    private(set) var isShowingFilters: Bool
+    // `var` because `showFilters()`, `showWishlist()` and `dismissSheet()` change it, and `syncSheet(_:)`
+    // takes a swipe down.
+    private(set) var presentedSheet: ProductSheet?
 
     init(
         start: ProductsStart,
-        onShowCart: @escaping () -> Void
+        membership: Membership,
+        onShowCart: @escaping () -> Void,
+        onShowAccounts: @escaping () -> Void
     ) {
         self.start = start
+        self.membership = membership
         self.onShowCart = onShowCart
+        self.onShowAccounts = onShowAccounts
         path = []
-        isShowingFilters = false
+        presentedSheet = nil
     }
 
     @ViewBuilder
@@ -52,8 +60,14 @@ final class ProductsCoordinator {
         }
     }
 
-    func makeFiltersFlow() -> some View {
-        FilterView(onApply: { self.dismissFilters() })
+    @ViewBuilder
+    func makeSheetFlow(for sheet: ProductSheet) -> some View {
+        switch sheet {
+        case .filters:
+            makeFiltersFlow()
+        case .wishlist:
+            makeWishlistFlow()
+        }
     }
 
     func showProduct(_ product: Product) {
@@ -61,29 +75,39 @@ final class ProductsCoordinator {
     }
 
     func showFilters() {
-        isShowingFilters = true
+        presentedSheet = .filters
+    }
+
+    func showWishlist() {
+        presentedSheet = .wishlist
     }
 
     func showCart() {
         onShowCart()
     }
 
-    func dismissFilters() {
-        isShowingFilters = false
+    func showAccounts() {
+        onShowAccounts()
+    }
+
+    func dismissSheet() {
+        presentedSheet = nil
     }
 
     func syncPath(_ newPath: [ProductScreen]) {
         path = newPath
     }
 
-    func syncFilters(_ isShowing: Bool) {
-        isShowingFilters = isShowing
+    func syncSheet(_ sheet: ProductSheet?) {
+        presentedSheet = sheet
     }
 
     private func makeShopFlow() -> some View {
         ProductListView(
+            showsSignIn: membership == .guest,
             onSelect: { self.showProduct($0) },
-            onFilter: { self.showFilters() }
+            onFilter: { self.showFilters() },
+            onSignIn: { self.showAccounts() }
         )
         .screenChrome(
             title: MainTab.shop.title,
@@ -101,10 +125,23 @@ final class ProductsCoordinator {
             )
     }
 
+    private func makeFiltersFlow() -> some View {
+        FilterView(onApply: { self.dismissSheet() })
+    }
+
+    private func makeWishlistFlow() -> some View {
+        WishlistView(
+            products: Product.sampleWishlist,
+            onDone: { self.dismissSheet() }
+        )
+    }
+
     private func makeProductFlow(_ product: Product) -> some View {
         ProductDetailView(
             product: product,
-            onAddToCart: { self.showCart() }
+            canBuy: membership == .member,
+            onAddToCart: { self.showCart() },
+            onSave: { self.showWishlist() }
         )
         .screenChrome(
             title: product.name,

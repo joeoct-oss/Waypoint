@@ -8,10 +8,11 @@
 
 import Foundation
 
-// What the launch arguments ask for: start signed in, open the Navigation Lab, or open one of its entries.
+// What the launch arguments ask for: start signed in or as a guest, open the Navigation Lab, or open one of
+// its entries.
 // UI tests use them to start a journey or open any Lab entry directly.
 struct LaunchOptions {
-    let startsSignedIn: Bool
+    let startMembership: Membership?
     let opensLab: Bool
     let branch: Branch?
     let entry: FlowEntry?
@@ -21,7 +22,10 @@ struct LaunchOptions {
         let flow = Self.value(ExampleFlow.self, for: .flow, in: defaults)
         let kind = Self.value(FlowKind.self, for: .kind, in: defaults)
         let opensLab = defaults.bool(forKey: LaunchArgument.lab.rawValue) || branch != nil
-        startsSignedIn = defaults.bool(forKey: LaunchArgument.signedIn.rawValue) || opensLab
+        startMembership = Self.makeMembership(
+            signedIn: defaults.bool(forKey: LaunchArgument.signedIn.rawValue) || opensLab,
+            guest: defaults.bool(forKey: LaunchArgument.guest.rawValue)
+        )
         self.opensLab = opensLab
         self.branch = branch
         entry = Self.makeEntry(
@@ -39,6 +43,16 @@ struct LaunchOptions {
         in defaults: UserDefaults
     ) -> Value? where Value.RawValue == String {
         defaults.string(forKey: argument.rawValue).flatMap(Value.init(rawValue:))
+    }
+
+    private static func makeMembership(
+        signedIn: Bool,
+        guest: Bool
+    ) -> Membership? {
+        if signedIn {
+            return .member
+        }
+        return guest ? .guest : nil
     }
 
     private static func makeEntry(

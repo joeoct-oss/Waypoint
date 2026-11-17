@@ -8,10 +8,17 @@
 
 import SwiftUI
 
-// The main tabs: Shop, Search, Cart and Account, each with its own coordinator and stack. The main
-// coordinator makes them once and keeps them, so each tab keeps its place while the reader switches tabs.
+// The main tabs: Shop, Search, Cart and Account, each with its own coordinator and stack. Guests see only
+// Shop and Search, with Sign in in the shop's bar. The main coordinator makes the tabs once and keeps them,
+// so each tab keeps its place while the reader switches tabs.
 @MainActor
 final class MainCoordinator {
+    private static let guestTabs: [MainTab] = [
+        .shop,
+        .search,
+    ]
+
+    let visibleTabs: [MainTab]
     let tabs: TabSelection
     let shop: ProductsCoordinator
     let search: ProductsCoordinator
@@ -19,23 +26,29 @@ final class MainCoordinator {
     let account: AccountCoordinator
 
     init(
+        membership: Membership,
         launch: LaunchOptions,
-        onSignOut: @escaping () -> Void
+        onShowAccounts: @escaping () -> Void
     ) {
         let tabs = TabSelection(selected: launch.opensLab ? .account : .shop)
+        visibleTabs = membership == .guest ? Self.guestTabs : MainTab.allCases
         self.tabs = tabs
         shop = ProductsCoordinator(
             start: .browse,
-            onShowCart: { tabs.select(.cart) }
+            membership: membership,
+            onShowCart: { tabs.select(.cart) },
+            onShowAccounts: onShowAccounts
         )
         search = ProductsCoordinator(
             start: .search,
-            onShowCart: { tabs.select(.cart) }
+            membership: membership,
+            onShowCart: { tabs.select(.cart) },
+            onShowAccounts: onShowAccounts
         )
         cart = CartCoordinator(onShopMore: { tabs.select(.shop) })
         account = AccountCoordinator(
             launch: launch,
-            onSignOut: onSignOut
+            onSignOut: onShowAccounts
         )
     }
 

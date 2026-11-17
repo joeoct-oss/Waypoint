@@ -20,10 +20,10 @@ struct SplashView: View {
             Image(systemName: "location.north.circle.fill")
                 .font(.system(size: 64))
                 .foregroundStyle(Palette.accent.color)
-            Text("Waypoint")
+            Text("Orbit Shop")
                 .font(Typography.display)
                 .foregroundStyle(Palette.text.color)
-            Text("Connect every screen. Know every route.")
+            Text("A Waypoint example app")
                 .font(Typography.callout)
                 .foregroundStyle(Palette.textSecondary.color)
         }

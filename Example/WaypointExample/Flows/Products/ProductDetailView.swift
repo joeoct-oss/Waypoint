@@ -8,10 +8,13 @@
 
 import SwiftUI
 
-// A product: its picture, name, price and description, with Add to cart.
+// A product: its picture, name, price and description, with Save to the wish list in the bar and Add to
+// cart for signed-in readers.
 struct ProductDetailView: View {
     let product: Product
+    let canBuy: Bool
     let onAddToCart: () -> Void
+    let onSave: () -> Void
 
     var body: some View {
         ScrollView {
@@ -26,7 +29,21 @@ struct ProductDetailView: View {
             }
             .padding(Spacing.large)
         }
-        .safeAreaInset(edge: .bottom) { addButton }
+        .safeAreaInset(edge: .bottom) { bottomBar }
+        .toolbar { saveItem }
+    }
+
+    @ViewBuilder
+    private var bottomBar: some View {
+        if canBuy {
+            addButton
+        }
+    }
+
+    private var saveItem: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button("Save", systemImage: "heart", action: onSave)
+        }
     }
 
     private var picture: some View {

@@ -11,9 +11,12 @@
 // `placeholder.<flow>.<kind>` for the screen it opens.
 enum Identifiers {
     static let splash = "splash"
+    static let welcomeSignIn = "auth.welcome.signIn"
+    static let welcomeCreateAccount = "auth.welcome.createAccount"
+    static let welcomeGuest = "auth.welcome.guest"
     static let signIn = "auth.signIn"
     static let signInButton = "auth.signIn.submit"
-    static let createAccountButton = "auth.createAccount"
+    static let guestSignIn = "shop.signIn"
     static let mainTabs = "main.tabs"
     static let productList = "shop.products"
     static let settingsButton = "account.settings"

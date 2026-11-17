@@ -8,11 +8,13 @@
 
 import SwiftUI
 
-// Shop: every product, with a filter button in the navigation bar. The screen reports the product or the
-// filter the reader picks.
+// Shop: every product, with Filter in the navigation bar, and Sign in for guests. The screen reports each
+// choice.
 struct ProductListView: View {
+    let showsSignIn: Bool
     let onSelect: (Product) -> Void
     let onFilter: () -> Void
+    let onSignIn: () -> Void
 
     var body: some View {
         List(Product.all) { product in
@@ -20,12 +22,19 @@ struct ProductListView: View {
         }
         .exampleList()
         .accessibilityIdentifier(Identifiers.productList)
-        .toolbar { filterItem }
+        .toolbar { toolbarItems }
     }
 
-    private var filterItem: some ToolbarContent {
+    @ToolbarContentBuilder
+    private var toolbarItems: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Button("Filter", systemImage: "line.3.horizontal.decrease", action: onFilter)
+        }
+        if showsSignIn {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Sign in", action: onSignIn)
+                    .accessibilityIdentifier(Identifiers.guestSignIn)
+            }
         }
     }
 }

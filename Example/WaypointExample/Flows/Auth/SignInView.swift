@@ -8,11 +8,10 @@
 
 import SwiftUI
 
-// Sign in: email and password, with ways to create an account or reset the password. The screen reports
-// each choice, and the sign-in coordinator decides where it goes. Any email and password sign in.
+// Sign in: email and password, with a way to reset the password. The screen reports each choice, and the
+// accounts coordinator decides where it goes. Any email and password sign in.
 struct SignInView: View {
     let onSignIn: () -> Void
-    let onCreateAccount: () -> Void
     let onForgotPassword: () -> Void
 
     @State private var email = ""
@@ -32,8 +31,6 @@ struct SignInView: View {
             }
             Section {
                 Button("Forgot password?", action: onForgotPassword)
-                Button("Create an account", action: onCreateAccount)
-                    .accessibilityIdentifier(Identifiers.createAccountButton)
             }
         }
         .scrollContentBackground(.hidden)

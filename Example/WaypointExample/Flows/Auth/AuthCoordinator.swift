@@ -8,97 +8,112 @@
 
 import SwiftUI
 
-// The sign-in flow: sign in at the root, with create account and forgot password pushed above it. When
-// the reader signs in or creates an account, the flow reports it and the app coordinator switches the root.
+// The accounts flow: Welcome at the root, with Sign in and the three steps of Create account pushed above
+// it, and Forgot password as a sheet over Sign in. Every way out (signing in, creating an account or
+// continuing as a guest) reports to the app coordinator, which switches the root once.
 //
 // Conformances:
-// - `Observable` (from `@Observable`), so `AuthFlowView` redraws when the path changes.
+// - `Observable` (from `@Observable`), so `AuthFlowView` redraws when the path or the sheet changes.
 @MainActor
 @Observable
 final class AuthCoordinator {
-    private let onSignedIn: () -> Void
-    // `var` because `showCreateAccount()` and `showForgotPassword()` push onto it, and `syncPath(_:)` takes
-    // the pops the stack makes itself.
+    private let onFinish: (Membership) -> Void
+    // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the stack makes
+    // itself.
     private(set) var path: [AuthScreen]
+    // `var` because `showForgotPassword()` and `dismissForgotPassword()` change it, and
+    // `syncForgotPassword(_:)` takes a swipe down.
+    private(set) var isShowingForgotPassword: Bool
 
-    init(onSignedIn: @escaping () -> Void) {
-        self.onSignedIn = onSignedIn
+    init(onFinish: @escaping (Membership) -> Void) {
+        self.onFinish = onFinish
         path = []
+        isShowingForgotPassword = false
     }
 
-    func makeSignInFlow() -> some View {
-        SignInView(
-            onSignIn: { self.finishSignIn() },
+    func makeWelcomeFlow() -> some View {
+        WelcomeView(
             onCreateAccount: { self.showCreateAccount() },
-            onForgotPassword: { self.showForgotPassword() }
+            onSignIn: { self.showSignIn() },
+            onContinueAsGuest: { self.finish(as: .guest) }
         )
-        .screenChrome(
-            title: "Sign in",
-            kind: nil,
-            trail: AuthTrail.signIn
-        )
+        .background(Palette.background.color)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
-    @ViewBuilder
     func makeDestination(for screen: AuthScreen) -> some View {
-        switch screen {
-        case .createAccount:
-            makeCreateAccountFlow()
-        case .forgotPassword:
-            makeForgotPasswordFlow()
-        }
+        makeScreen(for: screen)
+            .screenChrome(
+                title: screen.title,
+                kind: nil,
+                trail: screen.trail
+            )
     }
 
-    func showCreateAccount() {
-        path.append(.createAccount)
-    }
-
-    func showForgotPassword() {
-        path.append(.forgotPassword)
+    func makeForgotPasswordFlow() -> some View {
+        ForgotPasswordView(
+            onSent: { self.dismissForgotPassword() },
+            onCancel: { self.dismissForgotPassword() }
+        )
     }
 
     func showSignIn() {
-        path = []
+        path.append(.signIn)
     }
 
-    func finishSignIn() {
-        onSignedIn()
+    func showCreateAccount() {
+        path.append(.createAccount(.name))
+    }
+
+    func showForgotPassword() {
+        isShowingForgotPassword = true
+    }
+
+    func finish(as membership: Membership) {
+        onFinish(membership)
+    }
+
+    func dismissForgotPassword() {
+        isShowingForgotPassword = false
     }
 
     func syncPath(_ newPath: [AuthScreen]) {
         path = newPath
     }
 
-    private func makeCreateAccountFlow() -> some View {
-        CreateAccountView(onCreate: { self.finishSignIn() })
-            .screenChrome(
-                title: "Create account",
-                kind: nil,
-                trail: AuthTrail.createAccount
-            )
+    func syncForgotPassword(_ isShowing: Bool) {
+        isShowingForgotPassword = isShowing
     }
 
-    private func makeForgotPasswordFlow() -> some View {
-        ForgotPasswordView(onSent: { self.showSignIn() })
-            .screenChrome(
-                title: "Reset password",
-                kind: nil,
-                trail: AuthTrail.forgotPassword
-            )
+    @ViewBuilder
+    private func makeScreen(for screen: AuthScreen) -> some View {
+        switch screen {
+        case .signIn:
+            makeSignInFlow()
+        case .createAccount(let step):
+            makeCreateAccountFlow(step)
+        }
     }
-}
 
-// The route trail for each sign-in screen.
-enum AuthTrail {
-    static let signIn = [
-        "sign in",
-    ]
-    static let createAccount = [
-        "sign in",
-        "create account",
-    ]
-    static let forgotPassword = [
-        "sign in",
-        "reset password",
-    ]
+    private func makeSignInFlow() -> some View {
+        SignInView(
+            onSignIn: { self.finish(as: .member) },
+            onForgotPassword: { self.showForgotPassword() }
+        )
+    }
+
+    private func makeCreateAccountFlow(_ step: CreateAccountStep) -> some View {
+        CreateAccountStepView(
+            step: step,
+            onContinue: { self.continueCreatingAccount(after: step) }
+        )
+    }
+
+    private func continueCreatingAccount(after step: CreateAccountStep) {
+        guard let next = step.next else {
+            finish(as: .member)
+            return
+        }
+        path.append(.createAccount(next))
+    }
 }

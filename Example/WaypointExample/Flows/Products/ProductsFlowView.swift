@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-// Draws a products stack and its filter sheet from their coordinator.
+// Draws a products stack and its sheets from their coordinator.
 struct ProductsFlowView: View {
     let products: ProductsCoordinator
 
@@ -17,8 +17,8 @@ struct ProductsFlowView: View {
             products.makeRootFlow()
                 .navigationDestination(for: ProductScreen.self) { products.makeDestination(for: $0) }
         }
-        .sheet(isPresented: Binding(reading: products.isShowingFilters, writing: products.syncFilters)) {
-            products.makeFiltersFlow()
+        .sheet(item: Binding(reading: products.presentedSheet, writing: products.syncSheet)) {
+            products.makeSheetFlow(for: $0)
         }
     }
 }

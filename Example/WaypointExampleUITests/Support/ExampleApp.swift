@@ -8,7 +8,7 @@
 
 import XCTest
 
-// Launches the example app for a UI test: from the splash, already signed in, or straight into the
+// Launches the example app for a UI test: from the splash, signed in, as a guest, or straight into the
 // Navigation Lab, one of its branches or one of its twenty entries.
 enum ExampleApp {
     private static let yes = "YES"
@@ -16,6 +16,7 @@ enum ExampleApp {
     @MainActor
     static func launch(
         signedIn: Bool = false,
+        guest: Bool = false,
         lab: Bool = false,
         branch: Branch? = nil,
         flow: ExampleFlow? = nil,
@@ -24,6 +25,7 @@ enum ExampleApp {
         let app = XCUIApplication()
         app.launchArguments = arguments(
             signedIn: signedIn,
+            guest: guest,
             lab: lab,
             branch: branch,
             flow: flow,
@@ -35,6 +37,7 @@ enum ExampleApp {
 
     private static func arguments(
         signedIn: Bool,
+        guest: Bool,
         lab: Bool,
         branch: Branch?,
         flow: ExampleFlow?,
@@ -42,6 +45,7 @@ enum ExampleApp {
     ) -> [String] {
         let values = [
             (LaunchArgument.signedIn, signedIn ? yes : nil),
+            (LaunchArgument.guest, guest ? yes : nil),
             (LaunchArgument.lab, lab ? yes : nil),
             (LaunchArgument.branch, branch?.rawValue),
             (LaunchArgument.flow, flow?.rawValue),
