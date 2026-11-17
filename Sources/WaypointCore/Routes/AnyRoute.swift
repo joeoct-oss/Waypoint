@@ -15,7 +15,7 @@
 /// Two erased routes are equal only when they have the same type and equal values.
 ///
 /// It encodes as its key and its value. Decoding needs a ``RouteRegistry`` in the decoder's
-/// `userInfo` under ``Foundation/CodingUserInfoKey/routeRegistry``, because the key alone doesn't
+/// `userInfo` under ``Swift/CodingUserInfoKey/routeRegistry``, because the key alone doesn't
 /// name a type.
 ///
 /// Conformances:

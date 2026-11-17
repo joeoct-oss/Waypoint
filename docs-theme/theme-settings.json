@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "title": "Waypoint"
+  },
+  "theme": {
+    "typography": {
+      "html-font": "\"Inter\", -apple-system, BlinkMacSystemFont, \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+      "html-font-mono": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace"
+    },
+    "border-radius": "10px",
+    "color": {
+      "text": { "light": "#0B0F2A", "dark": "#EEF0FF" },
+      "text-background": { "light": "#FBFBFF", "dark": "#0B0F2A" },
+      "header-text": { "light": "#0B0F2A", "dark": "#EEF0FF" },
+      "fill": { "light": "#FBFBFF", "dark": "#0B0F2A" },
+      "fill-secondary": { "light": "#EEF0FF", "dark": "#121838" },
+      "fill-tertiary": { "light": "#E2E5FA", "dark": "#1A2147" },
+      "fill-gray": { "light": "#C9CDEB", "dark": "#2B3363" },
+      "fill-gray-secondary": { "light": "#EEF0FF", "dark": "#151B3D" },
+      "fill-gray-tertiary": { "light": "#E2E5FA", "dark": "#1A2147" },
+      "fill-gray-quaternary": { "light": "#D6DAF5", "dark": "#232A52" },
+      "fill-blue": { "light": "#4F5FE0", "dark": "#7C8CFF" },
+      "figure-blue": { "light": "#4F5FE0", "dark": "#7C8CFF" },
+      "figure-gray": { "light": "#0B0F2A", "dark": "#EEF0FF" },
+      "figure-gray-secondary": { "light": "#454B72", "dark": "#A9AED6" },
+      "figure-gray-secondary-alt": { "light": "#5A6088", "dark": "#959BC6" },
+      "figure-gray-tertiary": { "light": "#6B7096", "dark": "#7E84AE" },
+      "figure-light-gray": { "light": "#6B7096", "dark": "#7E84AE" },
+      "secondary-label": { "light": "#5A6088", "dark": "#A9AED6" },
+      "grid": { "light": "#DDE0F5", "dark": "#232A52" },
+      "link": { "light": "#4F5FE0", "dark": "#8D9BFF" },
+      "focus-color": { "light": "#4F5FE0", "dark": "#7C8CFF" },
+      "focus-border-color": { "light": "#4F5FE0", "dark": "#7C8CFF" },
+      "svg-icon": { "light": "#454B72", "dark": "#A9AED6" },
+      "article-body-background": { "light": "#FBFBFF", "dark": "#0B0F2A" },
+      "code-background": { "light": "#EEF0FF", "dark": "#121838" },
+      "code-plain": { "light": "#0B0F2A", "dark": "#EEF0FF" },
+      "code-line-highlight": { "light": "rgba(214, 47, 134, 0.08)", "dark": "rgba(255, 91, 170, 0.12)" },
+      "syntax-keywords": { "light": "#D62F86", "dark": "#FF5BAA" },
+      "syntax-other-type-names": { "light": "#4F5FE0", "dark": "#8D9BFF" },
+      "syntax-param-internal-name": { "light": "#5A6088", "dark": "#A9AED6" },
+      "syntax-strings": { "light": "#A35A00", "dark": "#FFB86B" },
+      "syntax-characters": { "light": "#A35A00", "dark": "#FFB86B" },
+      "syntax-numbers": { "light": "#7A3FD1", "dark": "#C3A6FF" },
+      "syntax-comments": { "light": "#6B7096", "dark": "#7E84AE" },
+      "syntax-plain-text": { "light": "#0B0F2A", "dark": "#EEF0FF" },
+      "syntax-highlighted": { "light": "rgba(79, 95, 224, 0.12)", "dark": "rgba(124, 140, 255, 0.18)" },
+      "documentation-intro-fill": "#0B0F2A",
+      "documentation-intro-title": "#EEF0FF",
+      "documentation-intro-figure": "#EEF0FF",
+      "documentation-intro-eyebrow": "#FF5BAA",
+      "documentation-intro-accent": "#7C8CFF",
+      "nav-solid-background": { "light": "#FBFBFF", "dark": "#0B0F2A" },
+      "nav-dark-solid-background": "#0B0F2A",
+      "nav-current-link": { "light": "#D62F86", "dark": "#FF5BAA" },
+      "nav-dark-current-link": "#FF5BAA",
+      "navigator-item-hover": { "light": "rgba(79, 95, 224, 0.08)", "dark": "rgba(124, 140, 255, 0.14)" },
+      "button-background": { "light": "#4F5FE0", "dark": "#7C8CFF" },
+      "button-background-hover": { "light": "#3E4DC8", "dark": "#94A1FF" },
+      "button-background-active": { "light": "#3441B0", "dark": "#A9B3FF" },
+      "button-text": { "light": "#FFFFFF", "dark": "#0B0F2A" },
+      "badge-default": { "light": "#4F5FE0", "dark": "#7C8CFF" },
+      "card-background": { "light": "#FFFFFF", "dark": "#121838" },
+      "card-content-text": { "light": "#0B0F2A", "dark": "#EEF0FF" },
+      "card-eyebrow": { "light": "#D62F86", "dark": "#FF5BAA" },
+      "link-block-card-border": { "light": "#DDE0F5", "dark": "#232A52" }
+    }
+  },
+  "features": {
+    "docs": {
+      "quickNavigation": {
+        "enable": true
+      }
+    }
+  }
+}
