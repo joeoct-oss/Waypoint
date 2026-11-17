@@ -90,6 +90,11 @@ extension StackRouter: PresentingRouter {
         return working.presented
     }
 
+    /// This stack.
+    var visibleStack: StackRouter? {
+        self
+    }
+
     /// A stack has no routers inside its own flow.
     var workingInFlowChildren: [any PresentingRouter] {
         []

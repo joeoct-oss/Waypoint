@@ -294,11 +294,12 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
 public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
     /// Do nothing. The state stays as it was.
     case none
-    /// Pop the stack to its root screen.
+    /// Pop the stack to its root screen. On a tab container, pops the
+    /// selected tab's stack.
     case popToRoot
     /// For `popTo` a route value: push it instead.
     case push
-    /// Dismiss everything presented over this flow.
+    /// Dismiss everything presented over this flow, including over its tabs.
     case dismissAll
     /// Dismisses everything and pops the root stack to its root screen.
     case resetToRoot
@@ -323,10 +324,32 @@ public struct FallbackPolicy: Sendable {
 /// - `Equatable`, so tests and the router can compare values.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public struct NavigationFailure: Sendable, Equatable, NavigationDescribable {
+    /// Why the call failed.
     public let issue: NavigationIssue
+    /// The fallback that ran and failed, or `nil` when no fallback ran.
+    public let fallback: NavigationFallback?
+    /// Why the fallback failed too, or `nil` when no fallback ran.
     public let fallbackIssue: NavigationIssue?
 }
+
+extension NavigationFallback {
+    /// The built-in default: `.popToRoot` for `notEnoughRoutes`, `.none` otherwise.
+    public static func builtIn(for kind: NavigationIssue.Kind) -> NavigationFallback
+}
+
+extension NavigationOutcome {
+    /// The issue a `.recovered` call recovered from, or `nil`.
+    public var recoveredIssue: NavigationIssue? { get }
+}
+
+extension StackRouter {   // also on TabRouter
+    /// Adds a handler for calls anywhere in the tree that failed and could not
+    /// be recovered. Each failure reaches it once.
+    public func onNavigationFailure(_ handler: @escaping @MainActor (NavigationFailure) -> Void)
+}
 ```
+
+Inside a transaction, each step takes its own `else:` and uses the same order. A step whose fallback succeeds counts as recovered, and the transaction's outcome is the first recovery. A step that still fails rolls back the whole transaction. A fallback's own steps never run another fallback.
 
 ### Handles for views and view models
 

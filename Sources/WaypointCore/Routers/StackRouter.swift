@@ -65,6 +65,16 @@ public final class StackRouter: NavigationRouter {
     /// Presentation defaults set on this router, if any.
     @ObservationIgnored private var ownPresentationDefaults: PresentationDefaults?
 
+    /// What to do when a call fails and passes no fallback, by issue kind.
+    ///
+    /// Children inherit every kind they don't set themselves. A kind set nowhere uses
+    /// ``NavigationFallback/builtIn(for:)``.
+    ///
+    /// ```swift
+    /// router.fallbackPolicy[.routeNotInPath] = .popToRoot
+    /// ```
+    @ObservationIgnored public var fallbackPolicy = FallbackPolicy()
+
     /// Creates a root router with an empty path.
     ///
     /// - Parameter flow: The flow's name in logs, events and saved state. Default: `main`.
@@ -157,9 +167,14 @@ public final class StackRouter: NavigationRouter {
 
     /// Pushes one route.
     @discardableResult
-    public func push<R: Route>(_ route: R, file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
+    public func push<R: Route>(
+        _ route: R,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
         let erased = AnyRoute(route)
-        return perform(file: file, line: line) { router, store in
+        return perform(file: file, line: line, fallback: fallback) { router, store in
             router.pushStep([erased], in: store)
         }
     }
@@ -169,8 +184,13 @@ public final class StackRouter: NavigationRouter {
     /// A pop on an empty path fails with `emptyPath`, and popping more routes than the path holds
     /// fails with `notEnoughRoutes`. A count of zero or less changes nothing.
     @discardableResult
-    public func pop(count: Int = 1, file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
+    public func pop(
+        count: Int = 1,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        perform(file: file, line: line, fallback: fallback) { router, store in
             router.stackStep(.pop(count: count), in: store)
         }
     }
@@ -180,17 +200,26 @@ public final class StackRouter: NavigationRouter {
     /// Returns `.alreadyThere` if it is on top. If the route is the stack's root screen, this
     /// pops to root. A route that is not in the path fails with `routeNotInPath`.
     @discardableResult
-    public func popTo<R: Route>(_ route: R, file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
+    public func popTo<R: Route>(
+        _ route: R,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
         let erased = AnyRoute(route)
-        return perform(file: file, line: line) { router, store in
+        return perform(file: file, line: line, fallback: fallback, route: erased) { router, store in
             router.stackStep(.popTo(erased), in: store)
         }
     }
 
     /// Empties the path, showing the root screen.
     @discardableResult
-    public func popToRoot(file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
+    public func popToRoot(
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        perform(file: file, line: line, fallback: fallback) { router, store in
             router.stackStep(.popToRoot, in: store)
         }
     }
@@ -203,11 +232,12 @@ public final class StackRouter: NavigationRouter {
     public func present<R: Route>(
         _ route: R,
         style: PresentationStyle = .sheet,
+        else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
         let erased = AnyRoute(route)
-        return perform(file: file, line: line) { router, store in
+        return perform(file: file, line: line, fallback: fallback) { router, store in
             router.presentStep(erased, style: style, in: store)
         }
     }
@@ -216,16 +246,24 @@ public final class StackRouter: NavigationRouter {
     ///
     /// Returns `.alreadyThere` when nothing is presented.
     @discardableResult
-    public func dismiss(file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
+    public func dismiss(
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        perform(file: file, line: line, fallback: fallback) { router, store in
             router.dismissStep(in: store)
         }
     }
 
     /// Dismisses every flow presented above this router.
     @discardableResult
-    public func dismissAll(file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
+    public func dismissAll(
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        perform(file: file, line: line, fallback: fallback) { router, store in
             router.dismissAllStep(in: store)
         }
     }
@@ -234,8 +272,12 @@ public final class StackRouter: NavigationRouter {
     ///
     /// Fails with `notPresented` when this flow wasn't presented, such as the root flow.
     @discardableResult
-    public func dismissFlow(file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
+    public func dismissFlow(
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        perform(file: file, line: line, fallback: fallback) { router, store in
             router.dismissFlowStep(in: store)
         }
     }
@@ -243,6 +285,18 @@ public final class StackRouter: NavigationRouter {
     /// The sheet options a presentation uses: its own, or this router's defaults.
     public func sheetOptions(for presentation: Presentation) -> SheetOptions {
         presentation.style.sheetOptions ?? presentationDefaults.sheet
+    }
+
+    /// Adds a handler for calls anywhere in this router's tree that failed and could not be
+    /// recovered, so the app can show a message or report it. Each failure reaches it once.
+    ///
+    /// ```swift
+    /// rootRouter.onNavigationFailure { failure in
+    ///     crashReporter.record(failure.description)
+    /// }
+    /// ```
+    public func onNavigationFailure(_ handler: @escaping @MainActor (NavigationFailure) -> Void) {
+        tree.addFailureHandler(handler)
     }
 
     /// Registers a route type for decoding and as having a destination.
@@ -254,14 +308,17 @@ public final class StackRouter: NavigationRouter {
         tree.register(type)
     }
 
-    /// Runs a call on this router as one transaction.
+    /// Runs a call on this router as one transaction, with its fallback if it fails.
     func perform(
         file: StaticString,
         line: UInt,
+        fallback: NavigationFallback?,
+        route: AnyRoute? = nil,
         _ step: @escaping (StackRouter, TransactionStore) -> StepResult
     ) -> NavigationOutcome {
-        tree.perform(on: self, file: file, line: line) { [unowned self] store in
-            step(self, store)
+        let context = FallbackContext(explicit: fallback, route: route, file: file, line: line)
+        return tree.perform(on: self, file: file, line: line) { [unowned self] store in
+            store.resolve(step(self, store), on: self, context)
         }
     }
 }

@@ -30,7 +30,7 @@ public struct NavigationTransaction {
     private let missingTarget: IssueDraft?
 
     /// A transaction value on one router.
-    private init(store: TransactionStore, target: any PresentingRouter) {
+    init(store: TransactionStore, target: any PresentingRouter) {
         self.store = store
         self.target = target
         self.missingTarget = nil
@@ -53,7 +53,7 @@ public struct NavigationTransaction {
         _ body: (inout NavigationTransaction) -> Void,
         on router: any PresentingRouter,
         in store: TransactionStore
-    ) -> StepResult {
+    ) -> CallResult {
         var transaction = NavigationTransaction(store: store, target: router)
         body(&transaction)
         return store.transactionResult
@@ -61,9 +61,14 @@ public struct NavigationTransaction {
 
     /// Pushes one route.
     @discardableResult
-    public func push<R: Route>(_ route: R, file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
+    public func push<R: Route>(
+        _ route: R,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
         let erased = AnyRoute(route)
-        return onStack(file: file, line: line) { stack in
+        return onStack(context(fallback, file, line)) { stack in
             stack.pushStep([erased], in: store)
         }
     }
@@ -71,29 +76,40 @@ public struct NavigationTransaction {
     /// Pushes several routes as one change.
     @discardableResult
     public func push(
+        else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line,
         @RoutePathBuilder _ routes: () -> [AnyRoute]
     ) -> NavigationOutcome {
         let built = routes()
-        return onStack(file: file, line: line) { stack in
+        return onStack(context(fallback, file, line)) { stack in
             stack.pushStep(built, in: store)
         }
     }
 
     /// Pops `count` routes.
     @discardableResult
-    public func pop(count: Int = 1, file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        onStack(file: file, line: line) { stack in
+    public func pop(
+        count: Int = 1,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        onStack(context(fallback, file, line)) { stack in
             stack.stackStep(.pop(count: count), in: store)
         }
     }
 
     /// Pops to the last occurrence of `route`, or to the root when it is the root screen's route.
     @discardableResult
-    public func popTo<R: Route>(_ route: R, file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
+    public func popTo<R: Route>(
+        _ route: R,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
         let erased = AnyRoute(route)
-        return onStack(file: file, line: line) { stack in
+        return onStack(context(fallback, file, line, route: erased)) { stack in
             stack.stackStep(.popTo(erased), in: store)
         }
     }
@@ -102,19 +118,24 @@ public struct NavigationTransaction {
     @discardableResult
     public func popTo<R: Route>(
         _ type: R.Type,
+        else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line,
         where predicate: (R) -> Bool = { _ in true }
     ) -> NavigationOutcome {
-        onStack(file: file, line: line) { stack in
+        onStack(context(fallback, file, line)) { stack in
             stack.popToStep(type, where: predicate, in: store)
         }
     }
 
     /// Empties the path.
     @discardableResult
-    public func popToRoot(file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        onStack(file: file, line: line) { stack in
+    public func popToRoot(
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        onStack(context(fallback, file, line)) { stack in
             stack.stackStep(.popToRoot, in: store)
         }
     }
@@ -122,12 +143,13 @@ public struct NavigationTransaction {
     /// Replaces the whole path.
     @discardableResult
     public func setPath(
+        else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line,
         @RoutePathBuilder _ routes: () -> [AnyRoute]
     ) -> NavigationOutcome {
         let built = routes()
-        return onStack(file: file, line: line) { stack in
+        return onStack(context(fallback, file, line)) { stack in
             stack.setPathStep(built, in: store)
         }
     }
@@ -137,35 +159,48 @@ public struct NavigationTransaction {
     public func present<R: Route>(
         _ route: R,
         style: PresentationStyle = .sheet,
+        else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
         let erased = AnyRoute(route)
-        return onRouter(file: file, line: line) { router in
+        return onRouter(context(fallback, file, line)) { router in
             router.presentStep(erased, style: style, in: store)
         }
     }
 
     /// Dismisses the presented flow.
     @discardableResult
-    public func dismiss(file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        onRouter(file: file, line: line) { router in
+    public func dismiss(
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        onRouter(context(fallback, file, line)) { router in
             router.dismissStep(in: store)
         }
     }
 
     /// Dismisses everything presented over this flow.
     @discardableResult
-    public func dismissAll(file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        onRouter(file: file, line: line) { router in
+    public func dismissAll(
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        onRouter(context(fallback, file, line)) { router in
             router.dismissAllStep(in: store)
         }
     }
 
     /// Asks whoever presented this flow to dismiss it.
     @discardableResult
-    public func dismissFlow(file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        onRouter(file: file, line: line) { router in
+    public func dismissFlow(
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        onRouter(context(fallback, file, line)) { router in
             router.dismissFlowStep(in: store)
         }
     }
@@ -176,8 +211,13 @@ public struct NavigationTransaction {
     /// Conformances:
     /// - `Tab: Hashable & Codable & Sendable`, the tab types a `TabRouter` accepts.
     @discardableResult
-    public func select<Tab: Hashable & Codable & Sendable>(_ tab: Tab, file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        onTabs(of: Tab.self, file: file, line: line) { tabs in
+    public func select<Tab: Hashable & Codable & Sendable>(
+        _ tab: Tab,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        onTabs(of: Tab.self, context(fallback, file, line)) { tabs in
             tabs.selectStep(tab, in: store)
         }
     }
@@ -199,24 +239,30 @@ public struct NavigationTransaction {
         return NavigationTransaction(store: store, target: stack)
     }
 
-    /// Runs a step on the router, unless an earlier step failed.
+    /// Runs a step on the router, with its fallback if it fails, unless an earlier step failed.
     private func onRouter(
-        file: StaticString,
-        line: UInt,
+        _ context: FallbackContext,
         _ step: (any PresentingRouter) -> StepResult
     ) -> NavigationOutcome {
         if let failure = store.failure {
-            return .failed(NavigationFailure(issue: failure))
+            return .failed(failure)
         }
         guard let target else {
-            return store.note(.failed(missingDraft()), file: file, line: line)
+            return noteMissingTarget(context)
         }
-        return store.note(step(target), file: file, line: line)
+        return store.note(store.resolve(step(target), on: target, context))
+    }
+
+    /// Fails a step on a value that names no router.
+    private func noteMissingTarget(_ context: FallbackContext) -> NavigationOutcome {
+        let issue = missingDraft().issue(file: context.file, line: context.line)
+        store.keep(issue)
+        return store.note(.failed(NavigationFailure(issue: issue)))
     }
 
     /// Runs a step that needs a stack.
-    private func onStack(file: StaticString, line: UInt, _ step: (StackRouter) -> StepResult) -> NavigationOutcome {
-        onRouter(file: file, line: line) { router in
+    private func onStack(_ context: FallbackContext, _ step: (StackRouter) -> StepResult) -> NavigationOutcome {
+        onRouter(context) { router in
             guard let stack = router as? StackRouter else {
                 return .failed(notStackDraft(router))
             }
@@ -227,16 +273,25 @@ public struct NavigationTransaction {
     /// Runs a step that needs a tab container of `Tab`.
     private func onTabs<Tab: Hashable & Codable & Sendable>(
         of type: Tab.Type,
-        file: StaticString,
-        line: UInt,
+        _ context: FallbackContext,
         _ step: (TabRouter<Tab>) -> StepResult
     ) -> NavigationOutcome {
-        onRouter(file: file, line: line) { router in
+        onRouter(context) { router in
             guard let tabs = router as? TabRouter<Tab> else {
                 return .failed(notTabsDraft(nil as Tab?))
             }
             return step(tabs)
         }
+    }
+
+    /// The fallback context of one step.
+    private func context(
+        _ fallback: NavigationFallback?,
+        _ file: StaticString,
+        _ line: UInt,
+        route: AnyRoute? = nil
+    ) -> FallbackContext {
+        FallbackContext(explicit: fallback, route: route, file: file, line: line)
     }
 
     /// The issue for a step on a value that names no router.

@@ -73,6 +73,16 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
     /// Presentation defaults set on this router, if any.
     @ObservationIgnored private var ownPresentationDefaults: PresentationDefaults?
 
+    /// What to do when a call fails and passes no fallback, by issue kind.
+    ///
+    /// Children inherit every kind they don't set themselves. A kind set nowhere uses
+    /// ``NavigationFallback/builtIn(for:)``.
+    ///
+    /// ```swift
+    /// router.fallbackPolicy[.routeNotInPath] = .popToRoot
+    /// ```
+    @ObservationIgnored public var fallbackPolicy = FallbackPolicy()
+
     /// Creates a root tab container.
     ///
     /// `selection` should be one of `tabs`. If it isn't, the first tab is selected; with no tabs,
@@ -152,8 +162,13 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
     /// Returns `.alreadyThere` if it is selected, unless ``popsToRootOnReselect`` pops its
     /// stack. Fails with `unknownTab` if it is not one of the tabs.
     @discardableResult
-    public func select(_ tab: Tab, file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
+    public func select(
+        _ tab: Tab,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        perform(file: file, line: line, fallback: fallback) { router, store in
             router.selectStep(tab, in: store)
         }
     }
@@ -163,8 +178,13 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
     /// If the selected tab is removed, the first tab is selected. A removed tab's stack leaves
     /// the tree. An empty list fails with `unknownTab`.
     @discardableResult
-    public func setTabs(_ tabs: [Tab], file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
+    public func setTabs(
+        _ tabs: [Tab],
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        perform(file: file, line: line, fallback: fallback) { router, store in
             router.setTabsStep(tabs, in: store)
         }
     }
@@ -174,27 +194,36 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
     public func present<R: Route>(
         _ route: R,
         style: PresentationStyle = .sheet,
+        else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
         let erased = AnyRoute(route)
-        return perform(file: file, line: line) { router, store in
+        return perform(file: file, line: line, fallback: fallback) { router, store in
             router.presentStep(erased, style: style, in: store)
         }
     }
 
     /// Dismisses the flow presented above the container. Returns `.alreadyThere` when nothing is.
     @discardableResult
-    public func dismiss(file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
+    public func dismiss(
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        perform(file: file, line: line, fallback: fallback) { router, store in
             router.dismissStep(in: store)
         }
     }
 
     /// Dismisses everything presented above the container and above each tab.
     @discardableResult
-    public func dismissAll(file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
+    public func dismissAll(
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome {
+        perform(file: file, line: line, fallback: fallback) { router, store in
             router.dismissAllStep(in: store)
         }
     }
@@ -202,6 +231,18 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
     /// The sheet options a presentation uses: its own, or this router's defaults.
     public func sheetOptions(for presentation: Presentation) -> SheetOptions {
         presentation.style.sheetOptions ?? presentationDefaults.sheet
+    }
+
+    /// Adds a handler for calls anywhere in this router's tree that failed and could not be
+    /// recovered, so the app can show a message or report it. Each failure reaches it once.
+    ///
+    /// ```swift
+    /// rootRouter.onNavigationFailure { failure in
+    ///     crashReporter.record(failure.description)
+    /// }
+    /// ```
+    public func onNavigationFailure(_ handler: @escaping @MainActor (NavigationFailure) -> Void) {
+        tree.addFailureHandler(handler)
     }
 
     /// Registers a route type for decoding and as having a destination. See
@@ -217,14 +258,17 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
         return StackRouter(tabOf: self, flow: flow, isAttached: attached)
     }
 
-    /// Runs a call on this router as one transaction.
+    /// Runs a call on this router as one transaction, with its fallback if it fails.
     private func perform(
         file: StaticString,
         line: UInt,
+        fallback: NavigationFallback?,
+        route: AnyRoute? = nil,
         _ step: @escaping (TabRouter, TransactionStore) -> StepResult
     ) -> NavigationOutcome {
-        tree.perform(on: self, file: file, line: line) { [unowned self] store in
-            step(self, store)
+        let context = FallbackContext(explicit: fallback, route: route, file: file, line: line)
+        return tree.perform(on: self, file: file, line: line) { [unowned self] store in
+            store.resolve(step(self, store), on: self, context)
         }
     }
 }

@@ -6,7 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-/// A call that failed, with the issue that stopped it.
+/// A call that failed, with the issue that stopped it and, when a fallback ran and failed too,
+/// the fallback and its issue.
 ///
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
@@ -16,22 +17,26 @@ public struct NavigationFailure: Sendable, Equatable, NavigationDescribable {
     /// Why the call failed.
     public let issue: NavigationIssue
 
+    /// The fallback that ran and failed, or `nil` when no fallback ran.
+    public let fallback: NavigationFallback?
+
     /// Why the call's fallback failed too, or `nil` when no fallback ran.
     public let fallbackIssue: NavigationIssue?
 
     /// Describes a failure.
-    public init(issue: NavigationIssue, fallbackIssue: NavigationIssue? = nil) {
+    public init(issue: NavigationIssue, fallback: NavigationFallback? = nil, fallbackIssue: NavigationIssue? = nil) {
         self.issue = issue
+        self.fallback = fallback
         self.fallbackIssue = fallbackIssue
     }
 
     /// `failed routeNotInPath flow=shop at=ShopCoordinator.swift:42`, with
-    /// `fallbackIssue=<kind>` when a fallback failed too.
+    /// `fallback=popToRoot fallbackIssue=emptyPath` when a fallback failed too.
     public var description: String {
-        guard let fallbackIssue else {
+        guard let fallback, let fallbackIssue else {
             return "failed \(issue)"
         }
-        return "failed \(issue) fallbackIssue=\(fallbackIssue.kind)"
+        return "failed \(issue) fallback=\(fallback) fallbackIssue=\(fallbackIssue.kind)"
     }
 
     /// The line, then each issue's message.

@@ -10,12 +10,13 @@ extension StackRouter {
     /// Pushes several routes as one change, with one animation.
     @discardableResult
     public func push(
+        else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line,
         @RoutePathBuilder _ routes: () -> [AnyRoute]
     ) -> NavigationOutcome {
         let built = routes()
-        return perform(file: file, line: line) { router, store in
+        return perform(file: file, line: line, fallback: fallback) { router, store in
             router.pushStep(built, in: store)
         }
     }
@@ -23,12 +24,13 @@ extension StackRouter {
     /// Replaces the whole path as one change.
     @discardableResult
     public func setPath(
+        else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line,
         @RoutePathBuilder _ routes: () -> [AnyRoute]
     ) -> NavigationOutcome {
         let built = routes()
-        return perform(file: file, line: line) { router, store in
+        return perform(file: file, line: line, fallback: fallback) { router, store in
             router.setPathStep(built, in: store)
         }
     }
@@ -40,11 +42,12 @@ extension StackRouter {
     @discardableResult
     public func popTo<R: Route>(
         _ type: R.Type,
+        else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line,
         where predicate: @escaping (R) -> Bool = { _ in true }
     ) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
+        perform(file: file, line: line, fallback: fallback) { router, store in
             router.popToStep(type, where: predicate, in: store)
         }
     }
@@ -67,8 +70,8 @@ extension StackRouter {
         line: UInt = #line,
         _ body: @escaping (inout NavigationTransaction) -> Void
     ) -> NavigationOutcome {
-        perform(file: file, line: line) { router, store in
-            NavigationTransaction.run(body, on: router, in: store)
+        tree.perform(on: self, file: file, line: line) { [unowned self] store in
+            NavigationTransaction.run(body, on: self, in: store)
         }
     }
 

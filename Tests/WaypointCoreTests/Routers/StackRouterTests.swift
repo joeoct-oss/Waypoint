@@ -52,12 +52,15 @@ struct StackRouterTests {
     }
 
     @Test
-    func popTooManyFailsWithNotEnoughRoutes() {
+    func popTooManyRecoversToRoot() {
         let router = StackRouter()
         router.push(HomeRoute())
 
-        #expect(router.pop(count: 3).failure?.issue.kind == .notEnoughRoutes)
-        #expect(router.state.path == [AnyRoute(HomeRoute())])
+        let outcome = router.pop(count: 3)
+
+        #expect(outcome.recoveredIssue?.kind == .notEnoughRoutes)
+        #expect(outcome.description == "recovered notEnoughRoutes by=popToRoot")
+        #expect(router.state.path.isEmpty)
     }
 
     @Test

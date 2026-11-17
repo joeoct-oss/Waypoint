@@ -31,7 +31,9 @@ public enum NavigationOutcome: Sendable, Equatable, NavigationDescribable {
     case queued
     /// The router's flow is gone, so the call did nothing.
     case ignored
-    /// The call failed. The state is unchanged.
+    /// The call failed, and its fallback succeeded.
+    case recovered(NavigationIssue, by: NavigationFallback)
+    /// The call failed and no fallback succeeded. The state is unchanged.
     case failed(NavigationFailure)
 
     /// The failure, or `nil` for any other outcome.
@@ -42,7 +44,8 @@ public enum NavigationOutcome: Sendable, Equatable, NavigationDescribable {
         return failure
     }
 
-    /// `applied`, `alreadyThere`, `queued`, `ignored` or `failed <issue kind>`.
+    /// `applied`, `alreadyThere`, `queued`, `ignored`, `recovered <issue kind> by=<fallback>` or
+    /// `failed <issue kind>`.
     public var description: String {
         switch self {
         case .applied:
@@ -53,16 +56,29 @@ public enum NavigationOutcome: Sendable, Equatable, NavigationDescribable {
             return "queued"
         case .ignored:
             return "ignored"
+        case .recovered(let issue, let fallback):
+            return "recovered \(issue.kind) by=\(fallback)"
         case .failed(let failure):
             return "failed \(failure.issue.kind)"
         }
     }
 
-    /// The line, and for a failure the failure's detailed form on the next lines.
-    public func debugDescription(revealingPrivateValues: Bool) -> String {
-        guard let failure else {
-            return description
+    /// The issue that was recovered from, or `nil` for any other outcome.
+    public var recoveredIssue: NavigationIssue? {
+        guard case .recovered(let issue, _) = self else {
+            return nil
         }
-        return "\(description)\n\(failure.debugDescription(revealingPrivateValues: revealingPrivateValues))"
+        return issue
+    }
+
+    /// The line, and for a failure or a recovery the detailed form of what went wrong.
+    public func debugDescription(revealingPrivateValues: Bool) -> String {
+        if let failure {
+            return "\(description)\n\(failure.debugDescription(revealingPrivateValues: revealingPrivateValues))"
+        }
+        if let recoveredIssue {
+            return "\(description)\n\(recoveredIssue.debugDescription(revealingPrivateValues: revealingPrivateValues))"
+        }
+        return description
     }
 }

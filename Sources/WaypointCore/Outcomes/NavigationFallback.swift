@@ -1,0 +1,99 @@
+//
+//  NavigationFallback.swift
+//  Waypoint
+//
+//  Created by Yousef Mohamed <52625092+JoeOCT91@users.noreply.github.com>.
+//  Copyright © 2026 Yousef Mohamed. MIT License.
+//
+
+/// What to do when a call fails.
+///
+/// A fallback is chosen in this order: the call's own `else:` argument, then the router's
+/// ``FallbackPolicy`` (children inherit it), then the built-in default for that kind of issue.
+/// The built-in defaults change nothing unless the intent is clear: popping more routes than the
+/// path holds pops to root, and every other kind defaults to `.none`.
+///
+/// A fallback runs once, inside the same change as the call, and never triggers another
+/// fallback. If it fails too, the call is rolled back and reported as a ``NavigationFailure``.
+///
+/// Two `custom` fallbacks are equal when their names are equal. The name also appears in logs
+/// and outcomes.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so outcomes that carry it can be compared in tests.
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
+    /// Do nothing. The outcome is `.failed`.
+    case none
+    /// Pop the stack to its root screen. On a tab container, pops the selected tab's stack.
+    case popToRoot
+    /// For `popTo` a route value: push it instead.
+    case push
+    /// Dismiss everything presented over this flow.
+    case dismissAll
+    /// Dismiss everything and pop the root router's stack to its root screen.
+    case resetToRoot
+    /// Run your own change. The name appears in logs and outcomes.
+    case custom(_ name: String, @MainActor @Sendable (inout NavigationTransaction, NavigationIssue) -> Void)
+
+    /// The built-in default for an issue kind: `.popToRoot` for `notEnoughRoutes`, `.none` for
+    /// every other kind.
+    public static func builtIn(for kind: NavigationIssue.Kind) -> NavigationFallback {
+        kind == .notEnoughRoutes ? .popToRoot : .none
+    }
+
+    /// The case name, or `custom(name)`.
+    public var description: String {
+        switch self {
+        case .none:
+            return "none"
+        case .popToRoot:
+            return "popToRoot"
+        case .push:
+            return "push"
+        case .dismissAll:
+            return "dismissAll"
+        case .resetToRoot:
+            return "resetToRoot"
+        case .custom(let name, _):
+            return "custom(\(name))"
+        }
+    }
+
+    /// Whether two fallbacks are the same case, comparing `custom` fallbacks by name.
+    public static func == (lhs: NavigationFallback, rhs: NavigationFallback) -> Bool {
+        lhs.description == rhs.description
+    }
+
+    /// The same line. A fallback holds no private values.
+    public func debugDescription(revealingPrivateValues: Bool) -> String {
+        description
+    }
+}
+
+/// Fallbacks by issue kind, inherited by child routers.
+///
+/// ```swift
+/// router.fallbackPolicy[.routeNotInPath] = .popToRoot   // for this flow and its children
+/// ```
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
+public struct FallbackPolicy: Sendable {
+    /// Fallbacks set for each kind.
+    private var fallbacks: [NavigationIssue.Kind: NavigationFallback] = [:]
+
+    /// Creates an empty policy: every kind uses its parent's entry, then the built-in default.
+    public init() { }
+
+    /// The fallback set for a kind, or `nil` to use the parent's entry, then the built-in default.
+    public subscript(kind: NavigationIssue.Kind) -> NavigationFallback? {
+        get {
+            fallbacks[kind]
+        }
+        set {
+            fallbacks[kind] = newValue
+        }
+    }
+}
