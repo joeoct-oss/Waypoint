@@ -56,10 +56,17 @@ extension XCUIApplication {
     @MainActor
     func reveal(_ element: XCUIElement) -> Bool {
         _ = element.waitForExistence(timeout: UITestSteps.timeout)
-        for _ in 0..<4 where !(element.exists && element.isHittable) {
+        for _ in 0..<4 where !isTappable(element) {
             swipeUp()
         }
-        return element.exists && element.isHittable
+        return isTappable(element)
+    }
+
+    // Checks the frame before asking `isHittable`, because a button that exists while its screen is still
+    // being pushed has no frame yet, and `isHittable` then fails the test instead of returning false.
+    @MainActor
+    private func isTappable(_ element: XCUIElement) -> Bool {
+        element.exists && !element.frame.isEmpty && element.isHittable
     }
 
     // Opens a main tab by its title.
