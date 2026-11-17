@@ -140,6 +140,29 @@ public struct LogCategory: Hashable, Sendable {
     public static let navigation, presentation, tabs, flows, links, restoration, renderer, issues: LogCategory
 }
 
+/// One log line, built only after the level and category were found enabled.
+///
+/// Conformances:
+/// - `Sendable`, so a handler can write it from any thread.
+public struct LogMessage: Sendable {
+    public let level: LogLevel
+    public let category: LogCategory
+    public let text: String       // the NavigationDescribable line, redacted unless revealing
+    public let file: StaticString // the call site in your code
+    public let line: UInt
+}
+
+/// A measured span, such as one transaction. Handlers may draw it as a signpost.
+///
+/// Conformances:
+/// - `Sendable`, so a handler can keep it on any thread.
+/// - `Hashable`, so a handler can match the end of an interval to its start.
+public struct LogInterval: Sendable, Hashable {
+    public let name: String
+    public let category: LogCategory
+    public let id: UInt64
+}
+
 /// Where log messages go.
 ///
 /// Conformances:
@@ -147,6 +170,16 @@ public struct LogCategory: Hashable, Sendable {
 public protocol LogHandler: Sendable {
     func isEnabled(level: LogLevel, category: LogCategory) -> Bool
     func log(_ message: LogMessage)
+    func beginInterval(_ interval: LogInterval) // default: does nothing
+    func endInterval(_ interval: LogInterval)   // default: does nothing
+}
+
+/// A handler that is never enabled, so no message is ever built.
+///
+/// Conformances:
+/// - `LogHandler`, so it can stand in for a real handler.
+public struct DisabledLogHandler: LogHandler {
+    public init()
 }
 
 /// How the whole tree logs. Set once on the root router.
@@ -154,12 +187,30 @@ public protocol LogHandler: Sendable {
 /// Conformances:
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct LogConfiguration: Sendable {
+    public init(
+        handler: any LogHandler = DisabledLogHandler(),
+        minimumLevel: LogLevel = .notice,
+        categories: Set<LogCategory>? = nil,
+        revealsPrivateValues: Bool = false
+    )
     public var handler: any LogHandler
     public var minimumLevel: LogLevel        // default .notice
     public var categories: Set<LogCategory>? // nil: all
     public var revealsPrivateValues: Bool    // default false
     public static var `default`: LogConfiguration { get }
     public static var disabled: LogConfiguration { get }
+    public func isEnabled(level: LogLevel, category: LogCategory) -> Bool
+    public func measuresIntervals(in category: LogCategory) -> Bool
+}
+
+extension StackRouter {
+    /// How this router's whole tree logs. Shared by every router in the tree.
+    public var logging: LogConfiguration { get set }
+}
+
+extension TabRouter {
+    /// How this router's whole tree logs. Shared by every router in the tree.
+    public var logging: LogConfiguration { get set }
 }
 
 extension Route {
@@ -178,7 +229,24 @@ let root = RootRouter(AppRoot.login)
 
 Values in log lines use their `NavigationDescribable` descriptions, so every Waypoint line has the same searchable `key=value` shape, and route fields print as `<private>` unless they are in `publicLogFields`. With `revealsPrivateValues` on, the logger uses the revealing form instead. See <doc:Descriptions>.
 
-Issues are logged in the `issues` category: a recovered call at `.error`, and a failed call at `.fault`, each with the file and line of the call.
+`WaypointCore` on its own logs nowhere: its default handler is `DisabledLogHandler`. The SwiftUI and UIKit products install a unified-log handler as the default. Any handler works, such as one that writes to a file or a test handler that records lines.
+
+Every message is built only after the level, the category and the handler's `isEnabled(level:category:)` all agree, in that order, so a disabled line costs one comparison. Waypoint writes these lines:
+
+| What | Level | Category | Example |
+| --- | --- | --- | --- |
+| A change was applied | `.info` | `navigation`, `presentation` or `tabs` | `pushed [ProductRoute(id: <private>)] flow=main` |
+| A change made by a fallback | `.info` | as above | `popped [HomeRoute] flow=main origin=fallback` |
+| A call changed nothing | `.debug` | `navigation` | `alreadyThere flow=main at=ShopCoordinator.swift:42` |
+| A call was queued behind a change | `.debug` | `navigation` | `reentrantChange flow=main at=ShopCoordinator.swift:42` |
+| A call on a router that left the tree | `.debug` | `navigation` | `staleNavigator flow=settings at=SettingsView.swift:18` |
+| A call recovered by a fallback | `.error` | `issues` | `notEnoughRoutes flow=main at=ShopCoordinator.swift:42`, then the message |
+| A call failed | `.fault` | `issues` | `routeNotInPath flow=main at=ShopCoordinator.swift:42`, then the message |
+| A route type problem at registration | `.error` | `issues` | `invalidRouteKey key=""` |
+
+Each transaction is also one `LogInterval` named `transaction` in the `navigation` category, begun and ended even when the transaction fails, so a handler can draw it as a signpost. Intervals are measured only when the `navigation` category is enabled at the minimum level.
+
+Privacy needs no separate log type: every line is built from `NavigationDescribable` descriptions, which already print route fields as `<private>` unless they are listed in `publicLogFields`.
 
 ### Screen tracking for analytics
 

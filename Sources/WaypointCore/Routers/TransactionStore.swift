@@ -101,8 +101,9 @@ final class TransactionStore {
     /// The changes so far, in order.
     private(set) var changes: [AppliedChange] = []
 
-    /// Issues to report when the transaction ends, in order.
-    private(set) var issues: [NavigationIssue] = []
+    /// Issues to report when the transaction ends, in order, with the level to log them at:
+    /// `.error` for a recovered call, `.fault` for a failed one.
+    private(set) var issues: [(issue: NavigationIssue, level: LogLevel)] = []
 
     /// The first failed step of a transaction, if any. Later steps are skipped.
     var failure: NavigationFailure?
@@ -142,8 +143,8 @@ final class TransactionStore {
     }
 
     /// Keeps an issue to report when the transaction ends.
-    func keep(_ issue: NavigationIssue) {
-        issues.append(issue)
+    func keep(_ issue: NavigationIssue, level: LogLevel) {
+        issues.append((issue, level))
     }
 
     /// Records what one step of a transaction did, and returns it as the step's outcome.

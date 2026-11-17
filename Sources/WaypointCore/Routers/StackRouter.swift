@@ -154,6 +154,17 @@ public final class StackRouter: NavigationRouter {
         }
     }
 
+    /// How this router's whole tree logs. Shared by every router in the tree, so set it once on
+    /// the root. Default: ``LogConfiguration/default``.
+    public var logging: LogConfiguration {
+        get {
+            tree.logging
+        }
+        set {
+            tree.logging = newValue
+        }
+    }
+
     /// Default presentation options for this router and its children. Unless set here, they
     /// come from the nearest router above, then ``PresentationDefaults/default``.
     public var presentationDefaults: PresentationDefaults {
