@@ -27,6 +27,13 @@ final class NavigationTreeContext {
     /// Called with each issue when it is reported. The seam for observers and logging.
     var didReport: ((NavigationIssue) -> Void)?
 
+    /// Called with the outcome of every call, including queued and ignored ones. The seam for
+    /// `WaypointTesting` strict mode (#41).
+    package var didFinish: ((NavigationOutcome) -> Void)?
+
+    /// The app's handlers for calls that failed and could not be recovered.
+    private var failureHandlers: [(NavigationFailure) -> Void] = []
+
     /// Whether a transaction is being applied, including its observers.
     private var isApplying = false
 
@@ -57,6 +64,11 @@ final class NavigationTreeContext {
         return registry.type(for: route.routeKey) != nil
     }
 
+    /// Adds a handler for calls that failed and could not be recovered.
+    func addFailureHandler(_ handler: @escaping (NavigationFailure) -> Void) {
+        failureHandlers.append(handler)
+    }
+
     /// Claims a flow name, adding `-2`, `-3` and so on when it is taken.
     func claimFlowName(_ base: String) -> FlowID {
         var name = base
@@ -78,12 +90,24 @@ final class NavigationTreeContext {
     ///
     /// A router that left the tree ignores the call. A call made while another transaction is
     /// applied waits in the queue and returns `.queued`. Otherwise the body changes working
-    /// copies, which are committed together, or all rolled back when a step fails.
+    /// copies, which are committed together, or all rolled back when the call fails.
     func perform(
         on router: some TreeNode,
         file: StaticString,
         line: UInt,
-        _ body: @escaping (TransactionStore) -> StepResult
+        _ body: @escaping (TransactionStore) -> CallResult
+    ) -> NavigationOutcome {
+        let outcome = start(on: router, file: file, line: line, body)
+        didFinish?(outcome)
+        return outcome
+    }
+
+    /// Ignores, queues or applies a call.
+    private func start(
+        on router: some TreeNode,
+        file: StaticString,
+        line: UInt,
+        _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
         guard router.isAttached else {
             return .ignored
@@ -91,48 +115,59 @@ final class NavigationTreeContext {
         guard !isApplying else {
             return enqueue(on: router, file: file, line: line, body)
         }
-        let outcome = apply(file: file, line: line, body)
+        let outcome = apply(body)
         drainQueue()
         return outcome
     }
 
     /// Applies the body as one transaction.
-    private func apply(file: StaticString, line: UInt, _ body: (TransactionStore) -> StepResult) -> NavigationOutcome {
+    private func apply(_ body: (TransactionStore) -> CallResult) -> NavigationOutcome {
         isApplying = true
         defer {
             isApplying = false
         }
         let store = TransactionStore()
-        switch body(store) {
+        let outcome = finish(store, body(store))
+        store.issues.forEach(report)
+        return outcome
+    }
+
+    /// Commits or rolls back, depending on the result.
+    private func finish(_ store: TransactionStore, _ result: CallResult) -> NavigationOutcome {
+        switch result {
         case .changed:
-            return commit(store)
+            return commit(store, outcome: .applied)
         case .unchanged:
-            return finishUnchanged(store)
-        case .failed(let draft):
-            return fail(store, draft.issue(file: file, line: line))
-        case .failedAt(let issue):
-            return fail(store, issue)
+            return rollBack(store, outcome: .alreadyThere)
+        case .recovered(let issue, let fallback):
+            return commit(store, outcome: .recovered(issue, by: fallback))
+        case .failed(let failure):
+            return fail(store, failure)
         }
     }
 
     /// Commits the working copies and tells the observers.
-    private func commit(_ store: TransactionStore) -> NavigationOutcome {
+    private func commit(_ store: TransactionStore, outcome: NavigationOutcome) -> NavigationOutcome {
         store.commit()
-        didApply?(store.changes)
-        return .applied
+        if !store.changes.isEmpty {
+            didApply?(store.changes)
+        }
+        return outcome
     }
 
-    /// Drops the working copies of a transaction that changed nothing.
-    private func finishUnchanged(_ store: TransactionStore) -> NavigationOutcome {
+    /// Drops the working copies.
+    private func rollBack(_ store: TransactionStore, outcome: NavigationOutcome) -> NavigationOutcome {
         store.rollback()
-        return .alreadyThere
+        return outcome
     }
 
-    /// Rolls the transaction back and reports the issue.
-    private func fail(_ store: TransactionStore, _ issue: NavigationIssue) -> NavigationOutcome {
+    /// Rolls the transaction back and tells the app's failure handlers.
+    private func fail(_ store: TransactionStore, _ failure: NavigationFailure) -> NavigationOutcome {
         store.rollback()
-        report(issue)
-        return .failed(NavigationFailure(issue: issue))
+        for handler in failureHandlers {
+            handler(failure)
+        }
+        return .failed(failure)
     }
 
     /// Reports an issue.
@@ -145,7 +180,7 @@ final class NavigationTreeContext {
         on router: some TreeNode,
         file: StaticString,
         line: UInt,
-        _ body: @escaping (TransactionStore) -> StepResult
+        _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
         guard queuedInTurn < maxQueuedChanges else {
             return refuseLoop(on: router, file: file, line: line)
@@ -162,8 +197,12 @@ final class NavigationTreeContext {
         let message = "More than \(maxQueuedChanges) calls were made while changes were applied, "
             + "which looks like an observer that navigates on every change. The rest were dropped."
         let issue = NavigationIssue(kind: .reentrantLoop, flow: router.flowID, message: message, file: file, line: line)
+        let failure = NavigationFailure(issue: issue)
         report(issue)
-        return .failed(NavigationFailure(issue: issue))
+        for handler in failureHandlers {
+            handler(failure)
+        }
+        return .failed(failure)
     }
 
     /// Runs queued calls in order until none are left. Only the outermost call drains.

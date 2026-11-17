@@ -53,6 +53,9 @@ protocol TreeNode: NavigationRouter, TransactionParticipant {
 
     /// The committed path of this router's stack, or empty for a container.
     var currentPath: [AnyRoute] { get }
+
+    /// This router's own fallback policy.
+    var fallbackPolicy: FallbackPolicy { get }
 }
 
 extension TreeNode {
@@ -63,6 +66,11 @@ extension TreeNode {
             node = parent
         }
         return node
+    }
+
+    /// The fallback this router's policy, or the nearest parent's, sets for a kind.
+    func policyFallback(for kind: NavigationIssue.Kind) -> NavigationFallback? {
+        fallbackPolicy[kind] ?? parentNode?.policyFallback(for: kind)
     }
 
     /// Marks this router and everything inside it as gone from the tree.

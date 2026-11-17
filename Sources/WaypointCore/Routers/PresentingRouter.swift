@@ -23,6 +23,9 @@ protocol PresentingRouter: TreeNode {
 
     /// The presented router as it is in the current transaction, or the committed one.
     var currentPresented: StackRouter? { get }
+
+    /// The stack a `.popToRoot` fallback pops: this stack, or a container's selected tab.
+    var visibleStack: StackRouter? { get }
 }
 
 extension PresentingRouter {
@@ -60,9 +63,9 @@ extension PresentingRouter {
     /// Dismisses everything presented over this flow, including over its tabs.
     func dismissAllStep(in store: TransactionStore) -> StepResult {
         store.enlist(self)
-        var changed = isChanged(dismissStep(in: store))
+        var changed = dismissStep(in: store).isChanged
         for child in workingInFlowChildren {
-            changed = isChanged(child.dismissAllStep(in: store)) || changed
+            changed = child.dismissAllStep(in: store).isChanged || changed
         }
         return changed ? .changed : .unchanged
     }
@@ -120,14 +123,6 @@ extension PresentingRouter {
         let message = "\(flowID) is not presented, so dismissFlow() has nothing to dismiss. "
             + "Only a presented flow can dismiss itself."
         return IssueDraft(kind: .notPresented, flow: flowID, message: message)
-    }
-
-    /// Whether a step changed something. A failed dismiss can't happen, so it counts as unchanged.
-    private func isChanged(_ result: StepResult) -> Bool {
-        guard case .changed = result else {
-            return false
-        }
-        return true
     }
 }
 

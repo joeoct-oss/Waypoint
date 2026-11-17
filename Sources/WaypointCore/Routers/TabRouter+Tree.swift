@@ -115,6 +115,11 @@ extension TabRouter: PresentingRouter {
         return working.presented
     }
 
+    /// The selected tab's stack, as it is in the current transaction.
+    var visibleStack: StackRouter? {
+        currentRouter(for: working?.state.selection ?? state.selection)
+    }
+
     /// Each tab's router, which is inside this flow.
     var workingInFlowChildren: [any PresentingRouter] {
         guard let working else {

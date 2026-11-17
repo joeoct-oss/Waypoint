@@ -22,7 +22,19 @@ protocol TransactionParticipant: AnyObject {
     func discardWorkingCopy()
 }
 
-/// One change, with the flow it happened in.
+/// Who asked for a change. The public form arrives with events (#23).
+///
+/// Conformances:
+/// - `Sendable`, so changes can be handed to observers off the main actor later.
+/// - `Equatable`, so tests can compare them.
+enum ChangeOrigin: Sendable, Equatable {
+    /// App code called a router.
+    case app
+    /// A fallback ran because the call that was asked for failed.
+    case fallback
+}
+
+/// One change, with the flow it happened in and who asked for it.
 ///
 /// Conformances:
 /// - `Sendable`, so changes can be handed to observers off the main actor later.
@@ -33,18 +45,31 @@ struct AppliedChange: Sendable, Equatable {
 
     /// What changed.
     let change: NavigationChange
+
+    /// Who asked for it.
+    var origin = ChangeOrigin.app
 }
 
-/// What one step of a transaction did.
+/// What one step did to the working copies, before any fallback.
 enum StepResult {
     /// The working copy changed.
     case changed
     /// Nothing needed to change.
     case unchanged
-    /// The step was refused. The transaction rolls back.
+    /// The step was refused, and changed nothing.
     case failed(IssueDraft)
-    /// A step inside a transaction was refused at its own call site. The transaction rolls back.
-    case failedAt(NavigationIssue)
+}
+
+/// What a call or a transaction did, after fallbacks.
+enum CallResult {
+    /// The working copies changed.
+    case changed
+    /// Nothing needed to change.
+    case unchanged
+    /// The call failed and its fallback succeeded.
+    case recovered(NavigationIssue, NavigationFallback)
+    /// The call failed and no fallback succeeded. Everything rolls back.
+    case failed(NavigationFailure)
 }
 
 /// An issue before the call site is attached.
@@ -64,7 +89,7 @@ struct IssueDraft {
     }
 }
 
-/// The working copies and changes of one transaction.
+/// The working copies, changes and issues of one transaction.
 @MainActor
 final class TransactionStore {
     /// Every router changed so far, in the order it was first changed.
@@ -76,16 +101,28 @@ final class TransactionStore {
     /// The changes so far, in order.
     private(set) var changes: [AppliedChange] = []
 
+    /// Issues to report when the transaction ends, in order.
+    private(set) var issues: [NavigationIssue] = []
+
     /// The first failed step of a transaction, if any. Later steps are skipped.
-    private(set) var failure: NavigationIssue?
+    var failure: NavigationFailure?
+
+    /// The first recovered step of a transaction, if any.
+    private var recovery: (issue: NavigationIssue, fallback: NavigationFallback)?
 
     /// Whether any step of a transaction changed something.
-    private(set) var hasChanged = false
+    private var hasChanged = false
+
+    /// Who the changes being recorded now come from.
+    var origin = ChangeOrigin.app
 
     /// What the whole transaction did, from its steps.
-    var transactionResult: StepResult {
+    var transactionResult: CallResult {
         if let failure {
-            return .failedAt(failure)
+            return .failed(failure)
+        }
+        if let recovery {
+            return .recovered(recovery.issue, recovery.fallback)
         }
         return hasChanged ? .changed : .unchanged
     }
@@ -99,37 +136,28 @@ final class TransactionStore {
         participant.beginWorkingCopy()
     }
 
-    /// Records changes made in one flow.
+    /// Records changes made in one flow, with the current origin.
     func record(_ changes: [NavigationChange], in flow: FlowID) {
-        self.changes.append(contentsOf: changes.map { AppliedChange(flow: flow, change: $0) })
+        self.changes.append(contentsOf: changes.map { AppliedChange(flow: flow, change: $0, origin: origin) })
     }
 
-    /// Records what one step of a transaction did, and returns it as an outcome.
-    func note(_ result: StepResult, file: StaticString, line: UInt) -> NavigationOutcome {
+    /// Keeps an issue to report when the transaction ends.
+    func keep(_ issue: NavigationIssue) {
+        issues.append(issue)
+    }
+
+    /// Records what one step of a transaction did, and returns it as the step's outcome.
+    func note(_ result: CallResult) -> NavigationOutcome {
         switch result {
         case .changed:
             return noteChanged()
         case .unchanged:
             return .alreadyThere
-        case .failed(let draft):
-            return noteFailure(draft.issue(file: file, line: line))
-        case .failedAt(let issue):
-            return noteFailure(issue)
+        case .recovered(let issue, let fallback):
+            return noteRecovered(issue, fallback)
+        case .failed(let failure):
+            return noteFailure(failure)
         }
-    }
-
-    /// Marks the transaction as changed.
-    private func noteChanged() -> NavigationOutcome {
-        hasChanged = true
-        return .applied
-    }
-
-    /// Keeps the first failure. The transaction rolls back when it ends.
-    func noteFailure(_ issue: NavigationIssue) -> NavigationOutcome {
-        if failure == nil {
-            failure = issue
-        }
-        return .failed(NavigationFailure(issue: failure ?? issue))
     }
 
     /// Writes every working copy back.
@@ -144,5 +172,28 @@ final class TransactionStore {
         for participant in participants {
             participant.discardWorkingCopy()
         }
+    }
+
+    /// Marks the transaction as changed.
+    private func noteChanged() -> NavigationOutcome {
+        hasChanged = true
+        return .applied
+    }
+
+    /// Keeps the first recovery. A recovery changed the state, or kept it as the fallback wants.
+    private func noteRecovered(_ issue: NavigationIssue, _ fallback: NavigationFallback) -> NavigationOutcome {
+        hasChanged = true
+        if recovery == nil {
+            recovery = (issue, fallback)
+        }
+        return .recovered(issue, by: fallback)
+    }
+
+    /// Keeps the first failure. The transaction rolls back when it ends.
+    private func noteFailure(_ failure: NavigationFailure) -> NavigationOutcome {
+        if self.failure == nil {
+            self.failure = failure
+        }
+        return .failed(failure)
     }
 }
