@@ -145,11 +145,11 @@ final class AppCoordinator: SwiftUIRootCoordinator {
 
 @main
 struct ShopApp: App {
-    @State private var app = AppCoordinator()
-
     var body: some Scene {
         WindowGroup {
-            WaypointRoot(app)
+            WaypointRoot {
+                AppCoordinator()
+            }
         }
     }
 }
@@ -251,7 +251,7 @@ The API is written in DocC articles, one per topic. Articles for built parts mat
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for how to run the tests and how pull requests are made. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for how to run the tests and how pull requests are made, and [CODE_STYLE.md](CODE_STYLE.md) for the code style. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

@@ -10,7 +10,7 @@ import Testing
 import WaypointCore
 import WaypointTestSupport
 
-/// Pins how routes, keys and decoding errors print (decision 0010, amended by 0011).
+/// Pins how routes, keys and decoding errors print (see the Descriptions and Routes articles).
 @Suite("Route descriptions")
 struct RouteDescriptionTests {
     typealias SearchRoute = RouteFixtures.SearchRoute

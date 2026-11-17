@@ -29,6 +29,8 @@ root.addGuard(LoginGuard(session: session))
 
 > Note: Guards are not available yet. This article fixes their shape so the rest of the API leaves room for them.
 
+A link that needs the user to sign in first is not a guard's job. The app coordinator holds the link until sign-in is complete, as <doc:DeepLinks> explains. Guards check navigation inside the app.
+
 ### Guard API
 
 Guards are attached to a router and apply to it and everything below it. They are synchronous: an answer that needs to wait, such as a server check, is done by the app before it navigates, or by redirecting to a flow that does the check.

@@ -62,67 +62,9 @@ The deploy reads a Cloudflare API token (Account, Cloudflare Pages, Edit) and th
 
 ## Code style
 
-swift-format formats the code and SwiftLint enforces the rules. Once the lint setup lands (#70), `scripts/lint.sh` must pass before a pull request is reviewed. Until then, review checks these rules by hand:
+The code style lives in [CODE_STYLE.md](CODE_STYLE.md): braces and bodies, member order, wrapping, naming, conformance comments and `let` by default, each with an example and how it is checked. Once the lint setup lands (#70), `scripts/lint.sh` must pass before a pull request is reviewed.
 
-- **Empty braces have one space inside:** `{ }`, never `{}`. This holds in code, tests and DocC snippets.
-- **No one-line type bodies.** A type or extension with anything in its body puts each member on its own line, and enums list one case per line.
-- **Every body goes on its own lines.** Functions, initializers, computed properties, accessors and the bodies of `if`, `guard`, `for`, `switch` and the like open their brace on the first line and close it on its own line. A closure argument whose body is one short expression may stay on one line, such as `Button("Close") { dismissFlow() }`.
-- **A blank line between member groups.** Separate stored properties from initializers, initializers from functions, and every member with a body from its neighbours.
-- **A type reads like a story.** Members come in this order: enum cases, type aliases and associated types, nested types, static properties, stored properties, computed properties, initializers and `deinit`, lifecycle methods, static functions, then functions and subscripts. Static members go first in their group. Keep related members next to each other.
-- **A wrapped parameter list puts each parameter on its own line.** When a signature doesn't fit in 120 characters, `(` ends the first line, each parameter gets its own line, and `)` starts the last one:
-
-  ```swift
-  public init(
-      handler: any LogHandler = DisabledLogHandler(),
-      minimumLevel: LogLevel = .notice,
-      categories: Set<LogCategory>? = nil,
-      revealsPrivateValues: Bool = false
-  )
-  ```
-
-- **A wrapped call puts each argument on its own line.** Nothing follows `(` on its line, each argument gets its own line, and `)` sits alone on the last line. In a coordinator, a closure argument calls one of its named functions:
-
-  ```swift
-  ProductListView(
-      onSelect: { self.showProduct(id: $0) },
-      onFilter: { self.showFilters() }
-  )
-  ```
-
-- **No collection literal inside a call's arguments.** Name an array, dictionary or set with `let` first, then pass the name, in tests too (`let expected = […]`, then `#expect(path == expected)`). `Package.swift` keeps SwiftPM's usual inline lists:
-
-  ```swift
-  let guestTabs: [MainTab] = [.home, .shop]
-  let tabs = TabRouter(tabs: guestTabs, selection: .home)
-  ```
-
-- **`let` by default** ([decision 0014](https://github.com/JoeOCT91/Waypoint-planning/blob/main/decisions/0014-immutability.md)). Value types (routes, state, options, configurations, events) have only `let` fields. A change makes a new value through a named function that checks it, such as `options.withDetents([.medium, .large])` or a reducer. Objects that own state over time, such as routers, keep it in as few `private` or `private(set)` `var`s as they need, and only their own named functions change them, such as `router.setFallback(.popToRoot, for: .routeNotInPath)`. There are no public settable properties, no mutable statics or globals, no `lazy var` and no `mutating` functions. Every remaining `var`, including a local one, says why in a comment that starts "`var` because". Computed properties, protocol requirements and property wrappers such as `@State` are not stored `var`s and need no reason.
-
-  ```swift
-  /// The committed state and presented router, which renderers observe.
-  ///
-  /// `var` because it is the router's current value. Only `commitWorkingCopy()` replaces it.
-  private var committed: Snapshot
-  ```
-
-- **A switch case's body goes on its own line, and is one call to a named function.** `break` and `return` are fine when there is nothing to do.
-- **Names say what coordination code does.** A function that builds a flow is `make…Flow()`, and a function that navigates is `show…()`, in both renderers.
-- **Document every member of a type, or none.** Public API documents every member.
-- **Every protocol conformance says why.** A `Conformances:` comment above the type, or its doc comment for public API, gives each conformance and each generic constraint its reason:
-
-  ```swift
-  // Conformances:
-  // - `NavigationRoot`, so `RootRouter` can compare roots to know when to switch, save and
-  //   restore the current root, and name it in events off the main actor.
-  enum AppRoot: NavigationRoot {
-      case login
-      case main
-  }
-  ```
-
-  A set that many types share is listed by its one name: `NavigationValue`, `NavigationRecord` or `NavigationStateValue` for Waypoint's own value types, and `Route`, `NavigationTab` or `NavigationRoot` for an app's types. The set's own doc comment gives the reason for each part. See the "Why these conformances" article.
-
-- **Public symbols are documented in DocC.** A change to the public API updates its article too.
+Public symbols are documented in DocC. A change to the public API updates its article in the same pull request.
 
 New source files start with this header:
 

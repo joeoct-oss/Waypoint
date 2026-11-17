@@ -10,7 +10,7 @@ import Testing
 import WaypointCore
 import WaypointTestSupport
 
-/// The type-keyed destination table shared by both renderers (#45, decision 0003).
+/// The type-keyed destination table shared by both renderers (#45, see the Routes article).
 @Suite("Route table")
 struct RouteTableTests {
     @Test

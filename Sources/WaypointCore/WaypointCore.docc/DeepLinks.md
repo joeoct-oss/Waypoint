@@ -170,7 +170,7 @@ extension NavigationFallback {
 
 ### The link inbox
 
-The app coordinator owns the inbox through its `links` property, and the renderers wire it up when they draw the coordinator. The app coordinator calls `markReady()` once the app can navigate, for example after login, and `markNotReady()` when it can't, for example after logout. See <doc:RootSwitching>.
+The app coordinator owns the inbox through its `links` property, and the renderers wire it up when they draw the coordinator. The app coordinator calls `markReady()` once the app can navigate, for example after it has restored the session at launch, and `markNotReady()` when it can't, for example while it resets after the user signs out. See <doc:RootSwitching>.
 
 ```swift
 /// The one place every link source sends to.
@@ -239,4 +239,11 @@ The renderer products connect the platform entry points (URL opens, universal li
 
 ### When a link can't be applied yet
 
-If a guard redirects a link, for example to login, the plan is parked. It resumes after the redirect flow finishes, unless a newer link replaces it or it expires. A link that matches nothing runs the policy's `unhandled` fallback.
+A link can arrive before the app is ready, or before the user has done something the link needs, such as signing in.
+
+- **The app is still starting.** The inbox holds every link until the app calls `markReady()` and a root router is attached. Then it applies them at once.
+- **The link needs something first.** The app coordinator decides for each link whether to apply it now, hold it until a requirement the app defines (such as signing in, accepting new terms or finishing onboarding) is complete, or drop it. A held link is saved, so it still opens after the app is relaunched, and it expires after 24 hours unless the app chooses another limit.
+
+A link that matches nothing runs the policy's `unhandled` fallback.
+
+> Note: Holding a link until a requirement is complete is accepted but not designed yet, so this article doesn't show its API. Guards are not used for links: they stay for changes inside a flow, such as leaving unsaved changes.
