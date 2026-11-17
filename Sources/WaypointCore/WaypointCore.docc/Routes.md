@@ -295,6 +295,12 @@ public struct RouteTable<Payload> {
 
     /// Every registered route type.
     public var registeredTypes: [any Route.Type] { get }
+
+    /// Whether a destination is registered for this route type.
+    public func contains<R: Route>(_ type: R.Type) -> Bool
+
+    /// The route types registered for decoding.
+    public private(set) var registry: RouteRegistry
 }
 ```
 

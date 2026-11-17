@@ -73,6 +73,13 @@ public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescriba
 
     /// A full-screen cover.
     public static var fullScreenCover: PresentationStyle { get }
+
+    /// The sheet's own options, or `nil` for a `.sheet` that uses the
+    /// router's defaults and for a full-screen cover.
+    public var sheetOptions: SheetOptions? { get }
+
+    /// Whether this is a full-screen cover.
+    public var isFullScreenCover: Bool { get }
 }
 ```
 
@@ -87,7 +94,8 @@ Sheet sizes are plain values in the navigation state. That means a restored or d
 /// - `Hashable`, so detents can be compared and kept in sets.
 /// - `Codable`, so it can be saved, restored and logged.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-public enum SheetDetent: Hashable, Codable, Sendable {
+/// - `CustomStringConvertible`, so presentation styles print their sizes as `[medium, large]`.
+public enum SheetDetent: Hashable, Codable, Sendable, CustomStringConvertible {
     /// About half the available height.
     case medium
     /// The full available height.
