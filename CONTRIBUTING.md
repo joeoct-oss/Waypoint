@@ -47,6 +47,17 @@ scripts/test-mac.sh
 
 It runs the package tests on the host, then every unit test target on the simulator (including the UIKit-only tests), then the example app's UI tests. Set `WAYPOINT_SIMULATOR` to use a simulator other than `waypoint-01`.
 
+## Documentation site
+
+The DocC documentation is published as a static site on Cloudflare Pages at <https://waypoint-docs-9zj.pages.dev/documentation>. Build it on a Mac, so the SwiftUI and UIKit pages have their symbols, then upload it:
+
+```sh
+scripts/build-docs.sh
+scripts/deploy-docs.sh
+```
+
+The deploy reads a Cloudflare API token (Account, Cloudflare Pages, Edit) and the account ID from `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, as set in the project's cloud environment, which allows `api.cloudflare.com`. On a Mac without them it falls back to the Keychain items `waypoint-cloudflare-api-token` and `waypoint-cloudflare-account-id`. Never commit either value. Set `WAYPOINT_DOCS_PROJECT` to use a Pages project other than `waypoint-docs`.
+
 ## Code style
 
 swift-format formats the code and SwiftLint enforces the rules. Once the lint setup lands (#70), `scripts/lint.sh` must pass before a pull request is reviewed. Until then, review checks these rules by hand:
