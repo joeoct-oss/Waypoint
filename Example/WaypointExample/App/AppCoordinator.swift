@@ -8,13 +8,13 @@
 
 import SwiftUI
 
-// The app's navigation lives here, and only here (decision 0009). The `App` holds this coordinator and
-// nothing else, screens report what the reader did, and the coordinator decides where that goes:
+// The app's navigation lives here, and only here (decision 0009). Each window makes its own coordinator,
+// screens report what the reader did, and the coordinator decides where that goes:
 // `make…Flow()` builds a screen, `show…()` navigates.
 //
 // Until the SwiftUI renderer is built, the coordinator keeps a plain `NavigationStack` path. That path is
 // the one seam to change when it is: it becomes the coordinator's router, and `AppRootView` becomes
-// `WaypointRoot(app)`. The screens and their callbacks stay as they are.
+// `WaypointRoot { AppCoordinator(...) }`. The screens and their callbacks stay as they are.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `AppRootView` redraws when the path changes.

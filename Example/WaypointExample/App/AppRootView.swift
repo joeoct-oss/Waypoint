@@ -8,10 +8,15 @@
 
 import SwiftUI
 
-// Draws the app coordinator: Home at the root of one stack, and the coordinator's screens above it.
-// `WaypointRoot(app)` takes this view's place once the SwiftUI renderer is built.
+// Makes this window's app coordinator once and draws it: Home at the root of one stack, and the
+// coordinator's screens above it. `WaypointRoot { AppCoordinator(...) }` takes this view's place once the
+// SwiftUI renderer is built, with the same shape: one coordinator per window.
 struct AppRootView: View {
-    let app: AppCoordinator
+    @State private var app: AppCoordinator
+
+    init(makeCoordinator: () -> AppCoordinator) {
+        _app = State(initialValue: makeCoordinator())
+    }
 
     var body: some View {
         NavigationStack(path: makePathBinding(app.path)) {
