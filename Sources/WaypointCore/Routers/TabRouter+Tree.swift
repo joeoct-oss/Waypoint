@@ -107,6 +107,14 @@ extension TabRouter: PresentingRouter {
         }
     }
 
+    /// The presented router as it is in the current transaction, or the committed one.
+    var currentPresented: StackRouter? {
+        guard let working else {
+            return presented
+        }
+        return working.presented
+    }
+
     /// Each tab's router, which is inside this flow.
     var workingInFlowChildren: [any PresentingRouter] {
         guard let working else {
@@ -117,6 +125,14 @@ extension TabRouter: PresentingRouter {
 }
 
 extension TabRouter {
+    /// One tab's router as it is in the current transaction, or the committed one.
+    func currentRouter(for tab: Tab) -> StackRouter? {
+        guard let working else {
+            return tabRouters[tab]
+        }
+        return working.tabRouters[tab]
+    }
+
     /// Selects a tab, or pops the selected tab's stack when it is selected again.
     func selectStep(_ tab: Tab, in store: TransactionStore) -> StepResult {
         store.enlist(self)
