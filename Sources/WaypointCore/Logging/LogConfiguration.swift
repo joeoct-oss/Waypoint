@@ -11,7 +11,7 @@
 ///
 /// ```swift
 /// #if DEBUG
-/// router.setLogging(LogConfiguration(handler: myHandler, minimumLevel: .debug, revealsPrivateValues: true))
+/// router.setLogging(LogConfiguration(handler: myHandler, minimumLevel: .debug, treeLogging: .changedStacks))
 /// #endif
 /// ```
 ///
@@ -37,9 +37,20 @@ public struct LogConfiguration: Sendable {
     /// The categories that are written, or `nil` for all. Default: all.
     public let categories: Set<LogCategory>?
 
-    /// Whether route field values are written as they are, instead of `<private>`. Turn it on in
-    /// debug builds only. Default: `false`.
+    /// Whether route field values are written as they are, instead of `<private>` or `…`. Turn it
+    /// on in debug builds only. Default: `false`.
     public let revealsPrivateValues: Bool
+
+    /// How lines are written: readable sentences, or structured `key=value` lines for tools.
+    /// Default: `.readable`.
+    public let format: LogFormat
+
+    /// Whether readable lines start with a symbol, such as `▸` for a push, and join routes with
+    /// `›`. Turn it off for consoles that can't show them. Default: `true`.
+    public let usesSymbols: Bool
+
+    /// Which part of the tree is logged after each change, at `.info`. Default: `.off`.
+    public let treeLogging: TreeLogging
 
     /// Creates a configuration. Every argument has a default; the default handler writes
     /// nothing until a renderer or the app sets one.
@@ -47,12 +58,18 @@ public struct LogConfiguration: Sendable {
         handler: any LogHandler = DisabledLogHandler(),
         minimumLevel: LogLevel = .notice,
         categories: Set<LogCategory>? = nil,
-        revealsPrivateValues: Bool = false
+        revealsPrivateValues: Bool = false,
+        format: LogFormat = .readable,
+        usesSymbols: Bool = true,
+        treeLogging: TreeLogging = .off
     ) {
         self.handler = handler
         self.minimumLevel = minimumLevel
         self.categories = categories
         self.revealsPrivateValues = revealsPrivateValues
+        self.format = format
+        self.usesSymbols = usesSymbols
+        self.treeLogging = treeLogging
     }
 
     /// The same configuration, writing to another handler.
@@ -61,7 +78,10 @@ public struct LogConfiguration: Sendable {
             handler: handler,
             minimumLevel: minimumLevel,
             categories: categories,
-            revealsPrivateValues: revealsPrivateValues
+            revealsPrivateValues: revealsPrivateValues,
+            format: format,
+            usesSymbols: usesSymbols,
+            treeLogging: treeLogging
         )
     }
 
@@ -71,7 +91,10 @@ public struct LogConfiguration: Sendable {
             handler: handler,
             minimumLevel: level,
             categories: categories,
-            revealsPrivateValues: revealsPrivateValues
+            revealsPrivateValues: revealsPrivateValues,
+            format: format,
+            usesSymbols: usesSymbols,
+            treeLogging: treeLogging
         )
     }
 
@@ -81,7 +104,10 @@ public struct LogConfiguration: Sendable {
             handler: handler,
             minimumLevel: minimumLevel,
             categories: categories,
-            revealsPrivateValues: revealsPrivateValues
+            revealsPrivateValues: revealsPrivateValues,
+            format: format,
+            usesSymbols: usesSymbols,
+            treeLogging: treeLogging
         )
     }
 
@@ -91,7 +117,49 @@ public struct LogConfiguration: Sendable {
             handler: handler,
             minimumLevel: minimumLevel,
             categories: categories,
-            revealsPrivateValues: reveals
+            revealsPrivateValues: reveals,
+            format: format,
+            usesSymbols: usesSymbols,
+            treeLogging: treeLogging
+        )
+    }
+
+    /// The same configuration, writing lines in another format.
+    public func withFormat(_ format: LogFormat) -> LogConfiguration {
+        LogConfiguration(
+            handler: handler,
+            minimumLevel: minimumLevel,
+            categories: categories,
+            revealsPrivateValues: revealsPrivateValues,
+            format: format,
+            usesSymbols: usesSymbols,
+            treeLogging: treeLogging
+        )
+    }
+
+    /// The same configuration, with or without the readable format's symbols.
+    public func withSymbols(_ usesSymbols: Bool) -> LogConfiguration {
+        LogConfiguration(
+            handler: handler,
+            minimumLevel: minimumLevel,
+            categories: categories,
+            revealsPrivateValues: revealsPrivateValues,
+            format: format,
+            usesSymbols: usesSymbols,
+            treeLogging: treeLogging
+        )
+    }
+
+    /// The same configuration, logging more or less of the tree after each change.
+    public func withTreeLogging(_ treeLogging: TreeLogging) -> LogConfiguration {
+        LogConfiguration(
+            handler: handler,
+            minimumLevel: minimumLevel,
+            categories: categories,
+            revealsPrivateValues: revealsPrivateValues,
+            format: format,
+            usesSymbols: usesSymbols,
+            treeLogging: treeLogging
         )
     }
 

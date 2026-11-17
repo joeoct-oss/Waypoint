@@ -24,6 +24,38 @@ extension TabRouter: TreeNode {
     var currentPath: [AnyRoute] {
         []
     }
+
+    /// The selected tab's stack.
+    var shownStack: any TreeNode {
+        visibleStack ?? self
+    }
+
+    /// The selected tab's routes.
+    var shownRoutes: [AnyRoute] {
+        visibleStack?.shownRoutes ?? []
+    }
+
+    /// `tabs      home · [shop] · profile`, with each tab's stack and the presented flow below.
+    func readableTree(_ naming: RouteNaming) -> ReadableTree {
+        let snapshot = current
+        let names = snapshot.state.tabs.map { tab in
+            Self.tabLabel(tab, selected: tab == snapshot.state.selection)
+        }
+        let detail = names.joined(separator: naming.usesSymbols ? " · " : " | ")
+        let tabTrees = snapshot.state.tabs.compactMap { tab in
+            snapshot.tabRouters[tab]?.readableTree(naming)
+        }
+        let presentedTree = snapshot.presented.map { child in
+            [child.readableTree(naming).presented(as: snapshot.state.presentation?.style)]
+        }
+        return ReadableTree(name: flowID.name, detail: detail, children: tabTrees + (presentedTree ?? []))
+    }
+
+    /// A tab's name, in brackets when it is selected.
+    private static func tabLabel(_ tab: Tab, selected: Bool) -> String {
+        let name = DescriptionFormat.name(of: tab)
+        return selected ? "[\(name)]" : name
+    }
 }
 
 /// Conformances:

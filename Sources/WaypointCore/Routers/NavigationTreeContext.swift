@@ -170,14 +170,16 @@ final class NavigationTreeContext {
         guard !turn.isApplying else {
             return enqueue(on: router, file: file, line: line, body)
         }
-        let outcome = apply(on: router.flowID, file: file, line: line, body)
+        let outcome = apply(on: router, file: file, line: line, body)
         drainQueue()
         return outcome
     }
 
-    /// Applies the body as one transaction, measured as one interval.
+    /// Applies the body as one transaction, measured as one interval. Issues are logged before
+    /// the changes, so a recovered issue reads before what its fallback did, and observers hear
+    /// of them after the commit.
     private func apply(
-        on flow: FlowID,
+        on router: some TreeNode,
         file: StaticString,
         line: UInt,
         _ body: (TransactionStore) -> CallResult
@@ -189,11 +191,13 @@ final class NavigationTreeContext {
             turn = turn.applying(false)
         }
         let store = TransactionStore()
-        let outcome = finish(store, body(store), file: file, line: line)
-        for (issue, level) in store.issues {
-            report(issue, level: level)
+        let result = body(store)
+        logIssues(store.issues)
+        let outcome = finish(store, result, on: router, file: file, line: line)
+        for (issue, _) in store.issues {
+            observers.reported?(issue)
         }
-        logUnchanged(outcome, flow: flow, file: file, line: line)
+        logUnchanged(outcome, flow: router.flowID, file: file, line: line)
         return outcome
     }
 
@@ -201,16 +205,17 @@ final class NavigationTreeContext {
     private func finish(
         _ store: TransactionStore,
         _ result: CallResult,
+        on router: some TreeNode,
         file: StaticString,
         line: UInt
     ) -> NavigationOutcome {
         switch result {
         case .changed:
-            return commit(store, outcome: .applied, file: file, line: line)
+            return commit(store, outcome: .applied, on: router, file: file, line: line)
         case .unchanged:
             return rollBack(store, outcome: .alreadyThere)
         case .recovered(let issue, let fallback):
-            return commit(store, outcome: .recovered(issue, by: fallback), file: file, line: line)
+            return commit(store, outcome: .recovered(issue, by: fallback), on: router, file: file, line: line)
         case .failed(let failure):
             return fail(store, failure)
         }
@@ -220,11 +225,12 @@ final class NavigationTreeContext {
     private func commit(
         _ store: TransactionStore,
         outcome: NavigationOutcome,
+        on router: some TreeNode,
         file: StaticString,
         line: UInt
     ) -> NavigationOutcome {
         store.commit()
-        logChanges(store.changes, file: file, line: line)
+        logChanges(store.changes, in: router, file: file, line: line)
         if !store.changes.isEmpty {
             observers.applied?(store.changes)
         }

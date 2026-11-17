@@ -23,6 +23,26 @@ extension StackRouter: TreeNode {
     var currentPath: [AnyRoute] {
         current.state.path
     }
+
+    /// This stack.
+    var shownStack: any TreeNode {
+        self
+    }
+
+    /// The root route, if any, then the path.
+    var shownRoutes: [AnyRoute] {
+        (rootRoute.map { [$0] } ?? []) + current.state.path
+    }
+
+    /// `shop      Product list (…)`, with the presented flow below.
+    func readableTree(_ naming: RouteNaming) -> ReadableTree {
+        let detail = ReadableLog.stackText(shownRoutes, naming: naming)
+        let style = current.state.presentation?.style
+        let children = presented.map { child in
+            [child.readableTree(naming).presented(as: style)]
+        }
+        return ReadableTree(name: flowID.name, detail: detail, children: children ?? [])
+    }
 }
 
 /// Conformances:

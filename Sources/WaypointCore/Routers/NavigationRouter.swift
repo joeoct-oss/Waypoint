@@ -57,6 +57,16 @@ protocol TreeNode: NavigationRouter, TransactionParticipant {
     /// This router's own fallback policy.
     var fallbackPolicy: FallbackPolicy { get }
 
+    /// The stack on screen in this flow: the stack itself, or a tab container's selected stack.
+    var shownStack: any TreeNode { get }
+
+    /// The routes on screen in this flow, root route first: a stack's routes, or a tab
+    /// container's selected stack.
+    var shownRoutes: [AnyRoute] { get }
+
+    /// This router and the routers inside it, as the readable tree prints them.
+    func readableTree(_ naming: RouteNaming) -> ReadableTree
+
     /// Marks this router as in the tree.
     func markAttached()
 
@@ -73,6 +83,14 @@ extension TreeNode {
     /// The fallback this router's policy, or the nearest parent's, sets for a kind.
     func policyFallback(for kind: NavigationIssue.Kind) -> NavigationFallback? {
         fallbackPolicy[kind] ?? parentNode?.policyFallback(for: kind)
+    }
+
+    /// This router, or the router inside it with this flow.
+    func node(for flow: FlowID) -> (any TreeNode)? {
+        guard flowID != flow else {
+            return self
+        }
+        return childNodes.lazy.compactMap { $0.node(for: flow) }.first
     }
 
     /// Marks this router and everything inside it as gone from the tree.
