@@ -40,7 +40,7 @@ public struct StackState: Sendable, Equatable, Codable, NavigationDescribable {
 
 ### Presentations
 
-A flow presents at most one child flow at a time. The presented flow can present again, which gives a chain of modals, as in both SwiftUI and UIKit. See <doc:Presentation> for styles and sheet sizes.
+A flow presents at most one child flow at a time. The presented flow can present again, which gives a chain of modals, as in both SwiftUI and UIKit. See <doc:PresentingFlows> for styles and sheet sizes.
 
 ```swift
 /// A child flow shown modally above its parent.

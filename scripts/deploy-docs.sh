@@ -41,6 +41,9 @@ if [[ ! -f "$SITE_DIR/index.html" ]]; then
     exit 1
 fi
 
+# Archives made on a Mac can carry AppleDouble files (._name); they are not part of the site.
+find "$SITE_DIR" -name '._*' -delete
+
 if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
     CLOUDFLARE_API_TOKEN=$(keychain_value waypoint-cloudflare-api-token)
 fi

@@ -173,6 +173,8 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
     /// `selection` becomes the only tab.
     ///
     /// - Parameters:
+    ///   - tabs: The tabs, in the order they are shown.
+    ///   - selection: The tab selected at the start.
     ///   - flow: The container's name in logs, events and saved state. Default: `tabs`.
     ///   - popsToRootOnReselect: Whether tapping the selected tab pops its stack to the root.
     ///     Default: `true`.

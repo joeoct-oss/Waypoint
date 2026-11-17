@@ -10,6 +10,8 @@
 # catalogs, built for iOS so the renderer pages have their symbols, merged into
 # one archive and made ready for static hosting.
 #
+# The Waypoint theme (colors, fonts, mark, favicon and landing page) comes from docs-theme.
+#
 # Usage: scripts/build-docs.sh
 # Output: .build/docs-site (upload it with scripts/deploy-docs.sh).
 # Runs on a Mac with Xcode. On Linux the renderers compile empty, so the site
@@ -22,6 +24,25 @@ cd "$(dirname "$0")/.."
 MODULES=(WaypointCore Waypoint WaypointUIKit)
 WORK_DIR=.build/docs-work
 SITE_DIR=.build/docs-site
+
+THEME_DIR=docs-theme
+FONTS_URL="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@500;600;700&display=swap"
+
+# Adds the Waypoint look from docs-theme: DocC colors and fonts, the mark and favicon, the
+# stylesheet on every DocC page, and the landing page at the site root.
+apply_theme() {
+    cp "$THEME_DIR/theme-settings.json" "$SITE_DIR/theme-settings.json"
+    mkdir -p "$SITE_DIR/images/waypoint"
+    cp "$THEME_DIR"/images/*.svg "$THEME_DIR"/images/*.png "$SITE_DIR/images/waypoint/"
+    cp "$THEME_DIR/images/favicon.svg" "$THEME_DIR/images/favicon.ico" "$SITE_DIR/"
+    cp "$THEME_DIR/waypoint.css" "$SITE_DIR/css/waypoint.css"
+
+    local head_links="<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link rel=\"stylesheet\" href=\"$FONTS_URL\"><link rel=\"stylesheet\" href=\"/css/waypoint.css\">"
+    find "$SITE_DIR" -name index.html -print0 |
+        HEAD_LINKS="$head_links" xargs -0 perl -pi -e 's|</head>|$ENV{HEAD_LINKS}</head>|'
+
+    cp "$THEME_DIR/index.html" "$SITE_DIR/index.html"
+}
 
 rm -rf "$WORK_DIR" "$SITE_DIR"
 mkdir -p "$WORK_DIR"
@@ -51,7 +72,7 @@ echo "==> docc transform-for-static-hosting"
 xcrun docc process-archive transform-for-static-hosting "$WORK_DIR/Waypoint.doccarchive" \
     --output-path "$SITE_DIR"
 
-# The archive's root page is empty, so the site's root opens the documentation.
-printf '/ /documentation 302\n' > "$SITE_DIR/_redirects"
+echo "==> Waypoint theme"
+apply_theme
 
 echo "Documentation site built in $SITE_DIR"

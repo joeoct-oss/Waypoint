@@ -56,6 +56,8 @@ scripts/build-docs.sh
 scripts/deploy-docs.sh
 ```
 
+The site's look lives in `docs-theme`: `theme-settings.json` (DocC colors and fonts), `waypoint.css` (headings and the mark in the navigation bar), the landing page `index.html`, and the mark and favicon in `images`. `scripts/build-docs.sh` adds them after DocC builds the site.
+
 The deploy reads a Cloudflare API token (Account, Cloudflare Pages, Edit) and the account ID from `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, as set in the project's cloud environment, which allows `api.cloudflare.com`. On a Mac without them it falls back to the Keychain items `waypoint-cloudflare-api-token` and `waypoint-cloudflare-account-id`. Never commit either value. Set `WAYPOINT_DOCS_PROJECT` to use a Pages project other than `waypoint-docs`.
 
 ## Code style

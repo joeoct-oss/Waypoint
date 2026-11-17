@@ -222,7 +222,7 @@ The API is written in DocC articles, one per topic. Articles for built parts mat
 | [Routes](Sources/WaypointCore/WaypointCore.docc/Routes.md) | Naming screens with small route types, and route keys from the type name |
 | [Navigation state](Sources/WaypointCore/WaypointCore.docc/NavigationState.md) | The navigation tree the router holds |
 | [Stack navigation](Sources/WaypointCore/WaypointCore.docc/StackNavigation.md) | Push, pop and replace, outcomes and `else:` fallbacks |
-| [Presentation](Sources/WaypointCore/WaypointCore.docc/Presentation.md) | Sheets, full-screen covers, and sheet sizes, including sheets that fit their content |
+| [Presentation](Sources/WaypointCore/WaypointCore.docc/PresentingFlows.md) | Sheets, full-screen covers, and sheet sizes, including sheets that fit their content |
 | [Tabs](Sources/WaypointCore/WaypointCore.docc/Tabs.md) | Tab routers and their stacks |
 | [Coordinators and child flows](Sources/WaypointCore/WaypointCore.docc/CoordinatorsAndChildFlows.md) | Grouping screens into flows |
 | [Root switching](Sources/WaypointCore/WaypointCore.docc/RootSwitching.md) | The app coordinator, and swapping login for the main tabs |

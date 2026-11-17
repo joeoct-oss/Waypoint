@@ -17,7 +17,7 @@ WaypointCore holds navigation state as plain, observable Swift values: stacks, p
 ### Navigating
 
 - <doc:StackNavigation>
-- <doc:Presentation>
+- <doc:PresentingFlows>
 - <doc:Tabs>
 
 ### Flows

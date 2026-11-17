@@ -1,0 +1,76 @@
+/*
+ *  waypoint.css
+ *  Waypoint
+ *
+ *  Created by Yousef Mohamed <52625092+JoeOCT91@users.noreply.github.com>.
+ *  Copyright © 2026 Yousef Mohamed. MIT License.
+ *
+ *  Waypoint look for the DocC site: Unbounded headings and the mark in the navigation bar.
+ *  Colors and the text fonts live in theme-settings.json; scripts/build-docs.sh links this file
+ *  from every page.
+ */
+
+/* Navigation bar: the mark and "Waypoint" instead of "Documentation". */
+/* DocC scopes its rules with data attributes, so these need !important to win. */
+h2.nav-title {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    font-size: 0 !important;
+}
+
+h2.nav-title::before {
+    content: "";
+    width: 26px;
+    height: 26px;
+    background: url("/images/waypoint/mark-day.svg") center / contain no-repeat;
+}
+
+h2.nav-title::after {
+    content: "Waypoint";
+    font-family: "Unbounded", "Inter", sans-serif;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+@media (prefers-color-scheme: dark) {
+    body[data-color-scheme="auto"] h2.nav-title::before {
+        background-image: url("/images/waypoint/mark-night.svg");
+    }
+}
+
+body[data-color-scheme="dark"] h2.nav-title::before {
+    background-image: url("/images/waypoint/mark-night.svg");
+}
+
+/* Page titles and section headings use the display face. */
+main h1,
+main h2:not(.nav-title),
+.contenttable .title {
+    font-family: "Unbounded", "Inter", sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em !important;
+}
+
+main h1 {
+    font-size: clamp(30px, 4vw, 40px) !important;
+}
+
+/* Module pages: a deep-space band with the current-position glow. */
+.documentation-hero:not(.documentation-hero--disabled) {
+    background:
+        radial-gradient(circle at 88% 30%, rgba(255, 91, 170, 0.22), transparent 28%),
+        radial-gradient(circle at 80% 60%, rgba(124, 140, 255, 0.18), transparent 45%),
+        #0B0F2A !important;
+}
+
+/* Other pages have no band, so their title takes the page's text color. */
+.documentation-hero--disabled h1.title {
+    color: var(--color-text) !important;
+}
+
+/* Inline code reads as part of the sentence. */
+code {
+    font-variant-ligatures: none;
+}
