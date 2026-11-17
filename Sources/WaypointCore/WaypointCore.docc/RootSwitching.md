@@ -32,11 +32,11 @@ final class AppCoordinator: RootCoordinator {
 
     func showMainFlow() {
         router.switch(to: .main)
-        links?.isReady = true
+        links?.markReady()
     }
 
     func showLoginFlow() {
-        links?.isReady = false
+        links?.markNotReady()
         router.switch(to: .login)
     }
 }
@@ -68,17 +68,27 @@ func loggingInShowsTheMainTabs() {
 @MainActor @Observable
 public final class RootRouter<Root: Hashable & Codable & Sendable>: NavigationRouter {
     /// The root that is showing.
-    public private(set) var current: Root
+    public var current: Root { get }
 
     /// What to do when a call fails. Inherited by every router below this one.
-    public var fallbackPolicy: FallbackPolicy { get set }
+    public var fallbackPolicy: FallbackPolicy { get }
     /// Default options for presentations. Inherited by every router below this one.
-    public var presentationDefaults: PresentationDefaults { get set }
+    public var presentationDefaults: PresentationDefaults { get }
 
     /// Creates a root router showing `initial`.
     ///
     /// `logging` sets how the whole tree logs. See <doc:EventsAndLogging>.
     public init(_ initial: Root, logging: LogConfiguration = .default)
+
+    /// Sets one kind's fallback for every router below this one.
+    public func setFallback(
+        _ fallback: NavigationFallback?,
+        for kind: NavigationIssue.Kind,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    )
+    /// Sets the default presentation options for every router below this one.
+    public func setPresentationDefaults(_ defaults: PresentationDefaults)
 
     /// Replaces the whole tree below this router with the flow for `root`.
     ///

@@ -9,7 +9,10 @@
 /// A state that can present one flow: a stack or a tab container.
 protocol PresentingState: Equatable {
     /// The presented flow, if any.
-    var presentation: Presentation? { get set }
+    var presentation: Presentation? { get }
+
+    /// The same state with another presented flow.
+    func withPresentation(_ presentation: Presentation?) -> Self
 }
 
 /// Conformances:
@@ -52,9 +55,7 @@ enum PresentationReducer {
         if let current = state.presentation {
             return .rejected(.alreadyPresenting(current.flow))
         }
-        var next = state
-        next.presentation = presentation
-        return .changed(next, [.presented(presentation)])
+        return .changed(state.withPresentation(presentation), [.presented(presentation)])
     }
 
     /// Clears the presentation.
@@ -62,8 +63,6 @@ enum PresentationReducer {
         guard let current = state.presentation else {
             return .unchanged
         }
-        var next = state
-        next.presentation = nil
-        return .changed(next, [.dismissed(current.flow)])
+        return .changed(state.withPresentation(nil), [.dismissed(current.flow)])
     }
 }

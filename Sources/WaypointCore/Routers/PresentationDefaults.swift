@@ -12,7 +12,7 @@
 /// `presentationDefaults`, then ``SheetOptions/default``.
 ///
 /// ```swift
-/// rootRouter.presentationDefaults.sheet = SheetOptions(detents: [.medium, .large])
+/// rootRouter.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
 /// ```
 ///
 /// Conformances:
@@ -25,10 +25,15 @@ public struct PresentationDefaults: Sendable, Equatable {
     }
 
     /// Used by `.sheet` when a call doesn't pass its own options.
-    public var sheet: SheetOptions
+    public let sheet: SheetOptions
 
     /// Creates defaults. Every argument has a default.
     public init(sheet: SheetOptions = .default) {
         self.sheet = sheet
+    }
+
+    /// The same defaults with other sheet options.
+    public func withSheet(_ sheet: SheetOptions) -> PresentationDefaults {
+        PresentationDefaults(sheet: sheet)
     }
 }

@@ -37,6 +37,7 @@ public struct FlowID: Hashable, Codable, Sendable, NavigationDescribable {
 
     /// Encodes the flow as its name.
     public func encode(to encoder: any Encoder) throws {
+        // `var` because `SingleValueEncodingContainer.encode` is mutating.
         var container = encoder.singleValueContainer()
         try container.encode(name)
     }

@@ -18,14 +18,14 @@
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public struct Presentation: Sendable, Equatable, Codable, NavigationDescribable {
     /// How the flow is shown.
-    public var style: PresentationStyle
+    public let style: PresentationStyle
 
     /// The presented flow.
-    public var flow: FlowID
+    public let flow: FlowID
 
     /// The route of the presented flow's root screen, or `nil` when a coordinator builds the
     /// flow's root itself.
-    public var route: AnyRoute?
+    public let route: AnyRoute?
 
     /// `sheet FilterRoute flow=filter`, with the route's fields private.
     public var description: String {

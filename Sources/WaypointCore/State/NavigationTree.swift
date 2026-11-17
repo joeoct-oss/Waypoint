@@ -32,10 +32,10 @@ public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribabl
     }
 
     /// The root flow and everything shown inside it.
-    public var root: Node
+    public let root: Node
 
     /// The flows presented over this one, by the flow that presented them.
-    public var presented: [FlowID: NavigationTree]
+    public let presented: [FlowID: NavigationTree]
 
     /// The path from the root to what is on screen, such as
     /// `root(app) current=main > tabs(main) selection=shop > stack(shop)[ProductRoute(id: <private>)]`.

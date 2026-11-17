@@ -59,10 +59,18 @@ extension TransactionStore {
         after issue: NavigationIssue,
         _ context: FallbackContext
     ) -> NavigationIssue? {
-        origin = .fallback
-        defer {
-            origin = .app
+        asFallback {
+            runFallbackSteps(fallback, on: router, after: issue, context)
         }
+    }
+
+    /// The steps of one fallback. Returns its issue if it failed.
+    private func runFallbackSteps(
+        _ fallback: NavigationFallback,
+        on router: any PresentingRouter,
+        after issue: NavigationIssue,
+        _ context: FallbackContext
+    ) -> NavigationIssue? {
         switch fallback {
         case .none:
             return nil
@@ -115,17 +123,13 @@ extension TransactionStore {
 
     /// Runs a custom fallback through a transaction value. Its first failed step is its issue.
     private func runCustom(
-        _ change: @MainActor @Sendable (inout NavigationTransaction, NavigationIssue) -> Void,
+        _ change: @MainActor @Sendable (NavigationTransaction, NavigationIssue) -> Void,
         on router: any PresentingRouter,
         after issue: NavigationIssue
     ) -> NavigationIssue? {
-        let earlier = failure
-        failure = nil
-        var transaction = NavigationTransaction(store: self, target: router)
-        change(&transaction, issue)
-        let fallbackIssue = failure?.issue
-        failure = earlier
-        return fallbackIssue
+        isolatingFailure {
+            change(NavigationTransaction(store: self, target: router), issue)
+        }
     }
 
     /// A failed step's issue at the call site, or `nil` when the step worked.

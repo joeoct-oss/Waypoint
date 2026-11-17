@@ -11,58 +11,98 @@
 @MainActor
 final class NavigationTreeContext {
     /// Route types registered for decoding and as having a destination.
+    ///
+    /// `var` because destinations are registered one by one as renderers and coordinators set
+    /// up. Only ``register(_:)`` changes it.
     private(set) var registry = RouteRegistry()
+
+    /// How the tree logs, and how many calls may be queued in one turn.
+    ///
+    /// `var` because the app and renderers set them after the root router exists. Only
+    /// ``setLogging(_:)`` and ``setMaxQueuedChanges(_:)`` change it.
+    private var settings = Settings()
+
+    /// The seams for observers, logging, strict mode and the app's failure handlers.
+    ///
+    /// `var` because observers join after the tree exists. Only the `on…` functions and
+    /// ``addFailureHandler(_:)`` change it.
+    private var observers = Observers()
+
+    /// Whether a transaction is being applied or queued calls are running, and the queue.
+    ///
+    /// `var` because it follows each call through the main-actor turn. Only `start`, `apply`,
+    /// `enqueue` and `drainQueue` change it.
+    private var turn = Turn.idle
+
+    /// Flow names used by routers in the tree.
+    ///
+    /// `var` because flows come and go. Only ``claimFlowName(_:)`` and ``releaseFlowName(_:)``
+    /// change it.
+    private var flowNames: Set<String> = []
+
+    /// How many transaction intervals were measured, for each interval's id.
+    ///
+    /// `var` because each measured transaction takes the next id. Only ``claimIntervalID()``
+    /// changes it.
+    private var intervalCount: UInt64 = 0
 
     /// Whether pushes check that the route type has a destination. Turned on by the first
     /// registration, so a tree without destinations, such as one in a unit test, is not checked.
-    private(set) var checksDestinations = false
+    var checksDestinations: Bool {
+        !registry.isEmpty
+    }
+
+    /// How the tree logs. Default: ``LogConfiguration/default``.
+    var logging: LogConfiguration {
+        settings.logging
+    }
 
     /// The most calls that may be queued in one main-actor turn. Default: 32.
-    var maxQueuedChanges = 32
-
-    /// How the tree logs.
-    var logging = LogConfiguration.default
-
-    /// The id of the next measured interval.
-    var nextIntervalID: UInt64 = 0
-
-    /// Called with the changes of each committed transaction, while it is still being applied.
-    /// The seam for observers and events (#23).
-    var didApply: (([AppliedChange]) -> Void)?
-
-    /// Called with each issue when it is reported. The seam for observers and logging.
-    var didReport: ((NavigationIssue) -> Void)?
-
-    /// Called with the outcome of every call, including queued and ignored ones. The seam for
-    /// `WaypointTesting` strict mode (#41).
-    package var didFinish: ((NavigationOutcome) -> Void)?
-
-    /// The app's handlers for calls that failed and could not be recovered.
-    private var failureHandlers: [(NavigationFailure) -> Void] = []
-
-    /// Whether a transaction is being applied, including its observers.
-    private var isApplying = false
-
-    /// Whether queued calls are running.
-    private var isDraining = false
-
-    /// Calls made while a transaction was applied, in order.
-    private var queue: [() -> Void] = []
-
-    /// Calls queued since the queue was last empty.
-    private var queuedInTurn = 0
-
-    /// Flow names used by routers in the tree.
-    private var flowNames: Set<String> = []
+    var maxQueuedChanges: Int {
+        settings.maxQueuedChanges
+    }
 
     /// Registers a route type for decoding and as having a destination.
     func register<R: Route>(_ type: R.Type) {
         let known = registry.problems.count
-        registry.register(type)
-        checksDestinations = true
+        registry = registry.registering(type)
         for problem in registry.problems.dropFirst(known) {
             logRegistryProblem(problem)
         }
+    }
+
+    /// Sets how the tree logs.
+    func setLogging(_ configuration: LogConfiguration) {
+        settings = settings.withLogging(configuration)
+    }
+
+    /// Sets the queue limit, or returns why it can't: a limit below 1 would drop every call
+    /// made from an observer.
+    func setMaxQueuedChanges(_ limit: Int) -> String? {
+        guard limit >= 1 else {
+            return "maxQueuedChanges must be at least 1, so \(limit) was not set. "
+                + "It stays \(settings.maxQueuedChanges)."
+        }
+        settings = settings.withMaxQueuedChanges(limit)
+        return nil
+    }
+
+    /// Calls `observer` with the changes of each committed transaction, while it is still being
+    /// applied. The seam for observers and events (#23). Replaces the previous one.
+    func onApplied(_ observer: @escaping ([AppliedChange]) -> Void) {
+        observers = observers.withApplied(observer)
+    }
+
+    /// Calls `observer` with each issue when it is reported. The seam for observers and
+    /// logging. Replaces the previous one.
+    func onReported(_ observer: @escaping (NavigationIssue) -> Void) {
+        observers = observers.withReported(observer)
+    }
+
+    /// Calls `observer` with the outcome of every call, including queued and ignored ones. The
+    /// seam for `WaypointTesting` strict mode (#41). Replaces the previous one.
+    package func onFinished(_ observer: @escaping (NavigationOutcome) -> Void) {
+        observers = observers.withFinished(observer)
     }
 
     /// Whether a route may be shown: always before any registration, then only when its type is
@@ -76,17 +116,15 @@ final class NavigationTreeContext {
 
     /// Adds a handler for calls that failed and could not be recovered.
     func addFailureHandler(_ handler: @escaping (NavigationFailure) -> Void) {
-        failureHandlers.append(handler)
+        observers = observers.addingFailureHandler(handler)
     }
 
     /// Claims a flow name, adding `-2`, `-3` and so on when it is taken.
     func claimFlowName(_ base: String) -> FlowID {
-        var name = base
-        var number = 1
-        while flowNames.contains(name) {
-            number += 1
-            name = "\(base)-\(number)"
+        let candidates = sequence(first: 1) { $0 + 1 }.lazy.map { number in
+            number == 1 ? base : "\(base)-\(number)"
         }
+        let name = candidates.first { !flowNames.contains($0) } ?? base
         flowNames.insert(name)
         return FlowID(name)
     }
@@ -94,6 +132,12 @@ final class NavigationTreeContext {
     /// Frees a flow name when its router leaves the tree.
     func releaseFlowName(_ flow: FlowID) {
         flowNames.remove(flow.name)
+    }
+
+    /// The id of the next measured interval.
+    func claimIntervalID() -> UInt64 {
+        intervalCount += 1
+        return intervalCount
     }
 
     /// Runs one call as a transaction on `router`.
@@ -108,7 +152,7 @@ final class NavigationTreeContext {
         _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
         let outcome = start(on: router, file: file, line: line, body)
-        didFinish?(outcome)
+        observers.finished?(outcome)
         return outcome
     }
 
@@ -123,7 +167,7 @@ final class NavigationTreeContext {
             logIgnored(router.flowID, file: file, line: line)
             return .ignored
         }
-        guard !isApplying else {
+        guard !turn.isApplying else {
             return enqueue(on: router, file: file, line: line, body)
         }
         let outcome = apply(on: router.flowID, file: file, line: line, body)
@@ -138,11 +182,11 @@ final class NavigationTreeContext {
         line: UInt,
         _ body: (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
-        isApplying = true
+        turn = turn.applying(true)
         let interval = beginTransactionInterval()
         defer {
             endTransactionInterval(interval)
-            isApplying = false
+            turn = turn.applying(false)
         }
         let store = TransactionStore()
         let outcome = finish(store, body(store), file: file, line: line)
@@ -182,7 +226,7 @@ final class NavigationTreeContext {
         store.commit()
         logChanges(store.changes, file: file, line: line)
         if !store.changes.isEmpty {
-            didApply?(store.changes)
+            observers.applied?(store.changes)
         }
         return outcome
     }
@@ -196,7 +240,7 @@ final class NavigationTreeContext {
     /// Rolls the transaction back and tells the app's failure handlers.
     private func fail(_ store: TransactionStore, _ failure: NavigationFailure) -> NavigationOutcome {
         store.rollback()
-        for handler in failureHandlers {
+        for handler in observers.failureHandlers {
             handler(failure)
         }
         return .failed(failure)
@@ -204,7 +248,7 @@ final class NavigationTreeContext {
 
     /// Reports an issue to the observers and logs it in the `issues` category.
     func report(_ issue: NavigationIssue, level: LogLevel) {
-        didReport?(issue)
+        observers.reported?(issue)
         logIssue(issue, level: level)
     }
 
@@ -215,12 +259,11 @@ final class NavigationTreeContext {
         line: UInt,
         _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
-        guard queuedInTurn < maxQueuedChanges else {
+        guard turn.queuedCount < maxQueuedChanges else {
             return refuseLoop(on: router, file: file, line: line)
         }
-        queuedInTurn += 1
         logQueued(router.flowID, file: file, line: line)
-        queue.append { [unowned self] in
+        turn = turn.enqueuing { [unowned self] in
             _ = self.perform(on: router, file: file, line: line, body)
         }
         return .queued
@@ -233,7 +276,7 @@ final class NavigationTreeContext {
         let issue = NavigationIssue(kind: .reentrantLoop, flow: router.flowID, message: message, file: file, line: line)
         let failure = NavigationFailure(issue: issue)
         report(issue, level: .fault)
-        for handler in failureHandlers {
+        for handler in observers.failureHandlers {
             handler(failure)
         }
         return .failed(failure)
@@ -241,15 +284,22 @@ final class NavigationTreeContext {
 
     /// Runs queued calls in order until none are left. Only the outermost call drains.
     private func drainQueue() {
-        guard !isDraining else {
+        guard !turn.isDraining else {
             return
         }
-        isDraining = true
-        while !queue.isEmpty {
-            let call = queue.removeFirst()
+        turn = turn.draining(true)
+        while let call = takeNextQueuedCall() {
             call()
         }
-        isDraining = false
-        queuedInTurn = 0
+        turn = .idle
+    }
+
+    /// Removes the first queued call and returns it, or `nil` when the queue is empty.
+    private func takeNextQueuedCall() -> (() -> Void)? {
+        guard let call = turn.queue.first else {
+            return nil
+        }
+        turn = turn.withQueue(Array(turn.queue.dropFirst()))
+        return call
     }
 }

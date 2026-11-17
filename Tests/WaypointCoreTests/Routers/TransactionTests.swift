@@ -20,9 +20,9 @@ struct TransactionTests {
     func transactionAppliesOnceWithAllChanges() {
         let router = StackRouter()
         router.push(HomeRoute())
-        var applied: [[AppliedChange]] = []
-        router.tree.didApply = { changes in
-            applied.append(changes)
+        let applied = Recorder<[AppliedChange]>()
+        router.tree.onApplied { changes in
+            applied.record(changes)
         }
 
         let outcome = router.transaction {
@@ -34,7 +34,7 @@ struct TransactionTests {
         let main = router.flowID
         #expect(outcome == .applied)
         #expect(router.state.path == [AnyRoute(ProductRoute(id: 1)), AnyRoute(ProductRoute(id: 2))])
-        #expect(applied == [[
+        #expect(applied.values == [[
             AppliedChange(flow: main, change: .popped([AnyRoute(HomeRoute())])),
             AppliedChange(flow: main, change: .pushed([AnyRoute(ProductRoute(id: 1))])),
             AppliedChange(flow: main, change: .pushed([AnyRoute(ProductRoute(id: 2))])),
@@ -149,19 +149,20 @@ struct TransactionTests {
     @Test
     func transactionDuringChangeIsQueued() {
         let router = StackRouter()
-        var inner: NavigationOutcome?
-        router.tree.didApply = { _ in
-            guard inner == nil else {
+        let inner = Recorder<NavigationOutcome>()
+        let once = Once()
+        router.tree.onApplied { _ in
+            guard once.claim() else {
                 return
             }
-            inner = router.transaction {
+            inner.record(router.transaction {
                 $0.push(SettingsRoute())
-            }
+            })
         }
 
         router.push(HomeRoute())
 
-        #expect(inner == .queued)
+        #expect(inner.values == [.queued])
         #expect(router.state.path == [AnyRoute(HomeRoute()), AnyRoute(SettingsRoute())])
     }
 }

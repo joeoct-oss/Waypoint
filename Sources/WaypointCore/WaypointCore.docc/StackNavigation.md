@@ -33,7 +33,7 @@ public final class StackRouter {
     public let rootRoute: AnyRoute?
 
     /// The current state. Change it only through the methods below.
-    public private(set) var state: StackState
+    public var state: StackState { get }
 
     // Pushing
 
@@ -52,14 +52,14 @@ public final class StackRouter {
 
     /// The most calls that may be queued while changes are applied, in one
     /// turn. Shared by the whole tree. Default: 32.
-    public var maxQueuedChanges: Int { get set }
+    public var maxQueuedChanges: Int { get }
 
     // Handles
 
     /// A handle that can navigate this stack with any route.
     public var navigator: StackNavigator { get }
     /// What to do when a call fails and passes no fallback. Children inherit it.
-    public var fallbackPolicy: FallbackPolicy { get set }
+    public var fallbackPolicy: FallbackPolicy { get }
 
     /// Creates a root router with an empty path. `flow` names it in logs,
     /// events and saved state.
@@ -68,6 +68,18 @@ public final class StackRouter {
     /// Creates a root router whose root screen shows `root`, so `popTo(root)`
     /// pops to the root.
     public init<R: Route>(root: R, flow: FlowID = FlowID("main"))
+
+    /// Sets the queue limit. Below 1 reports `invalidSetting` and keeps the old limit.
+    public func setMaxQueuedChanges(_ limit: Int, file: StaticString = #fileID, line: UInt = #line)
+
+    /// Sets one kind's fallback for this flow and its children, or clears it with `nil`.
+    /// `.push` for any kind but `routeNotInPath` reports `invalidSetting` and changes nothing.
+    public func setFallback(
+        _ fallback: NavigationFallback?,
+        for kind: NavigationIssue.Kind,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    )
 
     /// Pushes one route.
     @discardableResult public func push<R: Route>(
@@ -128,7 +140,7 @@ public final class StackRouter {
     ///
     /// If any step ends `.failed`, the whole transaction is rolled back, and
     /// the outcome is that step's failure with the step's file and line.
-    @discardableResult public func transaction(_ body: @escaping (inout NavigationTransaction) -> Void) -> NavigationOutcome
+    @discardableResult public func transaction(_ body: @escaping (NavigationTransaction) -> Void) -> NavigationOutcome
 
     // Place in the tree
     /// Registers a route type for decoding and as having a destination.
@@ -253,7 +265,7 @@ A call that can only be checked at run time never crashes the app. It reports a 
 
 ```swift
 router.popTo(HomeRoute.self, else: .popToRoot)        // for one call
-router.fallbackPolicy[.routeNotInPath] = .popToRoot   // for this flow and its children
+router.setFallback(.popToRoot, for: .routeNotInPath)   // for this flow and its children
 ```
 
 The built-in defaults change nothing unless the intent is clear. Popping more routes than the path holds pops to root. Every other kind defaults to `.none`. A fallback runs once, inside the same change as the call. If it fails too, the call is rolled back and reported as a `NavigationFailure`.
@@ -282,6 +294,7 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
         case denied
         case fallbackFailed
         case reentrantLoop
+        case invalidSetting
     }
     /// What went wrong.
     public let kind: Kind
@@ -320,7 +333,7 @@ public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
     /// Dismisses everything and pops the root stack to its root screen.
     case resetToRoot
     /// Run your own change. The name appears in logs and outcomes.
-    case custom(_ name: String, @MainActor @Sendable (inout NavigationTransaction, NavigationIssue) -> Void)
+    case custom(_ name: String, @MainActor @Sendable (NavigationTransaction, NavigationIssue) -> Void)
 }
 
 /// Fallbacks by issue kind, inherited by child routers.

@@ -13,10 +13,7 @@
 @MainActor
 protocol PresentingRouter: TreeNode {
     /// The working copy's presentation. Valid only while enlisted in a transaction.
-    var workingPresentation: Presentation? { get set }
-
-    /// The working copy's presented router. Valid only while enlisted in a transaction.
-    var workingPresented: StackRouter? { get set }
+    var workingPresentation: Presentation? { get }
 
     /// The routers inside this flow that are not presented, such as each tab's stack.
     var workingInFlowChildren: [any PresentingRouter] { get }
@@ -26,6 +23,10 @@ protocol PresentingRouter: TreeNode {
 
     /// The stack a `.popToRoot` fallback pops: this stack, or a container's selected tab.
     var visibleStack: StackRouter? { get }
+
+    /// Presents a flow in the working copy, or clears it with `nil`. Does nothing outside a
+    /// transaction.
+    func updateWorkingPresentation(_ presentation: Presentation?, presented router: StackRouter?)
 }
 
 extension PresentingRouter {
@@ -63,11 +64,11 @@ extension PresentingRouter {
     /// Dismisses everything presented over this flow, including over its tabs.
     func dismissAllStep(in store: TransactionStore) -> StepResult {
         store.enlist(self)
-        var changed = dismissStep(in: store).isChanged
-        for child in workingInFlowChildren {
-            changed = child.dismissAllStep(in: store).isChanged || changed
+        let own = dismissStep(in: store)
+        let children = workingInFlowChildren.map { child in
+            child.dismissAllStep(in: store)
         }
-        return changed ? .changed : .unchanged
+        return ([own] + children).contains(where: \.isChanged) ? .changed : .unchanged
     }
 
     /// Asks the router that presented this flow to dismiss it.
@@ -98,8 +99,7 @@ extension PresentingRouter {
         _ changes: [NavigationChange],
         in store: TransactionStore
     ) -> StepResult {
-        workingPresentation = presentation
-        workingPresented = child
+        updateWorkingPresentation(presentation, presented: child)
         store.record(changes, in: flowID)
         return .changed
     }
@@ -112,8 +112,7 @@ extension PresentingRouter {
 
     /// Clears the presented flow and records the change.
     private func detachPresented(changes: [NavigationChange], in store: TransactionStore) -> StepResult {
-        workingPresentation = nil
-        workingPresented = nil
+        updateWorkingPresentation(nil, presented: nil)
         store.record(changes, in: flowID)
         return .changed
     }
@@ -132,7 +131,12 @@ extension PresentingRouter {
 /// - `PresentingState`, so the presentation reducer accepts it.
 struct PresentationOnly: PresentingState {
     /// The presented flow, if any.
-    var presentation: Presentation?
+    let presentation: Presentation?
+
+    /// Another presented flow.
+    func withPresentation(_ presentation: Presentation?) -> PresentationOnly {
+        PresentationOnly(presentation: presentation)
+    }
 }
 
 /// The base flow name for a presented route: `SettingsRoute` becomes `settings`.

@@ -15,13 +15,13 @@ import WaypointTestSupport
 struct RouteTableTests {
     @Test
     func routeTableLooksUpByType() {
-        var table = RouteTable<String>()
-        table.register(ProductRoute.self) { route in
-            "product \(route.id)"
-        }
-        table.register(HomeRoute.self) { _ in
-            "home"
-        }
+        let table = RouteTable<String>()
+            .registering(ProductRoute.self) { route in
+                "product \(route.id)"
+            }
+            .registering(HomeRoute.self) { _ in
+                "home"
+            }
 
         #expect(table.payload(for: AnyRoute(ProductRoute(id: 7))) == "product 7")
         #expect(table.payload(for: AnyRoute(HomeRoute())) == "home")
@@ -37,13 +37,13 @@ struct RouteTableTests {
 
     @Test
     func registeringAgainReplacesDestination() {
-        var table = RouteTable<String>()
-        table.register(HomeRoute.self) { _ in
-            "old"
-        }
-        table.register(HomeRoute.self) { _ in
-            "new"
-        }
+        let table = RouteTable<String>()
+            .registering(HomeRoute.self) { _ in
+                "old"
+            }
+            .registering(HomeRoute.self) { _ in
+                "new"
+            }
 
         #expect(table.payload(for: AnyRoute(HomeRoute())) == "new")
         #expect(table.registeredTypes.count == 1)
@@ -51,10 +51,10 @@ struct RouteTableTests {
 
     @Test
     func routeTableRegistersForDecoding() {
-        var table = RouteTable<Int>()
-        table.register(ProductRoute.self) { route in
-            route.id
-        }
+        let table = RouteTable<Int>()
+            .registering(ProductRoute.self) { route in
+                route.id
+            }
 
         #expect(table.registry.isRegistered(ProductRoute.self))
         #expect(table.contains(ProductRoute.self))

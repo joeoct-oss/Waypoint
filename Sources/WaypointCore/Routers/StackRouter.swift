@@ -29,20 +29,24 @@ import Observation
 @MainActor
 @Observable
 public final class StackRouter: NavigationRouter {
-    /// The working copy of a stack router during a transaction.
-    struct Working {
-        /// The state being changed.
-        var state: StackState
+    /// What a stack router shows: its state and the router of the flow it presents.
+    struct Snapshot {
+        /// The stack's state.
+        let state: StackState
 
-        /// The presented router being changed.
-        var presented: StackRouter?
+        /// The router of the presented flow, if any.
+        let presented: StackRouter?
+
+        /// The same snapshot with another state.
+        func withState(_ state: StackState) -> Snapshot {
+            Snapshot(state: state, presented: presented)
+        }
+
+        /// The same snapshot presenting another flow, or none.
+        func presenting(_ presentation: Presentation?, by router: StackRouter?) -> Snapshot {
+            Snapshot(state: state.withPresentation(presentation), presented: router)
+        }
     }
-
-    /// The current state. Change it only through the methods below.
-    public internal(set) var state: StackState
-
-    /// The router of the presented flow, if any.
-    public internal(set) var presented: StackRouter?
 
     /// The flow this router drives.
     @ObservationIgnored public let flowID: FlowID
@@ -54,26 +58,40 @@ public final class StackRouter: NavigationRouter {
     @ObservationIgnored let tree: NavigationTreeContext
 
     /// The router that presented or contains this one.
-    @ObservationIgnored private(set) weak var parentNode: (any TreeNode)?
+    @ObservationIgnored weak let parentNode: (any TreeNode)?
+
+    /// The committed state and presented router, which renderers observe.
+    ///
+    /// `var` because it is the router's current value. Only `commitWorkingCopy()` replaces it.
+    private var committed: Snapshot
+
+    /// The copy a transaction changes, or `nil` between transactions.
+    ///
+    /// `var` because a transaction changes it step by step. Only the working-copy functions in
+    /// this file change it.
+    @ObservationIgnored private var working: Snapshot?
 
     /// Whether this router is in the tree.
-    @ObservationIgnored var isAttached: Bool
-
-    /// The working copy, during a transaction.
-    @ObservationIgnored var working: Working?
-
-    /// Presentation defaults set on this router, if any.
-    @ObservationIgnored private var ownPresentationDefaults: PresentationDefaults?
-
-    /// What to do when a call fails and passes no fallback, by issue kind.
     ///
-    /// Children inherit every kind they don't set themselves. A kind set nowhere uses
-    /// ``NavigationFallback/builtIn(for:)``.
+    /// `var` because a router joins the tree when the transaction that creates it commits, and
+    /// leaves when its flow is dismissed. Only `markAttached()` and `markDetached()` change it.
+    @ObservationIgnored private(set) var isAttached: Bool
+
+    /// Presentation defaults and fallbacks set on this router.
     ///
-    /// ```swift
-    /// router.fallbackPolicy[.routeNotInPath] = .popToRoot
-    /// ```
-    @ObservationIgnored public var fallbackPolicy = FallbackPolicy()
+    /// `var` because an app may set them after creating the router. Only
+    /// ``setPresentationDefaults(_:)`` and ``setFallback(_:for:file:line:)`` change it.
+    @ObservationIgnored private var settings = RouterSettings()
+
+    /// The current state. Change it through the navigation methods below.
+    public var state: StackState {
+        committed.state
+    }
+
+    /// The router of the presented flow, if any.
+    public var presented: StackRouter? {
+        committed.presented
+    }
 
     /// The router that presented or contains this one, or `nil` for the root.
     public var parent: (any NavigationRouter)? {
@@ -103,34 +121,32 @@ public final class StackRouter: NavigationRouter {
     /// The most calls that may be queued while changes are applied, in one main-actor turn.
     /// Shared by the whole tree. Default: 32. Calls past it report `reentrantLoop`.
     public var maxQueuedChanges: Int {
-        get {
-            tree.maxQueuedChanges
-        }
-        set {
-            tree.maxQueuedChanges = newValue
-        }
+        tree.maxQueuedChanges
     }
 
-    /// How this router's whole tree logs. Shared by every router in the tree, so set it once on
-    /// the root. Default: ``LogConfiguration/default``.
+    /// How this router's whole tree logs. Shared by every router in the tree.
+    /// Default: ``LogConfiguration/default``.
     public var logging: LogConfiguration {
-        get {
-            tree.logging
-        }
-        set {
-            tree.logging = newValue
-        }
+        tree.logging
     }
 
     /// Default presentation options for this router and its children. Unless set here, they
     /// come from the nearest router above, then ``PresentationDefaults/default``.
     public var presentationDefaults: PresentationDefaults {
-        get {
-            ownPresentationDefaults ?? parentNode?.presentationDefaults ?? .default
-        }
-        set {
-            ownPresentationDefaults = newValue
-        }
+        settings.presentationDefaults ?? parentNode?.presentationDefaults ?? .default
+    }
+
+    /// What to do when a call fails and passes no fallback, by issue kind.
+    ///
+    /// Children inherit every kind they don't set themselves. A kind set nowhere uses
+    /// ``NavigationFallback/builtIn(for:)``. Set an entry with ``setFallback(_:for:file:line:)``.
+    public var fallbackPolicy: FallbackPolicy {
+        settings.fallbackPolicy
+    }
+
+    /// The working copy during a transaction, or the committed snapshot.
+    var current: Snapshot {
+        working ?? committed
     }
 
     /// Creates a root router with an empty path.
@@ -141,7 +157,8 @@ public final class StackRouter: NavigationRouter {
         self.tree = tree
         self.flowID = tree.claimFlowName(flow.name)
         self.rootRoute = nil
-        self.state = StackState()
+        self.parentNode = nil
+        self.committed = Snapshot(state: StackState(), presented: nil)
         self.isAttached = true
     }
 
@@ -151,7 +168,8 @@ public final class StackRouter: NavigationRouter {
         self.tree = tree
         self.flowID = tree.claimFlowName(flow.name)
         self.rootRoute = AnyRoute(root)
-        self.state = StackState()
+        self.parentNode = nil
+        self.committed = Snapshot(state: StackState(), presented: nil)
         self.isAttached = true
     }
 
@@ -162,7 +180,7 @@ public final class StackRouter: NavigationRouter {
         self.flowID = flow
         self.rootRoute = route
         self.parentNode = parent
-        self.state = StackState()
+        self.committed = Snapshot(state: StackState(), presented: nil)
         self.isAttached = false
     }
 
@@ -172,7 +190,7 @@ public final class StackRouter: NavigationRouter {
         self.flowID = flow
         self.rootRoute = nil
         self.parentNode = parent
-        self.state = StackState()
+        self.committed = Snapshot(state: StackState(), presented: nil)
         self.isAttached = isAttached
     }
 
@@ -293,6 +311,57 @@ public final class StackRouter: NavigationRouter {
         }
     }
 
+    /// Sets how this router's whole tree logs. Set it once, on the root.
+    ///
+    /// ```swift
+    /// router.setLogging(LogConfiguration.default.withMinimumLevel(.debug))
+    /// ```
+    public func setLogging(_ configuration: LogConfiguration) {
+        tree.setLogging(configuration)
+    }
+
+    /// Sets the most calls that may be queued in one main-actor turn, for the whole tree.
+    ///
+    /// A limit below 1 would drop every call made from an observer, so it reports
+    /// `invalidSetting` and the limit stays as it was.
+    public func setMaxQueuedChanges(_ limit: Int, file: StaticString = #fileID, line: UInt = #line) {
+        guard let problem = tree.setMaxQueuedChanges(limit) else {
+            return
+        }
+        reportInvalidSetting(problem, file: file, line: line)
+    }
+
+    /// Sets the default presentation options for this router and its children.
+    ///
+    /// ```swift
+    /// router.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
+    /// ```
+    public func setPresentationDefaults(_ defaults: PresentationDefaults) {
+        settings = settings.withPresentationDefaults(defaults)
+    }
+
+    /// Sets what to do when a call of this kind fails and passes no fallback, for this flow and
+    /// its children. `nil` inherits the parent's entry again.
+    ///
+    /// ```swift
+    /// router.setFallback(.popToRoot, for: .routeNotInPath)
+    /// ```
+    ///
+    /// `.push` only applies to `routeNotInPath`. Set for another kind, it reports
+    /// `invalidSetting` and the fallback stays as it was.
+    public func setFallback(
+        _ fallback: NavigationFallback?,
+        for kind: NavigationIssue.Kind,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        if let problem = fallbackSettingProblem(fallback, for: kind) {
+            reportInvalidSetting(problem, file: file, line: line)
+            return
+        }
+        settings = settings.withFallback(fallback, for: kind)
+    }
+
     /// The sheet options a presentation uses: its own, or this router's defaults.
     public func sheetOptions(for presentation: Presentation) -> SheetOptions {
         presentation.style.sheetOptions ?? presentationDefaults.sheet
@@ -331,5 +400,59 @@ public final class StackRouter: NavigationRouter {
         return tree.perform(on: self, file: file, line: line) { [unowned self] store in
             store.resolve(step(self, store), on: self, context)
         }
+    }
+}
+
+/// Conformances:
+/// - `TransactionParticipant`, so a transaction can change it on a working copy.
+extension StackRouter: TransactionParticipant {
+    /// Copies the committed snapshot.
+    func beginWorkingCopy() {
+        working = committed
+    }
+
+    /// Changes the working copy. Does nothing outside a transaction.
+    func updateWorkingCopy(_ change: (Snapshot) -> Snapshot) {
+        guard let working else {
+            return
+        }
+        self.working = change(working)
+    }
+
+    /// Writes the working copy once, when it differs, and swaps the presented router if it
+    /// changed.
+    func commitWorkingCopy() {
+        guard let next = working else {
+            return
+        }
+        working = nil
+        let previous = committed
+        guard next.state != previous.state || next.presented !== previous.presented else {
+            return
+        }
+        committed = next
+        guard next.presented !== previous.presented else {
+            return
+        }
+        previous.presented?.detachSubtree()
+        next.presented?.markAttached()
+    }
+
+    /// Drops the working copy, and frees the name of a presented router that never joined.
+    func discardWorkingCopy() {
+        if let created = working?.presented, created !== committed.presented {
+            tree.releaseFlowName(created.flowID)
+        }
+        working = nil
+    }
+
+    /// Marks this router as in the tree, when the transaction that created it commits.
+    func markAttached() {
+        isAttached = true
+    }
+
+    /// Marks this router as gone from the tree. Its calls return `.ignored` from now on.
+    func markDetached() {
+        isAttached = false
     }
 }

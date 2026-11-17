@@ -15,6 +15,7 @@ The app coordinator owns the app's navigation, as in the SwiftUI example. The sc
 // - `UIResponder`, because UIKit requires a scene delegate to be a responder.
 // - `UIWindowSceneDelegate`, so UIKit hands it the scene's window and its links.
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    // `var` because `UIWindowSceneDelegate` requires a settable window.
     var window: UIWindow?
     let app = AppCoordinator()
 
@@ -36,8 +37,14 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 final class AppCoordinator: UIKitRootCoordinator {
     let router = RootRouter(AppRoot.login)
     let links: LinkInbox? = LinkInbox(domains: LinkDomains(hosts: ["example.com"], schemes: ["myshop"]))
-    let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
-    private(set) lazy var shop = ShopCoordinator(router: tabs.router(for: .shop))
+    let tabs: TabRouter<MainTab>
+    let shop: ShopCoordinator
+
+    init() {
+        let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
+        self.tabs = tabs
+        self.shop = ShopCoordinator(router: tabs.router(for: .shop))
+    }
 
     func makeFlow(for root: AppRoot) -> UIViewController {
         switch root {
@@ -54,11 +61,11 @@ final class AppCoordinator: UIKitRootCoordinator {
 
     func showMainFlow() {
         router.switch(to: .main)
-        links?.isReady = true
+        links?.markReady()
     }
 
     func showLoginFlow() {
-        links?.isReady = false
+        links?.markNotReady()
         router.switch(to: .login)
     }
 }
@@ -148,6 +155,6 @@ extension ShopCoordinator {
 
 ### 5. A deep link
 
-The scene delegate from the first example already forwards URLs and user activities to the app coordinator, and `makeWindow(for:options:)` hands it the links a cold launch brings. The inbox holds them until `showMainFlow()` sets `links?.isReady = true`. Nothing else is needed in the scene delegate.
+The scene delegate from the first example already forwards URLs and user activities to the app coordinator, and `makeWindow(for:options:)` hands it the links a cold launch brings. The inbox holds them until `showMainFlow()` calls `links?.markReady()`. Nothing else is needed in the scene delegate.
 
 The matcher, the plans and the link policy are the ones from the SwiftUI example. They live in `WaypointCore`, so both renderers use the same code.

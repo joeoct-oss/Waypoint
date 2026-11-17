@@ -40,7 +40,7 @@ protocol TreeNode: NavigationRouter, TransactionParticipant {
     var parentNode: (any TreeNode)? { get }
 
     /// Whether this router is in the tree.
-    var isAttached: Bool { get set }
+    var isAttached: Bool { get }
 
     /// The committed presented flow, if any.
     var presentedNode: (any TreeNode)? { get }
@@ -56,16 +56,18 @@ protocol TreeNode: NavigationRouter, TransactionParticipant {
 
     /// This router's own fallback policy.
     var fallbackPolicy: FallbackPolicy { get }
+
+    /// Marks this router as in the tree.
+    func markAttached()
+
+    /// Marks this router as gone from the tree.
+    func markDetached()
 }
 
 extension TreeNode {
     /// The root of the tree.
     var rootNode: any TreeNode {
-        var node: any TreeNode = self
-        while let parent = node.parentNode {
-            node = parent
-        }
-        return node
+        parentNode?.rootNode ?? self
     }
 
     /// The fallback this router's policy, or the nearest parent's, sets for a kind.
@@ -75,7 +77,7 @@ extension TreeNode {
 
     /// Marks this router and everything inside it as gone from the tree.
     func detachSubtree() {
-        isAttached = false
+        markDetached()
         tree.releaseFlowName(flowID)
         for child in childNodes {
             child.detachSubtree()
@@ -85,13 +87,9 @@ extension TreeNode {
     /// The router that presented this router's flow: the nearest ancestor whose presented flow
     /// is this router or contains it.
     func presenter() -> (any TreeNode)? {
-        var node: any TreeNode = self
-        while let parent = node.parentNode {
-            if parent.presentedNode === node {
-                return parent
-            }
-            node = parent
+        guard let parent = parentNode else {
+            return nil
         }
-        return nil
+        return parent.presentedNode === self ? parent : parent.presenter()
     }
 }

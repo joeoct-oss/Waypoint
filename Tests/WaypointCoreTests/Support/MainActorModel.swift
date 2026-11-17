@@ -10,6 +10,8 @@
 @MainActor
 final class MainActorModel {
     /// The pushed screen names, oldest first.
+    ///
+    /// `var` because screens are pushed one by one. Only ``push(_:)`` changes it.
     private(set) var stack: [String] = []
 
     /// Pushes a screen name onto the stack.

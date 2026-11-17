@@ -11,7 +11,7 @@
 ///
 /// ```swift
 /// #if DEBUG
-/// router.logging = LogConfiguration(handler: myHandler, minimumLevel: .debug, revealsPrivateValues: true)
+/// router.setLogging(LogConfiguration(handler: myHandler, minimumLevel: .debug, revealsPrivateValues: true))
 /// #endif
 /// ```
 ///
@@ -29,17 +29,17 @@ public struct LogConfiguration: Sendable {
     }
 
     /// Where messages go.
-    public var handler: any LogHandler
+    public let handler: any LogHandler
 
     /// The least important level that is written. Default: `.notice`.
-    public var minimumLevel: LogLevel
+    public let minimumLevel: LogLevel
 
     /// The categories that are written, or `nil` for all. Default: all.
-    public var categories: Set<LogCategory>?
+    public let categories: Set<LogCategory>?
 
     /// Whether route field values are written as they are, instead of `<private>`. Turn it on in
     /// debug builds only. Default: `false`.
-    public var revealsPrivateValues: Bool
+    public let revealsPrivateValues: Bool
 
     /// Creates a configuration. Every argument has a default; the default handler writes
     /// nothing until a renderer or the app sets one.
@@ -53,6 +53,46 @@ public struct LogConfiguration: Sendable {
         self.minimumLevel = minimumLevel
         self.categories = categories
         self.revealsPrivateValues = revealsPrivateValues
+    }
+
+    /// The same configuration, writing to another handler.
+    public func withHandler(_ handler: any LogHandler) -> LogConfiguration {
+        LogConfiguration(
+            handler: handler,
+            minimumLevel: minimumLevel,
+            categories: categories,
+            revealsPrivateValues: revealsPrivateValues
+        )
+    }
+
+    /// The same configuration, writing from another level up.
+    public func withMinimumLevel(_ level: LogLevel) -> LogConfiguration {
+        LogConfiguration(
+            handler: handler,
+            minimumLevel: level,
+            categories: categories,
+            revealsPrivateValues: revealsPrivateValues
+        )
+    }
+
+    /// The same configuration, writing other categories, or all of them for `nil`.
+    public func withCategories(_ categories: Set<LogCategory>?) -> LogConfiguration {
+        LogConfiguration(
+            handler: handler,
+            minimumLevel: minimumLevel,
+            categories: categories,
+            revealsPrivateValues: revealsPrivateValues
+        )
+    }
+
+    /// The same configuration, with route field values revealed or hidden.
+    public func withPrivateValuesRevealed(_ reveals: Bool) -> LogConfiguration {
+        LogConfiguration(
+            handler: handler,
+            minimumLevel: minimumLevel,
+            categories: categories,
+            revealsPrivateValues: reveals
+        )
     }
 
     /// Whether a message of this level and category would be written.

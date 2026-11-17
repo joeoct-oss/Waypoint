@@ -19,7 +19,7 @@ The screen reports what happened, and whoever made it decides where to go:
 ```swift
 struct ProductView: View {
     let id: Int
-    var onBuy: () -> Void
+    let onBuy: () -> Void
 
     var body: some View {
         Button("Buy", action: onBuy)

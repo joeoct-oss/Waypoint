@@ -223,7 +223,7 @@ let state = try decoder.decode(StackState.self, from: data)
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct RouteRegistry: Sendable {
     /// Problems found while registering, in the order they were found.
-    public private(set) var problems: [RouteDecodingError]
+    public let problems: [RouteDecodingError]
 
     /// Every registered route type, once each.
     public var registeredTypes: [any Route.Type] { get }
@@ -231,12 +231,14 @@ public struct RouteRegistry: Sendable {
     /// Creates an empty registry.
     public init()
 
-    /// Registers a route type under its `routeKey` and its `formerRouteKeys`.
+    /// The same registry with a route type added under its `routeKey` and
+    /// its `formerRouteKeys`.
     ///
-    /// Registering the same type twice does nothing. A former key that
-    /// belongs to another type reports `duplicateRouteKey`, and a private or
-    /// local type reports `unstableRouteKey`.
-    public mutating func register<R: Route>(_ type: R.Type)
+    /// Registering the same type twice returns the registry unchanged. A
+    /// former key that belongs to another type records `duplicateRouteKey`,
+    /// and a private or local type records `unstableRouteKey`.
+    public func registering<R: Route>(_ type: R.Type) -> RouteRegistry
+
     /// Whether this route type is registered under its current key.
     public func isRegistered<R: Route>(_ type: R.Type) -> Bool
 
@@ -282,7 +284,7 @@ Destinations say how each route type is shown. The renderers fill a `RouteTable`
 /// controller, or a test value.
 public struct RouteTable<Payload> {
     /// The route types registered for decoding.
-    public private(set) var registry: RouteRegistry
+    public let registry: RouteRegistry
 
     /// Every registered route type.
     public var registeredTypes: [any Route.Type] { get }
@@ -290,10 +292,10 @@ public struct RouteTable<Payload> {
     /// Creates an empty table.
     public init()
 
-    /// Registers how to build the payload for one route type.
+    /// The same table with a way to build the payload for one route type.
     ///
     /// Also registers the type for decoding.
-    public mutating func register<R: Route>(_ type: R.Type, _ make: @escaping (R) -> Payload)
+    public func registering<R: Route>(_ type: R.Type, _ make: @escaping (R) -> Payload) -> RouteTable
 
     /// The payload for a route, or `nil` if its type is not registered.
     public func payload(for route: AnyRoute) -> Payload?

@@ -72,7 +72,7 @@ An issue's detailed form adds its message:
 ```text
 routeNotInPath flow=shop at=ShopCoordinator.swift:42
   HomeRoute is not in the path [ProductListRoute(category: <private>), ProductRoute(id: <private>)].
-  Pass a fallback, such as popTo(HomeRoute.self, else: .popToRoot), or set fallbackPolicy[.routeNotInPath].
+  Pass a fallback, such as popTo(HomeRoute.self, else: .popToRoot), or call setFallback(.popToRoot, for: .routeNotInPath).
 ```
 
 A tree's detailed form is the indented `debugTree()` output.

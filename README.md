@@ -33,7 +33,7 @@ Built parts have unit tests that run on a Mac and on Linux. Designed parts are w
 - **One route type per screen.** Adding a screen is one route type and one registration line. There is no central `switch` over every screen, and a route's key comes from its type name, so routes declare no string keys.
 - **One app coordinator.** The app's navigation lives in one place: the root (login or the main tabs), the tabs, child flows and incoming links. Screens report what happened, and the coordinator decides where to go.
 - **State you can read.** Routers hold the whole navigation tree: stacks, sheets, tabs and child flows. Views and view models ask to move; they never own navigation state.
-- **Safe by construction.** Mistakes are caught by the compiler where possible. Anything only known at run time never crashes: every call returns an outcome, can name a fallback, and reports the issue with your file and line.
+- **Safe by construction.** Mistakes are caught by the compiler where possible. Values are immutable, and every change goes through a function that checks it, so an invalid state can't be made. Anything only known at run time never crashes: every call returns an outcome, can name a fallback, and reports the issue with your file and line.
 - **Logs you can search.** Routes, state, outcomes and issues print one stable line each, and route values stay private unless you list them.
 - **Testable without a simulator.** `WaypointCore` is plain Swift, so navigation tests run as fast unit tests, on a Mac or on Linux.
 - **SwiftUI and UIKit.** Both renderers draw the same core state, so a flow can mix SwiftUI and UIKit screens.

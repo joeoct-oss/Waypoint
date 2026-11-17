@@ -67,6 +67,15 @@ swift-format formats the code and SwiftLint enforces the rules. Once the lint se
   )
   ```
 
+- **`let` by default** ([decision 0014](https://github.com/JoeOCT91/Waypoint-planning/blob/main/decisions/0014-immutability.md)). Value types (routes, state, options, configurations, events) have only `let` fields. A change makes a new value through a named function that checks it, such as `options.withDetents([.medium, .large])` or a reducer. Objects that own state over time, such as routers, keep it in as few `private` or `private(set)` `var`s as they need, and only their own named functions change them, such as `router.setFallback(.popToRoot, for: .routeNotInPath)`. There are no public settable properties, no mutable statics or globals, no `lazy var` and no `mutating` functions. Every remaining `var`, including a local one, says why in a comment that starts "`var` because". Computed properties, protocol requirements and property wrappers such as `@State` are not stored `var`s and need no reason.
+
+  ```swift
+  /// The committed state and presented router, which renderers observe.
+  ///
+  /// `var` because it is the router's current value. Only `commitWorkingCopy()` replaces it.
+  private var committed: Snapshot
+  ```
+
 - **A switch case's body goes on its own line, and is one call to a named function.** `break` and `return` are fine when there is nothing to do.
 - **Names say what coordination code does.** A function that builds a flow is `make…Flow()`, and a function that navigates is `show…()`, in both renderers.
 - **Document every member of a type, or none.** Public API documents every member.

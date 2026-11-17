@@ -107,10 +107,10 @@ struct StateTests {
 
     // Encodes and decodes a value with a registry that knows the shared routes.
     private func roundTrip<Value: Codable>(_ value: Value) throws -> Value {
-        var registry = RouteRegistry()
-        registry.register(HomeRoute.self)
-        registry.register(ProductRoute.self)
-        registry.register(SettingsRoute.self)
+        let registry = RouteRegistry()
+            .registering(HomeRoute.self)
+            .registering(ProductRoute.self)
+            .registering(SettingsRoute.self)
         let decoder = JSONDecoder()
         decoder.userInfo[.routeRegistry] = registry
         return try decoder.decode(Value.self, from: JSONEncoder().encode(value))

@@ -17,6 +17,8 @@ final class FireCounter: @unchecked Sendable {
     /// Guards `value`, because the closures that call `increment()` can run on any thread.
     private let lock = NSLock()
     /// The count, read and written only under `lock`.
+    ///
+    /// `var` because each call adds one. Only ``increment()`` changes it.
     private var value = 0
 
     /// The number of calls so far.

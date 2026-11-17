@@ -68,7 +68,7 @@ extension StackRouter {
     public func transaction(
         file: StaticString = #fileID,
         line: UInt = #line,
-        _ body: @escaping (inout NavigationTransaction) -> Void
+        _ body: @escaping (NavigationTransaction) -> Void
     ) -> NavigationOutcome {
         tree.perform(on: self, file: file, line: line) { [unowned self] store in
             NavigationTransaction.run(body, on: self, in: store)
@@ -96,7 +96,7 @@ extension StackRouter {
     /// Pops to the last matching route of a type, or to the root when only the root matches.
     func popToStep<R: Route>(_ type: R.Type, where predicate: (R) -> Bool, in store: TransactionStore) -> StepResult {
         store.enlist(self)
-        let path = working?.state.path ?? state.path
+        let path = current.state.path
         if let match = path.last(where: { $0.as(R.self).map(predicate) ?? false }) {
             return stackStep(.popTo(match), in: store)
         }
@@ -126,7 +126,7 @@ extension TabRouter {
     public func transaction(
         file: StaticString = #fileID,
         line: UInt = #line,
-        _ body: @escaping (inout NavigationTransaction) -> Void
+        _ body: @escaping (NavigationTransaction) -> Void
     ) -> NavigationOutcome {
         tree.perform(on: self, file: file, line: line) { [unowned self] store in
             NavigationTransaction.run(body, on: self, in: store)

@@ -47,20 +47,33 @@ public struct RouteRegistry: Sendable {
     }
 
     /// Route types by current and former key.
-    private var entries: [RouteKey: Entry] = [:]
+    private let entries: [RouteKey: Entry]
 
     /// Problems found while registering, in the order they were found.
     ///
     /// The root router reports each one as an issue when it is found.
-    public private(set) var problems: [RouteDecodingError] = []
+    public let problems: [RouteDecodingError]
 
     /// Every registered route type, once each.
     public var registeredTypes: [any Route.Type] {
         entries.values.filter(\.isCurrent).map(\.type)
     }
 
+    /// Whether no route type is registered.
+    var isEmpty: Bool {
+        entries.isEmpty
+    }
+
     /// Creates an empty registry.
-    public init() { }
+    public init() {
+        self.init(entries: [:], problems: [])
+    }
+
+    /// A registry with these entries and problems.
+    private init(entries: [RouteKey: Entry], problems: [RouteDecodingError]) {
+        self.entries = entries
+        self.problems = problems
+    }
 
     /// Encodes a route with its current key, with or without a registry.
     static func encode(_ route: AnyRoute, to encoder: any Encoder) throws {
@@ -68,6 +81,7 @@ public struct RouteRegistry: Sendable {
         guard key.isStable else {
             throw RouteDecodingError.unstableRouteKey(key)
         }
+        // `var` because `KeyedEncodingContainer.encode` is mutating.
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(key, forKey: .route)
         try encodeValue(route.base, into: &container)
@@ -106,16 +120,16 @@ public struct RouteRegistry: Sendable {
         }
     }
 
-    /// Registers a route type under its ``Route/routeKey`` and its ``Route/formerRouteKeys``.
+    /// The same registry with a route type added under its ``Route/routeKey`` and its
+    /// ``Route/formerRouteKeys``.
     ///
-    /// Registering the same type twice does nothing.
-    public mutating func register<R: Route>(_ type: R.Type) {
+    /// Registering the same type twice returns the registry unchanged.
+    public func registering<R: Route>(_ type: R.Type) -> RouteRegistry {
         guard !isRegistered(type) else {
-            return
+            return self
         }
-        registerCurrentKey(of: type)
-        for former in R.formerRouteKeys {
-            registerFormerKey(former, of: type)
+        return R.formerRouteKeys.reduce(withCurrentKey(of: type)) { registry, former in
+            registry.withFormerKey(former, of: type)
         }
     }
 
@@ -147,37 +161,44 @@ public struct RouteRegistry: Sendable {
         return try Self.decodeValue(of: entry.type, key: key, from: container)
     }
 
-    /// Records the type under its current key. A former key of another type that held it loses.
-    private mutating func registerCurrentKey<R: Route>(of type: R.Type) {
+    /// The registry with the type under its current key. A former key of another type that
+    /// held it loses.
+    private func withCurrentKey<R: Route>(of type: R.Type) -> RouteRegistry {
         let key = R.routeKey
-        if !key.isStable {
-            problems.append(.unstableRouteKey(key))
-        }
-        if let existing = entries[key] {
-            problems.append(.duplicateRouteKey(key, types: [String(reflecting: existing.type), key.rawValue]))
-        }
-        entries[key] = Entry(type: type, isCurrent: true)
+        let unstable: [RouteDecodingError] = key.isStable ? [] : [.unstableRouteKey(key)]
+        let duplicate: [RouteDecodingError] = entries[key].map { existing in
+            [.duplicateRouteKey(key, types: [String(reflecting: existing.type), key.rawValue])]
+        } ?? []
+        return RouteRegistry(
+            entries: entries.merging([key: Entry(type: type, isCurrent: true)]) { _, new in new },
+            problems: problems + unstable + duplicate
+        )
     }
 
-    /// Records a former key, unless it is malformed or already taken.
-    private mutating func registerFormerKey<R: Route>(_ former: RouteKey, of type: R.Type) {
+    /// The registry with a former key, unless it is malformed or already taken.
+    private func withFormerKey<R: Route>(_ former: RouteKey, of type: R.Type) -> RouteRegistry {
         guard former.isWellFormed else {
-            problems.append(.invalidRouteKey(former.rawValue))
-            return
+            return RouteRegistry(entries: entries, problems: problems + [.invalidRouteKey(former.rawValue)])
         }
         if let existing = entries[former] {
-            reportTakenFormerKey(former, existing: existing, claimedBy: type)
-            return
+            return RouteRegistry(entries: entries, problems: problems + takenFormerKeyProblems(former, existing, type))
         }
-        entries[former] = Entry(type: type, isCurrent: false)
+        return RouteRegistry(
+            entries: entries.merging([former: Entry(type: type, isCurrent: false)]) { _, new in new },
+            problems: problems
+        )
     }
 
-    /// Reports a former key that another type already holds, unless it is this type's own.
-    private mutating func reportTakenFormerKey<R: Route>(_ former: RouteKey, existing: Entry, claimedBy type: R.Type) {
+    /// A problem for a former key that another type already holds, unless it is this type's own.
+    private func takenFormerKeyProblems<R: Route>(
+        _ former: RouteKey,
+        _ existing: Entry,
+        _ type: R.Type
+    ) -> [RouteDecodingError] {
         guard existing.type != type else {
-            return
+            return []
         }
-        problems.append(.duplicateRouteKey(former, types: [String(reflecting: existing.type), R.routeKey.rawValue]))
+        return [.duplicateRouteKey(former, types: [String(reflecting: existing.type), R.routeKey.rawValue])]
     }
 }
 
