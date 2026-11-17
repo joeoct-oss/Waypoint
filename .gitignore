@@ -4,3 +4,8 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 .DS_Store
+
+# Example app: Tuist generates the Xcode project and workspace.
+Example/*.xcodeproj
+Example/*.xcworkspace
+Example/Derived/
