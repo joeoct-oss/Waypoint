@@ -14,29 +14,15 @@ struct SwiftUIBranchView: View {
     let onSelect: (FlowEntry) -> Void
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                ForEach(ExampleFlow.allCases, id: \.self) { flow in
-                    row(for: flow)
-                }
+        List {
+            ForEach(ExampleFlow.allCases, id: \.self) { flow in
+                FlowRow(
+                    branch: .swiftUI,
+                    flow: flow,
+                    onSelect: onSelect
+                )
             }
-            .card()
-            .padding(.horizontal, Spacing.large)
-            .padding(.bottom, Spacing.large)
         }
-        .background(Palette.background.color)
-    }
-
-    @ViewBuilder
-    private func row(for flow: ExampleFlow) -> some View {
-        if flow != ExampleFlow.allCases.first {
-            Divider()
-                .overlay(Palette.line.color)
-        }
-        FlowRow(
-            branch: .swiftUI,
-            flow: flow,
-            onSelect: onSelect
-        )
+        .exampleList()
     }
 }

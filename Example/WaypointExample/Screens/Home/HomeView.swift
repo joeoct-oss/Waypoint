@@ -8,23 +8,22 @@
 
 import SwiftUI
 
-// Home: the Waypoint header and one card per branch. The screen reports the branch the reader picks, and
+// Home: the Waypoint header and one row per branch. The screen reports the branch the reader picks, and
 // the app coordinator decides where that goes.
 struct HomeView: View {
     let onSelectBranch: (Branch) -> Void
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.large) {
-                header
+        List {
+            Section {
                 ForEach(Branch.allCases, id: \.self) { branch in
-                    BranchCard(branch: branch) { onSelectBranch(branch) }
+                    BranchRow(branch: branch) { onSelectBranch(branch) }
                 }
+            } header: {
+                header
             }
-            .padding(.horizontal, Spacing.large)
-            .padding(.bottom, Spacing.large)
         }
-        .background(Palette.background.color)
+        .exampleList()
     }
 
     private var header: some View {
@@ -34,7 +33,8 @@ struct HomeView: View {
                 .foregroundStyle(Palette.text.color)
             slogan
         }
-        .padding(.vertical, Spacing.small)
+        .textCase(nil)
+        .padding(.bottom, Spacing.small)
         .accessibilityElement(children: .combine)
     }
 

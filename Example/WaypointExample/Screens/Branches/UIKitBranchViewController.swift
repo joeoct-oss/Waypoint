@@ -8,9 +8,13 @@
 
 import UIKit
 
-// The UIKit branch: the same five flows as the SwiftUI branch, built with UIKit views. The controller
-// reports the entry the reader picks, and the app coordinator opens it.
-final class UIKitBranchViewController: UIViewController {
+// The UIKit branch: the same five flows as the SwiftUI branch, in a system inset-grouped table. The
+// controller reports the entry the reader picks, and the app coordinator opens it. The table scrolls
+// under the system bars, which are Liquid Glass from iOS 26.
+//
+// Conformances:
+// - `UITableViewDataSource`, so the table asks this controller for one row per flow.
+final class UIKitBranchViewController: UIViewController, UITableViewDataSource {
     private let onSelect: (FlowEntry) -> Void
 
     init(onSelect: @escaping (FlowEntry) -> Void) {
@@ -26,9 +30,9 @@ final class UIKitBranchViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Palette.background.uiColor
-        let scrollView = makeScrollView()
-        view.addSubview(scrollView)
-        pin(scrollView, to: view)
+        let tableView = makeTableView()
+        view.addSubview(tableView)
+        pin(tableView, to: view)
     }
 
     nonisolated private static func applyButtonFont(
@@ -40,35 +44,39 @@ final class UIKitBranchViewController: UIViewController {
         return styled
     }
 
-    private func makeScrollView() -> UIScrollView {
-        let card = makeCard()
-        let scrollView = UIScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.alwaysBounceVertical = true
-        scrollView.addSubview(card)
-        let content = scrollView.contentLayoutGuide
-        let frame = scrollView.frameLayoutGuide
-        let constraints = [
-            card.topAnchor.constraint(equalTo: content.topAnchor),
-            card.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -Spacing.large),
-            card.leadingAnchor.constraint(equalTo: frame.leadingAnchor, constant: Spacing.large),
-            card.trailingAnchor.constraint(equalTo: frame.trailingAnchor, constant: -Spacing.large),
-        ]
-        NSLayoutConstraint.activate(constraints)
-        return scrollView
+    func tableView(
+        _ tableView: UITableView,
+        numberOfRowsInSection section: Int
+    ) -> Int {
+        ExampleFlow.allCases.count
     }
 
-    private func makeCard() -> UIView {
-        let rows = ExampleFlow.allCases.map(makeRow(for:))
-        let stack = UIStackView(arrangedSubviews: rows)
-        stack.axis = .vertical
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        stack.backgroundColor = Palette.surface.uiColor
-        stack.layer.cornerRadius = Radius.card
-        stack.layer.borderWidth = 1
-        stack.layer.borderColor = Palette.line.uiColor.resolvedColor(with: traitCollection).cgColor
-        stack.clipsToBounds = true
-        return stack
+    func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
+        let flow = ExampleFlow.allCases[indexPath.row]
+        return makeCell(for: flow)
+    }
+
+    private func makeTableView() -> UITableView {
+        let tableView = UITableView(frame: .zero, style: .insetGrouped)
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.backgroundColor = Palette.background.uiColor
+        tableView.allowsSelection = false
+        tableView.dataSource = self
+        return tableView
+    }
+
+    // Five rows that are all on screen, so each cell is made fresh instead of dequeued.
+    private func makeCell(for flow: ExampleFlow) -> UITableViewCell {
+        let cell = UITableViewCell()
+        cell.backgroundColor = Palette.surface.uiColor
+        let row = makeRow(for: flow)
+        row.translatesAutoresizingMaskIntoConstraints = false
+        cell.contentView.addSubview(row)
+        pin(row, toMarginsOf: cell.contentView)
+        return cell
     }
 
     private func makeRow(for flow: ExampleFlow) -> UIView {
@@ -81,13 +89,6 @@ final class UIKitBranchViewController: UIViewController {
         let row = UIStackView(arrangedSubviews: parts)
         row.axis = .vertical
         row.spacing = Spacing.medium
-        row.isLayoutMarginsRelativeArrangement = true
-        row.directionalLayoutMargins = NSDirectionalEdgeInsets(
-            top: Spacing.medium,
-            leading: Spacing.medium + 2,
-            bottom: Spacing.medium,
-            trailing: Spacing.medium + 2
-        )
         return row
     }
 
@@ -178,12 +179,11 @@ final class UIKitBranchViewController: UIViewController {
 
     private func makeButtonConfiguration(for kind: FlowKind) -> UIButton.Configuration {
         // `var` because the configuration is built up one property at a time below.
-        var configuration = UIButton.Configuration.plain()
+        var configuration = UIButton.Configuration.tinted()
         configuration.baseForegroundColor = kind.tint.uiColor
-        configuration.background.backgroundColor = Palette.surface.uiColor
-        configuration.background.strokeColor = Palette.line.uiColor
-        configuration.background.strokeWidth = 1
-        configuration.background.cornerRadius = Radius.field
+        configuration.baseBackgroundColor = kind.tint.uiColor
+        configuration.cornerStyle = .capsule
+        configuration.buttonSize = .large
         configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer(Self.applyButtonFont)
         return configuration
     }
@@ -193,10 +193,24 @@ final class UIKitBranchViewController: UIViewController {
         to container: UIView
     ) {
         let constraints = [
-            subview.topAnchor.constraint(equalTo: container.safeAreaLayoutGuide.topAnchor),
+            subview.topAnchor.constraint(equalTo: container.topAnchor),
             subview.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             subview.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             subview.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+        ]
+        NSLayoutConstraint.activate(constraints)
+    }
+
+    private func pin(
+        _ subview: UIView,
+        toMarginsOf container: UIView
+    ) {
+        let margins = container.layoutMarginsGuide
+        let constraints = [
+            subview.topAnchor.constraint(equalTo: margins.topAnchor),
+            subview.bottomAnchor.constraint(equalTo: margins.bottomAnchor),
+            subview.leadingAnchor.constraint(equalTo: margins.leadingAnchor),
+            subview.trailingAnchor.constraint(equalTo: margins.trailingAnchor),
         ]
         NSLayoutConstraint.activate(constraints)
     }

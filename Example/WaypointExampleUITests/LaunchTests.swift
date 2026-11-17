@@ -64,7 +64,7 @@ final class LaunchTests: XCTestCase {
 
         for entry in FlowEntry.entries(in: branch) {
             let button = app.buttons[Identifiers.entry(entry)]
-            XCTAssertTrue(button.waitForExistence(timeout: Self.timeout), "missing \(Identifiers.entry(entry))")
+            XCTAssertTrue(reveal(button, in: app), "missing \(Identifiers.entry(entry))")
         }
     }
 
@@ -73,8 +73,7 @@ final class LaunchTests: XCTestCase {
         in app: XCUIApplication
     ) {
         let button = app.buttons[Identifiers.entry(entry)]
-        XCTAssertTrue(button.waitForExistence(timeout: Self.timeout), "missing \(Identifiers.entry(entry))")
-        scrollIntoView(button, in: app)
+        XCTAssertTrue(reveal(button, in: app), "missing \(Identifiers.entry(entry))")
         button.tap()
 
         let placeholder = app.otherElements[Identifiers.placeholder(entry)]
@@ -98,12 +97,15 @@ final class LaunchTests: XCTestCase {
         app.navigationBars.buttons.element(boundBy: 0).tap()
     }
 
-    private func scrollIntoView(
+    // Lists build rows lazily, so a row below the fold exists only after scrolling to it.
+    private func reveal(
         _ element: XCUIElement,
         in app: XCUIApplication
-    ) {
-        for _ in 0..<3 where !element.isHittable {
+    ) -> Bool {
+        _ = element.waitForExistence(timeout: Self.timeout)
+        for _ in 0..<4 where !(element.exists && element.isHittable) {
             app.swipeUp()
         }
+        return element.exists && element.isHittable
     }
 }

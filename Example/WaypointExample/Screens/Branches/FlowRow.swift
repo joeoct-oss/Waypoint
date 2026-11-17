@@ -28,8 +28,7 @@ struct FlowRow: View {
             }
             .padding(.leading, Size.rowIcon + Spacing.medium)
         }
-        .padding(.horizontal, Spacing.medium + 2)
-        .padding(.vertical, Spacing.medium)
+        .padding(.vertical, Spacing.small)
     }
 
     private var icon: some View {
@@ -59,8 +58,7 @@ struct FlowRow: View {
             flow: flow,
             kind: kind
         )
-        return Button(kind.buttonTitle) { onSelect(entry) }
-            .buttonStyle(KindButtonStyle(kind: kind))
+        return KindButton(kind: kind) { onSelect(entry) }
             .accessibilityIdentifier(Identifiers.entry(entry))
     }
 }
