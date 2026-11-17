@@ -14,6 +14,9 @@ import SwiftUI
 // Conformances:
 // - `ViewModifier`, so the app coordinator gives every screen the same chrome with `.screenChrome(...)`.
 struct ScreenChrome: ViewModifier {
+    // The trail's backdrop stays inside the safe area, so it never paints over the navigation bar.
+    private static let trailBackdropEdges: Edge.Set = []
+
     let title: String
     let kind: FlowKind?
     let trail: [String]
@@ -22,7 +25,7 @@ struct ScreenChrome: ViewModifier {
         RouteTrail(steps: trail)
             .padding(.horizontal, Spacing.large)
             .padding(.bottom, Spacing.small)
-            .background(Palette.background.color)
+            .background(Palette.background.color, ignoresSafeAreaEdges: Self.trailBackdropEdges)
     }
 
     @ToolbarContentBuilder
