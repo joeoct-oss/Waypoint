@@ -8,18 +8,26 @@ These are the same five flows as the SwiftUI examples. The routes, routers and c
 
 ### 1. Login, then the main tabs
 
-The app coordinator owns the app's navigation, as in the SwiftUI example. The scene delegate creates it, hands it to the window and forwards what the OS hands it.
+The app coordinator owns the app's navigation, as in the SwiftUI example. The scene delegate holds no logic: each lifecycle method is one line that hands the OS's input to the coordinator.
 
 ```swift
 // Conformances:
+// - `UIResponder`, because UIKit requires a scene delegate to be a responder.
 // - `UIWindowSceneDelegate`, so UIKit hands it the scene's window and its links.
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
     let app = AppCoordinator()
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options: UIScene.ConnectionOptions) {
-        window?.rootViewController = WaypointRootViewController(app)
-        app.links?.receive(connectionOptions: options)
+        window = app.makeWindow(for: scene, options: options)
+    }
+
+    func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
+        app.receive(contexts)
+    }
+
+    func scene(_ scene: UIScene, continue activity: NSUserActivity) {
+        app.receive(activity)
     }
 }
 
@@ -113,12 +121,6 @@ extension ShopCoordinator {
 
 ### 5. A deep link
 
-```swift
-extension SceneDelegate {
-    func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
-        app.links?.receive(contexts)
-    }
-}
-```
+The scene delegate from the first example already forwards URLs and user activities to the app coordinator, and `makeWindow(for:options:)` hands it the links a cold launch brings. The inbox holds them until `didLogIn()` sets `links?.isReady = true`. Nothing else is needed in the scene delegate.
 
 The matcher, the plans and the link policy are the ones from the SwiftUI example. They live in `WaypointCore`, so both renderers use the same code.
