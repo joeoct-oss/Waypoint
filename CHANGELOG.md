@@ -20,5 +20,6 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - New "Descriptions" article and `NavigationDescribable`: routes, state, events, outcomes, issues and snapshots print one stable, logfmt-style line, with route fields private unless listed in `publicLogFields`. (#8)
 - Examples in the API articles put a blank line between member groups, such as stored properties and the initializer, and around every member with a body. (#8)
 - `RouteKey`: a route's key is its module and type name, such as `Shop.ProductRoute`, so routes declare no keys and two routes can't share one. Renamed routes list old keys in `formerRouteKeys`. The registry reports `duplicateRouteKey`, `unstableRouteKey` and `invalidRouteKey` at launch, and logs print the key's `typeName`. (#8)
+- `SheetDetent.fitsContent` sizes a sheet to its content, up to `SheetOptions.fitsContentLimit` (default `.large`); taller content scrolls. (#8)
 - Every function, initializer, computed property and statement body in the API articles is on its own lines. (#8)
 - `README.md` with the Waypoint banner, a first look at the API, the products, requirements and links to every DocC article; an MIT `LICENSE`; and a complete `CONTRIBUTING.md` covering tests, code style, pull requests and merging. (#6)

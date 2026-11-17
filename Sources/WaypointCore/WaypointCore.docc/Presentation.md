@@ -94,6 +94,8 @@ public enum SheetDetent: Hashable, Codable, Sendable {
     case fraction(Double)
     /// A fixed height in points.
     case height(Double)
+    /// As tall as the sheet's content, up to `SheetOptions.fitsContentLimit`.
+    case fitsContent
     /// A size the app defines, resolved by a rule registered with the renderer.
     case custom(String)
 }
@@ -108,6 +110,7 @@ public struct SheetOptions: Hashable, Codable, Sendable {
     public init(
         detents: [SheetDetent] = [.large],
         selectedDetent: SheetDetent? = nil,
+        fitsContentLimit: SheetDetent = .large,
         showsDragIndicator: Bool? = nil,
         allowsInteractiveDismiss: Bool = true
     )
@@ -116,6 +119,8 @@ public struct SheetOptions: Hashable, Codable, Sendable {
     public var detents: [SheetDetent]
     /// The size the sheet opens at. `nil` means the first detent.
     public var selectedDetent: SheetDetent?
+    /// The tallest a `.fitsContent` sheet can grow. Taller content scrolls. Default: `.large`.
+    public var fitsContentLimit: SheetDetent
     /// `nil` lets the platform decide.
     public var showsDragIndicator: Bool?
     /// Whether the user can swipe the sheet away. Default: `true`.
@@ -127,6 +132,26 @@ public struct SheetOptions: Hashable, Codable, Sendable {
 ```
 
 When the user drags a sheet to another size, the renderer reports it and `selectedDetent` changes, as with any other change the user makes. A size the platform cannot show falls back to `.large`, and an issue is reported in development.
+
+### Sheets that fit their content
+
+Use `.fitsContent` for a sheet that should be exactly as tall as what it shows, such as a confirmation or a short picker:
+
+```swift
+router.present(ShareRoute(item: item.id), style: .sheet(detents: [.fitsContent]))
+```
+
+- The state stores `.fitsContent`, not a number. The renderer measures the content, so a restored sheet fits the device, text size and language it opens with.
+- When the content's height changes, the sheet animates to the new height. That isn't a navigation change, so no event is sent.
+- A sheet never grows past `fitsContentLimit`, `.large` by default. Taller content stops there and scrolls: the renderer puts it in a scroll view, unless a UIKit screen's root view already scrolls.
+- Mix it with other sizes: `[.fitsContent, .large]` opens at the content's height and lets the user pull the sheet up.
+- The content needs a natural height. A view that fills whatever space it gets, such as a `List`, has none. Waypoint reports `fitsContentHasNoHeight` in development and uses the limit.
+- On iPad in regular width, a sheet is a form sheet, sized to the content where the platform allows it.
+
+```swift
+let options = SheetOptions(detents: [.fitsContent], fitsContentLimit: .fraction(0.6))
+router.present(FilterRoute(), style: .sheet(options))
+```
 
 ### Defaults you can change
 
