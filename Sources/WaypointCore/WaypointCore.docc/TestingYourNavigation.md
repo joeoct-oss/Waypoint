@@ -113,6 +113,8 @@ public struct StrictMode: Sendable {
     public enum Trigger: Sendable {
         case failed
         case recovered
+        /// A call on a navigator whose flow is gone.
+        case ignored
     }
 
     /// Default: `[.failed]`.

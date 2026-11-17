@@ -152,6 +152,11 @@ public enum NavigationOutcome: Sendable, Equatable, NavigationDescribable {
     case applied
     /// The state already matched. Nothing changed and nothing is reported.
     case alreadyThere
+    /// The call arrived while another change was being applied. It runs
+    /// right after, in order. A failure is reported as an issue when it runs.
+    case queued
+    /// The navigator's flow is gone, so the call did nothing.
+    case ignored
     /// The call failed, and its fallback succeeded.
     case recovered(NavigationIssue, by: NavigationFallback)
     /// The call failed and no fallback succeeded. The state is unchanged.
@@ -203,6 +208,7 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
         case flowMismatch
         case denied
         case fallbackFailed
+        case reentrantLoop
     }
     public let kind: Kind
     public let flow: FlowID
@@ -262,6 +268,10 @@ A handle navigates a router but owns nothing. View models take one and import on
 /// Navigates a stack with any route.
 @MainActor
 public struct StackNavigator {
+    /// Whether this navigator's flow is still in the tree. When it's gone,
+    /// every call returns `.ignored`. See <doc:Concurrency>.
+    public var isActive: Bool { get }
+
     @discardableResult public func push<R: Route>(_ route: R) -> NavigationOutcome
     @discardableResult public func pop(count: Int = 1) -> NavigationOutcome
     @discardableResult public func popTo<R: Route>(_ route: R) -> NavigationOutcome
@@ -276,6 +286,9 @@ public struct StackNavigator {
 /// - `Flow: NavigationFlow`: the flow whose routes are accepted.
 @MainActor
 public struct FlowNavigator<Flow: NavigationFlow> {
+    /// Whether this navigator's flow is still in the tree.
+    public var isActive: Bool { get }
+
     @discardableResult public func push<R: Route>(_ route: R) -> NavigationOutcome where R.Flow == Flow
     @discardableResult public func popTo<R: Route>(_ route: R) -> NavigationOutcome where R.Flow == Flow
     // pop, popToRoot, present and dismissFlow as on StackNavigator
