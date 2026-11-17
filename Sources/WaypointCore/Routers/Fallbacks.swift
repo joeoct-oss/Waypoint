@@ -45,7 +45,7 @@ extension TransactionStore {
             return failed(issue)
         }
         guard let fallbackIssue = runFallback(fallback, on: router, after: issue, context) else {
-            keep(issue)
+            keep(issue, level: .error)
             return .recovered(issue, fallback)
         }
         return failed(issue, fallback: fallback, fallbackIssue: fallbackIssue)
@@ -142,7 +142,7 @@ extension TransactionStore {
         fallback: NavigationFallback? = nil,
         fallbackIssue: NavigationIssue? = nil
     ) -> CallResult {
-        keep(issue)
+        keep(issue, level: .fault)
         return .failed(NavigationFailure(issue: issue, fallback: fallback, fallbackIssue: fallbackIssue))
     }
 }

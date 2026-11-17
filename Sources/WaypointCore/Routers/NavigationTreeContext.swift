@@ -20,6 +20,12 @@ final class NavigationTreeContext {
     /// The most calls that may be queued in one main-actor turn. Default: 32.
     var maxQueuedChanges = 32
 
+    /// How the tree logs.
+    var logging = LogConfiguration.default
+
+    /// The id of the next measured interval.
+    var nextIntervalID: UInt64 = 0
+
     /// Called with the changes of each committed transaction, while it is still being applied.
     /// The seam for observers and events (#23).
     var didApply: (([AppliedChange]) -> Void)?
@@ -51,8 +57,12 @@ final class NavigationTreeContext {
 
     /// Registers a route type for decoding and as having a destination.
     func register<R: Route>(_ type: R.Type) {
+        let known = registry.problems.count
         registry.register(type)
         checksDestinations = true
+        for problem in registry.problems.dropFirst(known) {
+            logRegistryProblem(problem)
+        }
     }
 
     /// Whether a route may be shown: always before any registration, then only when its type is
@@ -110,45 +120,67 @@ final class NavigationTreeContext {
         _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
         guard router.isAttached else {
+            logIgnored(router.flowID, file: file, line: line)
             return .ignored
         }
         guard !isApplying else {
             return enqueue(on: router, file: file, line: line, body)
         }
-        let outcome = apply(body)
+        let outcome = apply(on: router.flowID, file: file, line: line, body)
         drainQueue()
         return outcome
     }
 
-    /// Applies the body as one transaction.
-    private func apply(_ body: (TransactionStore) -> CallResult) -> NavigationOutcome {
+    /// Applies the body as one transaction, measured as one interval.
+    private func apply(
+        on flow: FlowID,
+        file: StaticString,
+        line: UInt,
+        _ body: (TransactionStore) -> CallResult
+    ) -> NavigationOutcome {
         isApplying = true
+        let interval = beginTransactionInterval()
         defer {
+            endTransactionInterval(interval)
             isApplying = false
         }
         let store = TransactionStore()
-        let outcome = finish(store, body(store))
-        store.issues.forEach(report)
+        let outcome = finish(store, body(store), file: file, line: line)
+        for (issue, level) in store.issues {
+            report(issue, level: level)
+        }
+        logUnchanged(outcome, flow: flow, file: file, line: line)
         return outcome
     }
 
     /// Commits or rolls back, depending on the result.
-    private func finish(_ store: TransactionStore, _ result: CallResult) -> NavigationOutcome {
+    private func finish(
+        _ store: TransactionStore,
+        _ result: CallResult,
+        file: StaticString,
+        line: UInt
+    ) -> NavigationOutcome {
         switch result {
         case .changed:
-            return commit(store, outcome: .applied)
+            return commit(store, outcome: .applied, file: file, line: line)
         case .unchanged:
             return rollBack(store, outcome: .alreadyThere)
         case .recovered(let issue, let fallback):
-            return commit(store, outcome: .recovered(issue, by: fallback))
+            return commit(store, outcome: .recovered(issue, by: fallback), file: file, line: line)
         case .failed(let failure):
             return fail(store, failure)
         }
     }
 
-    /// Commits the working copies and tells the observers.
-    private func commit(_ store: TransactionStore, outcome: NavigationOutcome) -> NavigationOutcome {
+    /// Commits the working copies, logs the changes and tells the observers.
+    private func commit(
+        _ store: TransactionStore,
+        outcome: NavigationOutcome,
+        file: StaticString,
+        line: UInt
+    ) -> NavigationOutcome {
         store.commit()
+        logChanges(store.changes, file: file, line: line)
         if !store.changes.isEmpty {
             didApply?(store.changes)
         }
@@ -170,9 +202,10 @@ final class NavigationTreeContext {
         return .failed(failure)
     }
 
-    /// Reports an issue.
-    func report(_ issue: NavigationIssue) {
+    /// Reports an issue to the observers and logs it in the `issues` category.
+    func report(_ issue: NavigationIssue, level: LogLevel) {
         didReport?(issue)
+        logIssue(issue, level: level)
     }
 
     /// Queues a call, or refuses it when too many were queued in this turn.
@@ -186,6 +219,7 @@ final class NavigationTreeContext {
             return refuseLoop(on: router, file: file, line: line)
         }
         queuedInTurn += 1
+        logQueued(router.flowID, file: file, line: line)
         queue.append { [unowned self] in
             _ = self.perform(on: router, file: file, line: line, body)
         }
@@ -198,7 +232,7 @@ final class NavigationTreeContext {
             + "which looks like an observer that navigates on every change. The rest were dropped."
         let issue = NavigationIssue(kind: .reentrantLoop, flow: router.flowID, message: message, file: file, line: line)
         let failure = NavigationFailure(issue: issue)
-        report(issue)
+        report(issue, level: .fault)
         for handler in failureHandlers {
             handler(failure)
         }

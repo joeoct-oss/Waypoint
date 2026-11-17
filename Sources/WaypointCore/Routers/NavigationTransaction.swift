@@ -256,7 +256,7 @@ public struct NavigationTransaction {
     /// Fails a step on a value that names no router.
     private func noteMissingTarget(_ context: FallbackContext) -> NavigationOutcome {
         let issue = missingDraft().issue(file: context.file, line: context.line)
-        store.keep(issue)
+        store.keep(issue, level: .fault)
         return store.note(.failed(NavigationFailure(issue: issue)))
     }
 
