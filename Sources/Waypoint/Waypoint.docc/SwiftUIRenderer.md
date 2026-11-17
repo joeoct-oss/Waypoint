@@ -158,21 +158,10 @@ public struct WaypointTabs<Tab: Hashable & Codable & Sendable, Content: View>: V
     public init(_ router: TabRouter<Tab>, @ViewBuilder content: @escaping (Tab) -> Content)
 }
 
-WaypointTabs(tabs) { tab in
-    switch tab {
-    case .home:
-        WaypointStack(tabs.router(for: .home)) {
-            HomeView()
-        }
-        .tabItem { Label("Home", systemImage: "house") }
-    case .shop:
-        WaypointStack(ShopCoordinator(router: tabs.router(for: .shop)))
-            .tabItem { Label("Shop", systemImage: "bag") }
-    }
-}
+WaypointTabs(tabs, content: makeTabFlow(for:))
 ```
 
-A `switch` over your own tab enum is fine here: it lists the tabs once, in one place, not every screen.
+`makeTabFlow(for:)` is a function in your app coordinator with a `switch` over your tab enum, one `make…Flow()` call per case. That is fine here: it lists the tabs once, in one place, not every screen. See <doc:ExampleFlows>.
 
 ### Roots
 
@@ -188,8 +177,8 @@ public protocol SwiftUIRootCoordinator: RootCoordinator {
     /// - `View`: what SwiftUI shows for a root.
     associatedtype Content: View
 
-    /// The screen or flow for one root.
-    @ViewBuilder func content(for root: Root) -> Content
+    /// Builds the flow for one root.
+    @ViewBuilder func makeFlow(for root: Root) -> Content
 }
 
 extension WaypointRoot {

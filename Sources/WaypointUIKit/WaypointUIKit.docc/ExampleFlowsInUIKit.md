@@ -39,21 +39,25 @@ final class AppCoordinator: UIKitRootCoordinator {
     let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
     private(set) lazy var shop = ShopCoordinator(router: tabs.router(for: .shop))
 
-    func makeViewController(for root: AppRoot) -> UIViewController {
+    func makeFlow(for root: AppRoot) -> UIViewController {
         switch root {
         case .login:
-            LoginViewController(onLoggedIn: { [weak self] in self?.didLogIn() })
+            makeLoginFlow()
         case .main:
-            makeTabs()
+            makeMainTabsFlow()
         }
     }
 
-    func didLogIn() {
+    func makeLoginFlow() -> UIViewController {
+        LoginViewController(onLoggedIn: { [weak self] in self?.showMainFlow() })
+    }
+
+    func showMainFlow() {
         router.switch(to: .main)
         links?.isReady = true
     }
 
-    func didLogOut() {
+    func showLoginFlow() {
         links?.isReady = false
         router.switch(to: .login)
     }
@@ -62,19 +66,37 @@ final class AppCoordinator: UIKitRootCoordinator {
 
 ### 2. Tabs, one stack each
 
+The functions have the same names as in the SwiftUI example, so a flow reads the same in both renderers.
+
 ```swift
 extension AppCoordinator {
-    func makeTabs() -> UIViewController {
-        WaypointTabBarController(router: tabs) { [tabs, shop] tab in
-            switch tab {
-            case .home:
-                WaypointNavigationController(router: tabs.router(for: .home), root: HomeViewController())
-            case .shop:
-                WaypointNavigationController(shop)
-            case .profile:
-                WaypointNavigationController(router: tabs.router(for: .profile), root: ProfileViewController())
-            }
+    func makeMainTabsFlow() -> UIViewController {
+        WaypointTabBarController(router: tabs) { [unowned self] tab in
+            self.makeTabFlow(for: tab)
         }
+    }
+
+    func makeTabFlow(for tab: MainTab) -> UIViewController {
+        switch tab {
+        case .home:
+            makeHomeFlow()
+        case .shop:
+            makeShopFlow()
+        case .profile:
+            makeProfileFlow()
+        }
+    }
+
+    func makeHomeFlow() -> UIViewController {
+        WaypointNavigationController(router: tabs.router(for: .home), root: HomeViewController())
+    }
+
+    func makeShopFlow() -> UIViewController {
+        WaypointNavigationController(shop)
+    }
+
+    func makeProfileFlow() -> UIViewController {
+        WaypointNavigationController(router: tabs.router(for: .profile), root: ProfileViewController())
     }
 }
 ```
@@ -121,6 +143,6 @@ extension ShopCoordinator {
 
 ### 5. A deep link
 
-The scene delegate from the first example already forwards URLs and user activities to the app coordinator, and `makeWindow(for:options:)` hands it the links a cold launch brings. The inbox holds them until `didLogIn()` sets `links?.isReady = true`. Nothing else is needed in the scene delegate.
+The scene delegate from the first example already forwards URLs and user activities to the app coordinator, and `makeWindow(for:options:)` hands it the links a cold launch brings. The inbox holds them until `showMainFlow()` sets `links?.isReady = true`. Nothing else is needed in the scene delegate.
 
 The matcher, the plans and the link policy are the ones from the SwiftUI example. They live in `WaypointCore`, so both renderers use the same code.

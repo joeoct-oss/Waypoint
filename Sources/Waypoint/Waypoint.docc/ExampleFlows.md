@@ -49,21 +49,25 @@ final class AppCoordinator: SwiftUIRootCoordinator {
     let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
     private(set) lazy var shop = ShopCoordinator(router: tabs.router(for: .shop))
 
-    func content(for root: AppRoot) -> some View {
+    func makeFlow(for root: AppRoot) -> some View {
         switch root {
         case .login:
-            LoginView(onLoggedIn: { self.didLogIn() })
+            makeLoginFlow()
         case .main:
-            mainTabs
+            makeMainTabsFlow()
         }
     }
 
-    func didLogIn() {
+    func makeLoginFlow() -> some View {
+        LoginView(onLoggedIn: { self.showMainFlow() })
+    }
+
+    func showMainFlow() {
         router.switch(to: .main)
         links?.isReady = true
     }
 
-    func didLogOut() {
+    func showLoginFlow() {
         links?.isReady = false
         router.switch(to: .login)
     }
@@ -72,30 +76,47 @@ final class AppCoordinator: SwiftUIRootCoordinator {
 
 `LoginView` doesn't import Waypoint. It calls `onLoggedIn`, and the rule for what happens next lives in one place you can test.
 
+Two naming rules keep a coordinator readable. Each `case` body is one call to a named function. Functions that build a flow are named `make…Flow()`, and functions that navigate are named `show…()`, so a reader can tell building from moving at a glance.
+
 ### 2. Tabs, one stack each
 
 The app coordinator draws the tabs too. The shop coordinator is created once and kept, so the shop tab keeps its state while the screen redraws.
 
 ```swift
 extension AppCoordinator {
-    var mainTabs: some View {
-        WaypointTabs(tabs) { tab in
-            switch tab {
-            case .home:
-                WaypointStack(self.tabs.router(for: .home)) {
-                    HomeView()
-                }
-                .tabItem { Label("Home", systemImage: "house") }
-            case .shop:
-                WaypointStack(self.shop)
-                    .tabItem { Label("Shop", systemImage: "bag") }
-            case .profile:
-                WaypointStack(self.tabs.router(for: .profile)) {
-                    ProfileView()
-                }
-                .tabItem { Label("Profile", systemImage: "person") }
-            }
+    func makeMainTabsFlow() -> some View {
+        WaypointTabs(tabs, content: makeTabFlow(for:))
+    }
+
+    @ViewBuilder
+    func makeTabFlow(for tab: MainTab) -> some View {
+        switch tab {
+        case .home:
+            makeHomeFlow()
+        case .shop:
+            makeShopFlow()
+        case .profile:
+            makeProfileFlow()
         }
+    }
+
+    func makeHomeFlow() -> some View {
+        WaypointStack(tabs.router(for: .home)) {
+            HomeView()
+        }
+        .tabItem { Label("Home", systemImage: "house") }
+    }
+
+    func makeShopFlow() -> some View {
+        WaypointStack(shop)
+            .tabItem { Label("Shop", systemImage: "bag") }
+    }
+
+    func makeProfileFlow() -> some View {
+        WaypointStack(tabs.router(for: .profile)) {
+            ProfileView()
+        }
+        .tabItem { Label("Profile", systemImage: "person") }
     }
 }
 ```
@@ -194,4 +215,4 @@ matcher.register("/sale/:id") { link in
 }
 ```
 
-`WaypointRoot(app)` sends every link to the app coordinator's inbox. If the link arrives during login, it waits. When the app coordinator's `didLogIn()` switches to the main flow and sets `links?.isReady = true`, the link is applied in one step: the sheet closes, the shop tab is selected and the product is pushed, with one animation.
+`WaypointRoot(app)` sends every link to the app coordinator's inbox. If the link arrives during login, it waits. When the app coordinator's `showMainFlow()` switches to the main flow and sets `links?.isReady = true`, the link is applied in one step: the sheet closes, the shop tab is selected and the product is pushed, with one animation.
