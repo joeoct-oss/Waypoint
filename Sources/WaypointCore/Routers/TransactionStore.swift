@@ -87,12 +87,30 @@ struct IssueDraft {
     /// The flow the call was made on.
     let flow: FlowID
 
-    /// What went wrong and how to fix it.
-    let message: String
+    /// Builds what went wrong and how to fix it, naming routes the way the reader needs.
+    let describeMessage: @Sendable (RouteNaming) -> String
+
+    /// A draft whose message names no routes.
+    init(kind: NavigationIssue.Kind, flow: FlowID, message: String) {
+        self.init(kind: kind, flow: flow) { _ in
+            message
+        }
+    }
+
+    /// A draft whose message names routes.
+    init(
+        kind: NavigationIssue.Kind,
+        flow: FlowID,
+        describeMessage: @escaping @Sendable (RouteNaming) -> String
+    ) {
+        self.kind = kind
+        self.flow = flow
+        self.describeMessage = describeMessage
+    }
 
     /// The issue with the call's file and line.
     func issue(file: StaticString, line: UInt) -> NavigationIssue {
-        NavigationIssue(kind: kind, flow: flow, message: message, file: file, line: line)
+        NavigationIssue(kind: kind, flow: flow, file: file, line: line, describeMessage: describeMessage)
     }
 }
 

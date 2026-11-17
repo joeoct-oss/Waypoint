@@ -88,8 +88,8 @@ extension StackRouter {   // also on TabRouter and RootRouter
     @discardableResult
     public func onEvents(_ handler: @escaping @MainActor ([NavigationEvent]) -> Void) -> ObservationToken
 
-    /// A readable dump of this router and everything below it.
-    public func debugTree() -> String
+    /// The whole tree, one flow per line. See "The navigation tree" below.
+    public func debugTree(revealingPrivateValues: Bool = false) -> String
 }
 
 /// Conformances:
@@ -195,12 +195,18 @@ public struct LogConfiguration: Sendable {
     public let minimumLevel: LogLevel        // default .notice
     public let categories: Set<LogCategory>? // nil: all
     public let revealsPrivateValues: Bool    // default false
+    public let format: LogFormat             // default .readable
+    public let usesSymbols: Bool             // default true
+    public let treeLogging: TreeLogging      // default .off
 
     public init(
         handler: any LogHandler = DisabledLogHandler(),
         minimumLevel: LogLevel = .notice,
         categories: Set<LogCategory>? = nil,
-        revealsPrivateValues: Bool = false
+        revealsPrivateValues: Bool = false,
+        format: LogFormat = .readable,
+        usesSymbols: Bool = true,
+        treeLogging: TreeLogging = .off
     )
 
     // Each returns a new configuration with one value changed.
@@ -208,9 +214,38 @@ public struct LogConfiguration: Sendable {
     public func withMinimumLevel(_ level: LogLevel) -> LogConfiguration
     public func withCategories(_ categories: Set<LogCategory>?) -> LogConfiguration
     public func withPrivateValuesRevealed(_ reveals: Bool) -> LogConfiguration
+    public func withFormat(_ format: LogFormat) -> LogConfiguration
+    public func withSymbols(_ usesSymbols: Bool) -> LogConfiguration
+    public func withTreeLogging(_ treeLogging: TreeLogging) -> LogConfiguration
 
     public func isEnabled(level: LogLevel, category: LogCategory) -> Bool
     public func measuresIntervals(in category: LogCategory) -> Bool
+}
+
+/// How log lines are written.
+///
+/// Conformances:
+/// - `Sendable`, so a configuration that holds it can be shared with the whole tree.
+/// - `Equatable`, so tests can compare formats.
+public enum LogFormat: Sendable, Equatable {
+    /// Sentences for people reading a console, with friendly route names. The default.
+    case readable
+    /// The stable `key=value` lines of `NavigationDescribable`, for tools that parse logs.
+    case structured
+}
+
+/// Which part of the navigation tree is logged after each change, at `.info`.
+///
+/// Conformances:
+/// - `Sendable`, so a configuration that holds it can be shared with the whole tree.
+/// - `Equatable`, so tests can compare settings.
+public enum TreeLogging: Sendable, Equatable {
+    /// Nothing more than the changes. The default.
+    case off
+    /// One line with each changed stack.
+    case changedStacks
+    /// The whole tree, one flow per line, after every change.
+    case wholeTree
 }
 
 extension StackRouter {
@@ -219,6 +254,9 @@ extension StackRouter {
 
     /// Sets how the whole tree logs. Set it once, on the root.
     public func setLogging(_ configuration: LogConfiguration)
+
+    /// The whole tree this router is in, one flow per line, for printing while debugging.
+    public func debugTree(revealingPrivateValues: Bool = false) -> String
 }
 
 extension TabRouter {
@@ -227,6 +265,9 @@ extension TabRouter {
 
     /// Sets how the whole tree logs. Set it once, on the root.
     public func setLogging(_ configuration: LogConfiguration)
+
+    /// The whole tree this router is in, one flow per line, for printing while debugging.
+    public func debugTree(revealingPrivateValues: Bool = false) -> String
 }
 
 extension Route {
@@ -237,32 +278,80 @@ extension Route {
 
 ```swift
 #if DEBUG
-let root = RootRouter(AppRoot.login, logging: .init(minimumLevel: .debug, revealsPrivateValues: true))
+let root = RootRouter(AppRoot.login, logging: .init(minimumLevel: .debug, treeLogging: .changedStacks))
 #else
 let root = RootRouter(AppRoot.login)
 #endif
 ```
 
-Values in log lines use their `NavigationDescribable` descriptions, so every Waypoint line has the same searchable `key=value` shape, and route fields print as `<private>` unless they are in `publicLogFields`. With `revealsPrivateValues` on, the logger uses the revealing form instead. See <doc:Descriptions>.
-
 `WaypointCore` on its own logs nowhere: its default handler is `DisabledLogHandler`. The SwiftUI and UIKit products install a unified-log handler as the default. Any handler works, such as one that writes to a file or a test handler that records lines.
 
-Every message is built only after the level, the category and the handler's `isEnabled(level:category:)` all agree, in that order, so a disabled line costs one comparison. Waypoint writes these lines:
+Every message is built only after the level, the category and the handler's `isEnabled(level:category:)` all agree, in that order, so a disabled line costs one comparison.
 
-| What | Level | Category | Example |
+#### The readable format
+
+By default each line names the flow, then a symbol and a sentence. Routes read as words, so `ProductListRoute` prints as "Product list". Fields listed in `publicLogFields` show their values, and private fields fold into `…`. With `revealsPrivateValues` on, every value shows, in the change lines and in issue messages.
+
+```text
+tabs       ⇥ tab home → shop
+shop       ▸ push Product list (…)
+shop       ▸ push Product (id: 42, …)
+shop       ⚠︎ recovered: can't go back to a screen that isn't in the stack
+             Cart is not in the path [Product list (…) › Product (id: 42, …)]. Check contains(_:) first, or handle the .failed outcome.
+             at ShopCoordinator.swift:28
+shop       ◂ back to the first screen (closed Product list (…) › Product (id: 42, …)) · by fallback
+shop       = already there (ShopCoordinator.swift:30)
+tabs       ↑ present sheet checkout: Checkout (…)
+shop       … queued until the current change ends (CartObserver.swift:36)
+checkout   ∅ ignored: this flow is closed (AddressView.swift:45)
+tabs       ↓ dismiss checkout
+```
+
+| Symbol | Meaning | Symbol | Meaning |
+| --- | --- | --- | --- |
+| `▸` | push | `⚠︎` | an issue a fallback recovered |
+| `◂` | back | `✖︎` | a failed call |
+| `↻` | the stack was set | `=` | nothing changed |
+| `↑` | present | `…` | queued behind a change |
+| `↓` | dismiss | `∅` | ignored: the flow is closed |
+| `⇥` | tab selected | `≡` | the stack after a change |
+
+`usesSymbols: false` drops the symbols and joins routes with `>` instead of `›`, for consoles that can't show them. An issue is written before the change its fallback made, so the cause reads first.
+
+#### The navigation tree
+
+`debugTree()` prints the whole tree at any time, from any router in it:
+
+```text
+tabs               home · [shop] · profile
+├ home             first screen
+├ shop             Product (…)
+│ └ sheet settings Settings › Home
+└ profile          first screen
+```
+
+`treeLogging` adds it to the log after each change: `.changedStacks` writes one line per changed stack, such as `shop       ≡ Product list (…) › Product (id: 42, …)`, and `.wholeTree` writes the tree above.
+
+#### The structured format
+
+`format: .structured` writes the stable `NavigationDescribable` lines instead, for tools that parse logs. See <doc:Descriptions>.
+
+| What | Level | Category | Structured example |
 | --- | --- | --- | --- |
 | A change was applied | `.info` | `navigation`, `presentation` or `tabs` | `pushed [ProductRoute(id: <private>)] flow=main` |
 | A change made by a fallback | `.info` | as above | `popped [HomeRoute] flow=main origin=fallback` |
+| A presentation | `.info` | `presentation` | `presented sheet SettingsRoute flow=settings presenter=main` |
 | A call changed nothing | `.debug` | `navigation` | `alreadyThere flow=main at=ShopCoordinator.swift:42` |
 | A call was queued behind a change | `.debug` | `navigation` | `reentrantChange flow=main at=ShopCoordinator.swift:42` |
 | A call on a router that left the tree | `.debug` | `navigation` | `staleNavigator flow=settings at=SettingsView.swift:18` |
 | A call recovered by a fallback | `.error` | `issues` | `notEnoughRoutes flow=main at=ShopCoordinator.swift:42`, then the message |
 | A call failed | `.fault` | `issues` | `routeNotInPath flow=main at=ShopCoordinator.swift:42`, then the message |
 | A route type problem at registration | `.error` | `issues` | `invalidRouteKey key=""` |
+| A changed stack, with `.changedStacks` | `.info` | `navigation` | `stack flow=main path=[HomeRoute]` |
 
 Each transaction is also one `LogInterval` named `transaction` in the `navigation` category, begun and ended even when the transaction fails, so a handler can draw it as a signpost. Intervals are measured only when the `navigation` category is enabled at the minimum level.
 
-Privacy needs no separate log type: every line is built from `NavigationDescribable` descriptions, which already print route fields as `<private>` unless they are listed in `publicLogFields`.
+Privacy needs no separate log type: in both formats, route fields stay hidden unless they are listed in `publicLogFields` or `revealsPrivateValues` is on.
 
 ### Screen tracking for analytics
 

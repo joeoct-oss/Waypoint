@@ -22,10 +22,32 @@ extension NavigationTreeContext {
     }
 
     /// `pushed [ProductRoute(id: <private>)] flow=main`, with `origin=fallback` for a fallback.
-    private static func changeLine(_ applied: AppliedChange, revealingPrivateValues: Bool) -> String {
-        let change = applied.change.debugDescription(revealingPrivateValues: revealingPrivateValues)
+    /// A presentation names the flow that presented it as `presenter=`, since the presented
+    /// flow is already in the change.
+    private static func structuredChangeLine(_ applied: AppliedChange, naming: RouteNaming) -> String {
+        let change = applied.change.debugDescription(revealingPrivateValues: naming.revealsPrivateValues)
+        let key = isPresentation(applied.change) ? "presenter" : "flow"
         let origin = applied.origin == .fallback ? " origin=fallback" : ""
-        return "\(change) flow=\(applied.flow)\(origin)"
+        return "\(change) \(key)=\(applied.flow)\(origin)"
+    }
+
+    /// Whether a change presents or dismisses a flow.
+    private static func isPresentation(_ change: NavigationChange) -> Bool {
+        switch change {
+        case .presented, .dismissed:
+            return true
+        case .pushed, .popped, .replaced, .tabSelected:
+            return false
+        }
+    }
+
+    /// The flow whose stack is worth showing after a change: the presented flow for a
+    /// presentation, otherwise the flow that changed.
+    private static func shownFlow(after applied: AppliedChange) -> FlowID {
+        guard case .presented(let presentation) = applied.change else {
+            return applied.flow
+        }
+        return presentation.flow
     }
 
     /// The file name and line, such as `ShopCoordinator.swift:42`.
@@ -35,35 +57,46 @@ extension NavigationTreeContext {
         return "\(name):\(line)"
     }
 
-    /// Writes one message, built only when enabled.
+    /// Writes one message, built only when enabled, with routes named the configured way.
     func log(
         _ level: LogLevel,
         _ category: LogCategory,
         file: StaticString,
         line: UInt,
-        _ text: (_ revealingPrivateValues: Bool) -> String
+        _ text: (RouteNaming) -> String
     ) {
         let configuration = logging
         guard configuration.isEnabled(level: level, category: category) else {
             return
         }
-        let message = text(configuration.revealsPrivateValues)
+        let message = text(RouteNaming(configuration))
         configuration.handler.log(LogMessage(level: level, category: category, text: message, file: file, line: line))
     }
 
-    /// Logs each applied change at `.info`, in the category of its kind.
-    func logChanges(_ changes: [AppliedChange], file: StaticString, line: UInt) {
+    /// Logs each applied change at `.info`, in the category of its kind, then the tree when
+    /// asked.
+    func logChanges(_ changes: [AppliedChange], in router: some TreeNode, file: StaticString, line: UInt) {
+        let root = router.rootNode
         for applied in changes {
-            log(.info, Self.category(of: applied.change), file: file, line: line) { reveal in
-                Self.changeLine(applied, revealingPrivateValues: reveal)
+            log(.info, Self.category(of: applied.change), file: file, line: line) { naming in
+                changeLine(applied, root: root, naming: naming)
             }
+        }
+        logTree(after: changes, root: root, file: file, line: line)
+    }
+
+    /// Logs issues in the `issues` category: a recovered one at `.error`, a failed one at
+    /// `.fault`.
+    func logIssues(_ issues: [(issue: NavigationIssue, level: LogLevel)]) {
+        for (issue, level) in issues {
+            logIssue(issue, level: level)
         }
     }
 
-    /// Logs an issue in the `issues` category, with its message on the next line.
+    /// Logs one issue in the `issues` category, with its message on the next lines.
     func logIssue(_ issue: NavigationIssue, level: LogLevel) {
-        log(level, .issues, file: issue.file, line: issue.line) { reveal in
-            issue.debugDescription(revealingPrivateValues: reveal)
+        log(level, .issues, file: issue.file, line: issue.line) { naming in
+            issueLine(issue, level: level, naming: naming)
         }
     }
 
@@ -72,29 +105,40 @@ extension NavigationTreeContext {
         guard outcome == .alreadyThere else {
             return
         }
-        log(.debug, .navigation, file: file, line: line) { _ in
-            "alreadyThere flow=\(flow) at=\(Self.callSite(file, line))"
+        let site = Self.callSite(file, line)
+        log(.debug, .navigation, file: file, line: line) { naming in
+            naming.format == .readable
+                ? ReadableLog.unchanged(flow, site: site, symbols: naming.usesSymbols)
+                : "alreadyThere flow=\(flow) at=\(site)"
         }
     }
 
     /// Logs a call queued behind a change, at `.debug` (decision 0013).
     func logQueued(_ flow: FlowID, file: StaticString, line: UInt) {
-        log(.debug, .navigation, file: file, line: line) { _ in
-            "reentrantChange flow=\(flow) at=\(Self.callSite(file, line))"
+        let site = Self.callSite(file, line)
+        log(.debug, .navigation, file: file, line: line) { naming in
+            naming.format == .readable
+                ? ReadableLog.queued(flow, site: site, symbols: naming.usesSymbols)
+                : "reentrantChange flow=\(flow) at=\(site)"
         }
     }
 
     /// Logs a call on a router that left the tree, at `.debug` (decision 0013).
     func logIgnored(_ flow: FlowID, file: StaticString, line: UInt) {
-        log(.debug, .navigation, file: file, line: line) { _ in
-            "staleNavigator flow=\(flow) at=\(Self.callSite(file, line))"
+        let site = Self.callSite(file, line)
+        log(.debug, .navigation, file: file, line: line) { naming in
+            naming.format == .readable
+                ? ReadableLog.ignored(flow, site: site, symbols: naming.usesSymbols)
+                : "staleNavigator flow=\(flow) at=\(site)"
         }
     }
 
     /// Logs a problem found while registering a route type, at `.error`.
     func logRegistryProblem(_ problem: RouteDecodingError) {
-        log(.error, .issues, file: #fileID, line: #line) { reveal in
-            problem.debugDescription(revealingPrivateValues: reveal)
+        log(.error, .issues, file: #fileID, line: #line) { naming in
+            naming.format == .readable
+                ? ReadableLog.registryProblem(problem, symbols: naming.usesSymbols)
+                : problem.debugDescription(revealingPrivateValues: naming.revealsPrivateValues)
         }
     }
 
@@ -115,5 +159,64 @@ extension NavigationTreeContext {
             return
         }
         logging.handler.endInterval(interval)
+    }
+
+    /// One change, in the configured format.
+    private func changeLine(_ applied: AppliedChange, root: any TreeNode, naming: RouteNaming) -> String {
+        guard naming.format == .readable else {
+            return Self.structuredChangeLine(applied, naming: naming)
+        }
+        let path = root.node(for: applied.flow)?.shownRoutes
+        return ReadableLog.change(applied, path: path, naming: naming)
+    }
+
+    /// One issue, in the configured format.
+    private func issueLine(_ issue: NavigationIssue, level: LogLevel, naming: RouteNaming) -> String {
+        guard naming.format == .readable else {
+            return issue.debugDescription(revealingPrivateValues: naming.revealsPrivateValues)
+        }
+        return ReadableLog.issue(issue, recovered: level < .fault, naming: naming)
+    }
+
+    /// Logs the changed stacks or the whole tree after a change, as the configuration asks.
+    private func logTree(after changes: [AppliedChange], root: any TreeNode, file: StaticString, line: UInt) {
+        switch logging.treeLogging {
+        case .off:
+            break
+        case .changedStacks:
+            logChangedStacks(changes, root: root, file: file, line: line)
+        case .wholeTree:
+            logWholeTree(root, file: file, line: line)
+        }
+    }
+
+    /// One line per changed flow with the routes it shows.
+    private func logChangedStacks(_ changes: [AppliedChange], root: any TreeNode, file: StaticString, line: UInt) {
+        let flows = changes.map(Self.shownFlow).reduce(into: [FlowID]()) { flows, flow in
+            flows += flows.contains(flow) ? [] : [flow]
+        }
+        for flow in flows {
+            guard let stack = root.node(for: flow)?.shownStack else {
+                continue
+            }
+            log(.info, .navigation, file: file, line: line) { naming in
+                Self.stackLine(stack.flowID, routes: stack.shownRoutes, naming: naming)
+            }
+        }
+    }
+
+    /// The whole tree, one flow per line.
+    private func logWholeTree(_ root: any TreeNode, file: StaticString, line: UInt) {
+        log(.info, .navigation, file: file, line: line) { naming in
+            "tree after the change:\n" + root.readableTree(naming).rendered
+        }
+    }
+
+    /// `shop       ≡ Product list (…)`, or `stack flow=shop path=[…]`.
+    private static func stackLine(_ flow: FlowID, routes: [AnyRoute], naming: RouteNaming) -> String {
+        guard naming.format == .readable else {
+            return "stack flow=\(flow) path=\(naming.list(routes))"
+        }
+        return ReadableLog.stack(flow, routes: routes, naming: naming)
     }
 }

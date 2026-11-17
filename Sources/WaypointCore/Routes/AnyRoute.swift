@@ -82,4 +82,9 @@ public struct AnyRoute: Hashable, Sendable, Codable, NavigationDescribable {
     public func debugDescription(revealingPrivateValues: Bool) -> String {
         RouteDescriber.describe(base, revealingPrivateValues: revealingPrivateValues)
     }
+
+    /// The readable name for the console, such as `Product list (…)`.
+    func readableDescription(revealingPrivateValues: Bool) -> String {
+        RouteDescriber.readable(base, revealingPrivateValues: revealingPrivateValues)
+    }
 }

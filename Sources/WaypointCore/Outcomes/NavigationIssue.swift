@@ -68,6 +68,10 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
     /// The line of the call.
     public let line: UInt
 
+    /// Builds the message with other route names, for readable or revealing logs. `nil` for an
+    /// issue made with the public initializer, whose message is fixed.
+    let describeMessage: (@Sendable (RouteNaming) -> String)?
+
     /// `routeNotInPath flow=shop at=ShopCoordinator.swift:42`.
     public var description: String {
         "\(kind) flow=\(flow) at=\(callSite)"
@@ -87,6 +91,23 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
         self.message = message
         self.file = file
         self.line = line
+        self.describeMessage = nil
+    }
+
+    /// Describes an issue whose message names routes, so logs can name them their own way.
+    init(
+        kind: Kind,
+        flow: FlowID,
+        file: StaticString,
+        line: UInt,
+        describeMessage: @escaping @Sendable (RouteNaming) -> String
+    ) {
+        self.kind = kind
+        self.flow = flow
+        self.message = describeMessage(.structured)
+        self.file = file
+        self.line = line
+        self.describeMessage = describeMessage
     }
 
     /// Whether two issues have the same kind, flow, message and call site.
@@ -100,6 +121,12 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
 
     /// The line, then the message on an indented second line.
     public func debugDescription(revealingPrivateValues: Bool) -> String {
-        "\(description)\n  \(message)"
+        let naming = RouteNaming(format: .structured, revealsPrivateValues: revealingPrivateValues, usesSymbols: false)
+        return "\(description)\n  \(message(in: naming))"
+    }
+
+    /// The message with routes named as `naming` names them.
+    func message(in naming: RouteNaming) -> String {
+        describeMessage?(naming) ?? message
     }
 }

@@ -35,16 +35,14 @@ extension Rejection {
     }
 
     /// Explains a `popTo` route that is not in the path.
-    private static func routeNotInPathMessage(_ route: AnyRoute, path: [AnyRoute]) -> String {
-        let pathText = DescriptionFormat.list(path, revealingPrivateValues: false)
-        return "\(route.routeKey.typeName) is not in the path \(pathText). "
+    private static func routeNotInPathMessage(_ route: AnyRoute, path: [AnyRoute], naming: RouteNaming) -> String {
+        "\(naming.typeName(route.routeKey)) is not in the path \(naming.list(path)). "
             + "Check contains(_:) first, or handle the .failed outcome."
     }
 
     /// Explains a typed `popTo` with no match.
-    private static func typeNotInPathMessage(_ key: RouteKey, path: [AnyRoute]) -> String {
-        let pathText = DescriptionFormat.list(path, revealingPrivateValues: false)
-        return "No \(key.typeName) in the path \(pathText) matches. "
+    private static func typeNotInPathMessage(_ key: RouteKey, path: [AnyRoute], naming: RouteNaming) -> String {
+        "No \(naming.typeName(key)) in the path \(naming.list(path)) matches. "
             + "Check last(_:) first, or handle the .failed outcome."
     }
 
@@ -63,17 +61,17 @@ extension Rejection {
         "This flow already presents \(flow). Dismiss it first, or present from the presented flow."
     }
 
-    /// What went wrong and how to fix it. Route fields stay private.
-    func message(path: [AnyRoute]) -> String {
+    /// What went wrong and how to fix it, with routes named as `naming` names them.
+    func message(path: [AnyRoute], naming: RouteNaming) -> String {
         switch self {
         case .emptyPath:
             return Self.emptyPathMessage()
         case .notEnoughRoutes(let requested, let available):
             return Self.notEnoughRoutesMessage(requested: requested, available: available)
         case .routeNotInPath(let route):
-            return Self.routeNotInPathMessage(route, path: path)
+            return Self.routeNotInPathMessage(route, path: path, naming: naming)
         case .typeNotInPath(let key):
-            return Self.typeNotInPathMessage(key, path: path)
+            return Self.typeNotInPathMessage(key, path: path, naming: naming)
         case .unknownTab(let name):
             return Self.unknownTabMessage(name)
         case .noTabs:
