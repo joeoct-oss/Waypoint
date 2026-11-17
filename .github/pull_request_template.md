@@ -15,6 +15,6 @@ Closes #
 - [ ] `scripts/lint.sh` passes (strict SwiftLint and swift-format, see #70); required before review
 - [ ] Labels copied from the issue (type, area, priority, test, runs)
 - [ ] Public symbols documented in DocC
-- [ ] Code follows [CODE_STYLE.md](../CODE_STYLE.md), including a reason for every protocol conformance
+- [ ] Code follows `CODE_STYLE.md`, including a reason for every protocol conformance
 - [ ] Every doc that states what this changes is updated in this pull request (DocC, README, CONTRIBUTING, CODE_STYLE), or none does
 - [ ] CHANGELOG updated under Unreleased
