@@ -56,6 +56,10 @@ public struct Presentation: Sendable, Equatable, Codable, NavigationDescribable 
 
     /// The presented flow.
     public var flow: FlowID
+
+    /// The route of the presented flow's root screen, or `nil` when a
+    /// coordinator builds the flow's root itself.
+    public var route: AnyRoute?
 }
 ```
 
@@ -103,6 +107,9 @@ Each router has a stable `FlowID`. The erased form of the whole app's state is a
 public struct FlowID: Hashable, Codable, Sendable, NavigationDescribable {
     /// Its `description` is the name, such as `shop`.
     public init(_ name: String)
+
+    /// The flow's name. Saved as a plain string.
+    public let name: String
 }
 
 /// The erased navigation state of every flow, from the root down.
@@ -117,7 +124,7 @@ public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribabl
     /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
     /// - `Equatable`, so tests and the router can compare values.
     /// - `Codable`, so it can be saved, restored and logged.
-    public enum Node: Sendable, Equatable, Codable {
+    public indirect enum Node: Sendable, Equatable, Codable {
         case stack(FlowID, StackState)
         case tabs(FlowID, selection: String, tabs: [String: NavigationTree])
         case root(FlowID, current: String, child: NavigationTree?)
