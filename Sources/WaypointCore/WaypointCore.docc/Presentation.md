@@ -25,16 +25,21 @@ These methods are on `StackRouter` and `TabRouter`. Like every navigation method
 
 ```swift
 extension StackRouter {
+    /// The router of the presented flow, if any.
+    public var presented: StackRouter? { get }
+    /// Default presentation options for this router and its children.
+    public var presentationDefaults: PresentationDefaults { get set }
+
     /// Presents `route` as the root screen of a new child flow.
     ///
     /// If a flow is already presented, returns `.failed` with
     /// `alreadyPresenting` unless a fallback says otherwise.
     @discardableResult
-    public func present<R: Route>(_ route: R, style: PresentationStyle = .sheet, else fallback: NavigationFallback? = nil) -> NavigationOutcome
-
-    /// The router of the presented flow, if any.
-    public var presented: StackRouter? { get }
-
+    public func present<R: Route>(
+        _ route: R,
+        style: PresentationStyle = .sheet,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
     /// Dismisses the flow this router presents.
     ///
     /// Returns `.alreadyThere` when nothing is presented.
@@ -45,10 +50,6 @@ extension StackRouter {
 
     /// Asks whoever presented this router's flow to dismiss it.
     @discardableResult public func dismissFlow(else fallback: NavigationFallback? = nil) -> NavigationOutcome
-
-    /// Default presentation options for this router and its children.
-    public var presentationDefaults: PresentationDefaults { get set }
-
     /// The sheet options a presentation uses: its own, or this router's defaults.
     public func sheetOptions(for presentation: Presentation) -> SheetOptions
 }
@@ -67,13 +68,6 @@ extension StackRouter {
 public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescribable {
     /// A sheet that uses the router's default sheet options. Large unless changed.
     public static var sheet: PresentationStyle { get }
-
-    /// A sheet with the given options.
-    public static func sheet(_ options: SheetOptions) -> PresentationStyle
-
-    /// A sheet with the given sizes. The first size is selected.
-    public static func sheet(detents: [SheetDetent], selected: SheetDetent? = nil) -> PresentationStyle
-
     /// A full-screen cover.
     public static var fullScreenCover: PresentationStyle { get }
 
@@ -83,6 +77,12 @@ public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescriba
 
     /// Whether this is a full-screen cover.
     public var isFullScreenCover: Bool { get }
+
+    /// A sheet with the given options.
+    public static func sheet(_ options: SheetOptions) -> PresentationStyle
+
+    /// A sheet with the given sizes. The first size is selected.
+    public static func sheet(detents: [SheetDetent], selected: SheetDetent? = nil) -> PresentationStyle
 }
 ```
 
@@ -120,14 +120,8 @@ public enum SheetDetent: Hashable, Codable, Sendable, CustomStringConvertible {
 /// - `Codable`, so it can be saved, restored and logged.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct SheetOptions: Hashable, Codable, Sendable {
-    /// Creates sheet options. Every argument has a default.
-    public init(
-        detents: [SheetDetent] = [.large],
-        selectedDetent: SheetDetent? = nil,
-        fitsContentLimit: SheetDetent = .large,
-        showsDragIndicator: Bool? = nil,
-        allowsInteractiveDismiss: Bool = true
-    )
+    /// A large sheet that the user can swipe away.
+    public static var `default`: SheetOptions { get }
 
     /// The sizes the sheet can rest at. Default: `[.large]`.
     public var detents: [SheetDetent]
@@ -140,8 +134,14 @@ public struct SheetOptions: Hashable, Codable, Sendable {
     /// Whether the user can swipe the sheet away. Default: `true`.
     public var allowsInteractiveDismiss: Bool
 
-    /// A large sheet that the user can swipe away.
-    public static var `default`: SheetOptions { get }
+    /// Creates sheet options. Every argument has a default.
+    public init(
+        detents: [SheetDetent] = [.large],
+        selectedDetent: SheetDetent? = nil,
+        fitsContentLimit: SheetDetent = .large,
+        showsDragIndicator: Bool? = nil,
+        allowsInteractiveDismiss: Bool = true
+    )
 }
 ```
 
@@ -178,14 +178,14 @@ Nothing is fixed. Set a default once for a flow or the whole app, and a single c
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 /// - `Equatable`, so tests can compare defaults.
 public struct PresentationDefaults: Sendable, Equatable {
-    /// Creates defaults. Every argument has a default.
-    public init(sheet: SheetOptions = .default)
+    /// Large sheets that the user can swipe away.
+    public static var `default`: PresentationDefaults { get }
 
     /// Used by `.sheet` when a call doesn't pass its own options.
     public var sheet: SheetOptions
 
-    /// Large sheets that the user can swipe away.
-    public static var `default`: PresentationDefaults { get }
+    /// Creates defaults. Every argument has a default.
+    public init(sheet: SheetOptions = .default)
 }
 
 rootRouter.presentationDefaults.sheet = SheetOptions(detents: [.medium, .large])

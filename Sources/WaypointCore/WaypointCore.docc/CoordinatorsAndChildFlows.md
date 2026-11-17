@@ -148,20 +148,26 @@ extension StackRouter {
     /// The result is delivered exactly once: when the flow calls `finish(with:)`,
     /// when it is dismissed in code, or when the user swipes it away.
     public func present<C: StackCoordinator & FlowFinishing>(
-        _ child: C, style: PresentationStyle = .sheet
+        _ child: C,
+        style: PresentationStyle = .sheet
     ) async -> FlowResult<C.Output>
 
     /// The same, with a callback instead of `await`.
     @discardableResult
     public func present<C: StackCoordinator & FlowFinishing>(
-        _ child: C, style: PresentationStyle = .sheet,
+        _ child: C,
+        style: PresentationStyle = .sheet,
         else fallback: NavigationFallback? = nil,
         onFinish: @escaping @MainActor (FlowResult<C.Output>) -> Void
     ) -> NavigationOutcome
 
     /// Presents a child flow that returns nothing.
     @discardableResult
-    public func present<C: StackCoordinator>(_ child: C, style: PresentationStyle = .sheet, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    public func present<C: StackCoordinator>(
+        _ child: C,
+        style: PresentationStyle = .sheet,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 
     /// Pushes a child flow's first screen onto this stack. The child shares
     /// this stack but has its own router for its own routes.
@@ -176,11 +182,11 @@ Like every navigation method, these take an optional fallback, file and line, le
 
 ```swift
 extension StackRouter {
-    /// The nearest coordinator of type `C` above this router.
-    public func nearest<C: AnyObject>(_ type: C.Type) -> C?
-
     /// The root router of the whole tree.
     public var root: any NavigationRouter { get }
+
+    /// The nearest coordinator of type `C` above this router.
+    public func nearest<C: AnyObject>(_ type: C.Type) -> C?
 }
 
 /// What every router has in common.

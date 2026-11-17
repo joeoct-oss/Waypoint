@@ -11,8 +11,9 @@ Most links name one screen. The route declares its own URL patterns, and registe
 // - `Route`, so it can be pushed, presented and saved.
 // - `DeepLinkable`, so it can be opened from a URL.
 struct ProductRoute: Route, DeepLinkable {
-    let id: Int
     static let patterns: [URLPattern] = ["/product/:id/:slug?", "/p/:id"]
+
+    let id: Int
 
     init(link: DeepLinkParameters) throws {
         id = try link.int("id")
@@ -160,8 +161,10 @@ public struct DeepLinkMatcher: Sendable {
     public init()
 
     public mutating func register<R: DeepLinkable>(_ type: R.Type)
-    public mutating func register(_ pattern: URLPattern,
-                                  _ plan: @escaping @Sendable (DeepLinkParameters) throws -> NavigationPlan)
+    public mutating func register(
+        _ pattern: URLPattern,
+        _ plan: @escaping @Sendable (DeepLinkParameters) throws -> NavigationPlan
+    )
     public func plan(for url: URL) -> Result<NavigationPlan, DeepLinkError>
 }
 
@@ -179,6 +182,10 @@ The app coordinator owns the inbox through its `links` property, and the rendere
 /// The one place every link source sends to.
 @MainActor
 public final class LinkInbox {
+    /// Set by the app once it can navigate, for example after loading its session.
+    /// Links wait until this is true and a root router is attached.
+    public var isReady: Bool { get set }
+
     /// Creates an inbox for the given domains, with a policy for waiting links.
     public init(domains: LinkDomains, policy: LinkPolicy = .default)
 
@@ -188,10 +195,6 @@ public final class LinkInbox {
     public func open(_ route: some Route)
     /// Receives a link that an adapter has already built.
     public func receive(_ link: IncomingLink)
-
-    /// Set by the app once it can navigate, for example after loading its session.
-    /// Links wait until this is true and a root router is attached.
-    public var isReady: Bool { get set }
 }
 
 /// The hosts and schemes this app answers, set once.
@@ -207,6 +210,9 @@ public struct LinkDomains: Sendable {
 /// Conformances:
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct LinkPolicy: Sendable {
+    /// The default policy: a short queue, a short expiry, and the unhandled fallback below.
+    public static var `default`: LinkPolicy { get }
+
     /// A newer link replaces one that is waiting. Default: `.latestOnly`.
     public var pendingLimit: PendingLimit
     /// A waiting link older than this is dropped. Default: 10 minutes.
@@ -215,8 +221,6 @@ public struct LinkPolicy: Sendable {
     public var duplicateWindow: Duration
     /// What to do with a link nothing matches. Default: `.none`.
     public var unhandled: NavigationFallback
-    /// The default policy: a short queue, a short expiry, and the unhandled fallback below.
-    public static var `default`: LinkPolicy { get }
 }
 ```
 

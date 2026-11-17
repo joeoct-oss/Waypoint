@@ -128,7 +128,7 @@ struct StackReducerTests {
         #expect(result == .changed(StackState(path: [home, product1], presentation: presentation), [.pushed([product1])]))
     }
 
-    /// Reduces a command on a stack with this path and no root route.
+    // Reduces a command on a stack with this path and no root route.
     private func reduce(_ path: [AnyRoute], _ command: StackCommand) -> Reduction<StackState> {
         StackReducer.reduce(StackState(path: path), command, rootRoute: nil)
     }

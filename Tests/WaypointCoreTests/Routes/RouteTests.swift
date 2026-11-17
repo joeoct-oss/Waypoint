@@ -195,7 +195,7 @@ struct RouteTests {
         #expect(returned == route)
     }
 
-    /// A decoder with a registry that knows one route type.
+    // A decoder with a registry that knows one route type.
     private func decoder<R: Route>(registering type: R.Type) -> JSONDecoder {
         var registry = RouteRegistry()
         registry.register(type)

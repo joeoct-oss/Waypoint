@@ -54,12 +54,56 @@ public struct RouteRegistry: Sendable {
     /// The root router reports each one as an issue when it is found.
     public private(set) var problems: [RouteDecodingError] = []
 
-    /// Creates an empty registry.
-    public init() { }
-
     /// Every registered route type, once each.
     public var registeredTypes: [any Route.Type] {
         entries.values.filter(\.isCurrent).map(\.type)
+    }
+
+    /// Creates an empty registry.
+    public init() { }
+
+    /// Encodes a route with its current key, with or without a registry.
+    static func encode(_ route: AnyRoute, to encoder: any Encoder) throws {
+        let key = route.routeKey
+        guard key.isStable else {
+            throw RouteDecodingError.unstableRouteKey(key)
+        }
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(key, forKey: .route)
+        try encodeValue(route.base, into: &container)
+    }
+
+    /// The registry in a decoder's `userInfo`, or a decoding error that says how to provide one.
+    static func required(by decoder: any Decoder) throws -> RouteRegistry {
+        guard let registry = decoder.userInfo[.routeRegistry] as? RouteRegistry else {
+            let context = DecodingError.Context(
+                codingPath: decoder.codingPath,
+                debugDescription: "Decoding a route needs a RouteRegistry in decoder.userInfo[.routeRegistry]."
+            )
+            throw DecodingError.dataCorrupted(context)
+        }
+        return registry
+    }
+
+    /// Encodes the route's own value under `value`.
+    private static func encodeValue<R: Route>(
+        _ route: R,
+        into container: inout KeyedEncodingContainer<CodingKeys>
+    ) throws {
+        try container.encode(route, forKey: .value)
+    }
+
+    /// Decodes the value under `value` as `R`.
+    private static func decodeValue<R: Route>(
+        of type: R.Type,
+        key: RouteKey,
+        from container: KeyedDecodingContainer<CodingKeys>
+    ) throws -> AnyRoute {
+        do {
+            return AnyRoute(try container.decode(R.self, forKey: .value))
+        } catch {
+            throw RouteDecodingError.invalidPayload(key)
+        }
     }
 
     /// Registers a route type under its ``Route/routeKey`` and its ``Route/formerRouteKeys``.
@@ -103,29 +147,6 @@ public struct RouteRegistry: Sendable {
         return try Self.decodeValue(of: entry.type, key: key, from: container)
     }
 
-    /// Encodes a route with its current key, with or without a registry.
-    static func encode(_ route: AnyRoute, to encoder: any Encoder) throws {
-        let key = route.routeKey
-        guard key.isStable else {
-            throw RouteDecodingError.unstableRouteKey(key)
-        }
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(key, forKey: .route)
-        try encodeValue(route.base, into: &container)
-    }
-
-    /// The registry in a decoder's `userInfo`, or a decoding error that says how to provide one.
-    static func required(by decoder: any Decoder) throws -> RouteRegistry {
-        guard let registry = decoder.userInfo[.routeRegistry] as? RouteRegistry else {
-            let context = DecodingError.Context(
-                codingPath: decoder.codingPath,
-                debugDescription: "Decoding a route needs a RouteRegistry in decoder.userInfo[.routeRegistry]."
-            )
-            throw DecodingError.dataCorrupted(context)
-        }
-        return registry
-    }
-
     /// Records the type under its current key. A former key of another type that held it loses.
     private mutating func registerCurrentKey<R: Route>(of type: R.Type) {
         let key = R.routeKey
@@ -157,24 +178,6 @@ public struct RouteRegistry: Sendable {
             return
         }
         problems.append(.duplicateRouteKey(former, types: [String(reflecting: existing.type), R.routeKey.rawValue]))
-    }
-
-    /// Encodes the route's own value under `value`.
-    private static func encodeValue<R: Route>(_ route: R, into container: inout KeyedEncodingContainer<CodingKeys>) throws {
-        try container.encode(route, forKey: .value)
-    }
-
-    /// Decodes the value under `value` as `R`.
-    private static func decodeValue<R: Route>(
-        of type: R.Type,
-        key: RouteKey,
-        from container: KeyedDecodingContainer<CodingKeys>
-    ) throws -> AnyRoute {
-        do {
-            return AnyRoute(try container.decode(R.self, forKey: .value))
-        } catch {
-            throw RouteDecodingError.invalidPayload(key)
-        }
     }
 }
 

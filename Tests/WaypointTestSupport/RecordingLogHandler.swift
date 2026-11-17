@@ -41,11 +41,6 @@ package final class RecordingLogHandler: LogHandler, @unchecked Sendable {
     /// Whether the handler accepts messages.
     private let accepts: Bool
 
-    /// Creates a handler that accepts every message, or none.
-    package init(accepts: Bool = true) {
-        self.accepts = accepts
-    }
-
     /// The messages so far.
     package var messages: [LogMessage] {
         lock.withLock {
@@ -70,6 +65,11 @@ package final class RecordingLogHandler: LogHandler, @unchecked Sendable {
         lock.withLock {
             recordedChecks
         }
+    }
+
+    /// Creates a handler that accepts every message, or none.
+    package init(accepts: Bool = true) {
+        self.accepts = accepts
     }
 
     /// Counts the check, then answers whether the handler accepts messages.

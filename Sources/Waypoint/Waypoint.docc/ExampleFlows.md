@@ -132,8 +132,10 @@ One route type per screen, one registration line each. The product route can als
 // - `DeepLinkable`, so it can be opened from a URL.
 struct ProductRoute: Route, DeepLinkable {
     typealias Flow = ShopCoordinator
-    let id: Int
+
     static let pattern: URLPattern = "/product/:id"
+
+    let id: Int
 
     init(id: Int) {
         self.id = id
@@ -156,10 +158,6 @@ struct CartRoute: Route {
 final class ShopCoordinator: SwiftUIStackCoordinator, NavigationFlow {
     let router: StackRouter
 
-    init(router: StackRouter) {
-        self.router = router
-    }
-
     var root: some View {
         ProductListView(onSelect: { self.router.push(ProductRoute(id: $0)) },
                         onFilter: { self.showFilters() })
@@ -170,6 +168,10 @@ final class ShopCoordinator: SwiftUIStackCoordinator, NavigationFlow {
             ProductView(model: ProductModel(id: route.id, navigation: navigation))
         }
         Destination(CartRoute.self) { _ in CartView() }
+    }
+
+    init(router: StackRouter) {
+        self.router = router
     }
 }
 ```

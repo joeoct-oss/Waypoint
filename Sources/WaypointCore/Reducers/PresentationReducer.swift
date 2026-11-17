@@ -45,7 +45,10 @@ enum PresentationReducer {
     }
 
     /// Sets the presentation, unless one is already shown.
-    private static func present<State: PresentingState>(_ presentation: Presentation, on state: State) -> Reduction<State> {
+    private static func present<State: PresentingState>(
+        _ presentation: Presentation,
+        on state: State
+    ) -> Reduction<State> {
         if let current = state.presentation {
             return .rejected(.alreadyPresenting(current.flow))
         }

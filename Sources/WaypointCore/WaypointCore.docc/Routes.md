@@ -119,17 +119,17 @@ Each one fails loudly in development, never crashes in release, and fails the te
 /// - `Sendable`, so keys can leave the main actor in events, logs and snapshots.
 /// - `NavigationDescribable`, so logs and test failures print it in the shared format.
 public struct RouteKey: Hashable, Codable, Sendable, NavigationDescribable {
-    /// The key of a route type: its module and type name, such as `Shop.ProductRoute`.
-    public init<R: Route>(_ type: R.Type)
-
-    /// A key written out, for `formerRouteKeys` only.
-    public init(_ rawValue: String)
-
     /// The full key, such as `Shop.ProductRoute`.
     public var rawValue: String { get }
 
     /// The key without its module, such as `ProductRoute`. Logs print this.
     public var typeName: String { get }
+
+    /// The key of a route type: its module and type name, such as `Shop.ProductRoute`.
+    public init<R: Route>(_ type: R.Type)
+
+    /// A key written out, for `formerRouteKeys` only.
+    public init(_ rawValue: String)
 }
 ```
 
@@ -187,11 +187,11 @@ Routers, state, events and snapshots hold routes of many types, so they store th
 /// - `Codable`, so navigation state that holds it can be saved and restored.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public struct AnyRoute: Hashable, Sendable, Codable, NavigationDescribable {
-    /// Wraps a route.
-    public init<R: Route>(_ route: R)
-
     /// The wrapped route's key.
     public var routeKey: RouteKey { get }
+
+    /// Wraps a route.
+    public init<R: Route>(_ route: R)
 
     /// The wrapped route as `R`, or `nil` if it is another type.
     public func `as`<R: Route>(_ type: R.Type) -> R?
@@ -222,6 +222,12 @@ let state = try decoder.decode(StackState.self, from: data)
 /// Conformances:
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct RouteRegistry: Sendable {
+    /// Problems found while registering, in the order they were found.
+    public private(set) var problems: [RouteDecodingError]
+
+    /// Every registered route type, once each.
+    public var registeredTypes: [any Route.Type] { get }
+
     /// Creates an empty registry.
     public init()
 
@@ -231,13 +237,6 @@ public struct RouteRegistry: Sendable {
     /// belongs to another type reports `duplicateRouteKey`, and a private or
     /// local type reports `unstableRouteKey`.
     public mutating func register<R: Route>(_ type: R.Type)
-
-    /// Problems found while registering, in the order they were found.
-    public private(set) var problems: [RouteDecodingError]
-
-    /// Every registered route type, once each.
-    public var registeredTypes: [any Route.Type] { get }
-
     /// Whether this route type is registered under its current key.
     public func isRegistered<R: Route>(_ type: R.Type) -> Bool
 
@@ -282,6 +281,12 @@ Destinations say how each route type is shown. The renderers fill a `RouteTable`
 /// `Payload` is whatever the renderer builds for a route: a view, a view
 /// controller, or a test value.
 public struct RouteTable<Payload> {
+    /// The route types registered for decoding.
+    public private(set) var registry: RouteRegistry
+
+    /// Every registered route type.
+    public var registeredTypes: [any Route.Type] { get }
+
     /// Creates an empty table.
     public init()
 
@@ -292,15 +297,8 @@ public struct RouteTable<Payload> {
 
     /// The payload for a route, or `nil` if its type is not registered.
     public func payload(for route: AnyRoute) -> Payload?
-
-    /// Every registered route type.
-    public var registeredTypes: [any Route.Type] { get }
-
     /// Whether a destination is registered for this route type.
     public func contains<R: Route>(_ type: R.Type) -> Bool
-
-    /// The route types registered for decoding.
-    public private(set) var registry: RouteRegistry
 }
 ```
 

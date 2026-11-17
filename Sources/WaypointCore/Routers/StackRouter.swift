@@ -75,49 +75,6 @@ public final class StackRouter: NavigationRouter {
     /// ```
     @ObservationIgnored public var fallbackPolicy = FallbackPolicy()
 
-    /// Creates a root router with an empty path.
-    ///
-    /// - Parameter flow: The flow's name in logs, events and saved state. Default: `main`.
-    public init(flow: FlowID = FlowID("main")) {
-        let tree = NavigationTreeContext()
-        self.tree = tree
-        self.flowID = tree.claimFlowName(flow.name)
-        self.rootRoute = nil
-        self.state = StackState()
-        self.isAttached = true
-    }
-
-    /// Creates a root router whose root screen shows `root`, so `popTo(root)` pops to the root.
-    public init<R: Route>(root: R, flow: FlowID = FlowID("main")) {
-        let tree = NavigationTreeContext()
-        self.tree = tree
-        self.flowID = tree.claimFlowName(flow.name)
-        self.rootRoute = AnyRoute(root)
-        self.state = StackState()
-        self.isAttached = true
-    }
-
-    /// Creates a router for a flow presented by `parent`. It joins the tree when the
-    /// transaction that presents it commits.
-    init(presentedBy parent: any TreeNode, flow: FlowID, route: AnyRoute) {
-        self.tree = parent.tree
-        self.flowID = flow
-        self.rootRoute = route
-        self.parentNode = parent
-        self.state = StackState()
-        self.isAttached = false
-    }
-
-    /// Creates the router of one tab, inside a tab container.
-    init(tabOf parent: any TreeNode, flow: FlowID, isAttached: Bool) {
-        self.tree = parent.tree
-        self.flowID = flow
-        self.rootRoute = nil
-        self.parentNode = parent
-        self.state = StackState()
-        self.isAttached = isAttached
-    }
-
     /// The router that presented or contains this one, or `nil` for the root.
     public var parent: (any NavigationRouter)? {
         parentNode
@@ -174,6 +131,49 @@ public final class StackRouter: NavigationRouter {
         set {
             ownPresentationDefaults = newValue
         }
+    }
+
+    /// Creates a root router with an empty path.
+    ///
+    /// - Parameter flow: The flow's name in logs, events and saved state. Default: `main`.
+    public init(flow: FlowID = FlowID("main")) {
+        let tree = NavigationTreeContext()
+        self.tree = tree
+        self.flowID = tree.claimFlowName(flow.name)
+        self.rootRoute = nil
+        self.state = StackState()
+        self.isAttached = true
+    }
+
+    /// Creates a root router whose root screen shows `root`, so `popTo(root)` pops to the root.
+    public init<R: Route>(root: R, flow: FlowID = FlowID("main")) {
+        let tree = NavigationTreeContext()
+        self.tree = tree
+        self.flowID = tree.claimFlowName(flow.name)
+        self.rootRoute = AnyRoute(root)
+        self.state = StackState()
+        self.isAttached = true
+    }
+
+    /// Creates a router for a flow presented by `parent`. It joins the tree when the
+    /// transaction that presents it commits.
+    init(presentedBy parent: any TreeNode, flow: FlowID, route: AnyRoute) {
+        self.tree = parent.tree
+        self.flowID = flow
+        self.rootRoute = route
+        self.parentNode = parent
+        self.state = StackState()
+        self.isAttached = false
+    }
+
+    /// Creates the router of one tab, inside a tab container.
+    init(tabOf parent: any TreeNode, flow: FlowID, isAttached: Bool) {
+        self.tree = parent.tree
+        self.flowID = flow
+        self.rootRoute = nil
+        self.parentNode = parent
+        self.state = StackState()
+        self.isAttached = isAttached
     }
 
     /// Pushes one route.

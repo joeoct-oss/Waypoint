@@ -53,8 +53,9 @@ They are thin, read the router from the environment, and hold no state of their 
 /// Conformances:
 /// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
 @propertyWrapper public struct StackNavigation: DynamicProperty {
-    public init()
     public var wrappedValue: StackNavigator { get }
+
+    public init()
 }
 
 /// The nearest stack of `Flow`, even from a sheet inside it.
@@ -63,8 +64,9 @@ They are thin, read the router from the environment, and hold no state of their 
 /// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
 /// - `Flow: NavigationFlow`: the flow whose routes are accepted.
 @propertyWrapper public struct FlowNavigation<Flow: NavigationFlow>: DynamicProperty {
-    public init(_ flow: Flow.Type)
     public var wrappedValue: FlowNavigator<Flow> { get }
+
+    public init(_ flow: Flow.Type)
 }
 
 /// Dismisses the flow this view is in.
@@ -72,8 +74,9 @@ They are thin, read the router from the environment, and hold no state of their 
 /// Conformances:
 /// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
 @propertyWrapper public struct DismissFlow: DynamicProperty {
-    public init()
     public var wrappedValue: DismissFlowAction { get }
+
+    public init()
 }
 
 /// Ends the flow this view is in with a result.
@@ -82,8 +85,9 @@ They are thin, read the router from the environment, and hold no state of their 
 /// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
 /// - `Flow: FlowFinishing`: the flow that ends with a result.
 @propertyWrapper public struct FinishFlow<Flow: FlowFinishing>: DynamicProperty {
-    public init(_ flow: Flow.Type)
     public var wrappedValue: FinishFlowAction<Flow.Output> { get }
+
+    public init(_ flow: Flow.Type)
 }
 
 /// The selected tab, settable. `$tab` is a `Binding`.
@@ -94,9 +98,10 @@ They are thin, read the router from the environment, and hold no state of their 
 /// - `Tab: Codable`, so the selection is saved and restored.
 /// - `Tab: Sendable`, so tab events can leave the main actor.
 @propertyWrapper public struct TabSelection<Tab: Hashable & Codable & Sendable>: DynamicProperty {
-    public init(_ tab: Tab.Type)
     public var wrappedValue: Tab { get nonmutating set }
     public var projectedValue: Binding<Tab> { get }
+
+    public init(_ tab: Tab.Type)
 }
 
 @MainActor public struct DismissFlowAction {

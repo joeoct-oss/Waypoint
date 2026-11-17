@@ -27,17 +27,6 @@ public struct AnyRoute: Hashable, Sendable, Codable, NavigationDescribable {
     /// The wrapped route.
     package let base: any Route
 
-    /// Wraps a route.
-    public init<R: Route>(_ route: R) {
-        self.base = route
-    }
-
-    /// Decodes a route by its key, through the registry in the decoder's `userInfo`.
-    public init(from decoder: any Decoder) throws {
-        let registry = try RouteRegistry.required(by: decoder)
-        self = try registry.decode(from: decoder)
-    }
-
     /// The wrapped route's key.
     public var routeKey: RouteKey {
         type(of: base).routeKey
@@ -47,6 +36,17 @@ public struct AnyRoute: Hashable, Sendable, Codable, NavigationDescribable {
     /// `ProductRoute(id: <private>)`.
     public var description: String {
         debugDescription(revealingPrivateValues: false)
+    }
+
+    /// Wraps a route.
+    public init<R: Route>(_ route: R) {
+        self.base = route
+    }
+
+    /// Decodes a route by its key, through the registry in the decoder's `userInfo`.
+    public init(from decoder: any Decoder) throws {
+        let registry = try RouteRegistry.required(by: decoder)
+        self = try registry.decode(from: decoder)
     }
 
     /// Whether two erased routes have the same type and equal values.

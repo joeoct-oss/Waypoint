@@ -23,26 +23,6 @@ extension Rejection {
         }
     }
 
-    /// What went wrong and how to fix it. Route fields stay private.
-    func message(path: [AnyRoute]) -> String {
-        switch self {
-        case .emptyPath:
-            return Self.emptyPathMessage()
-        case .notEnoughRoutes(let requested, let available):
-            return Self.notEnoughRoutesMessage(requested: requested, available: available)
-        case .routeNotInPath(let route):
-            return Self.routeNotInPathMessage(route, path: path)
-        case .typeNotInPath(let key):
-            return Self.typeNotInPathMessage(key, path: path)
-        case .unknownTab(let name):
-            return Self.unknownTabMessage(name)
-        case .noTabs:
-            return Self.noTabsMessage()
-        case .alreadyPresenting(let flow):
-            return Self.alreadyPresentingMessage(flow)
-        }
-    }
-
     /// Explains a pop on an empty path.
     private static func emptyPathMessage() -> String {
         "pop() was called on an empty path, so the root screen is already showing."
@@ -81,5 +61,25 @@ extension Rejection {
     /// Explains a second presentation.
     private static func alreadyPresentingMessage(_ flow: FlowID) -> String {
         "This flow already presents \(flow). Dismiss it first, or present from the presented flow."
+    }
+
+    /// What went wrong and how to fix it. Route fields stay private.
+    func message(path: [AnyRoute]) -> String {
+        switch self {
+        case .emptyPath:
+            return Self.emptyPathMessage()
+        case .notEnoughRoutes(let requested, let available):
+            return Self.notEnoughRoutesMessage(requested: requested, available: available)
+        case .routeNotInPath(let route):
+            return Self.routeNotInPathMessage(route, path: path)
+        case .typeNotInPath(let key):
+            return Self.typeNotInPathMessage(key, path: path)
+        case .unknownTab(let name):
+            return Self.unknownTabMessage(name)
+        case .noTabs:
+            return Self.noTabsMessage()
+        case .alreadyPresenting(let flow):
+            return Self.alreadyPresentingMessage(flow)
+        }
     }
 }

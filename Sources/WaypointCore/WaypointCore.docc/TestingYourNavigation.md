@@ -49,22 +49,34 @@ Failure messages print routes with their values, such as `ProductRoute(id: 42)`,
 ```swift
 /// Checks a stack's whole path.
 @MainActor
-public func expectPath(_ router: StackRouter, @RoutePathBuilder _ path: () -> [AnyRoute],
-                       sourceLocation: SourceLocation = #_sourceLocation)
+public func expectPath(
+    _ router: StackRouter,
+    @RoutePathBuilder _ path: () -> [AnyRoute],
+    sourceLocation: SourceLocation = #_sourceLocation
+)
 
 /// Checks that a flow of type `C` is presented above `router`.
 @MainActor
-public func expectPresented<C: AnyObject>(_ router: some NavigationRouter, _ type: C.Type,
-                                          sourceLocation: SourceLocation = #_sourceLocation)
+public func expectPresented<C: AnyObject>(
+    _ router: some NavigationRouter,
+    _ type: C.Type,
+    sourceLocation: SourceLocation = #_sourceLocation
+)
 
 /// Checks what a call returned.
-public func expectOutcome(_ outcome: NavigationOutcome, _ expected: NavigationOutcome,
-                          sourceLocation: SourceLocation = #_sourceLocation)
+public func expectOutcome(
+    _ outcome: NavigationOutcome,
+    _ expected: NavigationOutcome,
+    sourceLocation: SourceLocation = #_sourceLocation
+)
 
 /// Checks that every route type in `types` has a destination.
 @MainActor
-public func expectDestinations<Payload>(for table: RouteTable<Payload>, cover types: [any Route.Type],
-                                        sourceLocation: SourceLocation = #_sourceLocation)
+public func expectDestinations<Payload>(
+    for table: RouteTable<Payload>,
+    cover types: [any Route.Type],
+    sourceLocation: SourceLocation = #_sourceLocation
+)
 ```
 
 ### Recording events
@@ -76,9 +88,10 @@ public func expectDestinations<Payload>(for table: RouteTable<Payload>, cover ty
 /// - `NavigationObserver`, so routers send it every event to record.
 @MainActor
 public final class RecordingObserver: NavigationObserver {
-    public init()
     public private(set) var events: [NavigationEvent]
     public private(set) var issues: [NavigationIssue]
+
+    public init()
 }
 ```
 

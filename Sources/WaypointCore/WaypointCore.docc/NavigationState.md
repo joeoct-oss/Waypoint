@@ -105,11 +105,11 @@ Each router has a stable `FlowID`. The erased form of the whole app's state is a
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public struct FlowID: Hashable, Codable, Sendable, NavigationDescribable {
-    /// Its `description` is the name, such as `shop`.
-    public init(_ name: String)
-
     /// The flow's name. Saved as a plain string.
     public let name: String
+
+    /// Its `description` is the name, such as `shop`.
+    public init(_ name: String)
 }
 
 /// The erased navigation state of every flow, from the root down.

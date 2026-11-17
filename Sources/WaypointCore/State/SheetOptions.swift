@@ -16,6 +16,11 @@
 /// - `Codable`, so it can be saved, restored and logged.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct SheetOptions: Hashable, Codable, Sendable {
+    /// A large sheet that the user can swipe away.
+    public static var `default`: SheetOptions {
+        SheetOptions()
+    }
+
     /// The sizes the sheet can rest at. Default: `[.large]`.
     public var detents: [SheetDetent]
 
@@ -44,10 +49,5 @@ public struct SheetOptions: Hashable, Codable, Sendable {
         self.fitsContentLimit = fitsContentLimit
         self.showsDragIndicator = showsDragIndicator
         self.allowsInteractiveDismiss = allowsInteractiveDismiss
-    }
-
-    /// A large sheet that the user can swipe away.
-    public static var `default`: SheetOptions {
-        SheetOptions()
     }
 }

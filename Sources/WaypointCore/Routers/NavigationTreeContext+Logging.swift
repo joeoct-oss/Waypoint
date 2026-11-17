@@ -9,6 +9,32 @@
 /// The core's log call sites. Every message is built only when its level and category are
 /// enabled, so a disabled log line costs nothing.
 extension NavigationTreeContext {
+    /// The category a change is logged in.
+    private static func category(of change: NavigationChange) -> LogCategory {
+        switch change {
+        case .pushed, .popped, .replaced:
+            return .navigation
+        case .presented, .dismissed:
+            return .presentation
+        case .tabSelected:
+            return .tabs
+        }
+    }
+
+    /// `pushed [ProductRoute(id: <private>)] flow=main`, with `origin=fallback` for a fallback.
+    private static func changeLine(_ applied: AppliedChange, revealingPrivateValues: Bool) -> String {
+        let change = applied.change.debugDescription(revealingPrivateValues: revealingPrivateValues)
+        let origin = applied.origin == .fallback ? " origin=fallback" : ""
+        return "\(change) flow=\(applied.flow)\(origin)"
+    }
+
+    /// The file name and line, such as `ShopCoordinator.swift:42`.
+    private static func callSite(_ file: StaticString, _ line: UInt) -> String {
+        let path = "\(file)"
+        let name = path.split(separator: "/").last.map(String.init) ?? path
+        return "\(name):\(line)"
+    }
+
     /// Writes one message, built only when enabled.
     func log(
         _ level: LogLevel,
@@ -90,31 +116,5 @@ extension NavigationTreeContext {
             return
         }
         logging.handler.endInterval(interval)
-    }
-
-    /// The category a change is logged in.
-    private static func category(of change: NavigationChange) -> LogCategory {
-        switch change {
-        case .pushed, .popped, .replaced:
-            return .navigation
-        case .presented, .dismissed:
-            return .presentation
-        case .tabSelected:
-            return .tabs
-        }
-    }
-
-    /// `pushed [ProductRoute(id: <private>)] flow=main`, with `origin=fallback` for a fallback.
-    private static func changeLine(_ applied: AppliedChange, revealingPrivateValues: Bool) -> String {
-        let change = applied.change.debugDescription(revealingPrivateValues: revealingPrivateValues)
-        let origin = applied.origin == .fallback ? " origin=fallback" : ""
-        return "\(change) flow=\(applied.flow)\(origin)"
-    }
-
-    /// The file name and line, such as `ShopCoordinator.swift:42`.
-    private static func callSite(_ file: StaticString, _ line: UInt) -> String {
-        let path = "\(file)"
-        let name = path.split(separator: "/").last.map(String.init) ?? path
-        return "\(name):\(line)"
     }
 }

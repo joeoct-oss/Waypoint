@@ -136,8 +136,9 @@ public enum LogLevel: Int, Sendable, Comparable {
 /// - `Hashable`, so categories can be kept in a set.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct LogCategory: Hashable, Sendable {
-    public init(_ name: String)
     public static let navigation, presentation, tabs, flows, links, restoration, renderer, issues: LogCategory
+
+    public init(_ name: String)
 }
 
 /// One log line, built only after the level and category were found enabled.
@@ -187,18 +188,21 @@ public struct DisabledLogHandler: LogHandler {
 /// Conformances:
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct LogConfiguration: Sendable {
+    public static var `default`: LogConfiguration { get }
+    public static var disabled: LogConfiguration { get }
+
+    public var handler: any LogHandler
+    public var minimumLevel: LogLevel        // default .notice
+    public var categories: Set<LogCategory>? // nil: all
+    public var revealsPrivateValues: Bool    // default false
+
     public init(
         handler: any LogHandler = DisabledLogHandler(),
         minimumLevel: LogLevel = .notice,
         categories: Set<LogCategory>? = nil,
         revealsPrivateValues: Bool = false
     )
-    public var handler: any LogHandler
-    public var minimumLevel: LogLevel        // default .notice
-    public var categories: Set<LogCategory>? // nil: all
-    public var revealsPrivateValues: Bool    // default false
-    public static var `default`: LogConfiguration { get }
-    public static var disabled: LogConfiguration { get }
+
     public func isEnabled(level: LogLevel, category: LogCategory) -> Bool
     public func measuresIntervals(in category: LogCategory) -> Bool
 }

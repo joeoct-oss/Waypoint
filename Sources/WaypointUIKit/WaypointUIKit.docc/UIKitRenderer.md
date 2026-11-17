@@ -16,19 +16,23 @@ View controllers navigate through injection: the coordinator or the destination 
 /// A navigation controller driven by a `StackRouter`.
 @MainActor
 public final class WaypointNavigationController: UINavigationController {
-    /// Creates a navigation controller that draws the router's stack over a root screen.
-    public init(router: StackRouter, root: UIViewController)
-
     /// The router this controller draws.
     public let router: StackRouter
 
+    /// Creates a navigation controller that draws the router's stack over a root screen.
+    public init(router: StackRouter, root: UIViewController)
+
     /// Shows a view controller when a route of type `R` is pushed or presented.
-    public func destination<R: Route>(_ type: R.Type,
-                                      _ make: @escaping @MainActor (R) -> UIViewController)
+    public func destination<R: Route>(
+        _ type: R.Type,
+        _ make: @escaping @MainActor (R) -> UIViewController
+    )
 
     /// The same, and also hands the view controller a navigator.
-    public func destination<R: Route>(_ type: R.Type,
-                                      _ make: @escaping @MainActor (R, StackNavigator) -> UIViewController)
+    public func destination<R: Route>(
+        _ type: R.Type,
+        _ make: @escaping @MainActor (R, StackNavigator) -> UIViewController
+    )
 
     /// Defines an app-specific sheet size, used by `SheetDetent.custom(name)`.
     public func sheetDetent(_ name: String, _ detent: UISheetPresentationController.Detent)
@@ -46,10 +50,11 @@ A route with no destination never crashes. Debug builds push a "No destination f
 /// - `StackCoordinator`: it adds screen building to a stack coordinator.
 @MainActor
 public protocol UIKitStackCoordinator: StackCoordinator {
-    /// The flow's first screen.
-    func makeRootViewController() -> UIViewController
     /// The flow's screens, by route type.
     @UIKitDestinationsBuilder var destinations: UIKitDestinations { get }
+
+    /// The flow's first screen.
+    func makeRootViewController() -> UIViewController
 }
 
 /// Registers one route type's view controller inside a coordinator.
@@ -73,13 +78,13 @@ extension WaypointNavigationController {
 final class ShopCoordinator: UIKitStackCoordinator {
     let router = StackRouter()
 
-    func makeRootViewController() -> UIViewController {
-        ProductListViewController(onSelect: { [router] in router.push(ProductRoute(id: $0)) })
-    }
-
     var destinations: UIKitDestinations {
         UIKitDestination(ProductRoute.self) { ProductViewController(id: $0.id) }
         UIKitDestination(CartRoute.self) { _ in CartViewController() }
+    }
+
+    func makeRootViewController() -> UIViewController {
+        ProductListViewController(onSelect: { [router] in router.push(ProductRoute(id: $0)) })
     }
 }
 

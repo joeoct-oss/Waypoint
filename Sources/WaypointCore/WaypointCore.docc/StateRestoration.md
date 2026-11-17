@@ -48,10 +48,11 @@ extension RootRouter {
 /// Conformances:
 /// - `Sendable`, so the options can be built anywhere and passed to the root router.
 public struct RestoreOptions: Sendable {
-    /// Whether sheets and full-screen covers come back. Default: `true`.
-    public var includesPresentations: Bool
     /// Restores everything, including presentations.
     public static var `default`: RestoreOptions { get }
+
+    /// Whether sheets and full-screen covers come back. Default: `true`.
+    public var includesPresentations: Bool
 }
 
 /// What a restore did.
