@@ -37,7 +37,17 @@ extension RootRouter {
 
     /// Rebuilds the tree in one transaction with `origin: .restoration`.
     @discardableResult
-    public func restore(from data: Data) -> RestoreOutcome
+    public func restore(from data: Data, options: RestoreOptions = .default) -> RestoreOutcome
+}
+
+/// What a restore brings back.
+///
+/// Conformances:
+/// - `Sendable`, so the options can be built anywhere and passed to the root router.
+public struct RestoreOptions: Sendable {
+    /// Whether sheets and full-screen covers come back. Default: `true`.
+    public var includesPresentations: Bool
+    public static var `default`: RestoreOptions { get }
 }
 
 /// What a restore did.
@@ -53,6 +63,16 @@ public enum RestoreOutcome: Sendable, Equatable {
     case failed(String)
 }
 ```
+
+### Choosing what comes back
+
+By default the whole tree comes back, so the user sees exactly what they left. If you don't want a half-finished sheet to return, skip presentations:
+
+```swift
+root.restore(from: data, options: RestoreOptions(includesPresentations: false))
+```
+
+Tabs, stacks and the root are still restored.
 
 ### Restore never crashes
 

@@ -20,6 +20,28 @@ func buyPushesCart() {
 
 The `WaypointTesting` library adds helpers for the checks you write most. It will be its own product with its own documentation catalog. This article fixes its shape.
 
+### Swift Testing and XCTest
+
+The helpers work in both. Inside a Swift Testing test a failure is recorded as a Swift Testing issue. Anywhere else it is reported with `XCTFail`, at the same file and line. Your test reads the same either way:
+
+```swift
+final class ProductModelTests: XCTestCase {
+    @MainActor
+    func testBuyPushesCart() {
+        let router = StackRouter()
+        let model = ProductModel(navigation: router.navigator(for: ShopFlow.self))
+
+        model.buy()
+
+        expectPath(router) {
+            CartRoute()
+        }
+    }
+}
+```
+
+Strict mode reports failures the same way.
+
 ### Assertions
 
 ```swift
