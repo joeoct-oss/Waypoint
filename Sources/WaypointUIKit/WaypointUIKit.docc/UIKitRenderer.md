@@ -100,8 +100,8 @@ Sheet sizes come from the presentation's `SheetOptions` and map to `UISheetPrese
 /// - `RootCoordinator`: it adds a view controller for each root to an app coordinator.
 @MainActor
 public protocol UIKitRootCoordinator: RootCoordinator {
-    /// The screen or flow for one root.
-    func makeViewController(for root: Root) -> UIViewController
+    /// Builds the flow for one root.
+    func makeFlow(for root: Root) -> UIViewController
 }
 
 extension WaypointRootViewController {

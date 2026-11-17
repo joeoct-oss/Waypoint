@@ -30,12 +30,12 @@ final class AppCoordinator: RootCoordinator {
     let router = RootRouter(AppRoot.login)
     let links: LinkInbox? = LinkInbox(domains: LinkDomains(hosts: ["example.com"], schemes: ["myshop"]))
 
-    func didLogIn() {
+    func showMainFlow() {
         router.switch(to: .main)
         links?.isReady = true
     }
 
-    func didLogOut() {
+    func showLoginFlow() {
         links?.isReady = false
         router.switch(to: .login)
     }
@@ -49,7 +49,7 @@ The renderer protocols, `SwiftUIRootCoordinator` and `UIKitRootCoordinator`, add
 func loggingInShowsTheMainTabs() {
     let app = AppCoordinator()
 
-    app.didLogIn()
+    app.showMainFlow()
 
     #expect(app.router.current == .main)
 }
