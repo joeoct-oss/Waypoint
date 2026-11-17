@@ -179,8 +179,15 @@ The built-in defaults change nothing unless the intent is clear. Popping more ro
 /// A navigation call that could not be done as asked.
 public struct NavigationIssue: Sendable, Equatable, CustomStringConvertible {
     public enum Kind: Sendable, Hashable {
-        case routeNotInPath, emptyPath, unregisteredRoute, unknownTab
-        case alreadyPresenting, noRouterInScope, flowMismatch, denied, fallbackFailed
+        case routeNotInPath
+        case emptyPath
+        case unregisteredRoute
+        case unknownTab
+        case alreadyPresenting
+        case noRouterInScope
+        case flowMismatch
+        case denied
+        case fallbackFailed
     }
     public let kind: Kind
     public let flow: FlowID

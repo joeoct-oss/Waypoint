@@ -7,7 +7,11 @@ Keep one stack per tab, and switch tabs from code or a deep link.
 `TabRouter` owns a tab container. Each tab has its own child router, so every tab keeps its own stack when the user switches away and back.
 
 ```swift
-enum MainTab: String, Hashable, Codable, Sendable { case home, shop, profile }
+enum MainTab: String, Hashable, Codable, Sendable {
+    case home
+    case shop
+    case profile
+}
 
 let tabs = TabRouter(tabs: [.home, .shop, .profile], selection: .home)
 tabs.select(.shop)

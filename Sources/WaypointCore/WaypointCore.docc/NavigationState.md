@@ -52,7 +52,7 @@ public struct Presentation: Sendable, Equatable, Codable {
 ```swift
 /// The state of a tab container.
 ///
-/// `Tab` is usually an app enum, such as `enum MainTab { case home, shop, profile }`.
+/// `Tab` is usually an app enum, such as a `MainTab` with `home`, `shop` and `profile` cases.
 public struct TabState<Tab: Hashable & Codable & Sendable>: Sendable, Equatable, Codable {
     /// The tabs, in display order.
     public var tabs: [Tab]

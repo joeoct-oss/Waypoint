@@ -7,7 +7,10 @@ Swap whole flows, such as login and the main tabs.
 Apps replace their whole screen at a few moments: from launch to login, from login to the main tabs, and back to login on logout. `RootRouter` holds which root is showing and replaces the whole subtree when it switches. The old flow and every router inside it are released.
 
 ```swift
-enum AppRoot: Hashable, Codable, Sendable { case login, main }
+enum AppRoot: Hashable, Codable, Sendable {
+    case login
+    case main
+}
 
 let root = RootRouter(AppRoot.login)
 root.switch(to: .main)

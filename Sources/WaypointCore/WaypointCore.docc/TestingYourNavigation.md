@@ -77,7 +77,10 @@ In strict mode, a navigation call whose outcome is `.failed` fails the current t
 ```swift
 /// Fails tests on bad navigation calls.
 public struct StrictMode: Sendable {
-    public enum Trigger: Sendable { case failed, recovered }
+    public enum Trigger: Sendable {
+        case failed
+        case recovered
+    }
     /// Default: `[.failed]`.
     public init(failOn: Set<Trigger> = [.failed])
 }

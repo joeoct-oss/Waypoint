@@ -7,7 +7,9 @@ Name each screen with a small value type, and register it by its type.
 A route is a value that names one screen and carries its inputs. Waypoint uses one small type per screen, so adding a screen is a local change: one route type and one registration line. No central `switch` is needed.
 
 ```swift
-struct ProductRoute: Route { let id: Int }
+struct ProductRoute: Route {
+    let id: Int
+}
 struct CartRoute: Route { }
 
 router.push(ProductRoute(id: 42))
@@ -18,7 +20,11 @@ Routes hold identifiers and small inputs, never models or view models. That keep
 A small enum is still fine for a closed group of screens, such as the steps of a wizard. It is registered as one type:
 
 ```swift
-enum CheckoutStep: Route { case address, payment, review }
+enum CheckoutStep: Route {
+    case address
+    case payment
+    case review
+}
 ```
 
 ### The route protocol
@@ -65,7 +71,9 @@ public enum AnyFlow: NavigationFlow { }
 ```swift
 enum ShopFlow: NavigationFlow { }
 
-struct CartRoute: Route { typealias Flow = ShopFlow }
+struct CartRoute: Route {
+    typealias Flow = ShopFlow
+}
 struct HelpRoute: Route { }   // unscoped
 
 func checkout(_ shop: FlowNavigator<ShopFlow>) {
