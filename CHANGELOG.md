@@ -13,4 +13,5 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - DocC catalogs for the `Waypoint` (SwiftUI) and `WaypointUIKit` products, with renderer API articles, navigating from views and view models, and five example flows in each renderer. Signatures only. (#44)
 - Every type in the API articles lists its conformances with a reason for each, and a new "Why these conformances" article explains `Hashable`, `Codable`, `Sendable`, `Equatable` and `AnyObject`. (#8)
 - The API articles now show restore options for skipping presentations, how an observer reads the whole tree after a change, and that the testing helpers work in both Swift Testing and XCTest. (#8)
+- Switch cases in the API articles put their body on its own line. (#8)
 - `README.md` with the Waypoint banner, a first look at the API, the products, requirements and links to every DocC article; an MIT `LICENSE`; and a complete `CONTRIBUTING.md` covering tests, code style, pull requests and merging. (#6)

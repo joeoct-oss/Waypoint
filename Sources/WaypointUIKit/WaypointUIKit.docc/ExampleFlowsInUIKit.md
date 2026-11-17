@@ -15,8 +15,10 @@ func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options: UIS
 
     window?.rootViewController = WaypointRootViewController(router: root) { current in
         switch current {
-        case .login: LoginViewController(onLoggedIn: { root.switch(to: .main) })
-        case .main: makeTabs(tabs)
+        case .login:
+            LoginViewController(onLoggedIn: { root.switch(to: .main) })
+        case .main:
+            makeTabs(tabs)
         }
     }
     inbox.attach(root)
@@ -30,9 +32,12 @@ func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options: UIS
 func makeTabs(_ tabs: TabRouter<MainTab>) -> UIViewController {
     WaypointTabBarController(router: tabs) { tab in
         switch tab {
-        case .home: WaypointNavigationController(router: tabs.router(for: .home), root: HomeViewController())
-        case .shop: WaypointNavigationController(ShopCoordinator(router: tabs.router(for: .shop)))
-        case .profile: WaypointNavigationController(router: tabs.router(for: .profile), root: ProfileViewController())
+        case .home:
+            WaypointNavigationController(router: tabs.router(for: .home), root: HomeViewController())
+        case .shop:
+            WaypointNavigationController(ShopCoordinator(router: tabs.router(for: .shop)))
+        case .profile:
+            WaypointNavigationController(router: tabs.router(for: .profile), root: ProfileViewController())
         }
     }
 }
