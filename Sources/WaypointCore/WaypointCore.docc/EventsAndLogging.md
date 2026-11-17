@@ -82,7 +82,13 @@ An `AsyncStream` of events is not available yet. Observers cover the same needs.
 Waypoint logs what it does and why, at levels you choose. Logging is on at `.notice` by default, so problems show up and normal changes stay quiet. On Apple platforms it goes to the unified log. Route values are private in logs unless you mark fields as public.
 
 ```swift
-public enum LogLevel: Int, Sendable, Comparable { case debug, info, notice, error, fault }
+public enum LogLevel: Int, Sendable, Comparable {
+    case debug
+    case info
+    case notice
+    case error
+    case fault
+}
 
 public struct LogCategory: Hashable, Sendable {
     public init(_ name: String)

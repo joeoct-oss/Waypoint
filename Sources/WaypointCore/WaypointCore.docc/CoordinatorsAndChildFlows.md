@@ -53,8 +53,12 @@ public protocol FlowFinishing: AnyObject {
 A coordinator can be its own `NavigationFlow`. Routes then name it as their flow, and the coordinator gets a scoped handle for free. A separate empty `enum ShopFlow: NavigationFlow { }` works just as well. Neither is required.
 
 ```swift
-final class ShopCoordinator: StackCoordinator, NavigationFlow { ... }
-struct CartRoute: Route { typealias Flow = ShopCoordinator }
+final class ShopCoordinator: StackCoordinator, NavigationFlow {
+    ...
+}
+struct CartRoute: Route {
+    typealias Flow = ShopCoordinator
+}
 
 extension StackCoordinator where Self: NavigationFlow {
     /// A handle that only accepts this coordinator's routes.

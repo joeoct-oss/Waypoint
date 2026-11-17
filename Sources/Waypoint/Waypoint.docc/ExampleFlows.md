@@ -11,8 +11,15 @@ These five flows cover what most apps need. They build on each other: the app st
 The root router holds which flow is showing. Logging in switches the whole screen and releases the login flow.
 
 ```swift
-enum AppRoot: Hashable, Codable, Sendable { case login, main }
-enum MainTab: String, Hashable, Codable, Sendable { case home, shop, profile }
+enum AppRoot: Hashable, Codable, Sendable {
+    case login
+    case main
+}
+enum MainTab: String, Hashable, Codable, Sendable {
+    case home
+    case shop
+    case profile
+}
 
 @main
 struct ShopApp: App {
@@ -68,7 +75,9 @@ struct ProductRoute: Route, DeepLinkable {
     init(link: DeepLinkParameters) throws { id = try link.int("id") }
 }
 
-struct CartRoute: Route { typealias Flow = ShopCoordinator }
+struct CartRoute: Route {
+    typealias Flow = ShopCoordinator
+}
 
 final class ShopCoordinator: SwiftUIStackCoordinator, NavigationFlow {
     let router: StackRouter

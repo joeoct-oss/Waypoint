@@ -78,14 +78,24 @@ public struct NavigationPlan: Sendable, Equatable {
 }
 
 /// Steps, written as small values inside a plan.
-public struct SwitchRoot<Root: Hashable & Codable & Sendable>: NavigationPlanStep { public init(_ root: Root) }
-public struct SelectTab<Tab: Hashable & Codable & Sendable>: NavigationPlanStep { public init(_ tab: Tab) }
+public struct SwitchRoot<Root: Hashable & Codable & Sendable>: NavigationPlanStep {
+    public init(_ root: Root)
+}
+public struct SelectTab<Tab: Hashable & Codable & Sendable>: NavigationPlanStep {
+    public init(_ tab: Tab)
+}
 public struct SetPath<Tab: Hashable & Codable & Sendable>: NavigationPlanStep {
     public init(in tab: Tab, @RoutePathBuilder _ routes: () throws -> [AnyRoute]) rethrows
 }
-public struct Push: NavigationPlanStep { public init<R: Route>(_ route: R) }
-public struct Present: NavigationPlanStep { public init<R: Route>(_ route: R, style: PresentationStyle = .sheet) }
-public struct DismissAll: NavigationPlanStep { public init() }
+public struct Push: NavigationPlanStep {
+    public init<R: Route>(_ route: R)
+}
+public struct Present: NavigationPlanStep {
+    public init<R: Route>(_ route: R, style: PresentationStyle = .sheet)
+}
+public struct DismissAll: NavigationPlanStep {
+    public init()
+}
 
 /// Matches URLs to plans. Registering a `DeepLinkable` destination fills it.
 public struct DeepLinkMatcher: Sendable {

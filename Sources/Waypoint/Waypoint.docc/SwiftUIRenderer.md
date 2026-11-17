@@ -79,7 +79,9 @@ public struct Destination<R: Route, Content: View>: Destinations {
 public protocol Destinations { }
 
 @resultBuilder
-public enum DestinationsBuilder { /* blocks, conditions and loops */ }
+public enum DestinationsBuilder {
+    /* blocks, conditions and loops */
+}
 
 extension WaypointStack {
     /// Draws a coordinator's flow.
