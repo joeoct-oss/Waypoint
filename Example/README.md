@@ -1,6 +1,13 @@
 # Waypoint example app
 
-A SwiftUI app with two branches, a **SwiftUI branch** and a **UIKit branch**. Each branch launches five flows (login, tabs, detail push, sheet and deep link), each as a SwiftUI flow or a UIKit flow: twenty entry points, which are also the UI test scenarios.
+A small shop that behaves like a production app, so every navigation pattern shows up in a real journey:
+
+1. **Splash**, then the app coordinator picks the root: sign in, or the main tabs when already signed in.
+2. **Sign in**: sign in, create an account or reset the password (pushed screens). Signing in switches the root to the main tabs.
+3. **Main tabs** (system tab bar): **Shop** (products, a pushed product, a filter sheet), **Search** (the system search field), **Cart** (checkout presented full screen) and **Account** (orders, settings, sign out, which switches the root back).
+4. **Navigation Lab**, under Account > Settings: two branches, SwiftUI and UIKit, each launching five demo flows (login, tabs, detail push, sheet and deep link) as a SwiftUI flow or a UIKit flow. These twenty entry points are also UI test scenarios.
+
+Each window makes its own app coordinator. Screens report what the reader did through callbacks; only coordinators navigate. Bars, tab bars, sheets and buttons are system controls, so they take Liquid Glass on iOS 26 and the classic look on earlier systems.
 
 ## Generate and run
 
@@ -15,24 +22,27 @@ open Example/WaypointExample.xcworkspace
 
 ## Launch arguments
 
-UI tests open any screen directly with `-branch`, `-flow` and `-kind`, for example `-branch uikit -flow sheet -kind swiftui`. `ExampleApp.launch(branch:flow:kind:)` in the UI tests sets them.
+UI tests start where they need to: `-signedIn YES` skips sign in, `-lab YES` opens the Navigation Lab, and `-branch uikit -flow sheet -kind swiftui` opens one Lab entry. `ExampleApp.launch(signedIn:lab:branch:flow:kind:)` in the UI tests sets them.
 
 ## Folders
 
 | Folder | What it holds |
 |---|---|
-| `App/` | The `App`, the app coordinator that owns all navigation, the screens it can push, and launch arguments |
-| `Catalog/` | Branches, flows, kinds, entries and accessibility identifiers. The UI tests compile these too |
-| `DesignSystem/Tokens/` | Color, type, spacing and radius tokens, used by SwiftUI and UIKit screens alike |
-| `DesignSystem/Components/` | The few components the app adds on top of system controls: the route trail, kind chips and buttons, cards and screen chrome |
-| `Screens/Home/` | Home and its branch cards |
-| `Screens/Branches/` | The SwiftUI branch and the UIKit branch |
-| `Screens/Placeholder/` | The SwiftUI and UIKit placeholder each flow shows until it is built |
-
-Each flow gets its own folder under `Screens/` when it is built, with its SwiftUI and UIKit screens side by side.
+| `App/` | The `App`, the app coordinator and its roots, and launch arguments |
+| `Store/` | The fixed sample products and orders |
+| `Flows/Splash/` | The splash screen |
+| `Flows/Auth/` | Sign in, create account and reset password, with their coordinator |
+| `Flows/Main/` | The main tabs and their coordinator |
+| `Flows/Products/` | Shop and Search: product lists, a product, the filter sheet |
+| `Flows/Cart/` | The cart and the full-screen checkout |
+| `Flows/Account/` | Account, orders, settings, and the Navigation Lab's place in the account stack |
+| `Flows/Lab/` | The Navigation Lab: both branches and the placeholder each demo flow shows until it is built |
+| `Catalog/` | The Lab's branches, flows, kinds and entries, accessibility identifiers and launch argument names. The UI tests compile these too |
+| `DesignSystem/` | Color, type and spacing tokens, and the few components the app adds to system controls |
 
 ## Rules the app follows
 
-- Screens report what the reader did through callbacks; only the app coordinator navigates.
-- Accessibility identifiers follow one pattern: `root.<branch>`, `<branch>.<flow>.<kind>` and `placeholder.<flow>.<kind>`.
+- Each window has its own app coordinator; the `App` holds no navigation state.
+- Screens report through callbacks; only coordinators navigate, with `make…Flow()` to build and `show…()` to navigate.
+- Accessibility identifiers follow one pattern: `<flow>.<screen>` for journeys, and `root.<branch>`, `<branch>.<flow>.<kind>` and `placeholder.<flow>.<kind>` in the Lab.
 - The code follows the package's code style in `CONTRIBUTING.md`.

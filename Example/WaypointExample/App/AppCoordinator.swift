@@ -8,111 +8,72 @@
 
 import SwiftUI
 
-// The app's navigation lives here, and only here (decision 0009). Each window makes its own coordinator,
-// screens report what the reader did, and the coordinator decides where that goes:
-// `make…Flow()` builds a screen, `show…()` navigates.
+// The app's navigation starts here (decision 0009). Each window makes its own app coordinator. It owns
+// the root: the splash, then the sign-in flow or the main tabs, and it switches between them when a flow
+// reports that the reader signed in or out. Screens report, coordinators decide: `make…Flow()` builds a
+// flow, `show…()` navigates.
 //
-// Until the SwiftUI renderer is built, the coordinator keeps a plain `NavigationStack` path. That path is
-// the one seam to change when it is: it becomes the coordinator's router, and `AppRootView` becomes
+// Until the SwiftUI renderer is built, coordinators keep plain SwiftUI state (a root, a path, a selected
+// tab, a presented sheet). Each piece is the seam for one Waypoint router: the root becomes a root router,
+// paths become stack routers, the tab selection a tab router, and `AppRootView` becomes
 // `WaypointRoot { AppCoordinator(...) }`. The screens and their callbacks stay as they are.
 //
 // Conformances:
-// - `Observable` (from `@Observable`), so `AppRootView` redraws when the path changes.
+// - `Observable` (from `@Observable`), so `AppRootView` redraws when the root switches.
 @MainActor
 @Observable
 final class AppCoordinator {
-    // `var` because `showBranch(_:)` and `showFlow(_:)` push onto it, and `syncPath(_:)` takes the pops the
-    // stack makes itself, from the back button and the swipe.
-    private(set) var path: [AppScreen]
+    private let launch: LaunchOptions
+    // `var` because `showAuthFlow()` and `showMainFlow()` switch it.
+    private(set) var root: AppRoot
 
     init(launch: LaunchOptions) {
-        path = Self.makePath(for: launch)
-    }
-
-    private static func makePath(for launch: LaunchOptions) -> [AppScreen] {
-        guard let branch = launch.branch else {
-            return []
-        }
-        let branchScreen = AppScreen.branch(branch)
-        guard let entry = launch.entry else {
-            return [branchScreen]
-        }
-        return [branchScreen, .flow(entry)]
-    }
-
-    func makeHomeFlow() -> some View {
-        HomeView(onSelectBranch: { self.showBranch($0) })
-            .screenChrome(
-                title: AppScreen.homeTitle,
-                kind: nil,
-                trail: AppScreen.homeTrail
-            )
-    }
-
-    func makeDestination(for screen: AppScreen) -> some View {
-        makeScreen(for: screen)
-            .screenChrome(
-                title: screen.title,
-                kind: screen.kind,
-                trail: screen.trail
-            )
-    }
-
-    func showBranch(_ branch: Branch) {
-        path.append(.branch(branch))
-    }
-
-    func showFlow(_ entry: FlowEntry) {
-        path.append(.flow(entry))
-    }
-
-    func syncPath(_ newPath: [AppScreen]) {
-        path = newPath
+        self.launch = launch
+        root = .splash
     }
 
     @ViewBuilder
-    private func makeScreen(for screen: AppScreen) -> some View {
-        switch screen {
-        case .branch(let branch):
-            makeBranchFlow(branch)
-        case .flow(let entry):
-            makePlaceholderFlow(entry)
+    func makeFlow(for root: AppRoot) -> some View {
+        switch root {
+        case .splash:
+            makeSplashFlow()
+        case .auth(let auth):
+            makeAuthFlow(auth)
+        case .main(let main):
+            makeMainFlow(main)
         }
     }
 
-    @ViewBuilder
-    private func makeBranchFlow(_ branch: Branch) -> some View {
-        switch branch {
-        case .swiftUI:
-            makeSwiftUIBranchFlow()
-        case .uiKit:
-            makeUIKitBranchFlow()
+    func showStartFlow() {
+        if launch.startsSignedIn {
+            showMainFlow()
+        } else {
+            showAuthFlow()
         }
     }
 
-    private func makeSwiftUIBranchFlow() -> some View {
-        SwiftUIBranchView(onSelect: { self.showFlow($0) })
+    func showAuthFlow() {
+        let auth = AuthCoordinator(onSignedIn: { [weak self] in self?.showMainFlow() })
+        root = .auth(auth)
     }
 
-    private func makeUIKitBranchFlow() -> some View {
-        UIKitBranchView(onSelect: { self.showFlow($0) })
+    func showMainFlow() {
+        let main = MainCoordinator(
+            launch: launch,
+            onSignOut: { [weak self] in self?.showAuthFlow() }
+        )
+        root = .main(main)
     }
 
-    @ViewBuilder
-    private func makePlaceholderFlow(_ entry: FlowEntry) -> some View {
-        switch entry.kind {
-        case .swiftUI:
-            makeSwiftUIPlaceholder(entry)
-        case .uiKit:
-            makeUIKitPlaceholder(entry)
-        }
+    private func makeSplashFlow() -> some View {
+        SplashView(onFinished: { self.showStartFlow() })
     }
 
-    private func makeSwiftUIPlaceholder(_ entry: FlowEntry) -> some View {
-        PlaceholderView(entry: entry)
+    private func makeAuthFlow(_ auth: AuthCoordinator) -> some View {
+        AuthFlowView(auth: auth)
     }
 
-    private func makeUIKitPlaceholder(_ entry: FlowEntry) -> some View {
-        PlaceholderControllerView(entry: entry)
+    private func makeMainFlow(_ main: MainCoordinator) -> some View {
+        MainTabView(main: main)
     }
 }

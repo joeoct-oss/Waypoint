@@ -1,5 +1,5 @@
 //
-//  HomeView.swift
+//  LabView.swift
 //  WaypointExample
 //
 //  Created by Yousef Mohamed <52625092+JoeOCT91@users.noreply.github.com>.
@@ -8,9 +8,9 @@
 
 import SwiftUI
 
-// Home: the Waypoint header and one row per branch. The screen reports the branch the reader picks, and
-// the app coordinator decides where that goes.
-struct HomeView: View {
+// The Navigation Lab: one row per branch, each opening the five demo flows in both kinds. The screen
+// reports the branch the reader picks, and the account coordinator opens it.
+struct LabView: View {
     let onSelectBranch: (Branch) -> Void
 
     var body: some View {
@@ -24,11 +24,12 @@ struct HomeView: View {
             }
         }
         .exampleList()
+        .accessibilityIdentifier(Identifiers.lab)
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Spacing.extraSmall) {
-            Text("Waypoint")
+            Text("Navigation Lab")
                 .font(Typography.display)
                 .foregroundStyle(Palette.text.color)
             slogan
@@ -40,9 +41,9 @@ struct HomeView: View {
 
     private var slogan: some View {
         HStack(spacing: Spacing.extraSmall) {
-            Text("Connect every screen.")
+            Text("Try every flow")
                 .foregroundStyle(Palette.textSecondary.color)
-            Text("Know every route.")
+            Text("in SwiftUI and UIKit.")
                 .fontWeight(.semibold)
                 .foregroundStyle(Palette.accent.color)
         }

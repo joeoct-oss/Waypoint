@@ -8,14 +8,47 @@
 
 import XCTest
 
-// The example app's launch and entry points: both branches, every flow of both kinds, and the launch
-// arguments that open an entry directly.
+// The example app's journeys from launch (splash, sign in, the main tabs, the Lab under settings) and the
+// Navigation Lab's entry points: both branches, every flow of both kinds, and the launch arguments that
+// open an entry directly.
 @MainActor
 final class LaunchTests: XCTestCase {
     private static let timeout: TimeInterval = 5
+    private static let shopTitle = "Shop"
+    private static let accountTitle = "Account"
 
-    func testLaunchShowsBothBranches() {
+    func testLaunchShowsSplashThenSignIn() {
         let app = ExampleApp.launch()
+
+        let splash = app.descendants(matching: .any)[Identifiers.splash]
+        XCTAssertTrue(splash.waitForExistence(timeout: Self.timeout))
+        XCTAssertTrue(app.buttons[Identifiers.signInButton].waitForExistence(timeout: Self.timeout))
+    }
+
+    func testSignInLandsOnShop() {
+        let app = ExampleApp.launch()
+        let signIn = app.buttons[Identifiers.signInButton]
+        XCTAssertTrue(signIn.waitForExistence(timeout: Self.timeout))
+
+        signIn.tap()
+
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: Self.timeout))
+    }
+
+    func testSettingsOpensNavigationLab() {
+        let app = ExampleApp.launch(signedIn: true)
+        let accountTab = app.tabBars.buttons[Self.accountTitle]
+        XCTAssertTrue(accountTab.waitForExistence(timeout: Self.timeout))
+
+        accountTab.tap()
+        tapWhenReady(app.buttons[Identifiers.settingsButton])
+        tapWhenReady(app.buttons[Identifiers.labButton])
+
+        XCTAssertTrue(app.buttons[Identifiers.branch(.swiftUI)].waitForExistence(timeout: Self.timeout))
+    }
+
+    func testLabShowsBothBranches() {
+        let app = ExampleApp.launch(lab: true)
 
         for branch in Branch.allCases {
             let card = app.buttons[Identifiers.branch(branch)]
@@ -32,7 +65,7 @@ final class LaunchTests: XCTestCase {
     }
 
     func testEveryEntryOpensItsPlaceholder() {
-        let app = ExampleApp.launch()
+        let app = ExampleApp.launch(lab: true)
 
         for branch in Branch.allCases {
             open(branch, in: app)
@@ -91,6 +124,11 @@ final class LaunchTests: XCTestCase {
         let card = app.buttons[Identifiers.branch(branch)]
         XCTAssertTrue(card.waitForExistence(timeout: Self.timeout))
         card.tap()
+    }
+
+    private func tapWhenReady(_ element: XCUIElement) {
+        XCTAssertTrue(element.waitForExistence(timeout: Self.timeout))
+        element.tap()
     }
 
     private func goBack(in app: XCUIApplication) {

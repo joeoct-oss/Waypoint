@@ -8,9 +8,11 @@
 
 import Foundation
 
-// The screen the launch arguments ask for, such as `-branch uikit -flow sheet -kind swiftui`. UI tests use
-// them to open any of the twenty entries directly.
+// What the launch arguments ask for: start signed in, open the Navigation Lab, or open one of its entries.
+// UI tests use them to start a journey or open any Lab entry directly.
 struct LaunchOptions {
+    let startsSignedIn: Bool
+    let opensLab: Bool
     let branch: Branch?
     let entry: FlowEntry?
 
@@ -18,6 +20,9 @@ struct LaunchOptions {
         let branch = Self.value(Branch.self, for: .branch, in: defaults)
         let flow = Self.value(ExampleFlow.self, for: .flow, in: defaults)
         let kind = Self.value(FlowKind.self, for: .kind, in: defaults)
+        let opensLab = defaults.bool(forKey: LaunchArgument.lab.rawValue) || branch != nil
+        startsSignedIn = defaults.bool(forKey: LaunchArgument.signedIn.rawValue) || opensLab
+        self.opensLab = opensLab
         self.branch = branch
         entry = Self.makeEntry(
             branch: branch,
