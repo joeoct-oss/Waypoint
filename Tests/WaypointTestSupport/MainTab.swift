@@ -13,11 +13,15 @@
 /// - `Hashable`, required by tab state, which selects and compares tabs.
 /// - `Codable`, required by tab state, which saves and restores the selection.
 /// - `Sendable`, required by tab state, so changes that name the tab can leave the main actor.
-package enum MainTab: String, Hashable, Codable, Sendable {
+/// - `CaseIterable`, so a tab router can show every tab without listing them.
+package enum MainTab: String, Hashable, Codable, Sendable, CaseIterable {
     /// The home tab.
     case home
     /// The shop tab.
     case shop
     /// The profile tab.
     case profile
+
+    /// The home and shop tabs, for tests of a two-tab container.
+    package static let homeAndShop: [MainTab] = [.home, .shop]
 }

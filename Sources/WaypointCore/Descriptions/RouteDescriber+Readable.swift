@@ -62,8 +62,8 @@ extension RouteDescriber {
         }
         let payloadMirror = Mirror(reflecting: payload.value)
         guard payloadMirror.displayStyle == .tuple else {
-            let single = Mirror.Child(label: caseName, value: payload.value)
-            return readableFields([single], name: "\(name): \(caseName)", visibility: visibility)
+            let fields = [Mirror.Child(label: caseName, value: payload.value)]
+            return readableFields(fields, name: "\(name): \(caseName)", visibility: visibility)
         }
         let fields = payloadMirror.children.map { child in
             Mirror.Child(label: tupleLabel(child.label), value: child.value)
@@ -107,7 +107,8 @@ extension RouteDescriber {
         let breaks = characters.indices.filter { index in
             isWordStart(characters, at: index)
         }
-        let bounds = zip(breaks, breaks.dropFirst() + [characters.count])
+        let ends = breaks.dropFirst() + [characters.count]
+        let bounds = zip(breaks, ends)
         return bounds.map { start, end in
             String(characters[start..<end])
         }

@@ -18,8 +18,9 @@ struct StateTests {
 
     @Test
     func stateRoundTripsThroughCodable() throws {
-        let stack = StackState(path: [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 4))], presentation: filter)
-        let tabs = TabState(tabs: [MainTab.home, .shop], selection: .shop, presentation: filter)
+        let path = [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 4))]
+        let stack = StackState(path: path, presentation: filter)
+        let tabs = TabState(tabs: MainTab.homeAndShop, selection: .shop, presentation: filter)
 
         #expect(try roundTrip(stack) == stack)
         #expect(try roundTrip(tabs) == tabs)
@@ -27,11 +28,14 @@ struct StateTests {
 
     @Test
     func presentationStylesRoundTrip() throws {
+        let everyDetent: [SheetDetent] = [.medium, .fraction(0.3), .height(240), .fitsContent, .custom("tall")]
+        let fitted: [SheetDetent] = [.fitsContent]
+        let fittedOptions = SheetOptions(detents: fitted, fitsContentLimit: .fraction(0.6), showsDragIndicator: true)
         let styles: [PresentationStyle] = [
             .sheet,
             .fullScreenCover,
-            .sheet(detents: [.medium, .fraction(0.3), .height(240), .fitsContent, .custom("tall")], selected: .medium),
-            .sheet(SheetOptions(detents: [.fitsContent], fitsContentLimit: .fraction(0.6), showsDragIndicator: true)),
+            .sheet(detents: everyDetent, selected: .medium),
+            .sheet(fittedOptions),
         ]
 
         for style in styles {
@@ -42,20 +46,23 @@ struct StateTests {
     @Test
     func sheetOptionsDefaults() {
         let options = SheetOptions.default
+        let large: [SheetDetent] = [.large]
+        let medium: [SheetDetent] = [.medium]
 
-        #expect(options.detents == [.large])
+        #expect(options.detents == large)
         #expect(options.selectedDetent == nil)
         #expect(options.fitsContentLimit == .large)
         #expect(options.showsDragIndicator == nil)
         #expect(options.allowsInteractiveDismiss)
         #expect(PresentationStyle.sheet.sheetOptions == nil)
-        #expect(PresentationStyle.sheet(detents: [.medium]).sheetOptions?.detents == [.medium])
+        #expect(PresentationStyle.sheet(detents: medium).sheetOptions?.detents == medium)
         #expect(PresentationStyle.fullScreenCover.isFullScreenCover)
     }
 
     @Test
     func stackStateDescription() {
-        let state = StackState(path: [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 4))])
+        let path = [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 4))]
+        let state = StackState(path: path)
 
         #expect(state.description == "[HomeRoute, ProductRoute(id: <private>)]")
         #expect(state.debugDescription(revealingPrivateValues: true) == "[HomeRoute, ProductRoute(id: 4)]")
@@ -64,7 +71,7 @@ struct StateTests {
 
     @Test
     func tabStateDescriptionMarksSelection() {
-        let state = TabState(tabs: [MainTab.home, .shop, .profile], selection: .shop)
+        let state = TabState(tabs: MainTab.allCases, selection: .shop)
 
         #expect(state.description == "[home, *shop, profile]")
     }
@@ -72,35 +79,42 @@ struct StateTests {
     @Test
     func presentationDescriptions() {
         let cover = Presentation(style: .fullScreenCover, flow: FlowID("login"))
+        let mediumAndLarge: [SheetDetent] = [.medium, .large]
+        let sizes: [SheetDetent] = [.fraction(0.5), .height(200)]
+        let resizable = PresentationStyle.sheet(detents: mediumAndLarge)
+        let sized = PresentationStyle.sheet(detents: sizes)
 
         #expect(filter.description == "sheet SettingsRoute flow=filter")
         #expect(cover.description == "fullScreenCover flow=login")
-        #expect(PresentationStyle.sheet(detents: [.medium, .large]).description == "sheet(detents: [medium, large])")
-        let sized = PresentationStyle.sheet(detents: [.fraction(0.5), .height(200)])
+        #expect(resizable.description == "sheet(detents: [medium, large])")
         #expect(sized.description == "sheet(detents: [fraction(0.5), height(200.0)])")
         #expect(FlowID("shop").description == "shop")
     }
 
     @Test
     func changeDescriptions() {
-        let product = AnyRoute(ProductRoute(id: 4))
+        let products = [AnyRoute(ProductRoute(id: 4))]
+        let homes = [AnyRoute(HomeRoute())]
+        let empty: [AnyRoute] = []
+        let pushed = NavigationChange.pushed(products)
+        let replaced = NavigationChange.replaced(from: empty, to: products)
 
-        #expect(NavigationChange.pushed([product]).description == "pushed [ProductRoute(id: <private>)]")
-        #expect(NavigationChange.popped([AnyRoute(HomeRoute())]).description == "popped [HomeRoute]")
-        let replaced = NavigationChange.replaced(from: [], to: [product])
+        #expect(pushed.description == "pushed [ProductRoute(id: <private>)]")
+        #expect(NavigationChange.popped(homes).description == "popped [HomeRoute]")
         #expect(replaced.description == "replaced [] -> [ProductRoute(id: <private>)]")
         #expect(NavigationChange.tabSelected(from: "home", to: "shop").description == "tabSelected home -> shop")
         #expect(NavigationChange.dismissed(FlowID("filter")).description == "dismissed flow=filter")
         #expect(NavigationChange.presented(filter).description == "presented sheet SettingsRoute flow=filter")
-        let pushed = NavigationChange.pushed([product])
         #expect(pushed.debugDescription(revealingPrivateValues: true) == "pushed [ProductRoute(id: 4)]")
     }
 
     @Test
     func treeDescription() {
-        let shopState = StackState(path: [AnyRoute(ProductRoute(id: 1))], presentation: filter)
+        let shopPath = [AnyRoute(ProductRoute(id: 1))]
+        let shopState = StackState(path: shopPath, presentation: filter)
         let shop = NavigationTree(root: .stack(FlowID("shop"), shopState))
-        let main = NavigationTree(root: .tabs(FlowID("main"), selection: "shop", tabs: ["shop": shop]))
+        let tabTrees = ["shop": shop]
+        let main = NavigationTree(root: .tabs(FlowID("main"), selection: "shop", tabs: tabTrees))
         let tree = NavigationTree(root: .root(FlowID("app"), current: "main", child: main))
 
         let expected = "root(app) current=main > tabs(main) selection=shop > "

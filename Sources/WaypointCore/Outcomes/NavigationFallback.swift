@@ -105,6 +105,7 @@ public struct FallbackPolicy: Sendable {
         guard let fallback else {
             return FallbackPolicy(fallbacks: others)
         }
-        return FallbackPolicy(fallbacks: others.merging([kind: fallback]) { _, new in new })
+        let added = [kind: fallback]
+        return FallbackPolicy(fallbacks: others.merging(added) { _, new in new })
     }
 }

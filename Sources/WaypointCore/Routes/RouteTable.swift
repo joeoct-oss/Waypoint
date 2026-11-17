@@ -25,7 +25,8 @@ public struct RouteTable<Payload> {
 
     /// Creates an empty table.
     public init() {
-        self.init(builders: [:], registry: RouteRegistry())
+        let noBuilders: [RouteKey: (AnyRoute) -> Payload?] = [:]
+        self.init(builders: noBuilders, registry: RouteRegistry())
     }
 
     /// A table with these builders and registry.
@@ -42,8 +43,9 @@ public struct RouteTable<Payload> {
         let builder: (AnyRoute) -> Payload? = { route in
             route.as(R.self).map(make)
         }
+        let added = [R.routeKey: builder]
         return RouteTable(
-            builders: builders.merging([R.routeKey: builder]) { _, new in new },
+            builders: builders.merging(added) { _, new in new },
             registry: registry.registering(type)
         )
     }

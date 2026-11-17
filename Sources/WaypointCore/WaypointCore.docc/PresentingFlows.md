@@ -14,7 +14,8 @@ router.dismiss()
 A presented flow is named after its route, such as `settings` for `SettingsRoute`, with `-2`, `-3` added when the name is taken. A sheet is large by default. Choose other sizes when you need them:
 
 ```swift
-router.present(FilterRoute(), style: .sheet(detents: [.medium, .large]))
+let detents: [SheetDetent] = [.medium, .large]
+router.present(FilterRoute(), style: .sheet(detents: detents))
 ```
 
 Presenting a coordinator's flow, and getting a result back when it ends, is covered in the coordinators article.
@@ -166,7 +167,8 @@ When the user drags a sheet to another size, the renderer reports it and `select
 Use `.fitsContent` for a sheet that should be exactly as tall as what it shows, such as a confirmation or a short picker:
 
 ```swift
-router.present(ShareRoute(item: item.id), style: .sheet(detents: [.fitsContent]))
+let detents: [SheetDetent] = [.fitsContent]
+router.present(ShareRoute(item: item.id), style: .sheet(detents: detents))
 ```
 
 - The state stores `.fitsContent`, not a number. The renderer measures the content, so a restored sheet fits the device, text size and language it opens with.
@@ -177,7 +179,8 @@ router.present(ShareRoute(item: item.id), style: .sheet(detents: [.fitsContent])
 - On iPad in regular width, a sheet is a form sheet, sized to the content where the platform allows it.
 
 ```swift
-let options = SheetOptions(detents: [.fitsContent], fitsContentLimit: .fraction(0.6))
+let detents: [SheetDetent] = [.fitsContent]
+let options = SheetOptions(detents: detents, fitsContentLimit: .fraction(0.6))
 router.present(FilterRoute(), style: .sheet(options))
 ```
 
@@ -205,7 +208,9 @@ public struct PresentationDefaults: Sendable, Equatable {
     public func withSheet(_ sheet: SheetOptions) -> PresentationDefaults
 }
 
-rootRouter.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
+let detents: [SheetDetent] = [.medium, .large]
+let sheet = SheetOptions(detents: detents)
+rootRouter.setPresentationDefaults(PresentationDefaults(sheet: sheet))
 ```
 
 The lookup order is: the call's own options, then the nearest router's `presentationDefaults`, then `SheetOptions.default`.

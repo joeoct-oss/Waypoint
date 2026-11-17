@@ -28,7 +28,13 @@ The root router belongs to your app coordinator (see <doc:CoordinatorsAndChildFl
 // - `RootCoordinator`, so it owns the app's root router and link inbox.
 final class AppCoordinator: RootCoordinator {
     let router = RootRouter(AppRoot.login)
-    let links: LinkInbox? = LinkInbox(domains: LinkDomains(hosts: ["example.com"], schemes: ["myshop"]))
+    let links: LinkInbox?
+
+    init() {
+        let hosts: Set<String> = ["example.com"]
+        let schemes: Set<String> = ["myshop"]
+        self.links = LinkInbox(domains: LinkDomains(hosts: hosts, schemes: schemes))
+    }
 
     func showMainFlow() {
         router.switch(to: .main)

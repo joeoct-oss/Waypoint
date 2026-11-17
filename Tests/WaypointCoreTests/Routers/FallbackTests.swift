@@ -25,7 +25,8 @@ struct FallbackTests {
         let outcome = router.popTo(SettingsRoute(), else: .push)
 
         #expect(outcome.description == "recovered routeNotInPath by=push")
-        #expect(router.state.path == [AnyRoute(HomeRoute()), AnyRoute(SettingsRoute())])
+        let expectedPath = [AnyRoute(HomeRoute()), AnyRoute(SettingsRoute())]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test
@@ -81,8 +82,11 @@ struct FallbackTests {
 
         router.popTo(SettingsRoute(), else: .popToRoot)
 
-        let popped = NavigationChange.popped([AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 1))])
-        #expect(batches.values == [[AppliedChange(flow: router.flowID, change: popped, origin: .fallback)]])
+        let routes = [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 1))]
+        let popped = NavigationChange.popped(routes)
+        let batch = [AppliedChange(flow: router.flowID, change: popped, origin: .fallback)]
+        let expectedBatches = [batch]
+        #expect(batches.values == expectedBatches)
         #expect(fired.calls == 1)
     }
 
@@ -103,7 +107,8 @@ struct FallbackTests {
         #expect(failure.issue.kind == .emptyPath)
         #expect(failure.fallback == .push)
         #expect(failure.fallbackIssue?.kind == .fallbackFailed)
-        #expect(failures.values == [failure])
+        let expectedValues = [failure]
+        #expect(failures.values == expectedValues)
         #expect(router.state.path.isEmpty)
     }
 
@@ -124,7 +129,8 @@ struct FallbackTests {
 
         let failure = try #require(outcome.failure)
         #expect(failure.description.hasSuffix("fallback=custom(pushThenFail) fallbackIssue=routeNotInPath"))
-        #expect(router.state.path == [AnyRoute(HomeRoute())])
+        let expectedPath = [AnyRoute(HomeRoute())]
+        #expect(router.state.path == expectedPath)
         #expect(failures.count == 1)
     }
 
@@ -157,8 +163,10 @@ struct FallbackTests {
         let outcome = router.popTo(SettingsRoute(), else: showHome)
 
         #expect(outcome.description == "recovered routeNotInPath by=custom(showHome)")
-        #expect(seen.values == [.routeNotInPath])
-        #expect(router.state.path == [AnyRoute(HomeRoute())])
+        let expectedKinds: [NavigationIssue.Kind] = [.routeNotInPath]
+        #expect(seen.values == expectedKinds)
+        let expectedPath = [AnyRoute(HomeRoute())]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test
@@ -178,7 +186,7 @@ struct FallbackTests {
 
     @Test
     func resetToRootDismissesEverythingAndPopsTheRoot() throws {
-        let tabs = TabRouter(tabs: [MainTab.home, .shop], selection: .shop)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop)
         let shop = tabs.router(for: .shop)
         shop.push(ProductRoute(id: 1))
         tabs.present(SettingsRoute())
@@ -193,7 +201,7 @@ struct FallbackTests {
 
     @Test
     func tabFallbackPopsSelectedTab() {
-        let tabs = TabRouter(tabs: [MainTab.home, .shop], selection: .shop)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop)
         tabs.router(for: .shop).push(ProductRoute(id: 1))
 
         let outcome = tabs.select(.profile, else: .popToRoot)
@@ -214,7 +222,8 @@ struct FallbackTests {
         }
 
         #expect(outcome.recoveredIssue?.kind == .routeNotInPath)
-        #expect(router.state.path == [AnyRoute(ProductRoute(id: 2))])
+        let expectedPath = [AnyRoute(ProductRoute(id: 2))]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test
@@ -228,7 +237,8 @@ struct FallbackTests {
         router.popTo(HomeRoute(), else: .popToRoot)
         router.pop()
 
-        #expect(reported.values == [.routeNotInPath, .emptyPath])
+        let expectedKinds: [NavigationIssue.Kind] = [.routeNotInPath, .emptyPath]
+        #expect(reported.values == expectedKinds)
     }
 
     @Test

@@ -62,7 +62,9 @@ struct PathHelperTests {
             ProductRoute(id: 1)
         }
 
-        #expect(changes.values.map(\.change) == [.pushed([AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 1))])])
+        let pushed = [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 1))]
+        let expectedChanges: [NavigationChange] = [.pushed(pushed)]
+        #expect(changes.values.map(\.change) == expectedChanges)
     }
 
     @Test
@@ -72,7 +74,8 @@ struct PathHelperTests {
 
         #expect(router.setPath { ProductRoute(id: 1) } == .applied)
         #expect(router.setPath { ProductRoute(id: 1) } == .alreadyThere)
-        #expect(router.state.path == [AnyRoute(ProductRoute(id: 1))])
+        let expectedPath = [AnyRoute(ProductRoute(id: 1))]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test
@@ -103,7 +106,8 @@ struct PathHelperTests {
             route.id == 1
         }
 
-        #expect(router.state.path == [AnyRoute(ProductRoute(id: 1))])
+        let expectedPath = [AnyRoute(ProductRoute(id: 1))]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test

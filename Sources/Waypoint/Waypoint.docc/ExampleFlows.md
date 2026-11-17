@@ -25,7 +25,8 @@ enum AppRoot: Hashable, Codable, Sendable {
 // - `Hashable`, required by `TabRouter`, which selects and compares tabs.
 // - `Codable`, required by `TabRouter`, which saves and restores the selection with the tree.
 // - `Sendable`, required by `TabRouter`, so events that name the tab can leave the main actor.
-enum MainTab: String, Hashable, Codable, Sendable {
+// - `CaseIterable`, so `TabRouter` shows every tab without a list.
+enum MainTab: String, Hashable, Codable, Sendable, CaseIterable {
     case home
     case shop
     case profile
@@ -46,12 +47,15 @@ struct ShopApp: App {
 // - `SwiftUIRootCoordinator`, so `WaypointRoot` can draw it.
 final class AppCoordinator: SwiftUIRootCoordinator {
     let router = RootRouter(AppRoot.login)
-    let links: LinkInbox? = LinkInbox(domains: LinkDomains(hosts: ["example.com"], schemes: ["myshop"]))
+    let links: LinkInbox?
     let tabs: TabRouter<MainTab>
     let shop: ShopCoordinator
 
     init() {
-        let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
+        let hosts: Set<String> = ["example.com"]
+        let schemes: Set<String> = ["myshop"]
+        let tabs = TabRouter(selection: MainTab.home)
+        self.links = LinkInbox(domains: LinkDomains(hosts: hosts, schemes: schemes))
         self.tabs = tabs
         self.shop = ShopCoordinator(router: tabs.router(for: .shop))
     }
@@ -208,8 +212,9 @@ final class FilterCoordinator: SwiftUIStackCoordinator, FlowFinishing {
 
 extension ShopCoordinator {
     func showFilters() {
+        let detents: [SheetDetent] = [.medium, .large]
         Task {
-            let result = await router.present(FilterCoordinator(), style: .sheet(detents: [.medium, .large]))
+            let result = await router.present(FilterCoordinator(), style: .sheet(detents: detents))
             if case .finished(let filter) = result {
                 apply(filter)
             }

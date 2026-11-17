@@ -65,7 +65,7 @@ func showReviews() async {
 ```
 
 - Every call returns `.ignored` and leaves the tree alone, so a late call can't move a screen that now sits where the old one was.
-- Each one logs `staleNavigator` at the debug level, with its file and line. It isn't an issue, because replies that arrive after a screen closes are normal. To treat it as a bug in tests, use `StrictMode(failOn: [.failed, .ignored])`.
+- Each one logs `staleNavigator` at the debug level, with its file and line. It isn't an issue, because replies that arrive after a screen closes are normal. To treat it as a bug in tests, pass `.ignored` along with `.failed` to `StrictMode(failOn:)`.
 - `navigation.isActive` tells you whether the flow is still there.
 - A view model that keeps a navigator doesn't keep a closed flow alive.
 

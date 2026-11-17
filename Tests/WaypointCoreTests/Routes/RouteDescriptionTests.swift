@@ -81,9 +81,8 @@ struct RouteDescriptionTests {
         #expect(RouteDecodingError.invalidPayload(key).description == "invalidPayload key=Shop.ProductRoute")
         #expect(RouteDecodingError.unstableRouteKey(key).description == "unstableRouteKey key=Shop.ProductRoute")
         #expect(RouteDecodingError.invalidRouteKey("").description == #"invalidRouteKey key="""#)
-        #expect(
-            RouteDecodingError.duplicateRouteKey(key, types: ["Shop.A", "Shop.B"]).description
-                == "duplicateRouteKey key=Shop.ProductRoute types=[Shop.A, Shop.B]"
-        )
+        let types = ["Shop.A", "Shop.B"]
+        let duplicate = RouteDecodingError.duplicateRouteKey(key, types: types)
+        #expect(duplicate.description == "duplicateRouteKey key=Shop.ProductRoute types=[Shop.A, Shop.B]")
     }
 }
