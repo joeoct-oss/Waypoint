@@ -40,8 +40,10 @@ struct ShopApp: App {
         WindowGroup {
             WaypointRoot(root) { current in
                 switch current {
-                case .login: LoginView(onLoggedIn: { root.switch(to: .main) })
-                case .main: MainTabsView(tabs: tabs)
+                case .login:
+                    LoginView(onLoggedIn: { root.switch(to: .main) })
+                case .main:
+                    MainTabsView(tabs: tabs)
                 }
             }
             .incomingLinks(inbox)
@@ -59,11 +61,18 @@ struct MainTabsView: View {
     var body: some View {
         WaypointTabs(tabs) { tab in
             switch tab {
-            case .home: WaypointStack(tabs.router(for: .home)) { HomeView() }
+            case .home:
+                WaypointStack(tabs.router(for: .home)) {
+                    HomeView()
+                }
                 .tabItem { Label("Home", systemImage: "house") }
-            case .shop: WaypointStack(ShopCoordinator(router: tabs.router(for: .shop)))
-                .tabItem { Label("Shop", systemImage: "bag") }
-            case .profile: WaypointStack(tabs.router(for: .profile)) { ProfileView() }
+            case .shop:
+                WaypointStack(ShopCoordinator(router: tabs.router(for: .shop)))
+                    .tabItem { Label("Shop", systemImage: "bag") }
+            case .profile:
+                WaypointStack(tabs.router(for: .profile)) {
+                    ProfileView()
+                }
                 .tabItem { Label("Profile", systemImage: "person") }
             }
         }

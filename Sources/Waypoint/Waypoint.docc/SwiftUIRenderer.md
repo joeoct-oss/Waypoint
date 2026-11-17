@@ -160,8 +160,14 @@ public struct WaypointTabs<Tab: Hashable & Codable & Sendable, Content: View>: V
 
 WaypointTabs(tabs) { tab in
     switch tab {
-    case .home: WaypointStack(tabs.router(for: .home)) { HomeView() }.tabItem { Label("Home", systemImage: "house") }
-    case .shop: WaypointStack(ShopCoordinator(router: tabs.router(for: .shop))).tabItem { Label("Shop", systemImage: "bag") }
+    case .home:
+        WaypointStack(tabs.router(for: .home)) {
+            HomeView()
+        }
+        .tabItem { Label("Home", systemImage: "house") }
+    case .shop:
+        WaypointStack(ShopCoordinator(router: tabs.router(for: .shop)))
+            .tabItem { Label("Shop", systemImage: "bag") }
     }
 }
 ```

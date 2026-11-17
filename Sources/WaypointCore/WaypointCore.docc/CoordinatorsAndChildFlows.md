@@ -89,8 +89,10 @@ Presenting or pushing a child coordinator creates a child router in the tree. Wh
 ```swift
 let result = await router.present(AddressPickerCoordinator(), style: .sheet)
 switch result {
-case .finished(let address): order.address = address
-case .cancelled: break   // the user swiped the sheet away
+case .finished(let address):
+    order.address = address
+case .cancelled:
+    break   // the user swiped the sheet away
 }
 ```
 
