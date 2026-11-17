@@ -93,6 +93,20 @@ public final class ObservationToken: Sendable {
 
 An `AsyncStream` of events is not available yet. Observers cover the same needs.
 
+### Seeing the whole tree
+
+An event carries only the change, which keeps every change fast and every log short. Observers run right after each transaction, so an observer that wants the whole tree reads it then:
+
+```swift
+#if DEBUG
+root.onEvents { _ in
+    print(root.debugTree())   // the tree after this transaction
+}
+#endif
+```
+
+Use `snapshot()` instead of `debugTree()` when you want a value to compare or save. The tree before a transaction is the one the previous call saw.
+
 ### Diagnostic logging
 
 Waypoint logs what it does and why, at levels you choose. Logging is on at `.notice` by default, so problems show up and normal changes stay quiet. On Apple platforms it goes to the unified log. Route values are private in logs unless you mark fields as public.
