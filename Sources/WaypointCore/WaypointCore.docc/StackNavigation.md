@@ -29,8 +29,16 @@ The signatures below leave those three parameters out to stay readable.
 /// The owner of one navigation stack.
 @MainActor @Observable
 public final class StackRouter {
-    /// Creates a router with an empty path.
-    public init()
+    /// Creates a root router with an empty path. `flow` names it in logs,
+    /// events and saved state.
+    public init(flow: FlowID = FlowID("main"))
+
+    /// Creates a root router whose root screen shows `root`, so `popTo(root)`
+    /// pops to the root.
+    public init<R: Route>(root: R, flow: FlowID = FlowID("main"))
+
+    /// The route of the stack's root screen, if it has one.
+    public let rootRoute: AnyRoute?
 
     /// The current state. Change it only through the methods below.
     public private(set) var state: StackState
@@ -87,6 +95,25 @@ public final class StackRouter {
     public var flowID: FlowID { get }
     /// The router that presented or contains this one, or `nil` for the root.
     public var parent: (any NavigationRouter)? { get }
+
+    /// Whether this router is still in the tree. A router whose flow was
+    /// dismissed ignores every call and returns `.ignored`.
+    public var isActive: Bool { get }
+
+    // Destinations
+
+    /// Registers a route type for decoding and as having a destination.
+    /// Renderers and coordinators call it. Once any type is registered in the
+    /// tree, a push or present of an unregistered type fails with
+    /// `unregisteredRoute`.
+    public func register<R: Route>(_ type: R.Type)
+
+    /// The route types registered in this tree.
+    public var registry: RouteRegistry { get }
+
+    /// The most calls that may be queued while changes are applied, in one
+    /// turn. Shared by the whole tree. Default: 32.
+    public var maxQueuedChanges: Int { get set }
 
     // Handles
 
@@ -165,6 +192,9 @@ public enum NavigationOutcome: Sendable, Equatable, NavigationDescribable {
     case recovered(NavigationIssue, by: NavigationFallback)
     /// The call failed and no fallback succeeded. The state is unchanged.
     case failed(NavigationFailure)
+
+    /// The failure, or `nil` for any other outcome.
+    public var failure: NavigationFailure? { get }
 }
 ```
 
@@ -205,9 +235,11 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
     public enum Kind: Sendable, Hashable {
         case routeNotInPath
         case emptyPath
+        case notEnoughRoutes
         case unregisteredRoute
         case unknownTab
         case alreadyPresenting
+        case notPresented
         case noRouterInScope
         case flowMismatch
         case denied
@@ -224,6 +256,9 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
     public let file: StaticString
     /// The line of the call.
     public let line: UInt
+
+    /// The file name and line, such as `ShopCoordinator.swift:42`.
+    public var callSite: String { get }
 }
 
 /// What to do when a call fails.
