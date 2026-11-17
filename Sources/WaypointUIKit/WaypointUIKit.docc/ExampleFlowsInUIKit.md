@@ -110,6 +110,13 @@ extension AppCoordinator {
 final class ShopCoordinator: UIKitStackCoordinator, NavigationFlow {
     let router: StackRouter
 
+    var destinations: UIKitDestinations {
+        UIKitDestination(ProductRoute.self) { route, navigation in
+            ProductViewController(model: ProductModel(id: route.id, navigation: navigation))
+        }
+        UIKitDestination(CartRoute.self) { _ in CartViewController() }
+    }
+
     init(router: StackRouter) {
         self.router = router
     }
@@ -117,13 +124,6 @@ final class ShopCoordinator: UIKitStackCoordinator, NavigationFlow {
     func makeRootViewController() -> UIViewController {
         ProductListViewController(onSelect: { [router] in router.push(ProductRoute(id: $0)) },
                                   onFilter: { [weak self] in self?.showFilters() })
-    }
-
-    var destinations: UIKitDestinations {
-        UIKitDestination(ProductRoute.self) { route, navigation in
-            ProductViewController(model: ProductModel(id: route.id, navigation: navigation))
-        }
-        UIKitDestination(CartRoute.self) { _ in CartViewController() }
     }
 }
 ```

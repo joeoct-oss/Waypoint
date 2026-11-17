@@ -37,12 +37,6 @@ public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
     /// Run your own change. The name appears in logs and outcomes.
     case custom(_ name: String, @MainActor @Sendable (inout NavigationTransaction, NavigationIssue) -> Void)
 
-    /// The built-in default for an issue kind: `.popToRoot` for `notEnoughRoutes`, `.none` for
-    /// every other kind.
-    public static func builtIn(for kind: NavigationIssue.Kind) -> NavigationFallback {
-        kind == .notEnoughRoutes ? .popToRoot : .none
-    }
-
     /// The case name, or `custom(name)`.
     public var description: String {
         switch self {
@@ -59,6 +53,12 @@ public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
         case .custom(let name, _):
             return "custom(\(name))"
         }
+    }
+
+    /// The built-in default for an issue kind: `.popToRoot` for `notEnoughRoutes`, `.none` for
+    /// every other kind.
+    public static func builtIn(for kind: NavigationIssue.Kind) -> NavigationFallback {
+        kind == .notEnoughRoutes ? .popToRoot : .none
     }
 
     /// Whether two fallbacks are the same case, comparing `custom` fallbacks by name.

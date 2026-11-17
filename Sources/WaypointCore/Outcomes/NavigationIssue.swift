@@ -65,15 +65,6 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
     /// The line of the call.
     public let line: UInt
 
-    /// Describes an issue.
-    public init(kind: Kind, flow: FlowID, message: String, file: StaticString, line: UInt) {
-        self.kind = kind
-        self.flow = flow
-        self.message = message
-        self.file = file
-        self.line = line
-    }
-
     /// `routeNotInPath flow=shop at=ShopCoordinator.swift:42`.
     public var description: String {
         "\(kind) flow=\(flow) at=\(callSite)"
@@ -84,6 +75,15 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
         let path = "\(file)"
         let name = path.split(separator: "/").last.map(String.init) ?? path
         return "\(name):\(line)"
+    }
+
+    /// Describes an issue.
+    public init(kind: Kind, flow: FlowID, message: String, file: StaticString, line: UInt) {
+        self.kind = kind
+        self.flow = flow
+        self.message = message
+        self.file = file
+        self.line = line
     }
 
     /// Whether two issues have the same kind, flow, message and call site.

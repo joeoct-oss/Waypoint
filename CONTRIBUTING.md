@@ -55,6 +55,18 @@ swift-format formats the code and SwiftLint enforces the rules. Once the lint se
 - **No one-line type bodies.** A type or extension with anything in its body puts each member on its own line, and enums list one case per line.
 - **Every body goes on its own lines.** Functions, initializers, computed properties, accessors and the bodies of `if`, `guard`, `for`, `switch` and the like open their brace on the first line and close it on its own line. A closure argument whose body is one short expression may stay on one line, such as `Button("Close") { dismissFlow() }`.
 - **A blank line between member groups.** Separate stored properties from initializers, initializers from functions, and every member with a body from its neighbours.
+- **A type reads like a story.** Members come in this order: enum cases, type aliases and associated types, nested types, static properties, stored properties, computed properties, initializers and `deinit`, lifecycle methods, static functions, then functions and subscripts. Static members go first in their group. Keep related members next to each other.
+- **A wrapped parameter list puts each parameter on its own line.** When a signature doesn't fit in 120 characters, `(` ends the first line, each parameter gets its own line, and `)` starts the last one:
+
+  ```swift
+  public init(
+      handler: any LogHandler = DisabledLogHandler(),
+      minimumLevel: LogLevel = .notice,
+      categories: Set<LogCategory>? = nil,
+      revealsPrivateValues: Bool = false
+  )
+  ```
+
 - **A switch case's body goes on its own line, and is one call to a named function.** `break` and `return` are fine when there is nothing to do.
 - **Names say what coordination code does.** A function that builds a flow is `make…Flow()`, and a function that navigates is `show…()`, in both renderers.
 - **Document every member of a type, or none.** Public API documents every member.

@@ -30,12 +30,14 @@ public struct WaypointStack<Root: View>: View {
 extension View {
     /// Shows `route`'s screen when a route of type `R` is pushed or presented.
     public func destination<R: Route, Content: View>(
-        _ type: R.Type, @ViewBuilder _ content: @escaping (R) -> Content
+        _ type: R.Type,
+        @ViewBuilder _ content: @escaping (R) -> Content
     ) -> some View
 
     /// The same, and also hands the screen a navigator for its view model.
     public func destination<R: Route, Content: View>(
-        _ type: R.Type, @ViewBuilder _ content: @escaping (R, StackNavigator) -> Content
+        _ type: R.Type,
+        @ViewBuilder _ content: @escaping (R, StackNavigator) -> Content
     ) -> some View
 }
 ```

@@ -19,6 +19,11 @@ public struct FlowID: Hashable, Codable, Sendable, NavigationDescribable {
     /// The flow's name, such as `shop`.
     public let name: String
 
+    /// The name.
+    public var description: String {
+        name
+    }
+
     /// Names a flow. Its `description` is the name, such as `shop`.
     public init(_ name: String) {
         self.name = name
@@ -28,11 +33,6 @@ public struct FlowID: Hashable, Codable, Sendable, NavigationDescribable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.name = try container.decode(String.self)
-    }
-
-    /// The name.
-    public var description: String {
-        name
     }
 
     /// Encodes the flow as its name.

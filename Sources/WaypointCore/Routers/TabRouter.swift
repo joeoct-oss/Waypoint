@@ -83,21 +83,6 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
     /// ```
     @ObservationIgnored public var fallbackPolicy = FallbackPolicy()
 
-    /// Creates a root tab container.
-    ///
-    /// `selection` should be one of `tabs`. If it isn't, the first tab is selected; with no tabs,
-    /// `selection` becomes the only tab.
-    ///
-    /// - Parameter flow: The container's name in logs, events and saved state. Default: `tabs`.
-    public init(tabs: [Tab], selection: Tab, flow: FlowID = FlowID("tabs")) {
-        let tree = NavigationTreeContext()
-        let tabs = tabs.isEmpty ? [selection] : tabs
-        self.tree = tree
-        self.flowID = tree.claimFlowName(flow.name)
-        self.state = TabState(tabs: tabs, selection: tabs.contains(selection) ? selection : tabs[0])
-        self.tabRouters = Dictionary(uniqueKeysWithValues: tabs.map { ($0, makeTabRouter(for: $0, attached: true)) })
-    }
-
     /// The selected tab.
     public var selection: Tab {
         state.selection
@@ -158,6 +143,21 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
         set {
             ownPresentationDefaults = newValue
         }
+    }
+
+    /// Creates a root tab container.
+    ///
+    /// `selection` should be one of `tabs`. If it isn't, the first tab is selected; with no tabs,
+    /// `selection` becomes the only tab.
+    ///
+    /// - Parameter flow: The container's name in logs, events and saved state. Default: `tabs`.
+    public init(tabs: [Tab], selection: Tab, flow: FlowID = FlowID("tabs")) {
+        let tree = NavigationTreeContext()
+        let tabs = tabs.isEmpty ? [selection] : tabs
+        self.tree = tree
+        self.flowID = tree.claimFlowName(flow.name)
+        self.state = TabState(tabs: tabs, selection: tabs.contains(selection) ? selection : tabs[0])
+        self.tabRouters = Dictionary(uniqueKeysWithValues: tabs.map { ($0, makeTabRouter(for: $0, attached: true)) })
     }
 
     /// The stack router of one tab.

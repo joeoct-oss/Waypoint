@@ -29,14 +29,6 @@ The signatures below leave those three parameters out to stay readable.
 /// The owner of one navigation stack.
 @MainActor @Observable
 public final class StackRouter {
-    /// Creates a root router with an empty path. `flow` names it in logs,
-    /// events and saved state.
-    public init(flow: FlowID = FlowID("main"))
-
-    /// Creates a root router whose root screen shows `root`, so `popTo(root)`
-    /// pops to the root.
-    public init<R: Route>(root: R, flow: FlowID = FlowID("main"))
-
     /// The route of the stack's root screen, if it has one.
     public let rootRoute: AnyRoute?
 
@@ -45,11 +37,49 @@ public final class StackRouter {
 
     // Pushing
 
+    /// The flow this router drives.
+    public var flowID: FlowID { get }
+    /// The router that presented or contains this one, or `nil` for the root.
+    public var parent: (any NavigationRouter)? { get }
+
+    /// Whether this router is still in the tree. A router whose flow was
+    /// dismissed ignores every call and returns `.ignored`.
+    public var isActive: Bool { get }
+
+    // Destinations
+    /// The route types registered in this tree.
+    public var registry: RouteRegistry { get }
+
+    /// The most calls that may be queued while changes are applied, in one
+    /// turn. Shared by the whole tree. Default: 32.
+    public var maxQueuedChanges: Int { get set }
+
+    // Handles
+
+    /// A handle that can navigate this stack with any route.
+    public var navigator: StackNavigator { get }
+    /// What to do when a call fails and passes no fallback. Children inherit it.
+    public var fallbackPolicy: FallbackPolicy { get set }
+
+    /// Creates a root router with an empty path. `flow` names it in logs,
+    /// events and saved state.
+    public init(flow: FlowID = FlowID("main"))
+
+    /// Creates a root router whose root screen shows `root`, so `popTo(root)`
+    /// pops to the root.
+    public init<R: Route>(root: R, flow: FlowID = FlowID("main"))
+
     /// Pushes one route.
-    @discardableResult public func push<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func push<R: Route>(
+        _ route: R,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 
     /// Pushes several routes as one change, with one animation.
-    @discardableResult public func push(else fallback: NavigationFallback? = nil, @RoutePathBuilder _ routes: () -> [AnyRoute]) -> NavigationOutcome
+    @discardableResult public func push(
+        else fallback: NavigationFallback? = nil,
+        @RoutePathBuilder _ routes: () -> [AnyRoute]
+    ) -> NavigationOutcome
 
     // Popping
 
@@ -61,10 +91,17 @@ public final class StackRouter {
     ///
     /// Returns `.alreadyThere` if it is on top. If the route is the stack's
     /// root screen, this pops to root.
-    @discardableResult public func popTo<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func popTo<R: Route>(
+        _ route: R,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 
     /// Pops to the last route of type `R` that matches `predicate`.
-    @discardableResult public func popTo<R: Route>(_ type: R.Type, else fallback: NavigationFallback? = nil, where predicate: @escaping (R) -> Bool = { _ in true }) -> NavigationOutcome
+    @discardableResult public func popTo<R: Route>(
+        _ type: R.Type,
+        else fallback: NavigationFallback? = nil,
+        where predicate: @escaping (R) -> Bool = { _ in true }
+    ) -> NavigationOutcome
 
     /// Empties the path, showing the root screen.
     @discardableResult public func popToRoot(else fallback: NavigationFallback? = nil) -> NavigationOutcome
@@ -72,7 +109,10 @@ public final class StackRouter {
     // Replacing
 
     /// Replaces the whole path as one change.
-    @discardableResult public func setPath(else fallback: NavigationFallback? = nil, @RoutePathBuilder _ routes: () -> [AnyRoute]) -> NavigationOutcome
+    @discardableResult public func setPath(
+        else fallback: NavigationFallback? = nil,
+        @RoutePathBuilder _ routes: () -> [AnyRoute]
+    ) -> NavigationOutcome
 
     // Reading
 
@@ -91,36 +131,11 @@ public final class StackRouter {
     @discardableResult public func transaction(_ body: @escaping (inout NavigationTransaction) -> Void) -> NavigationOutcome
 
     // Place in the tree
-
-    /// The flow this router drives.
-    public var flowID: FlowID { get }
-    /// The router that presented or contains this one, or `nil` for the root.
-    public var parent: (any NavigationRouter)? { get }
-
-    /// Whether this router is still in the tree. A router whose flow was
-    /// dismissed ignores every call and returns `.ignored`.
-    public var isActive: Bool { get }
-
-    // Destinations
-
     /// Registers a route type for decoding and as having a destination.
     /// Renderers and coordinators call it. Once any type is registered in the
     /// tree, a push or present of an unregistered type fails with
     /// `unregisteredRoute`.
     public func register<R: Route>(_ type: R.Type)
-
-    /// The route types registered in this tree.
-    public var registry: RouteRegistry { get }
-
-    /// The most calls that may be queued while changes are applied, in one
-    /// turn. Shared by the whole tree. Default: 32.
-    public var maxQueuedChanges: Int { get set }
-
-    // Handles
-
-    /// A handle that can navigate this stack with any route.
-    public var navigator: StackNavigator { get }
-
     /// A handle that only accepts routes of `Flow`.
     ///
     /// If this stack was declared for another flow, the handle still works
@@ -128,9 +143,6 @@ public final class StackRouter {
     public func navigator<Flow: NavigationFlow>(for flow: Flow.Type) -> FlowNavigator<Flow>
 
     // Defaults the app can change
-
-    /// What to do when a call fails and passes no fallback. Children inherit it.
-    public var fallbackPolicy: FallbackPolicy { get set }
 }
 ```
 
@@ -178,14 +190,17 @@ public struct NavigationTransaction {
     // present, dismiss, dismissAll and dismissFlow, as on the router,
     // each with the same `else:` fallback argument.
 
+    /// The transaction on the presented flow, as it is so far.
+    public var presented: NavigationTransaction? { get }
+
     /// Selects a tab, when the transaction's router is a tab container.
-    @discardableResult public func select<Tab: Hashable & Codable & Sendable>(_ tab: Tab, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func select<Tab: Hashable & Codable & Sendable>(
+        _ tab: Tab,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 
     /// The transaction on one tab's stack.
     public func router<Tab: Hashable & Codable & Sendable>(for tab: Tab) -> NavigationTransaction
-
-    /// The transaction on the presented flow, as it is so far.
-    public var presented: NavigationTransaction? { get }
 }
 ```
 
@@ -365,15 +380,25 @@ public struct StackNavigator {
     public var isActive: Bool { get }
 
     /// Pushes a route onto the stack.
-    @discardableResult public func push<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func push<R: Route>(
+        _ route: R,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
     /// Pops `count` screens.
     @discardableResult public func pop(count: Int = 1, else fallback: NavigationFallback? = nil) -> NavigationOutcome
     /// Pops back to the last screen showing this route.
-    @discardableResult public func popTo<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func popTo<R: Route>(
+        _ route: R,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
     /// Pops back to the stack's root screen.
     @discardableResult public func popToRoot(else fallback: NavigationFallback? = nil) -> NavigationOutcome
     /// Presents a route over this flow.
-    @discardableResult public func present<R: Route>(_ route: R, style: PresentationStyle = .sheet, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func present<R: Route>(
+        _ route: R,
+        style: PresentationStyle = .sheet,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
     /// Dismisses the flow this navigator belongs to.
     @discardableResult public func dismissFlow(else fallback: NavigationFallback? = nil) -> NavigationOutcome
 }
@@ -386,15 +411,20 @@ public struct StackNavigator {
 public struct FlowNavigator<Flow: NavigationFlow> {
     /// Whether this navigator's flow is still in the tree.
     public var isActive: Bool { get }
-
-    /// Pushes a route of this flow.
-    @discardableResult public func push<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome where R.Flow == Flow
-    /// Pops back to the last screen showing this route of this flow.
-    @discardableResult public func popTo<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome where R.Flow == Flow
-    // pop, popToRoot, present and dismissFlow as on StackNavigator
-
     /// The same stack with any route. Visible in code review on purpose.
     public var unscoped: StackNavigator { get }
+
+    /// Pushes a route of this flow.
+    @discardableResult public func push<R: Route>(
+        _ route: R,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome where R.Flow == Flow
+    /// Pops back to the last screen showing this route of this flow.
+    @discardableResult public func popTo<R: Route>(
+        _ route: R,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome where R.Flow == Flow
+    // pop, popToRoot, present and dismissFlow as on StackNavigator
 }
 ```
 

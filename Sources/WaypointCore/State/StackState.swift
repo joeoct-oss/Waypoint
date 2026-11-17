@@ -23,16 +23,16 @@ public struct StackState: Sendable, Equatable, Codable, NavigationDescribable {
     /// The flow this stack presents, if any.
     public var presentation: Presentation?
 
-    /// Creates a stack state. Both values default to empty.
-    public init(path: [AnyRoute] = [], presentation: Presentation? = nil) {
-        self.path = path
-        self.presentation = presentation
-    }
-
     /// The path, such as `[HomeRoute, ProductRoute(id: <private>)]`, then `+` and the
     /// presentation if there is one.
     public var description: String {
         debugDescription(revealingPrivateValues: false)
+    }
+
+    /// Creates a stack state. Both values default to empty.
+    public init(path: [AnyRoute] = [], presentation: Presentation? = nil) {
+        self.path = path
+        self.presentation = presentation
     }
 
     /// The same line, with route fields revealed when asked.

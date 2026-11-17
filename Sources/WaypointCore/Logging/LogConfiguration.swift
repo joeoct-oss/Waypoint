@@ -18,6 +18,16 @@
 /// Conformances:
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct LogConfiguration: Sendable {
+    /// Notices, errors and faults in every category, with private values hidden.
+    public static var `default`: LogConfiguration {
+        LogConfiguration()
+    }
+
+    /// Nothing is logged and no message is built.
+    public static var disabled: LogConfiguration {
+        LogConfiguration(handler: DisabledLogHandler())
+    }
+
     /// Where messages go.
     public var handler: any LogHandler
 
@@ -43,16 +53,6 @@ public struct LogConfiguration: Sendable {
         self.minimumLevel = minimumLevel
         self.categories = categories
         self.revealsPrivateValues = revealsPrivateValues
-    }
-
-    /// Notices, errors and faults in every category, with private values hidden.
-    public static var `default`: LogConfiguration {
-        LogConfiguration()
-    }
-
-    /// Nothing is logged and no message is built.
-    public static var disabled: LogConfiguration {
-        LogConfiguration(handler: DisabledLogHandler())
     }
 
     /// Whether a message of this level and category would be written.

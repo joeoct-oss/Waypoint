@@ -23,22 +23,6 @@ public struct RouteKey: Hashable, Codable, Sendable, NavigationDescribable {
     /// The full key, such as `Shop.ProductRoute`.
     public let rawValue: String
 
-    /// The key of a route type: its module and type name, such as `Shop.ProductRoute`.
-    public init<R: Route>(_ type: R.Type) {
-        self.rawValue = String(reflecting: type)
-    }
-
-    /// A key written out, for ``Route/formerRouteKeys`` only.
-    public init(_ rawValue: String) {
-        self.rawValue = rawValue
-    }
-
-    /// Decodes a key saved as a plain string.
-    public init(from decoder: any Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        self.rawValue = try container.decode(String.self)
-    }
-
     /// The key without its module, such as `ProductRoute`. Logs print this.
     ///
     /// A private or local type prints its own name only, without the unstable context.
@@ -71,10 +55,20 @@ public struct RouteKey: Hashable, Codable, Sendable, NavigationDescribable {
         return !rawValue.isEmpty && hasModule && !hasSpace && !hasEmptyPart
     }
 
-    /// Encodes the key as a plain string.
-    public func encode(to encoder: any Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(rawValue)
+    /// The key of a route type: its module and type name, such as `Shop.ProductRoute`.
+    public init<R: Route>(_ type: R.Type) {
+        self.rawValue = String(reflecting: type)
+    }
+
+    /// A key written out, for ``Route/formerRouteKeys`` only.
+    public init(_ rawValue: String) {
+        self.rawValue = rawValue
+    }
+
+    /// Decodes a key saved as a plain string.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.rawValue = try container.decode(String.self)
     }
 
     /// The name with every `(unknown context at $…).` part removed.
@@ -85,6 +79,12 @@ public struct RouteKey: Hashable, Codable, Sendable, NavigationDescribable {
             result.removeSubrange(start.lowerBound..<end.upperBound)
         }
         return result
+    }
+
+    /// Encodes the key as a plain string.
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
     }
 
     /// The full key. A key holds no private values.

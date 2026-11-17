@@ -27,14 +27,6 @@ public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescriba
         case fullScreenCover
     }
 
-    /// What kind of presentation this is.
-    private let kind: Kind
-
-    /// Creates a style of one kind.
-    private init(kind: Kind) {
-        self.kind = kind
-    }
-
     /// A sheet that uses the router's default sheet options. Large unless changed.
     public static var sheet: PresentationStyle {
         PresentationStyle(kind: .sheet(nil))
@@ -44,6 +36,9 @@ public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescriba
     public static var fullScreenCover: PresentationStyle {
         PresentationStyle(kind: .fullScreenCover)
     }
+
+    /// What kind of presentation this is.
+    private let kind: Kind
 
     /// The sheet's own options, or `nil` for a sheet that uses the router's defaults and for a
     /// full-screen cover.
@@ -69,6 +64,11 @@ public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescriba
         }
     }
 
+    /// Creates a style of one kind.
+    private init(kind: Kind) {
+        self.kind = kind
+    }
+
     /// A sheet with the given options.
     public static func sheet(_ options: SheetOptions) -> PresentationStyle {
         PresentationStyle(kind: .sheet(options))
@@ -79,11 +79,6 @@ public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescriba
         sheet(SheetOptions(detents: detents, selectedDetent: selected))
     }
 
-    /// The same line. A style holds no private values.
-    public func debugDescription(revealingPrivateValues: Bool) -> String {
-        description
-    }
-
     /// `sheet`, or `sheet(detents: [...])` when the sheet has its own options.
     private static func sheetDescription(_ options: SheetOptions?) -> String {
         guard let options else {
@@ -91,5 +86,10 @@ public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescriba
         }
         let detents = options.detents.map(\.description).joined(separator: ", ")
         return "sheet(detents: [\(detents)])"
+    }
+
+    /// The same line. A style holds no private values.
+    public func debugDescription(revealingPrivateValues: Bool) -> String {
+        description
     }
 }

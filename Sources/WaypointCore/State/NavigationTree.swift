@@ -37,26 +37,16 @@ public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribabl
     /// The flows presented over this one, by the flow that presented them.
     public var presented: [FlowID: NavigationTree]
 
-    /// Creates a tree.
-    public init(root: Node, presented: [FlowID: NavigationTree] = [:]) {
-        self.root = root
-        self.presented = presented
-    }
-
     /// The path from the root to what is on screen, such as
     /// `root(app) current=main > tabs(main) selection=shop > stack(shop)[ProductRoute(id: <private>)]`.
     public var description: String {
         debugDescription(revealingPrivateValues: false)
     }
 
-    /// The same line, with route fields revealed when asked.
-    public func debugDescription(revealingPrivateValues: Bool) -> String {
-        let node = Self.describe(root, revealingPrivateValues)
-        let presentedFlows = presented.keys.sorted { $0.name < $1.name }
-        let presentedTrees = presentedFlows.compactMap { flow in
-            presented[flow].map { "presented(\(flow)) \($0.debugDescription(revealingPrivateValues: revealingPrivateValues))" }
-        }
-        return ([node] + presentedTrees).joined(separator: " + ")
+    /// Creates a tree.
+    public init(root: Node, presented: [FlowID: NavigationTree] = [:]) {
+        self.root = root
+        self.presented = presented
     }
 
     /// One node and the visible part of what it contains.
@@ -77,7 +67,12 @@ public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribabl
     }
 
     /// `tabs(flow) selection=name > selected tab`.
-    private static func describeTabs(_ flow: FlowID, _ selection: String, _ selected: NavigationTree?, _ reveal: Bool) -> String {
+    private static func describeTabs(
+        _ flow: FlowID,
+        _ selection: String,
+        _ selected: NavigationTree?,
+        _ reveal: Bool
+    ) -> String {
         let head = "tabs(\(flow)) selection=\(selection)"
         guard let selected else {
             return head
@@ -86,11 +81,26 @@ public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribabl
     }
 
     /// `root(flow) current=name > child`.
-    private static func describeRoot(_ flow: FlowID, _ current: String, _ child: NavigationTree?, _ reveal: Bool) -> String {
+    private static func describeRoot(
+        _ flow: FlowID,
+        _ current: String,
+        _ child: NavigationTree?,
+        _ reveal: Bool
+    ) -> String {
         let head = "root(\(flow)) current=\(current)"
         guard let child else {
             return head
         }
         return "\(head) > \(child.debugDescription(revealingPrivateValues: reveal))"
+    }
+
+    /// The same line, with route fields revealed when asked.
+    public func debugDescription(revealingPrivateValues: Bool) -> String {
+        let node = Self.describe(root, revealingPrivateValues)
+        let presentedFlows = presented.keys.sorted { $0.name < $1.name }
+        let presentedTrees = presentedFlows.compactMap { flow in
+            presented[flow].map { "presented(\(flow)) \($0.debugDescription(revealingPrivateValues: revealingPrivateValues))" }
+        }
+        return ([node] + presentedTrees).joined(separator: " + ")
     }
 }

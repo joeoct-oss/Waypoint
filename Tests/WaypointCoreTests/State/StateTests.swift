@@ -105,7 +105,7 @@ struct StateTests {
         #expect(tree.description == "root(app) current=main > tabs(main) selection=shop > stack(shop)[ProductRoute(id: <private>)] + sheet SettingsRoute flow=filter")
     }
 
-    /// Encodes and decodes a value with a registry that knows the shared routes.
+    // Encodes and decodes a value with a registry that knows the shared routes.
     private func roundTrip<Value: Codable>(_ value: Value) throws -> Value {
         var registry = RouteRegistry()
         registry.register(HomeRoute.self)

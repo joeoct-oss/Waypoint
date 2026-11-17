@@ -43,15 +43,19 @@ Navigation methods return a `NavigationOutcome` and take an optional fallback, f
 /// - `Tab: Sendable`, so tab events can leave the main actor.
 @MainActor @Observable
 public final class TabRouter<Tab: Hashable & Codable & Sendable> {
-    /// Creates a tab container. `selection` should be one of `tabs`; if it
-    /// isn't, the first tab is selected. `flow` names the container.
-    public init(tabs: [Tab], selection: Tab, flow: FlowID = FlowID("tabs"))
-
     /// The current state. Change it only through the methods below.
     public private(set) var state: TabState<Tab>
 
     /// The selected tab.
     public var selection: Tab { get }
+    /// The flow this router drives.
+    public var flowID: FlowID { get }
+    /// What to do when a call fails. Inherited by every tab's router.
+    public var fallbackPolicy: FallbackPolicy { get set }
+
+    /// Creates a tab container. `selection` should be one of `tabs`; if it
+    /// isn't, the first tab is selected. `flow` names the container.
+    public init(tabs: [Tab], selection: Tab, flow: FlowID = FlowID("tabs"))
 
     /// Selects a tab.
     ///
@@ -72,11 +76,6 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable> {
 
     // Presenting above the whole tab container: `present`, `dismiss`,
     // `dismissAll` and `presentationDefaults`, as on StackRouter.
-
-    /// The flow this router drives.
-    public var flowID: FlowID { get }
-    /// What to do when a call fails. Inherited by every tab's router.
-    public var fallbackPolicy: FallbackPolicy { get set }
 }
 ```
 

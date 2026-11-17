@@ -18,13 +18,13 @@ public struct RouteTable<Payload> {
     /// The route types registered for decoding, filled as destinations are registered.
     public private(set) var registry = RouteRegistry()
 
-    /// Creates an empty table.
-    public init() { }
-
     /// Every registered route type.
     public var registeredTypes: [any Route.Type] {
         registry.registeredTypes
     }
+
+    /// Creates an empty table.
+    public init() { }
 
     /// Registers how to build the payload for one route type. Registering a type again replaces
     /// its destination.

@@ -14,20 +14,6 @@
 /// - Field values are `<private>` unless the field is in ``Route/publicLogFields`` or private
 ///   values are revealed.
 enum RouteDescriber {
-    /// The text that stands in for a private value.
-    static let redacted = "<private>"
-
-    /// The description of one route.
-    static func describe<R: Route>(_ route: R, revealingPrivateValues: Bool) -> String {
-        let mirror = Mirror(reflecting: route)
-        let typeName = R.routeKey.typeName
-        let visible = Visibility(publicFields: R.publicLogFields, revealsAll: revealingPrivateValues)
-        if mirror.displayStyle == .enum {
-            return describeCase(of: route, mirror: mirror, typeName: typeName, visibility: visible)
-        }
-        return describeFields(mirror.children, typeName: typeName, visibility: visible)
-    }
-
     /// Which field values may be shown.
     struct Visibility {
         /// Fields the route marks as public.
@@ -46,6 +32,20 @@ enum RouteDescriber {
             }
             return publicFields.contains(label)
         }
+    }
+
+    /// The text that stands in for a private value.
+    static let redacted = "<private>"
+
+    /// The description of one route.
+    static func describe<R: Route>(_ route: R, revealingPrivateValues: Bool) -> String {
+        let mirror = Mirror(reflecting: route)
+        let typeName = R.routeKey.typeName
+        let visible = Visibility(publicFields: R.publicLogFields, revealsAll: revealingPrivateValues)
+        if mirror.displayStyle == .enum {
+            return describeCase(of: route, mirror: mirror, typeName: typeName, visibility: visible)
+        }
+        return describeFields(mirror.children, typeName: typeName, visibility: visible)
     }
 
     /// `TypeName(field: value, ...)`, or `TypeName` with no fields.

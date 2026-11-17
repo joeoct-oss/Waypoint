@@ -33,6 +33,18 @@ public enum NavigationChange: Sendable, Equatable, NavigationDescribable {
         debugDescription(revealingPrivateValues: false)
     }
 
+    /// `name [routes]`.
+    private static func routesLine(_ name: String, _ routes: [AnyRoute], _ reveal: Bool) -> String {
+        "\(name) \(DescriptionFormat.list(routes, revealingPrivateValues: reveal))"
+    }
+
+    /// `replaced [old] -> [new]`.
+    private static func replacedLine(_ old: [AnyRoute], _ new: [AnyRoute], _ reveal: Bool) -> String {
+        let from = DescriptionFormat.list(old, revealingPrivateValues: reveal)
+        let to = DescriptionFormat.list(new, revealingPrivateValues: reveal)
+        return "replaced \(from) -> \(to)"
+    }
+
     /// The same line, with route fields revealed when asked.
     public func debugDescription(revealingPrivateValues: Bool) -> String {
         switch self {
@@ -49,17 +61,5 @@ public enum NavigationChange: Sendable, Equatable, NavigationDescribable {
         case .tabSelected(let old, let new):
             return "tabSelected \(old) -> \(new)"
         }
-    }
-
-    /// `name [routes]`.
-    private static func routesLine(_ name: String, _ routes: [AnyRoute], _ reveal: Bool) -> String {
-        "\(name) \(DescriptionFormat.list(routes, revealingPrivateValues: reveal))"
-    }
-
-    /// `replaced [old] -> [new]`.
-    private static func replacedLine(_ old: [AnyRoute], _ new: [AnyRoute], _ reveal: Bool) -> String {
-        let from = DescriptionFormat.list(old, revealingPrivateValues: reveal)
-        let to = DescriptionFormat.list(new, revealingPrivateValues: reveal)
-        return "replaced \(from) -> \(to)"
     }
 }

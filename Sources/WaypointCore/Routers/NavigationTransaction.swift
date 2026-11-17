@@ -29,6 +29,11 @@ public struct NavigationTransaction {
     /// Why this value names no router, for steps made on it.
     private let missingTarget: IssueDraft?
 
+    /// The flow presented by this transaction's router, as it is in the transaction so far.
+    public var presented: NavigationTransaction? {
+        target?.currentPresented.map { NavigationTransaction(store: store, target: $0) }
+    }
+
     /// A transaction value on one router.
     init(store: TransactionStore, target: any PresentingRouter) {
         self.store = store
@@ -41,11 +46,6 @@ public struct NavigationTransaction {
         self.store = store
         self.target = nil
         self.missingTarget = missing
-    }
-
-    /// The flow presented by this transaction's router, as it is in the transaction so far.
-    public var presented: NavigationTransaction? {
-        target?.currentPresented.map { NavigationTransaction(store: store, target: $0) }
     }
 
     /// Runs a transaction's closure and sums up its steps.

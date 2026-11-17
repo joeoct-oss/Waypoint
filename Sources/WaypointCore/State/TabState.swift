@@ -28,16 +28,16 @@ public struct TabState<Tab: Hashable & Codable & Sendable>: Sendable, Equatable,
     /// The flow presented above the whole tab container, if any.
     public var presentation: Presentation?
 
+    /// The tabs, with `*` before the selected one: `[home, *shop, profile]`.
+    public var description: String {
+        debugDescription(revealingPrivateValues: false)
+    }
+
     /// Creates a tab state.
     public init(tabs: [Tab], selection: Tab, presentation: Presentation? = nil) {
         self.tabs = tabs
         self.selection = selection
         self.presentation = presentation
-    }
-
-    /// The tabs, with `*` before the selected one: `[home, *shop, profile]`.
-    public var description: String {
-        debugDescription(revealingPrivateValues: false)
     }
 
     /// The same line, then `+` and the presentation if there is one.

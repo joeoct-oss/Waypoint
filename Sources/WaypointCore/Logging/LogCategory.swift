@@ -43,13 +43,13 @@ public struct LogCategory: Hashable, Sendable, CustomStringConvertible {
     /// The category's name, such as `navigation`.
     public let name: String
 
-    /// A category with this name.
-    public init(_ name: String) {
-        self.name = name
-    }
-
     /// The name.
     public var description: String {
         name
+    }
+
+    /// A category with this name.
+    public init(_ name: String) {
+        self.name = name
     }
 }

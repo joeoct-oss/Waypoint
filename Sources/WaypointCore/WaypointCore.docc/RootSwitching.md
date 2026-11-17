@@ -67,13 +67,18 @@ func loggingInShowsTheMainTabs() {
 /// - `Root: Sendable`, so root events can leave the main actor.
 @MainActor @Observable
 public final class RootRouter<Root: Hashable & Codable & Sendable>: NavigationRouter {
+    /// The root that is showing.
+    public private(set) var current: Root
+
+    /// What to do when a call fails. Inherited by every router below this one.
+    public var fallbackPolicy: FallbackPolicy { get set }
+    /// Default options for presentations. Inherited by every router below this one.
+    public var presentationDefaults: PresentationDefaults { get set }
+
     /// Creates a root router showing `initial`.
     ///
     /// `logging` sets how the whole tree logs. See <doc:EventsAndLogging>.
     public init(_ initial: Root, logging: LogConfiguration = .default)
-
-    /// The root that is showing.
-    public private(set) var current: Root
 
     /// Replaces the whole tree below this router with the flow for `root`.
     ///
@@ -84,11 +89,6 @@ public final class RootRouter<Root: Hashable & Codable & Sendable>: NavigationRo
 
     /// Called when a call fails and its fallback fails too, anywhere in the tree.
     public func onNavigationFailure(_ handler: @escaping @MainActor (NavigationFailure) -> Void)
-
-    /// What to do when a call fails. Inherited by every router below this one.
-    public var fallbackPolicy: FallbackPolicy { get set }
-    /// Default options for presentations. Inherited by every router below this one.
-    public var presentationDefaults: PresentationDefaults { get set }
 }
 ```
 

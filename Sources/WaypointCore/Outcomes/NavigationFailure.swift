@@ -23,13 +23,6 @@ public struct NavigationFailure: Sendable, Equatable, NavigationDescribable {
     /// Why the call's fallback failed too, or `nil` when no fallback ran.
     public let fallbackIssue: NavigationIssue?
 
-    /// Describes a failure.
-    public init(issue: NavigationIssue, fallback: NavigationFallback? = nil, fallbackIssue: NavigationIssue? = nil) {
-        self.issue = issue
-        self.fallback = fallback
-        self.fallbackIssue = fallbackIssue
-    }
-
     /// `failed routeNotInPath flow=shop at=ShopCoordinator.swift:42`, with
     /// `fallback=popToRoot fallbackIssue=emptyPath` when a fallback failed too.
     public var description: String {
@@ -37,6 +30,13 @@ public struct NavigationFailure: Sendable, Equatable, NavigationDescribable {
             return "failed \(issue)"
         }
         return "failed \(issue) fallback=\(fallback) fallbackIssue=\(fallbackIssue.kind)"
+    }
+
+    /// Describes a failure.
+    public init(issue: NavigationIssue, fallback: NavigationFallback? = nil, fallbackIssue: NavigationIssue? = nil) {
+        self.issue = issue
+        self.fallback = fallback
+        self.fallbackIssue = fallbackIssue
     }
 
     /// The line, then each issue's message.

@@ -27,16 +27,16 @@ public struct Presentation: Sendable, Equatable, Codable, NavigationDescribable 
     /// flow's root itself.
     public var route: AnyRoute?
 
+    /// `sheet FilterRoute flow=filter`, with the route's fields private.
+    public var description: String {
+        debugDescription(revealingPrivateValues: false)
+    }
+
     /// Describes a presented flow.
     public init(style: PresentationStyle, flow: FlowID, route: AnyRoute? = nil) {
         self.style = style
         self.flow = flow
         self.route = route
-    }
-
-    /// `sheet FilterRoute flow=filter`, with the route's fields private.
-    public var description: String {
-        debugDescription(revealingPrivateValues: false)
     }
 
     /// The style, the root route if any, and the flow.
