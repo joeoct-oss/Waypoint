@@ -60,7 +60,8 @@ extension StackRouter {
 /// - `Hashable`, so presentations can be compared.
 /// - `Codable`, so it can be saved, restored and logged.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-public struct PresentationStyle: Hashable, Codable, Sendable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct PresentationStyle: Hashable, Codable, Sendable, NavigationDescribable {
     /// A sheet that uses the router's default sheet options. Large unless changed.
     public static var sheet: PresentationStyle { get }
 

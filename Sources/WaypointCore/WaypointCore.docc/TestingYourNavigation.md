@@ -42,6 +42,8 @@ final class ProductModelTests: XCTestCase {
 
 Strict mode reports failures the same way.
 
+Failure messages print routes with their values, such as `ProductRoute(id: 42)`, because a test needs to see what it compares. Logs keep them private. See <doc:Descriptions>.
+
 ### Assertions
 
 ```swift

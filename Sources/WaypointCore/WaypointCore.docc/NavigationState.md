@@ -25,7 +25,8 @@ router.state.presentation // nil
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
 /// - `Codable`, so it can be saved, restored and logged.
-public struct StackState: Sendable, Equatable, Codable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct StackState: Sendable, Equatable, Codable, NavigationDescribable {
     /// The routes pushed above the stack's root screen, bottom first.
     ///
     /// The root screen belongs to the stack itself, not the path, as in
@@ -48,7 +49,8 @@ A flow presents at most one child flow at a time. The presented flow can present
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
 /// - `Codable`, so it can be saved, restored and logged.
-public struct Presentation: Sendable, Equatable, Codable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct Presentation: Sendable, Equatable, Codable, NavigationDescribable {
     /// How the flow is shown.
     public var style: PresentationStyle
 
@@ -71,7 +73,8 @@ public struct Presentation: Sendable, Equatable, Codable {
 /// - `Tab: Hashable`, to select and compare tabs.
 /// - `Tab: Codable`, so the selection is saved and restored.
 /// - `Tab: Sendable`, so tab events can leave the main actor.
-public struct TabState<Tab: Hashable & Codable & Sendable>: Sendable, Equatable, Codable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct TabState<Tab: Hashable & Codable & Sendable>: Sendable, Equatable, Codable, NavigationDescribable {
     /// The tabs, in display order.
     public var tabs: [Tab]
 
@@ -96,10 +99,10 @@ Each router has a stable `FlowID`. The erased form of the whole app's state is a
 /// - `Hashable`, to find flows in the tree and key dictionaries by flow.
 /// - `Codable`, so it can be saved, restored and logged.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `CustomStringConvertible`, for readable logs and test failures.
-public struct FlowID: Hashable, Codable, Sendable, CustomStringConvertible {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct FlowID: Hashable, Codable, Sendable, NavigationDescribable {
+    /// Its `description` is the name, such as `shop`.
     public init(_ name: String)
-    public var description: String { get }
 }
 
 /// The erased navigation state of every flow, from the root down.
@@ -108,7 +111,8 @@ public struct FlowID: Hashable, Codable, Sendable, CustomStringConvertible {
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
 /// - `Codable`, so it can be saved, restored and logged.
-public struct NavigationTree: Sendable, Equatable, Codable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribable {
     /// Conformances:
     /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
     /// - `Equatable`, so tests and the router can compare values.
@@ -133,7 +137,8 @@ Every applied change is described by a value. Routers emit them as events, and t
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
-public enum NavigationChange: Sendable, Equatable {
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+public enum NavigationChange: Sendable, Equatable, NavigationDescribable {
     case pushed([AnyRoute])
     case popped([AnyRoute])
     case replaced(from: [AnyRoute], to: [AnyRoute])

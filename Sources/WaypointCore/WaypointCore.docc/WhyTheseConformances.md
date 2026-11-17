@@ -12,6 +12,7 @@ Every type in these articles lists its conformances and gives a reason for each 
 | `Codable` | Routes, tab types, root types, all navigation state | The navigation tree can be saved and restored, built from a deep link, and written to logs in a stable form. | Restoration and deep links can't rebuild the screen. |
 | `Sendable` | Routes, tab types, root types, all values | Routers live on the main actor, but events, snapshots and logs are handed to code that may run elsewhere: a logger, an analytics service, a background save. Swift 6 only lets values cross that boundary when they are `Sendable`. | Strict concurrency checking rejects the code. |
 | `Equatable` | State, events, outcomes, issues | Tests compare them with `#expect`, and the router skips a change that leaves the state equal. | Tests need hand-written comparisons. |
+| `NavigationDescribable` | Routes, state, events, outcomes, issues, snapshots | Logs, events and test failures print one stable, searchable line per value, and route fields stay private unless the route opts in. See <doc:Descriptions>. | Values print with Swift's default reflection, which changes between versions and prints every field. |
 | `AnyObject` | Coordinators, routers, observers, guards | Each one is a single shared object with identity. Routers hold coordinators weakly and keep observers and guards until their token is cancelled. | A copy would be notified instead of the original. |
 
 ### Your route types
