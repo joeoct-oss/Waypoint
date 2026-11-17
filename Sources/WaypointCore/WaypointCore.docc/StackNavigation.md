@@ -46,33 +46,33 @@ public final class StackRouter {
     // Pushing
 
     /// Pushes one route.
-    @discardableResult public func push<R: Route>(_ route: R) -> NavigationOutcome
+    @discardableResult public func push<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     /// Pushes several routes as one change, with one animation.
-    @discardableResult public func push(@RoutePathBuilder _ routes: () -> [AnyRoute]) -> NavigationOutcome
+    @discardableResult public func push(else fallback: NavigationFallback? = nil, @RoutePathBuilder _ routes: () -> [AnyRoute]) -> NavigationOutcome
 
     // Popping
 
     /// Pops `count` routes. Popping more than the path holds pops to the root
     /// and returns `.recovered`.
-    @discardableResult public func pop(count: Int = 1) -> NavigationOutcome
+    @discardableResult public func pop(count: Int = 1, else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     /// Pops to the last occurrence of `route`.
     ///
     /// Returns `.alreadyThere` if it is on top. If the route is the stack's
     /// root screen, this pops to root.
-    @discardableResult public func popTo<R: Route>(_ route: R) -> NavigationOutcome
+    @discardableResult public func popTo<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     /// Pops to the last route of type `R` that matches `predicate`.
-    @discardableResult public func popTo<R: Route>(_ type: R.Type, where predicate: @escaping (R) -> Bool = { _ in true }) -> NavigationOutcome
+    @discardableResult public func popTo<R: Route>(_ type: R.Type, else fallback: NavigationFallback? = nil, where predicate: @escaping (R) -> Bool = { _ in true }) -> NavigationOutcome
 
     /// Empties the path, showing the root screen.
-    @discardableResult public func popToRoot() -> NavigationOutcome
+    @discardableResult public func popToRoot(else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     // Replacing
 
     /// Replaces the whole path as one change.
-    @discardableResult public func setPath(@RoutePathBuilder _ routes: () -> [AnyRoute]) -> NavigationOutcome
+    @discardableResult public func setPath(else fallback: NavigationFallback? = nil, @RoutePathBuilder _ routes: () -> [AnyRoute]) -> NavigationOutcome
 
     // Reading
 
@@ -175,10 +175,11 @@ router.transaction {
 @MainActor
 public struct NavigationTransaction {
     // push, push { }, pop, popTo, popTo(_:where:), popToRoot, setPath { },
-    // present, dismiss, dismissAll and dismissFlow, as on the router.
+    // present, dismiss, dismissAll and dismissFlow, as on the router,
+    // each with the same `else:` fallback argument.
 
     /// Selects a tab, when the transaction's router is a tab container.
-    @discardableResult public func select<Tab: Hashable & Codable & Sendable>(_ tab: Tab) -> NavigationOutcome
+    @discardableResult public func select<Tab: Hashable & Codable & Sendable>(_ tab: Tab, else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     /// The transaction on one tab's stack.
     public func router<Tab: Hashable & Codable & Sendable>(for tab: Tab) -> NavigationTransaction
@@ -231,7 +232,7 @@ if case .failed = router.popTo(CheckoutRoute.self) {
 
 A call that can only be checked at run time never crashes the app. It reports a `NavigationIssue` with the file and line of the call, then runs one fallback. The fallback is chosen in this order:
 
-1. the call's own `else:` argument
+1. the call's own `else:` argument, which every navigation call takes: on routers, navigators, coordinators and transaction steps (default `nil`, meaning "use the policy")
 2. the router's `FallbackPolicy`
 3. the built-in default for that kind of issue
 
@@ -364,17 +365,17 @@ public struct StackNavigator {
     public var isActive: Bool { get }
 
     /// Pushes a route onto the stack.
-    @discardableResult public func push<R: Route>(_ route: R) -> NavigationOutcome
+    @discardableResult public func push<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome
     /// Pops `count` screens.
-    @discardableResult public func pop(count: Int = 1) -> NavigationOutcome
+    @discardableResult public func pop(count: Int = 1, else fallback: NavigationFallback? = nil) -> NavigationOutcome
     /// Pops back to the last screen showing this route.
-    @discardableResult public func popTo<R: Route>(_ route: R) -> NavigationOutcome
+    @discardableResult public func popTo<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome
     /// Pops back to the stack's root screen.
-    @discardableResult public func popToRoot() -> NavigationOutcome
+    @discardableResult public func popToRoot(else fallback: NavigationFallback? = nil) -> NavigationOutcome
     /// Presents a route over this flow.
-    @discardableResult public func present<R: Route>(_ route: R, style: PresentationStyle = .sheet) -> NavigationOutcome
+    @discardableResult public func present<R: Route>(_ route: R, style: PresentationStyle = .sheet, else fallback: NavigationFallback? = nil) -> NavigationOutcome
     /// Dismisses the flow this navigator belongs to.
-    @discardableResult public func dismissFlow() -> NavigationOutcome
+    @discardableResult public func dismissFlow(else fallback: NavigationFallback? = nil) -> NavigationOutcome
 }
 
 /// Navigates a stack with the routes of one flow only.
@@ -387,9 +388,9 @@ public struct FlowNavigator<Flow: NavigationFlow> {
     public var isActive: Bool { get }
 
     /// Pushes a route of this flow.
-    @discardableResult public func push<R: Route>(_ route: R) -> NavigationOutcome where R.Flow == Flow
+    @discardableResult public func push<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome where R.Flow == Flow
     /// Pops back to the last screen showing this route of this flow.
-    @discardableResult public func popTo<R: Route>(_ route: R) -> NavigationOutcome where R.Flow == Flow
+    @discardableResult public func popTo<R: Route>(_ route: R, else fallback: NavigationFallback? = nil) -> NavigationOutcome where R.Flow == Flow
     // pop, popToRoot, present and dismissFlow as on StackNavigator
 
     /// The same stack with any route. Visible in code review on purpose.

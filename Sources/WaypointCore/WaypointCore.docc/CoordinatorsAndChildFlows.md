@@ -155,17 +155,18 @@ extension StackRouter {
     @discardableResult
     public func present<C: StackCoordinator & FlowFinishing>(
         _ child: C, style: PresentationStyle = .sheet,
+        else fallback: NavigationFallback? = nil,
         onFinish: @escaping @MainActor (FlowResult<C.Output>) -> Void
     ) -> NavigationOutcome
 
     /// Presents a child flow that returns nothing.
     @discardableResult
-    public func present<C: StackCoordinator>(_ child: C, style: PresentationStyle = .sheet) -> NavigationOutcome
+    public func present<C: StackCoordinator>(_ child: C, style: PresentationStyle = .sheet, else fallback: NavigationFallback? = nil) -> NavigationOutcome
 
     /// Pushes a child flow's first screen onto this stack. The child shares
     /// this stack but has its own router for its own routes.
     @discardableResult
-    public func push<C: StackCoordinator>(_ child: C) -> NavigationOutcome
+    public func push<C: StackCoordinator>(_ child: C, else fallback: NavigationFallback? = nil) -> NavigationOutcome
 }
 ```
 
