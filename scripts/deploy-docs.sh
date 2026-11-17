@@ -12,10 +12,11 @@
 # Usage: scripts/deploy-docs.sh
 # Environment:
 #   WAYPOINT_DOCS_PROJECT  Pages project name (default waypoint-docs).
-#   CLOUDFLARE_API_TOKEN   Token with Account > Cloudflare Pages > Edit. When unset,
-#                          read from the macOS Keychain item waypoint-cloudflare-api-token.
-#   CLOUDFLARE_ACCOUNT_ID  Account ID. When unset, read from the Keychain item
-#                          waypoint-cloudflare-account-id.
+#   CLOUDFLARE_API_TOKEN   Token with Account > Cloudflare Pages > Edit, set in the
+#                          cloud environment. On a Mac without it, read from the
+#                          Keychain item waypoint-cloudflare-api-token.
+#   CLOUDFLARE_ACCOUNT_ID  Account ID, set the same way (Keychain item
+#                          waypoint-cloudflare-account-id).
 # Needs Node.js (npx). Tokens never go in the repository.
 
 set -euo pipefail
