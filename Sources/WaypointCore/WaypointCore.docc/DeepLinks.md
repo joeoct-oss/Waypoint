@@ -179,10 +179,14 @@ The app coordinator owns the inbox through its `links` property, and the rendere
 /// The one place every link source sends to.
 @MainActor
 public final class LinkInbox {
+    /// Creates an inbox for the given domains, with a policy for waiting links.
     public init(domains: LinkDomains, policy: LinkPolicy = .default)
 
+    /// Opens a URL as a link, as if the system had delivered it.
     public func open(_ url: URL, source: IncomingLink.Source = .app)
+    /// Opens a route directly, with no URL.
     public func open(_ route: some Route)
+    /// Receives a link that an adapter has already built.
     public func receive(_ link: IncomingLink)
 
     /// Set by the app once it can navigate, for example after loading its session.
@@ -211,6 +215,7 @@ public struct LinkPolicy: Sendable {
     public var duplicateWindow: Duration
     /// What to do with a link nothing matches. Default: `.none`.
     public var unhandled: NavigationFallback
+    /// The default policy: a short queue, a short expiry, and the unhandled fallback below.
     public static var `default`: LinkPolicy { get }
 }
 ```

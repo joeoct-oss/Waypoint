@@ -16,8 +16,10 @@ View controllers navigate through injection: the coordinator or the destination 
 /// A navigation controller driven by a `StackRouter`.
 @MainActor
 public final class WaypointNavigationController: UINavigationController {
+    /// Creates a navigation controller that draws the router's stack over a root screen.
     public init(router: StackRouter, root: UIViewController)
 
+    /// The router this controller draws.
     public let router: StackRouter
 
     /// Shows a view controller when a route of type `R` is pushed or presented.
@@ -151,7 +153,9 @@ A coordinator can conform to both `UIKitStackCoordinator` and `SwiftUIStackCoord
 extension LinkInbox {
     /// Cold launch: reads every URL, user activity and shortcut in the options at once.
     public func receive(connectionOptions: UIScene.ConnectionOptions)
+    /// Receives URLs the scene opened.
     public func receive(_ contexts: Set<UIOpenURLContext>)
+    /// Receives a universal link or handoff activity.
     public func receive(_ activity: NSUserActivity)
     /// Returns whether the shortcut was handled, for the completion handler.
     public func receive(_ item: UIApplicationShortcutItem) -> Bool
@@ -173,6 +177,7 @@ extension UIKitRootCoordinator {
 
     /// Hands links to the app coordinator's inbox. Does nothing if `links` is `nil`.
     public func receive(_ contexts: Set<UIOpenURLContext>)
+    /// Forwards a universal link or handoff activity to the link inbox.
     public func receive(_ activity: NSUserActivity)
     /// Returns whether the shortcut was handled, for the completion handler.
     public func receive(_ item: UIApplicationShortcutItem) -> Bool

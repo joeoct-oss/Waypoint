@@ -111,7 +111,9 @@ public struct StrictMode: Sendable {
     /// Conformances:
     /// - `Sendable`, because `StrictMode` is `Sendable`.
     public enum Trigger: Sendable {
+        /// A call whose outcome is `.failed`.
         case failed
+        /// A call that failed and was saved by its fallback.
         case recovered
         /// A call on a navigator whose flow is gone.
         case ignored

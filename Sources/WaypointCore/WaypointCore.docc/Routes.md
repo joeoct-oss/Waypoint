@@ -208,6 +208,7 @@ Decoding an `AnyRoute` needs to know which concrete type a key stands for. Regis
 /// Conformances:
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct RouteRegistry: Sendable {
+    /// Creates an empty registry.
     public init()
 
     /// Registers a route type under its `routeKey` and its `formerRouteKeys`.
@@ -217,7 +218,9 @@ public struct RouteRegistry: Sendable {
     /// local type reports `unstableRouteKey`.
     public mutating func register<R: Route>(_ type: R.Type)
 
+    /// Encodes a route with its key.
     public func encode(_ route: AnyRoute, to encoder: any Encoder) throws
+    /// Decodes a route by its key, or throws `RouteDecodingError`.
     public func decode(from decoder: any Decoder) throws -> AnyRoute
 }
 
@@ -247,6 +250,7 @@ Destinations say how each route type is shown. The renderers fill a `RouteTable`
 /// `Payload` is whatever the renderer builds for a route: a view, a view
 /// controller, or a test value.
 public struct RouteTable<Payload> {
+    /// Creates an empty table.
     public init()
 
     /// Registers how to build the payload for one route type.

@@ -48,8 +48,11 @@ public protocol NavigationGuard: AnyObject {
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct NavigationRequest: Sendable {
+    /// The flow the change would affect.
     public let flow: FlowID
+    /// The change being asked for.
     public let change: NavigationChange
+    /// What asked for the change.
     public let origin: NavigationOrigin
 
     /// Whether the change shows a route of type `R`.
@@ -62,6 +65,7 @@ public struct NavigationRequest: Sendable {
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Equatable`, so tests and the router can compare values.
 public enum GuardDecision: Sendable, Equatable {
+    /// Let the change happen.
     case allow
     /// Refuses the change. The call returns `.failed` with a `denied` issue,
     /// unless its fallback applies.
