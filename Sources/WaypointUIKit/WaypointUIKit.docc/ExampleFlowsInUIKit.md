@@ -4,40 +4,68 @@ Login, tabs, a detail push, a sheet and a deep link, with view controllers.
 
 ## Overview
 
-These are the same five flows as the SwiftUI examples. The routes, routers and coordinators' logic don't change, only the screens do. That is what lets an app move a flow from one renderer to the other, one screen at a time.
+These are the same five flows as the SwiftUI examples. The routes, routers and coordinators' logic don't change, only the screens do. The app coordinator has the same rules in both. That is what lets an app move a flow from one renderer to the other, one screen at a time.
 
 ### 1. Login, then the main tabs
 
-```swift
-func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options: UIScene.ConnectionOptions) {
-    let root = RootRouter(AppRoot.login)
-    let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
+The app coordinator owns the app's navigation, as in the SwiftUI example. The scene delegate creates it, hands it to the window and forwards what the OS hands it.
 
-    window?.rootViewController = WaypointRootViewController(router: root) { current in
-        switch current {
+```swift
+// Conformances:
+// - `UIWindowSceneDelegate`, so UIKit hands it the scene's window and its links.
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+    let app = AppCoordinator()
+
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options: UIScene.ConnectionOptions) {
+        window?.rootViewController = WaypointRootViewController(app)
+        app.links?.receive(connectionOptions: options)
+    }
+}
+
+// Conformances:
+// - `UIKitRootCoordinator`, so `WaypointRootViewController` can draw it.
+final class AppCoordinator: UIKitRootCoordinator {
+    let router = RootRouter(AppRoot.login)
+    let links: LinkInbox? = LinkInbox(domains: LinkDomains(hosts: ["example.com"], schemes: ["myshop"]))
+    let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
+    private(set) lazy var shop = ShopCoordinator(router: tabs.router(for: .shop))
+
+    func makeViewController(for root: AppRoot) -> UIViewController {
+        switch root {
         case .login:
-            LoginViewController(onLoggedIn: { root.switch(to: .main) })
+            LoginViewController(onLoggedIn: { [weak self] in self?.didLogIn() })
         case .main:
-            makeTabs(tabs)
+            makeTabs()
         }
     }
-    inbox.attach(root)
-    inbox.receive(connectionOptions: options)
+
+    func didLogIn() {
+        router.switch(to: .main)
+        links?.isReady = true
+    }
+
+    func didLogOut() {
+        links?.isReady = false
+        router.switch(to: .login)
+    }
 }
 ```
 
 ### 2. Tabs, one stack each
 
 ```swift
-func makeTabs(_ tabs: TabRouter<MainTab>) -> UIViewController {
-    WaypointTabBarController(router: tabs) { tab in
-        switch tab {
-        case .home:
-            WaypointNavigationController(router: tabs.router(for: .home), root: HomeViewController())
-        case .shop:
-            WaypointNavigationController(ShopCoordinator(router: tabs.router(for: .shop)))
-        case .profile:
-            WaypointNavigationController(router: tabs.router(for: .profile), root: ProfileViewController())
+extension AppCoordinator {
+    func makeTabs() -> UIViewController {
+        WaypointTabBarController(router: tabs) { [tabs, shop] tab in
+            switch tab {
+            case .home:
+                WaypointNavigationController(router: tabs.router(for: .home), root: HomeViewController())
+            case .shop:
+                WaypointNavigationController(shop)
+            case .profile:
+                WaypointNavigationController(router: tabs.router(for: .profile), root: ProfileViewController())
+            }
         }
     }
 }
@@ -86,8 +114,10 @@ extension ShopCoordinator {
 ### 5. A deep link
 
 ```swift
-func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
-    inbox.receive(contexts)
+extension SceneDelegate {
+    func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
+        app.links?.receive(contexts)
+    }
 }
 ```
 

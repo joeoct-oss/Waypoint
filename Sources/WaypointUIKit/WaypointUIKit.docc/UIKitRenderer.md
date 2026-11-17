@@ -91,6 +91,23 @@ Sheet sizes come from the presentation's `SheetOptions` and map to `UISheetPrese
 ### Tabs and roots
 
 ```swift
+/// An app coordinator that draws with UIKit.
+///
+/// Conformances:
+/// - `RootCoordinator`: it adds a view controller for each root to an app coordinator.
+@MainActor
+public protocol UIKitRootCoordinator: RootCoordinator {
+    /// The screen or flow for one root.
+    func makeViewController(for root: Root) -> UIViewController
+}
+
+extension WaypointRootViewController {
+    /// Draws an app coordinator's flow, and attaches its root router to its link inbox.
+    public convenience init<C: UIKitRootCoordinator>(_ coordinator: C) where Root == C.Root
+}
+```
+
+```swift
 /// A tab bar controller driven by a `TabRouter`.
 ///
 /// Conformances:
@@ -136,6 +153,9 @@ extension LinkInbox {
     /// Returns whether the shortcut was handled, for the completion handler.
     public func receive(_ item: UIApplicationShortcutItem) -> Bool
     /// Attaches the root router the links are applied to.
+    /// `WaypointRootViewController(app)` does this for you.
     public func attach<Root>(_ root: RootRouter<Root>)
 }
 ```
+
+The scene delegate only forwards what the OS hands it, such as `app.links?.receive(contexts)`. The app coordinator decides the rest.

@@ -15,12 +15,45 @@ enum AppRoot: Hashable, Codable, Sendable {
     case login
     case main
 }
-
-let root = RootRouter(AppRoot.login)
-root.switch(to: .main)
 ```
 
 Root types need `Hashable`, `Codable` and `Sendable`. See <doc:WhyTheseConformances>.
+
+### The app coordinator decides
+
+The root router belongs to your app coordinator (see <doc:CoordinatorsAndChildFlows>). Screens never switch the root. The login screen reports that the user logged in, and the app coordinator decides what happens next:
+
+```swift
+// Conformances:
+// - `RootCoordinator`, so it owns the app's root router and link inbox.
+final class AppCoordinator: RootCoordinator {
+    let router = RootRouter(AppRoot.login)
+    let links: LinkInbox? = LinkInbox(domains: LinkDomains(hosts: ["example.com"], schemes: ["myshop"]))
+
+    func didLogIn() {
+        router.switch(to: .main)
+        links?.isReady = true
+    }
+
+    func didLogOut() {
+        links?.isReady = false
+        router.switch(to: .login)
+    }
+}
+```
+
+The renderer protocols, `SwiftUIRootCoordinator` and `UIKitRootCoordinator`, add the screens for each root. The rules stay in plain Swift, so you test them without drawing anything:
+
+```swift
+@Test @MainActor
+func loggingInShowsTheMainTabs() {
+    let app = AppCoordinator()
+
+    app.didLogIn()
+
+    #expect(app.router.current == .main)
+}
+```
 
 ### The root router
 
@@ -57,7 +90,7 @@ public final class RootRouter<Root: Hashable & Codable & Sendable>: NavigationRo
 }
 ```
 
-The renderers decide which screen or coordinator each root shows. See the renderer articles.
+The app coordinator's renderer protocol decides which screen or flow each root shows. See the renderer articles. `RootRouter` can also be used on its own, as a lower-level building block, but the app coordinator is the place to start.
 
 ### Resuming a link after login
 

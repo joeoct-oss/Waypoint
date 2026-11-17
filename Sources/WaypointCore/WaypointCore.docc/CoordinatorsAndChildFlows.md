@@ -59,6 +59,35 @@ public protocol FlowFinishing: AnyObject {
 }
 ```
 
+### The app coordinator
+
+An app with more than one root flow, such as login and the main tabs, keeps its navigation in an app coordinator: your own type at the top of the coordinator tree. It owns the root router, the tab router, the child coordinators that live as long as the app, and the link inbox. It also decides what happens between flows. The `App` or scene delegate only creates it and hands it to the renderer, and screens report what happened instead of switching roots themselves.
+
+```swift
+/// App code that owns the app's top-level flow: which root shows, and where links go.
+///
+/// Conformances:
+/// - `AnyObject`, because a coordinator is one shared object that owns its router.
+@MainActor
+public protocol RootCoordinator: AnyObject {
+    /// Conformances:
+    /// - `Hashable`, `Codable` and `Sendable`, required by `RootRouter`.
+    associatedtype Root: Hashable & Codable & Sendable
+
+    /// The router this coordinator owns.
+    var router: RootRouter<Root> { get }
+
+    /// Where incoming links go, or `nil` if the app takes no links.
+    ///
+    /// There is no default, so every app says which it means.
+    var links: LinkInbox? { get }
+}
+```
+
+The renderer products add the screens for each root: `SwiftUIRootCoordinator` and `UIKitRootCoordinator`. See <doc:RootSwitching> for a whole app coordinator.
+
+Create child coordinators once and keep them in their parent coordinator, not inside a view's `body`, so a flow keeps its state while the screen redraws.
+
 ### A coordinator as its own flow type
 
 A coordinator can be its own `NavigationFlow`. Routes then name it as their flow, and the coordinator gets a scoped handle for free. A separate empty `enum ShopFlow: NavigationFlow { }` works just as well. Neither is required.

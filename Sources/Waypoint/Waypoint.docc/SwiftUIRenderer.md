@@ -176,6 +176,46 @@ A `switch` over your own tab enum is fine here: it lists the tabs once, in one p
 
 ### Roots
 
+An app coordinator draws each root. `WaypointRoot` draws the app coordinator, and the `App` holds nothing else:
+
+```swift
+/// An app coordinator that draws with SwiftUI.
+///
+/// Conformances:
+/// - `RootCoordinator`: it adds a screen for each root to an app coordinator.
+public protocol SwiftUIRootCoordinator: RootCoordinator {
+    /// Conformances:
+    /// - `View`: what SwiftUI shows for a root.
+    associatedtype Content: View
+
+    /// The screen or flow for one root.
+    @ViewBuilder func content(for root: Root) -> Content
+}
+
+extension WaypointRoot {
+    /// Draws an app coordinator's flow.
+    ///
+    /// If the coordinator has a link inbox, URL opens, universal links and
+    /// user activities go to it, and its root router is attached.
+    public init<C: SwiftUIRootCoordinator>(_ coordinator: C) where Root == C.Root, Content == C.Content
+}
+```
+
+```swift
+@main
+struct ShopApp: App {
+    @State private var app = AppCoordinator()
+
+    var body: some Scene {
+        WindowGroup {
+            WaypointRoot(app)
+        }
+    }
+}
+```
+
+<doc:ExampleFlows> shows the whole `AppCoordinator`. The lower-level form draws a `RootRouter` with a closure:
+
 ```swift
 /// Draws whichever root a `RootRouter` is showing.
 ///
@@ -190,6 +230,8 @@ public struct WaypointRoot<Root: Hashable & Codable & Sendable, Content: View>: 
 ```
 
 ### Incoming links
+
+`WaypointRoot(app)` wires the app coordinator's inbox, so most apps never call this. It is for apps that draw a `RootRouter` directly:
 
 ```swift
 extension View {

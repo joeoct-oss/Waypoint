@@ -8,7 +8,7 @@ These five flows cover what most apps need. They build on each other: the app st
 
 ### 1. Login, then the main tabs
 
-The root router holds which flow is showing. Logging in switches the whole screen and releases the login flow.
+The app coordinator owns the app's navigation: the root router, the tabs, the shop flow and the link inbox. The `App` only creates it. The login screen reports that the user logged in, and the coordinator switches the whole screen and releases the login flow.
 
 ```swift
 // Conformances:
@@ -32,45 +32,65 @@ enum MainTab: String, Hashable, Codable, Sendable {
 
 @main
 struct ShopApp: App {
-    @State private var root = RootRouter(AppRoot.login)
-    @State private var tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
-    @State private var inbox = LinkInbox(domains: LinkDomains(hosts: ["example.com"], schemes: ["myshop"]))
+    @State private var app = AppCoordinator()
 
     var body: some Scene {
         WindowGroup {
-            WaypointRoot(root) { current in
-                switch current {
-                case .login:
-                    LoginView(onLoggedIn: { root.switch(to: .main) })
-                case .main:
-                    MainTabsView(tabs: tabs)
-                }
-            }
-            .incomingLinks(inbox)
+            WaypointRoot(app)
         }
+    }
+}
+
+// Conformances:
+// - `SwiftUIRootCoordinator`, so `WaypointRoot` can draw it.
+final class AppCoordinator: SwiftUIRootCoordinator {
+    let router = RootRouter(AppRoot.login)
+    let links: LinkInbox? = LinkInbox(domains: LinkDomains(hosts: ["example.com"], schemes: ["myshop"]))
+    let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
+    private(set) lazy var shop = ShopCoordinator(router: tabs.router(for: .shop))
+
+    func content(for root: AppRoot) -> some View {
+        switch root {
+        case .login:
+            LoginView(onLoggedIn: { self.didLogIn() })
+        case .main:
+            mainTabs
+        }
+    }
+
+    func didLogIn() {
+        router.switch(to: .main)
+        links?.isReady = true
+    }
+
+    func didLogOut() {
+        links?.isReady = false
+        router.switch(to: .login)
     }
 }
 ```
 
+`LoginView` doesn't import Waypoint. It calls `onLoggedIn`, and the rule for what happens next lives in one place you can test.
+
 ### 2. Tabs, one stack each
 
-```swift
-struct MainTabsView: View {
-    let tabs: TabRouter<MainTab>
+The app coordinator draws the tabs too. The shop coordinator is created once and kept, so the shop tab keeps its state while the screen redraws.
 
-    var body: some View {
+```swift
+extension AppCoordinator {
+    var mainTabs: some View {
         WaypointTabs(tabs) { tab in
             switch tab {
             case .home:
-                WaypointStack(tabs.router(for: .home)) {
+                WaypointStack(self.tabs.router(for: .home)) {
                     HomeView()
                 }
                 .tabItem { Label("Home", systemImage: "house") }
             case .shop:
-                WaypointStack(ShopCoordinator(router: tabs.router(for: .shop)))
+                WaypointStack(self.shop)
                     .tabItem { Label("Shop", systemImage: "bag") }
             case .profile:
-                WaypointStack(tabs.router(for: .profile)) {
+                WaypointStack(self.tabs.router(for: .profile)) {
                     ProfileView()
                 }
                 .tabItem { Label("Profile", systemImage: "person") }
@@ -174,4 +194,4 @@ matcher.register("/sale/:id") { link in
 }
 ```
 
-If the link arrives during login, it waits. After `root.switch(to: .main)` and once the app sets `inbox.isReady = true`, it is applied in one step: the sheet closes, the shop tab is selected and the product is pushed, with one animation.
+`WaypointRoot(app)` sends every link to the app coordinator's inbox. If the link arrives during login, it waits. When the app coordinator's `didLogIn()` switches to the main flow and sets `links?.isReady = true`, the link is applied in one step: the sheet closes, the shop tab is selected and the product is pushed, with one animation.
