@@ -133,8 +133,12 @@ struct ProductRoute: Route, DeepLinkable {
     typealias Flow = ShopCoordinator
     let id: Int
     static let pattern: URLPattern = "/product/:id"
-    init(id: Int) { self.id = id }
-    init(link: DeepLinkParameters) throws { id = try link.int("id") }
+    init(id: Int) {
+        self.id = id
+    }
+    init(link: DeepLinkParameters) throws {
+        id = try link.int("id")
+    }
 }
 
 // Conformances:
@@ -148,7 +152,9 @@ struct CartRoute: Route {
 // - `NavigationFlow`, so routes can name it as their flow.
 final class ShopCoordinator: SwiftUIStackCoordinator, NavigationFlow {
     let router: StackRouter
-    init(router: StackRouter) { self.router = router }
+    init(router: StackRouter) {
+        self.router = router
+    }
 
     var root: some View {
         ProductListView(onSelect: { self.router.push(ProductRoute(id: $0)) },
@@ -176,7 +182,9 @@ final class FilterCoordinator: SwiftUIStackCoordinator, FlowFinishing {
     typealias Output = ProductFilter
     let router = StackRouter()
 
-    var root: some View { FilterView(onApply: { self.finish(with: $0) }) }
+    var root: some View {
+        FilterView(onApply: { self.finish(with: $0) })
+    }
     var destinations: some Destinations { }
 }
 
@@ -184,7 +192,9 @@ extension ShopCoordinator {
     func showFilters() {
         Task {
             let result = await router.present(FilterCoordinator(), style: .sheet(detents: [.medium, .large]))
-            if case .finished(let filter) = result { apply(filter) }
+            if case .finished(let filter) = result {
+                apply(filter)
+            }
         }
     }
 }
@@ -195,7 +205,9 @@ Inside the filter screen, a view can end the flow without a closure:
 ```swift
 struct FilterView: View {
     @FinishFlow(FilterCoordinator.self) private var finish
-    var body: some View { Button("Apply") { finish(ProductFilter.default) } }
+    var body: some View {
+        Button("Apply") { finish(ProductFilter.default) }
+    }
 }
 ```
 

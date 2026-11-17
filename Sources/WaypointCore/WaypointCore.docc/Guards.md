@@ -11,10 +11,14 @@ A guard checks a change before the router applies it. Typical uses are asking th
 // - `NavigationGuard`, so a router asks it before each change.
 final class LoginGuard: NavigationGuard {
     let session: Session
-    init(session: Session) { self.session = session }
+    init(session: Session) {
+        self.session = session
+    }
 
     func evaluate(_ request: NavigationRequest) -> GuardDecision {
-        guard request.targets(AccountRoute.self), !session.isLoggedIn else { return .allow }
+        guard request.targets(AccountRoute.self), !session.isLoggedIn else {
+            return .allow
+        }
         return .redirect(NavigationPlan { SwitchRoot(AppRoot.login) })
     }
 }
