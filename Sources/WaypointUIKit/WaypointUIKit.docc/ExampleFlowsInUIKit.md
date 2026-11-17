@@ -109,6 +109,7 @@ extension AppCoordinator {
 // - `NavigationFlow`, so routes can name it as their flow.
 final class ShopCoordinator: UIKitStackCoordinator, NavigationFlow {
     let router: StackRouter
+
     init(router: StackRouter) {
         self.router = router
     }

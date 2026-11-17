@@ -90,6 +90,7 @@ A simulated renderer sends the same reports a real one does when the user swipes
 @MainActor
 public struct SimulatedRenderer {
     public init()
+
     public func swipeBack(on router: StackRouter, count: Int = 1)
     public func dragSheetDown(on router: some NavigationRouter)
     public func dragSheet(on router: some NavigationRouter, to detent: SheetDetent)

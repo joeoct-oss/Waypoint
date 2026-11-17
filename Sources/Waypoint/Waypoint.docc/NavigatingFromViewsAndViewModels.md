@@ -20,6 +20,7 @@ The screen reports what happened, and whoever made it decides where to go:
 struct ProductView: View {
     let id: Int
     var onBuy: () -> Void
+
     var body: some View {
         Button("Buy", action: onBuy)
     }
@@ -101,6 +102,7 @@ They are thin, read the router from the environment, and hold no state of their 
 @MainActor public struct DismissFlowAction {
     @discardableResult public func callAsFunction() -> NavigationOutcome
 }
+
 /// Conformances:
 /// - `Output: Sendable`, because the result travels from the child flow to the task that awaits
 ///   it.

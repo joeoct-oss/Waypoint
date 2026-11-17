@@ -238,6 +238,7 @@ public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct FallbackPolicy: Sendable {
     public init()
+
     public subscript(kind: NavigationIssue.Kind) -> NavigationFallback? { get set }
 }
 
@@ -288,6 +289,7 @@ public struct FlowNavigator<Flow: NavigationFlow> {
 @Observable @MainActor
 final class ProductModel {
     private let navigation: FlowNavigator<ShopFlow>
+
     init(navigation: FlowNavigator<ShopFlow>) {
         self.navigation = navigation
     }
