@@ -15,4 +15,5 @@ Closes #
 - [ ] `scripts/lint.sh` passes (strict SwiftLint and swift-format, see #70); required before review
 - [ ] Labels copied from the issue (type, area, priority, test, runs)
 - [ ] Public symbols documented in DocC
+- [ ] Every protocol conformance says why it is needed, in its doc comment or a comment above the type
 - [ ] CHANGELOG updated under Unreleased

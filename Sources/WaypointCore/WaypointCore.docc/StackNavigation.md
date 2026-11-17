@@ -140,6 +140,10 @@ router.transaction {
 
 ```swift
 /// What a navigation call did.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so tests and the router can compare values.
 public enum NavigationOutcome: Sendable, Equatable {
     /// The call did what it says.
     case applied
@@ -177,7 +181,15 @@ The built-in defaults change nothing unless the intent is clear. Popping more ro
 
 ```swift
 /// A navigation call that could not be done as asked.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so tests and the router can compare values.
+/// - `CustomStringConvertible`, for readable logs and test failures.
 public struct NavigationIssue: Sendable, Equatable, CustomStringConvertible {
+    /// Conformances:
+    /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+    /// - `Hashable`, because it is the key of `FallbackPolicy`.
     public enum Kind: Sendable, Hashable {
         case routeNotInPath
         case emptyPath
@@ -201,6 +213,10 @@ public struct NavigationIssue: Sendable, Equatable, CustomStringConvertible {
 ///
 /// Two `custom` fallbacks are equal when their names are equal. The name
 /// also appears in logs and outcomes.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so outcomes that carry it can be compared in tests.
 public enum NavigationFallback: Sendable, Equatable {
     case none
     case popToRoot
@@ -213,12 +229,20 @@ public enum NavigationFallback: Sendable, Equatable {
 }
 
 /// Fallbacks by issue kind, inherited by child routers.
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct FallbackPolicy: Sendable {
     public init()
     public subscript(kind: NavigationIssue.Kind) -> NavigationFallback? { get set }
 }
 
 /// A call whose fallback also failed.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so tests and the router can compare values.
+/// - `CustomStringConvertible`, for readable logs and test failures.
 public struct NavigationFailure: Sendable, Equatable, CustomStringConvertible {
     public let issue: NavigationIssue
     public let fallbackIssue: NavigationIssue?
@@ -242,6 +266,9 @@ public struct StackNavigator {
 }
 
 /// Navigates a stack with the routes of one flow only.
+///
+/// Conformances:
+/// - `Flow: NavigationFlow`: the flow whose routes are accepted.
 @MainActor
 public struct FlowNavigator<Flow: NavigationFlow> {
     @discardableResult public func push<R: Route>(_ route: R) -> NavigationOutcome where R.Flow == Flow

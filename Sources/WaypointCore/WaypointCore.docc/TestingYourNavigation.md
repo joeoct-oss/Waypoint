@@ -47,6 +47,9 @@ public func expectDestinations<Payload>(for table: RouteTable<Payload>, cover ty
 
 ```swift
 /// Records every event and issue it observes.
+///
+/// Conformances:
+/// - `NavigationObserver`, so routers send it every event to record.
 @MainActor
 public final class RecordingObserver: NavigationObserver {
     public init()
@@ -76,7 +79,12 @@ In strict mode, a navigation call whose outcome is `.failed` fails the current t
 
 ```swift
 /// Fails tests on bad navigation calls.
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct StrictMode: Sendable {
+    /// Conformances:
+    /// - `Sendable`, because `StrictMode` is `Sendable`.
     public enum Trigger: Sendable {
         case failed
         case recovered

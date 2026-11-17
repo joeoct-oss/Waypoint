@@ -7,6 +7,10 @@ Swap whole flows, such as login and the main tabs.
 Apps replace their whole screen at a few moments: from launch to login, from login to the main tabs, and back to login on logout. `RootRouter` holds which root is showing and replaces the whole subtree when it switches. The old flow and every router inside it are released.
 
 ```swift
+// Conformances:
+// - `Hashable`, required by `RootRouter`, which compares roots to know when to switch.
+// - `Codable`, required by `RootRouter`, which saves and restores the current root with the tree.
+// - `Sendable`, required by `RootRouter`, so events that name the root can leave the main actor.
 enum AppRoot: Hashable, Codable, Sendable {
     case login
     case main
@@ -16,10 +20,18 @@ let root = RootRouter(AppRoot.login)
 root.switch(to: .main)
 ```
 
+Root types need `Hashable`, `Codable` and `Sendable`. See <doc:WhyTheseConformances>.
+
 ### The root router
 
 ```swift
 /// The owner of the app's top-level flow.
+///
+/// Conformances:
+/// - `NavigationRouter`, so it takes part in the router tree.
+/// - `Root: Hashable`, to compare roots.
+/// - `Root: Codable`, so the current root is saved and restored.
+/// - `Root: Sendable`, so root events can leave the main actor.
 @MainActor @Observable
 public final class RootRouter<Root: Hashable & Codable & Sendable>: NavigationRouter {
     /// Creates a root router showing `initial`.

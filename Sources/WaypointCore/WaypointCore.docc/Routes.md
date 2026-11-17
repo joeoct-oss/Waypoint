@@ -7,19 +7,27 @@ Name each screen with a small value type, and register it by its type.
 A route is a value that names one screen and carries its inputs. Waypoint uses one small type per screen, so adding a screen is a local change: one route type and one registration line. No central `switch` is needed.
 
 ```swift
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
 struct ProductRoute: Route {
     let id: Int
 }
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
 struct CartRoute: Route { }
 
 router.push(ProductRoute(id: 42))
 ```
+
+Every route is `Hashable`, `Codable` and `Sendable` through the `Route` protocol. <doc:WhyTheseConformances> explains what each one is for.
 
 Routes hold identifiers and small inputs, never models or view models. That keeps them cheap to compare, store, log and deep link into.
 
 A small enum is still fine for a closed group of screens, such as the steps of a wizard. It is registered as one type:
 
 ```swift
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
 enum CheckoutStep: Route {
     case address
     case payment
@@ -34,6 +42,11 @@ enum CheckoutStep: Route {
 ///
 /// Conforming types are usually small structs with `let` properties.
 /// `Codable` is required so routes can be restored and deep linked into.
+///
+/// Conformances:
+/// - `Hashable`, so the router can compare routes and find them in a path.
+/// - `Codable`, so routes can be saved, restored and built from links.
+/// - `Sendable`, so routes can be logged and tracked off the main actor.
 public protocol Route: Hashable, Codable, Sendable {
     /// The flow this route belongs to.
     ///
@@ -65,15 +78,24 @@ Scoping is opt in. A route that names its flow can only be pushed through that f
 public protocol NavigationFlow { }
 
 /// The flow of routes that don't declare one. They can be pushed anywhere.
+///
+/// Conformances:
+/// - `NavigationFlow`, so routes can name it as their flow.
 public enum AnyFlow: NavigationFlow { }
 ```
 
 ```swift
+// Conformances:
+// - `NavigationFlow`, so routes can name it as their flow.
 enum ShopFlow: NavigationFlow { }
 
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
 struct CartRoute: Route {
     typealias Flow = ShopFlow
 }
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
 struct HelpRoute: Route { }   // unscoped
 
 func checkout(_ shop: FlowNavigator<ShopFlow>) {
@@ -89,6 +111,11 @@ Routers, state, events and snapshots hold routes of many types, so they store th
 
 ```swift
 /// A route of any type, with its stable key.
+///
+/// Conformances:
+/// - `Hashable`, so paths can be compared and searched.
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `CustomStringConvertible`, for readable logs and test failures.
 public struct AnyRoute: Hashable, Sendable, CustomStringConvertible {
     /// Wraps a route.
     public init<R: Route>(_ route: R)
@@ -113,6 +140,9 @@ Decoding an `AnyRoute` needs to know which concrete type a key stands for. Regis
 
 ```swift
 /// Maps route keys to route types, so erased routes can be encoded and decoded.
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct RouteRegistry: Sendable {
     public init()
 
@@ -127,6 +157,11 @@ public struct RouteRegistry: Sendable {
 }
 
 /// Why an erased route could not be decoded.
+///
+/// Conformances:
+/// - `Error`, so it can be thrown.
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so tests and the router can compare values.
 public enum RouteDecodingError: Error, Sendable, Equatable {
     case unknownRouteKey(String)
     case invalidPayload(routeKey: String)

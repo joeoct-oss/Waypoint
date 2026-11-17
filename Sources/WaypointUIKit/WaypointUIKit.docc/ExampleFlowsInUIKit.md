@@ -41,6 +41,9 @@ func makeTabs(_ tabs: TabRouter<MainTab>) -> UIViewController {
 ### 3. A detail push
 
 ```swift
+// Conformances:
+// - `UIKitStackCoordinator`, so `WaypointNavigationController` can draw it.
+// - `NavigationFlow`, so routes can name it as their flow.
 final class ShopCoordinator: UIKitStackCoordinator, NavigationFlow {
     let router: StackRouter
     init(router: StackRouter) { self.router = router }

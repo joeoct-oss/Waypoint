@@ -7,6 +7,8 @@ Allow, deny or redirect a navigation before it happens.
 A guard checks a change before the router applies it. Typical uses are asking the user to log in before a protected screen, confirming before leaving unsaved changes, and blocking a link to a feature that is turned off.
 
 ```swift
+// Conformances:
+// - `NavigationGuard`, so a router asks it before each change.
 final class LoginGuard: NavigationGuard {
     let session: Session
     init(session: Session) { self.session = session }
@@ -28,12 +30,18 @@ Guards are attached to a router and apply to it and everything below it. They ar
 
 ```swift
 /// Checks changes before they are applied.
+///
+/// Conformances:
+/// - `AnyObject`, because routers keep it until its token is cancelled.
 @MainActor
 public protocol NavigationGuard: AnyObject {
     func evaluate(_ request: NavigationRequest) -> GuardDecision
 }
 
 /// A change waiting to be applied.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct NavigationRequest: Sendable {
     public let flow: FlowID
     public let change: NavigationChange
@@ -43,6 +51,10 @@ public struct NavigationRequest: Sendable {
 }
 
 /// A guard's answer.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so tests and the router can compare values.
 public enum GuardDecision: Sendable, Equatable {
     case allow
     /// Refuses the change. The call returns `.failed` with a `denied` issue,

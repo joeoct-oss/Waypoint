@@ -18,6 +18,10 @@ router.debugTree()
 
 ```swift
 /// One applied change, with where it came from.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so tests and the router can compare values.
 public struct NavigationEvent: Sendable, Equatable {
     public let flow: FlowID
     public let change: NavigationChange
@@ -27,6 +31,10 @@ public struct NavigationEvent: Sendable, Equatable {
 }
 
 /// Who asked for a change.
+///
+/// Conformances:
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Equatable`, so tests and the router can compare values.
 public enum NavigationOrigin: Sendable, Equatable {
     /// App code called a router or a handle.
     case app
@@ -38,6 +46,9 @@ public enum NavigationOrigin: Sendable, Equatable {
     case fallback
 }
 
+/// Conformances:
+/// - `Hashable`, to group the events of one transaction.
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct TransactionID: Hashable, Sendable { }
 ```
 
@@ -47,6 +58,9 @@ An observer gets every event in order, synchronously, after each change. Use it 
 
 ```swift
 /// Receives navigation events and issues.
+///
+/// Conformances:
+/// - `AnyObject`, because routers keep it until its token is cancelled.
 @MainActor
 public protocol NavigationObserver: AnyObject {
     func navigation(didApply events: [NavigationEvent])
@@ -70,6 +84,8 @@ extension StackRouter {   // also on TabRouter and RootRouter
     public func debugTree() -> String
 }
 
+/// Conformances:
+/// - `Sendable`, so it can be stored in any type and cancelled from anywhere.
 public final class ObservationToken: Sendable {
     public func cancel()
 }
@@ -82,6 +98,10 @@ An `AsyncStream` of events is not available yet. Observers cover the same needs.
 Waypoint logs what it does and why, at levels you choose. Logging is on at `.notice` by default, so problems show up and normal changes stay quiet. On Apple platforms it goes to the unified log. Route values are private in logs unless you mark fields as public.
 
 ```swift
+/// Conformances:
+/// - `Int` raw value: orders the levels.
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
+/// - `Comparable`, so levels can be compared, as in `level >= .notice`.
 public enum LogLevel: Int, Sendable, Comparable {
     case debug
     case info
@@ -90,18 +110,27 @@ public enum LogLevel: Int, Sendable, Comparable {
     case fault
 }
 
+/// Conformances:
+/// - `Hashable`, so categories can be kept in a set.
+/// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct LogCategory: Hashable, Sendable {
     public init(_ name: String)
     public static let navigation, presentation, tabs, flows, links, restoration, renderer, issues: LogCategory
 }
 
 /// Where log messages go.
+///
+/// Conformances:
+/// - `Sendable`, because messages can be written from any thread.
 public protocol LogHandler: Sendable {
     func isEnabled(level: LogLevel, category: LogCategory) -> Bool
     func log(_ message: LogMessage)
 }
 
 /// How the whole tree logs. Set once on the root router.
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct LogConfiguration: Sendable {
     public var handler: any LogHandler
     public var minimumLevel: LogLevel        // default .notice

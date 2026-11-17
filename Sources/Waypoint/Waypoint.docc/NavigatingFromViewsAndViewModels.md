@@ -46,30 +46,50 @@ They are thin, read the router from the environment, and hold no state of their 
 
 ```swift
 /// The nearest stack's navigator.
+///
+/// Conformances:
+/// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
 @propertyWrapper public struct StackNavigation: DynamicProperty {
     public init()
     public var wrappedValue: StackNavigator { get }
 }
 
 /// The nearest stack of `Flow`, even from a sheet inside it.
+///
+/// Conformances:
+/// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
+/// - `Flow: NavigationFlow`: the flow whose routes are accepted.
 @propertyWrapper public struct FlowNavigation<Flow: NavigationFlow>: DynamicProperty {
     public init(_ flow: Flow.Type)
     public var wrappedValue: FlowNavigator<Flow> { get }
 }
 
 /// Dismisses the flow this view is in.
+///
+/// Conformances:
+/// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
 @propertyWrapper public struct DismissFlow: DynamicProperty {
     public init()
     public var wrappedValue: DismissFlowAction { get }
 }
 
 /// Ends the flow this view is in with a result.
+///
+/// Conformances:
+/// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
+/// - `Flow: FlowFinishing`: the flow that ends with a result.
 @propertyWrapper public struct FinishFlow<Flow: FlowFinishing>: DynamicProperty {
     public init(_ flow: Flow.Type)
     public var wrappedValue: FinishFlowAction<Flow.Output> { get }
 }
 
 /// The selected tab, settable. `$tab` is a `Binding`.
+///
+/// Conformances:
+/// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
+/// - `Tab: Hashable`, to select and compare tabs.
+/// - `Tab: Codable`, so the selection is saved and restored.
+/// - `Tab: Sendable`, so tab events can leave the main actor.
 @propertyWrapper public struct TabSelection<Tab: Hashable & Codable & Sendable>: DynamicProperty {
     public init(_ tab: Tab.Type)
     public var wrappedValue: Tab { get nonmutating set }
@@ -77,6 +97,12 @@ They are thin, read the router from the environment, and hold no state of their 
 }
 
 /// Switches the app's root.
+///
+/// Conformances:
+/// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
+/// - `Root: Hashable`, to compare roots.
+/// - `Root: Codable`, so the current root is saved and restored.
+/// - `Root: Sendable`, so root events can leave the main actor.
 @propertyWrapper public struct SwitchRoot<Root: Hashable & Codable & Sendable>: DynamicProperty {
     public init(_ root: Root.Type)
     public var wrappedValue: SwitchRootAction<Root> { get }
@@ -85,9 +111,16 @@ They are thin, read the router from the environment, and hold no state of their 
 @MainActor public struct DismissFlowAction {
     @discardableResult public func callAsFunction() -> NavigationOutcome
 }
+/// Conformances:
+/// - `Output: Sendable`, because the result travels from the child flow to the task that awaits
+///   it.
 @MainActor public struct FinishFlowAction<Output: Sendable> {
     public func callAsFunction(_ output: Output)
 }
+/// Conformances:
+/// - `Root: Hashable`, to compare roots.
+/// - `Root: Codable`, so the current root is saved and restored.
+/// - `Root: Sendable`, so root events can leave the main actor.
 @MainActor public struct SwitchRootAction<Root: Hashable & Codable & Sendable> {
     @discardableResult public func callAsFunction(to root: Root) -> NavigationOutcome
 }

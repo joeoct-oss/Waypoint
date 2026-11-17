@@ -12,6 +12,7 @@ WaypointCore holds navigation state as plain, observable Swift values: stacks, p
 
 - <doc:Routes>
 - <doc:NavigationState>
+- <doc:WhyTheseConformances>
 
 ### Navigating
 
