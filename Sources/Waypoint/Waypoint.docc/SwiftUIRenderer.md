@@ -132,6 +132,7 @@ Presentations are drawn from router state. A presented route uses the destinatio
 | `.medium`, `.large` | `.medium`, `.large` |
 | `.fraction(f)` | `.fraction(f)` |
 | `.height(h)` | `.height(h)` |
+| `.fitsContent` | `.height(measured)`, capped at `fitsContentLimit`; the content is measured with `onGeometryChange` and placed in a `ScrollView` that only scrolls when it overflows |
 | `.custom(name)` | the rule registered for `name` |
 
 ```swift

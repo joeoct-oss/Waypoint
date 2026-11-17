@@ -89,7 +89,7 @@ A whole app shows its flows through an app coordinator, not by setting a window'
 
 ### Sheets and full-screen covers
 
-Sheet sizes come from the presentation's `SheetOptions` and map to `UISheetPresentationController.Detent`: `.medium` and `.large` directly, `.fraction` and `.height` as custom detents, and `.custom(name)` as the detent registered for that name. When the user drags a sheet to another size, the selected detent is reported back to the router.
+Sheet sizes come from the presentation's `SheetOptions` and map to `UISheetPresentationController.Detent`: `.medium` and `.large` directly, `.fraction` and `.height` as custom detents, and `.custom(name)` as the detent registered for that name. `.fitsContent` is a custom detent sized to the content: its `preferredContentSize` when it sets one, or else its Auto Layout height at the sheet's width, capped at `fitsContentLimit`. When the height changes, the sheet animates to it. Taller content scrolls in its own scroll view, such as a table, or in one the renderer adds. When the user drags a sheet to another size, the selected detent is reported back to the router.
 
 ### Tabs and roots
 
