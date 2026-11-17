@@ -9,14 +9,18 @@
 import SwiftUI
 
 // One step of creating an account under the bar's Create account title: the step's own title, its fields,
-// and Continue (or Start shopping on the last step). The
-// fields write the coordinator's draft, so going back keeps what the reader typed. The screen reports
-// Continue and Read the terms, and the accounts coordinator decides what comes next.
+// and Continue (or Start shopping on the last step). The fields write the coordinator's draft, so going
+// back keeps what the reader typed. Continue closes the keyboard first, so going back never brings it up
+// over Continue. The screen reports Continue and Read the terms, and the accounts coordinator decides what
+// comes next.
 struct CreateAccountStepView: View {
     let step: CreateAccountStep
     @Bindable var draft: SignUpDraft
     let onContinue: () -> Void
     let onShowTerms: () -> Void
+
+    // `var` because SwiftUI moves focus between the fields, and Continue clears it.
+    @FocusState private var focusedField: Field?
 
     private var canContinue: Bool {
         switch step {
@@ -53,11 +57,13 @@ struct CreateAccountStepView: View {
         Section {
             TextField("Name", text: $draft.name)
                 .textContentType(.name)
+                .focused($focusedField, equals: .name)
                 .accessibilityIdentifier(Identifiers.signUpName)
             TextField("Email", text: $draft.email)
                 .textContentType(.username)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
+                .focused($focusedField, equals: .email)
                 .accessibilityIdentifier(Identifiers.signUpEmail)
         } header: {
             stepHeader
@@ -68,6 +74,7 @@ struct CreateAccountStepView: View {
         Section {
             SecureField("Password", text: $draft.password)
                 .textContentType(.newPassword)
+                .focused($focusedField, equals: .password)
                 .accessibilityIdentifier(Identifiers.signUpPassword)
             Toggle("I accept the terms", isOn: $draft.acceptsTerms)
                 .accessibilityIdentifier(Identifiers.signUpAcceptTerms)
@@ -102,9 +109,26 @@ struct CreateAccountStepView: View {
         PrimaryActionButton(
             title: step.actionTitle,
             identifier: Identifiers.signUpContinue,
-            action: onContinue
+            action: continueToNextStep
         )
         .disabled(!canContinue)
         .padding(Spacing.large)
+    }
+
+    private func continueToNextStep() {
+        focusedField = nil
+        onContinue()
+    }
+}
+
+extension CreateAccountStepView {
+    // The fields that can hold the keyboard's focus.
+    //
+    // Conformances:
+    // - `Hashable`, so `@FocusState` can tell which field has focus.
+    private enum Field: Hashable {
+        case name
+        case email
+        case password
     }
 }

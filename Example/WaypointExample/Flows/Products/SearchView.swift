@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-// Search: the system search field over the products whose name matches.
+// Search: the system search field, always shown under the bar, over the products whose name matches.
 struct SearchView: View {
     let onSelect: (Product) -> Void
 
@@ -26,6 +26,10 @@ struct SearchView: View {
             ProductRow(product: product) { onSelect(product) }
         }
         .exampleList()
-        .searchable(text: $query, prompt: "Products")
+        .searchable(
+            text: $query,
+            placement: SearchFieldPlacement.navigationBarDrawer(displayMode: .always),
+            prompt: "Products"
+        )
     }
 }

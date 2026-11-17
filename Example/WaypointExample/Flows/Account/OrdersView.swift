@@ -27,13 +27,12 @@ struct OrdersView: View {
     }
 }
 
-// One order: what was bought and where it is.
+// One order: what was bought and where it is. The bar's title already names the order.
 struct OrderDetailView: View {
     let order: Order
 
     var body: some View {
         List {
-            LabeledContent("Order", value: "\(order.id)")
             LabeledContent("Product", value: order.productName)
             LabeledContent("Status", value: order.status)
         }

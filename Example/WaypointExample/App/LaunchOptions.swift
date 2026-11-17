@@ -80,6 +80,5 @@ struct LaunchOptions {
             flow: flow,
             kind: kind
         )
-        splashDuration = Self.makeSplashDuration(in: defaults)
     }
 }
