@@ -84,15 +84,16 @@ public enum DeepLinkError: Error, Sendable, Equatable {
 A `NavigationPlan` is an ordered list of steps over the whole tree. It is built with a result builder, so conditions work inside it.
 
 ```swift
-matcher.register("/shop/featured/:id") { link in
-    NavigationPlan {
-        SelectTab(MainTab.shop)
-        SetPath(in: MainTab.shop) {
-            ProductListRoute(category: "all")
-            ProductRoute(id: try link.int("id"))
+let matcher = DeepLinkMatcher()
+    .registering("/shop/featured/:id") { link in
+        NavigationPlan {
+            SelectTab(MainTab.shop)
+            SetPath(in: MainTab.shop) {
+                ProductListRoute(category: "all")
+                ProductRoute(id: try link.int("id"))
+            }
         }
     }
-}
 ```
 
 ```swift
@@ -160,11 +161,12 @@ public struct DismissAll: NavigationPlanStep {
 public struct DeepLinkMatcher: Sendable {
     public init()
 
-    public mutating func register<R: DeepLinkable>(_ type: R.Type)
-    public mutating func register(
+    // Each returns a new matcher with one more pattern.
+    public func registering<R: DeepLinkable>(_ type: R.Type) -> DeepLinkMatcher
+    public func registering(
         _ pattern: URLPattern,
         _ plan: @escaping @Sendable (DeepLinkParameters) throws -> NavigationPlan
-    )
+    ) -> DeepLinkMatcher
     public func plan(for url: URL) -> Result<NavigationPlan, DeepLinkError>
 }
 
@@ -176,18 +178,26 @@ extension NavigationFallback {
 
 ### The link inbox
 
-The app coordinator owns the inbox through its `links` property, and the renderers wire it up when they draw the coordinator. The app coordinator sets `isReady` once the app can navigate, for example after login. See <doc:RootSwitching>.
+The app coordinator owns the inbox through its `links` property, and the renderers wire it up when they draw the coordinator. The app coordinator calls `markReady()` once the app can navigate, for example after login, and `markNotReady()` when it can't, for example after logout. See <doc:RootSwitching>.
 
 ```swift
 /// The one place every link source sends to.
 @MainActor
 public final class LinkInbox {
-    /// Set by the app once it can navigate, for example after loading its session.
-    /// Links wait until this is true and a root router is attached.
-    public var isReady: Bool { get set }
+    /// Whether the app can navigate. Links wait until this is true and a root
+    /// router is attached.
+    public var isReady: Bool { get }
 
     /// Creates an inbox for the given domains, with a policy for waiting links.
     public init(domains: LinkDomains, policy: LinkPolicy = .default)
+
+    /// Called by the app once it can navigate, for example after loading its
+    /// session. Waiting links run now.
+    public func markReady()
+
+    /// Called by the app when it can't navigate, for example after logout. New
+    /// links wait again.
+    public func markNotReady()
 
     /// Opens a URL as a link, as if the system had delivered it.
     public func open(_ url: URL, source: IncomingLink.Source = .app)
@@ -214,13 +224,22 @@ public struct LinkPolicy: Sendable {
     public static var `default`: LinkPolicy { get }
 
     /// A newer link replaces one that is waiting. Default: `.latestOnly`.
-    public var pendingLimit: PendingLimit
+    public let pendingLimit: PendingLimit
     /// A waiting link older than this is dropped. Default: 10 minutes.
-    public var expiry: Duration
+    public let expiry: Duration
     /// The same link received again within this window is ignored. Default: 2 seconds.
-    public var duplicateWindow: Duration
+    public let duplicateWindow: Duration
     /// What to do with a link nothing matches. Default: `.none`.
-    public var unhandled: NavigationFallback
+    public let unhandled: NavigationFallback
+
+    /// The same policy with another limit for waiting links.
+    public func withPendingLimit(_ limit: PendingLimit) -> LinkPolicy
+    /// The same policy with another expiry. A negative one becomes zero.
+    public func withExpiry(_ expiry: Duration) -> LinkPolicy
+    /// The same policy with another duplicate window. A negative one becomes zero.
+    public func withDuplicateWindow(_ window: Duration) -> LinkPolicy
+    /// The same policy with another fallback for links nothing matches.
+    public func withUnhandled(_ fallback: NavigationFallback) -> LinkPolicy
 }
 ```
 

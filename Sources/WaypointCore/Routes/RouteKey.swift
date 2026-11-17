@@ -73,16 +73,16 @@ public struct RouteKey: Hashable, Codable, Sendable, NavigationDescribable {
 
     /// The name with every `(unknown context at $…).` part removed.
     private static func removingUnknownContexts(from name: String) -> String {
-        var result = name
-        while let start = result.range(of: "(unknown context at "),
-            let end = result[start.upperBound...].range(of: ").") {
-            result.removeSubrange(start.lowerBound..<end.upperBound)
+        guard let start = name.range(of: "(unknown context at "),
+            let end = name[start.upperBound...].range(of: ").") else {
+            return name
         }
-        return result
+        return removingUnknownContexts(from: String(name[..<start.lowerBound] + name[end.upperBound...]))
     }
 
     /// Encodes the key as a plain string.
     public func encode(to encoder: any Encoder) throws {
+        // `var` because `SingleValueEncodingContainer.encode` is mutating.
         var container = encoder.singleValueContainer()
         try container.encode(rawValue)
     }

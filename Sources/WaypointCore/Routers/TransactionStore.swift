@@ -47,7 +47,14 @@ struct AppliedChange: Sendable, Equatable {
     let change: NavigationChange
 
     /// Who asked for it.
-    var origin = ChangeOrigin.app
+    let origin: ChangeOrigin
+
+    /// A change in a flow. App code asked for it unless `origin` says otherwise.
+    init(flow: FlowID, change: NavigationChange, origin: ChangeOrigin = .app) {
+        self.flow = flow
+        self.change = change
+        self.origin = origin
+    }
 }
 
 /// What one step did to the working copies, before any fallback.
@@ -92,30 +99,39 @@ struct IssueDraft {
 /// The working copies, changes and issues of one transaction.
 @MainActor
 final class TransactionStore {
-    /// Every router changed so far, in the order it was first changed.
+    /// Every router changed so far, in the order it was first changed. `var` because routers
+    /// join as steps change them, through ``enlist(_:)``.
     private var participants: [any TransactionParticipant] = []
 
-    /// The routers already in `participants`.
+    /// The routers already in `participants`. `var` because routers join as steps change them,
+    /// through ``enlist(_:)``.
     private var enlisted: Set<ObjectIdentifier> = []
 
-    /// The changes so far, in order.
+    /// The changes so far, in order. `var` because each step adds its changes, through
+    /// ``record(_:in:)``.
     private(set) var changes: [AppliedChange] = []
 
     /// Issues to report when the transaction ends, in order, with the level to log them at:
-    /// `.error` for a recovered call, `.fault` for a failed one.
+    /// `.error` for a recovered call, `.fault` for a failed one. `var` because steps add them,
+    /// through ``keep(_:level:)``.
     private(set) var issues: [(issue: NavigationIssue, level: LogLevel)] = []
 
-    /// The first failed step of a transaction, if any. Later steps are skipped.
-    var failure: NavigationFailure?
+    /// The first failed step of a transaction, if any. Later steps are skipped. `var` because a
+    /// step can fail, through ``note(_:)``, and a custom fallback runs with it set aside, through
+    /// ``isolatingFailure(_:)``.
+    private(set) var failure: NavigationFailure?
 
-    /// The first recovered step of a transaction, if any.
+    /// The first recovered step of a transaction, if any. `var` because a step can recover,
+    /// through ``note(_:)``.
     private var recovery: (issue: NavigationIssue, fallback: NavigationFallback)?
 
-    /// Whether any step of a transaction changed something.
+    /// Whether any step of a transaction changed something. `var` because steps change things,
+    /// through ``note(_:)``.
     private var hasChanged = false
 
-    /// Who the changes being recorded now come from.
-    var origin = ChangeOrigin.app
+    /// Who the changes being recorded now come from. `var` because a fallback's changes are
+    /// marked as its own, through ``asFallback(_:)``.
+    private(set) var origin = ChangeOrigin.app
 
     /// What the whole transaction did, from its steps.
     var transactionResult: CallResult {
@@ -159,6 +175,26 @@ final class TransactionStore {
         case .failed(let failure):
             return noteFailure(failure)
         }
+    }
+
+    /// Runs `body` with its changes marked as coming from a fallback.
+    func asFallback<Result>(_ body: () -> Result) -> Result {
+        origin = .fallback
+        defer {
+            origin = .app
+        }
+        return body()
+    }
+
+    /// Runs `body` with no earlier failure, and returns the issue of its first failed step, if
+    /// any. The earlier failure is restored afterwards.
+    func isolatingFailure(_ body: () -> Void) -> NavigationIssue? {
+        let earlier = failure
+        failure = nil
+        body()
+        let issue = failure?.issue
+        failure = earlier
+        return issue
     }
 
     /// Writes every working copy back.

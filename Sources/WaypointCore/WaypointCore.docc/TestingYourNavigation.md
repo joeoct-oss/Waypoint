@@ -88,8 +88,8 @@ public func expectDestinations<Payload>(
 /// - `NavigationObserver`, so routers send it every event to record.
 @MainActor
 public final class RecordingObserver: NavigationObserver {
-    public private(set) var events: [NavigationEvent]
-    public private(set) var issues: [NavigationIssue]
+    public var events: [NavigationEvent] { get }
+    public var issues: [NavigationIssue] { get }
 
     public init()
 }

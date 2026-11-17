@@ -20,13 +20,13 @@
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public struct TabState<Tab: Hashable & Codable & Sendable>: Sendable, Equatable, Codable, NavigationDescribable {
     /// The tabs, in display order.
-    public var tabs: [Tab]
+    public let tabs: [Tab]
 
-    /// The selected tab. The router keeps it one of `tabs`.
-    public var selection: Tab
+    /// The selected tab, always one of `tabs`.
+    public let selection: Tab
 
     /// The flow presented above the whole tab container, if any.
-    public var presentation: Presentation?
+    public let presentation: Presentation?
 
     /// The tabs, with `*` before the selected one: `[home, *shop, profile]`.
     public var description: String {
@@ -34,10 +34,41 @@ public struct TabState<Tab: Hashable & Codable & Sendable>: Sendable, Equatable,
     }
 
     /// Creates a tab state.
+    ///
+    /// The selection is always one of the tabs: a `selection` that isn't one of `tabs` selects
+    /// the first tab, and an empty `tabs` becomes `[selection]`.
     public init(tabs: [Tab], selection: Tab, presentation: Presentation? = nil) {
+        let tabs = tabs.isEmpty ? [selection] : tabs
         self.tabs = tabs
-        self.selection = selection
+        self.selection = tabs.contains(selection) ? selection : tabs[0]
         self.presentation = presentation
+    }
+
+    /// Decodes a saved tab state through ``init(tabs:selection:presentation:)``, so a saved
+    /// selection that is no longer one of the tabs selects the first tab.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            tabs: try container.decode([Tab].self, forKey: .tabs),
+            selection: try container.decode(Tab.self, forKey: .selection),
+            presentation: try container.decodeIfPresent(Presentation.self, forKey: .presentation)
+        )
+    }
+
+    /// The same state with another tab selected. A tab that isn't one of `tabs` selects the
+    /// first tab.
+    func withSelection(_ selection: Tab) -> TabState {
+        TabState(tabs: tabs, selection: selection, presentation: presentation)
+    }
+
+    /// The same state with other tabs. If the selected tab is removed, the first tab is selected.
+    func withTabs(_ tabs: [Tab]) -> TabState {
+        TabState(tabs: tabs, selection: selection, presentation: presentation)
+    }
+
+    /// The same state with another presented flow.
+    func withPresentation(_ presentation: Presentation?) -> TabState {
+        TabState(tabs: tabs, selection: selection, presentation: presentation)
     }
 
     /// The same line, then `+` and the presentation if there is one.

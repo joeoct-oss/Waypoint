@@ -191,10 +191,10 @@ public struct LogConfiguration: Sendable {
     public static var `default`: LogConfiguration { get }
     public static var disabled: LogConfiguration { get }
 
-    public var handler: any LogHandler
-    public var minimumLevel: LogLevel        // default .notice
-    public var categories: Set<LogCategory>? // nil: all
-    public var revealsPrivateValues: Bool    // default false
+    public let handler: any LogHandler
+    public let minimumLevel: LogLevel        // default .notice
+    public let categories: Set<LogCategory>? // nil: all
+    public let revealsPrivateValues: Bool    // default false
 
     public init(
         handler: any LogHandler = DisabledLogHandler(),
@@ -203,18 +203,30 @@ public struct LogConfiguration: Sendable {
         revealsPrivateValues: Bool = false
     )
 
+    // Each returns a new configuration with one value changed.
+    public func withHandler(_ handler: any LogHandler) -> LogConfiguration
+    public func withMinimumLevel(_ level: LogLevel) -> LogConfiguration
+    public func withCategories(_ categories: Set<LogCategory>?) -> LogConfiguration
+    public func withPrivateValuesRevealed(_ reveals: Bool) -> LogConfiguration
+
     public func isEnabled(level: LogLevel, category: LogCategory) -> Bool
     public func measuresIntervals(in category: LogCategory) -> Bool
 }
 
 extension StackRouter {
     /// How this router's whole tree logs. Shared by every router in the tree.
-    public var logging: LogConfiguration { get set }
+    public var logging: LogConfiguration { get }
+
+    /// Sets how the whole tree logs. Set it once, on the root.
+    public func setLogging(_ configuration: LogConfiguration)
 }
 
 extension TabRouter {
     /// How this router's whole tree logs. Shared by every router in the tree.
-    public var logging: LogConfiguration { get set }
+    public var logging: LogConfiguration { get }
+
+    /// Sets how the whole tree logs. Set it once, on the root.
+    public func setLogging(_ configuration: LogConfiguration)
 }
 
 extension Route {

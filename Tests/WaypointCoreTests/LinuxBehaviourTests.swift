@@ -24,7 +24,7 @@ struct LinuxBehaviourTests {
         } onChange: {
             fired.increment()
         }
-        model.title = "Changed"
+        model.rename(to: "Changed")
 
         #expect(fired.calls == 1)
     }
@@ -39,7 +39,7 @@ struct LinuxBehaviourTests {
         } onChange: {
             fired.increment()
         }
-        model.count += 1
+        model.increment()
 
         #expect(fired.calls == 0)
     }

@@ -35,7 +35,7 @@ public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
     /// Dismiss everything and pop the root router's stack to its root screen.
     case resetToRoot
     /// Run your own change. The name appears in logs and outcomes.
-    case custom(_ name: String, @MainActor @Sendable (inout NavigationTransaction, NavigationIssue) -> Void)
+    case custom(_ name: String, @MainActor @Sendable (NavigationTransaction, NavigationIssue) -> Void)
 
     /// The case name, or `custom(name)`.
     public var description: String {
@@ -75,25 +75,36 @@ public enum NavigationFallback: Sendable, Equatable, NavigationDescribable {
 /// Fallbacks by issue kind, inherited by child routers.
 ///
 /// ```swift
-/// router.fallbackPolicy[.routeNotInPath] = .popToRoot   // for this flow and its children
+/// router.setFallback(.popToRoot, for: .routeNotInPath)   // for this flow and its children
 /// ```
 ///
 /// Conformances:
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct FallbackPolicy: Sendable {
     /// Fallbacks set for each kind.
-    private var fallbacks: [NavigationIssue.Kind: NavigationFallback] = [:]
+    private let fallbacks: [NavigationIssue.Kind: NavigationFallback]
 
     /// Creates an empty policy: every kind uses its parent's entry, then the built-in default.
-    public init() { }
+    public init() {
+        self.fallbacks = [:]
+    }
+
+    /// A policy with these fallbacks.
+    private init(fallbacks: [NavigationIssue.Kind: NavigationFallback]) {
+        self.fallbacks = fallbacks
+    }
 
     /// The fallback set for a kind, or `nil` to use the parent's entry, then the built-in default.
     public subscript(kind: NavigationIssue.Kind) -> NavigationFallback? {
-        get {
-            fallbacks[kind]
+        fallbacks[kind]
+    }
+
+    /// The same policy with a fallback set for one kind, or cleared with `nil`.
+    public func withFallback(_ fallback: NavigationFallback?, for kind: NavigationIssue.Kind) -> FallbackPolicy {
+        let others = fallbacks.filter { $0.key != kind }
+        guard let fallback else {
+            return FallbackPolicy(fallbacks: others)
         }
-        set {
-            fallbacks[kind] = newValue
-        }
+        return FallbackPolicy(fallbacks: others.merging([kind: fallback]) { _, new in new })
     }
 }

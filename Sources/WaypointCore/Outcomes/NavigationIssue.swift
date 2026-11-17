@@ -48,6 +48,9 @@ public struct NavigationIssue: Sendable, Equatable, NavigationDescribable {
         case fallbackFailed
         /// Calls queued during changes went past the tree's `maxQueuedChanges`.
         case reentrantLoop
+        /// A router setting that would break a rule, such as `maxQueuedChanges` below 1. The
+        /// setting keeps its old value.
+        case invalidSetting
     }
 
     /// What went wrong.

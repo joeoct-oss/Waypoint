@@ -31,57 +31,78 @@ import Observation
 @MainActor
 @Observable
 public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRouter {
-    /// The working copy of a tab router during a transaction.
-    struct Working {
-        /// The state being changed.
-        var state: TabState<Tab>
+    /// What a tab router shows: its state, the router of the flow presented above it, and each
+    /// tab's router.
+    struct Snapshot {
+        /// The container's state.
+        let state: TabState<Tab>
 
-        /// The presented router being changed.
-        var presented: StackRouter?
+        /// The router of the presented flow, if any.
+        let presented: StackRouter?
 
-        /// Each tab's router, being changed.
-        var tabRouters: [Tab: StackRouter]
+        /// Each tab's stack router.
+        let tabRouters: [Tab: StackRouter]
+
+        /// The same snapshot with another state.
+        func withState(_ state: TabState<Tab>) -> Snapshot {
+            Snapshot(state: state, presented: presented, tabRouters: tabRouters)
+        }
+
+        /// The same snapshot with other tab routers.
+        func withTabRouters(_ tabRouters: [Tab: StackRouter]) -> Snapshot {
+            Snapshot(state: state, presented: presented, tabRouters: tabRouters)
+        }
+
+        /// The same snapshot presenting another flow, or none.
+        func presenting(_ presentation: Presentation?, by router: StackRouter?) -> Snapshot {
+            Snapshot(state: state.withPresentation(presentation), presented: router, tabRouters: tabRouters)
+        }
     }
 
-    /// The current state. Change it only through the methods below.
-    public internal(set) var state: TabState<Tab>
-
-    /// The router of the flow presented above the whole container, if any.
-    public internal(set) var presented: StackRouter?
-
     /// Whether tapping the selected tab pops its stack to the root. Default: `true`.
-    public var popsToRootOnReselect = true
+    @ObservationIgnored public let popsToRootOnReselect: Bool
 
     /// The flow this router drives.
     @ObservationIgnored public let flowID: FlowID
-
-    /// Each tab's stack router.
-    @ObservationIgnored var tabRouters: [Tab: StackRouter] = [:]
 
     /// The tree this router belongs to.
     @ObservationIgnored let tree: NavigationTreeContext
 
     /// The router that presented or contains this one.
-    @ObservationIgnored private(set) weak var parentNode: (any TreeNode)?
+    @ObservationIgnored weak let parentNode: (any TreeNode)?
+
+    /// The committed state, presented router and tab routers, which renderers observe.
+    ///
+    /// `var` because it is the router's current value. Only `commitWorkingCopy()` replaces it.
+    private var committed: Snapshot
+
+    /// The copy a transaction changes, or `nil` between transactions.
+    ///
+    /// `var` because a transaction changes it step by step. Only the working-copy functions in
+    /// this file change it.
+    @ObservationIgnored private var working: Snapshot?
 
     /// Whether this router is in the tree.
-    @ObservationIgnored var isAttached = true
-
-    /// The working copy, during a transaction.
-    @ObservationIgnored var working: Working?
-
-    /// Presentation defaults set on this router, if any.
-    @ObservationIgnored private var ownPresentationDefaults: PresentationDefaults?
-
-    /// What to do when a call fails and passes no fallback, by issue kind.
     ///
-    /// Children inherit every kind they don't set themselves. A kind set nowhere uses
-    /// ``NavigationFallback/builtIn(for:)``.
+    /// `var` because a router leaves the tree when its flow is dismissed. Only `markAttached()`
+    /// and `markDetached()` change it.
+    @ObservationIgnored private(set) var isAttached = true
+
+    /// Presentation defaults and fallbacks set on this router.
     ///
-    /// ```swift
-    /// router.fallbackPolicy[.routeNotInPath] = .popToRoot
-    /// ```
-    @ObservationIgnored public var fallbackPolicy = FallbackPolicy()
+    /// `var` because an app may set them after creating the router. Only
+    /// ``setPresentationDefaults(_:)`` and ``setFallback(_:for:file:line:)`` change it.
+    @ObservationIgnored private var settings = RouterSettings()
+
+    /// The current state. Change it through the navigation methods below.
+    public var state: TabState<Tab> {
+        committed.state
+    }
+
+    /// The router of the flow presented above the whole container, if any.
+    public var presented: StackRouter? {
+        committed.presented
+    }
 
     /// The selected tab.
     public var selection: Tab {
@@ -116,33 +137,34 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
     /// The most calls that may be queued while changes are applied, in one main-actor turn.
     /// Shared by the whole tree. Default: 32.
     public var maxQueuedChanges: Int {
-        get {
-            tree.maxQueuedChanges
-        }
-        set {
-            tree.maxQueuedChanges = newValue
-        }
+        tree.maxQueuedChanges
     }
 
-    /// How this router's whole tree logs. Shared by every router in the tree, so set it once on
-    /// the root. Default: ``LogConfiguration/default``.
+    /// How this router's whole tree logs. Shared by every router in the tree.
+    /// Default: ``LogConfiguration/default``.
     public var logging: LogConfiguration {
-        get {
-            tree.logging
-        }
-        set {
-            tree.logging = newValue
-        }
+        tree.logging
     }
 
     /// Default presentation options for this container, its tabs and their children.
     public var presentationDefaults: PresentationDefaults {
-        get {
-            ownPresentationDefaults ?? parentNode?.presentationDefaults ?? .default
-        }
-        set {
-            ownPresentationDefaults = newValue
-        }
+        settings.presentationDefaults ?? parentNode?.presentationDefaults ?? .default
+    }
+
+    /// What to do when a call fails and passes no fallback, by issue kind. See
+    /// ``StackRouter/fallbackPolicy``.
+    public var fallbackPolicy: FallbackPolicy {
+        settings.fallbackPolicy
+    }
+
+    /// Each tab's committed stack router.
+    var tabRouters: [Tab: StackRouter] {
+        committed.tabRouters
+    }
+
+    /// The working copy during a transaction, or the committed snapshot.
+    var current: Snapshot {
+        working ?? committed
     }
 
     /// Creates a root tab container.
@@ -150,14 +172,28 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
     /// `selection` should be one of `tabs`. If it isn't, the first tab is selected; with no tabs,
     /// `selection` becomes the only tab.
     ///
-    /// - Parameter flow: The container's name in logs, events and saved state. Default: `tabs`.
-    public init(tabs: [Tab], selection: Tab, flow: FlowID = FlowID("tabs")) {
+    /// - Parameters:
+    ///   - flow: The container's name in logs, events and saved state. Default: `tabs`.
+    ///   - popsToRootOnReselect: Whether tapping the selected tab pops its stack to the root.
+    ///     Default: `true`.
+    public init(
+        tabs: [Tab],
+        selection: Tab,
+        flow: FlowID = FlowID("tabs"),
+        popsToRootOnReselect: Bool = true
+    ) {
         let tree = NavigationTreeContext()
-        let tabs = tabs.isEmpty ? [selection] : tabs
+        let state = TabState(tabs: tabs, selection: selection)
         self.tree = tree
         self.flowID = tree.claimFlowName(flow.name)
-        self.state = TabState(tabs: tabs, selection: tabs.contains(selection) ? selection : tabs[0])
-        self.tabRouters = Dictionary(uniqueKeysWithValues: tabs.map { ($0, makeTabRouter(for: $0, attached: true)) })
+        self.parentNode = nil
+        self.popsToRootOnReselect = popsToRootOnReselect
+        self.committed = Snapshot(state: state, presented: nil, tabRouters: [:])
+        // The tab routers need `self` as their parent, so they are added once `self` exists.
+        let routers = state.tabs.map { tab in
+            (tab, makeTabRouter(for: tab, attached: true))
+        }
+        self.committed = Snapshot(state: state, presented: nil, tabRouters: Dictionary(uniqueKeysWithValues: routers))
     }
 
     /// The stack router of one tab.
@@ -239,6 +275,57 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
         }
     }
 
+    /// Sets how this router's whole tree logs. Set it once, on the root.
+    ///
+    /// ```swift
+    /// tabs.setLogging(LogConfiguration.default.withMinimumLevel(.debug))
+    /// ```
+    public func setLogging(_ configuration: LogConfiguration) {
+        tree.setLogging(configuration)
+    }
+
+    /// Sets the most calls that may be queued in one main-actor turn, for the whole tree.
+    ///
+    /// A limit below 1 would drop every call made from an observer, so it reports
+    /// `invalidSetting` and the limit stays as it was.
+    public func setMaxQueuedChanges(_ limit: Int, file: StaticString = #fileID, line: UInt = #line) {
+        guard let problem = tree.setMaxQueuedChanges(limit) else {
+            return
+        }
+        reportInvalidSetting(problem, file: file, line: line)
+    }
+
+    /// Sets the default presentation options for this router and its children.
+    ///
+    /// ```swift
+    /// tabs.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
+    /// ```
+    public func setPresentationDefaults(_ defaults: PresentationDefaults) {
+        settings = settings.withPresentationDefaults(defaults)
+    }
+
+    /// Sets what to do when a call of this kind fails and passes no fallback, for this flow and
+    /// its children. `nil` inherits the parent's entry again.
+    ///
+    /// ```swift
+    /// tabs.setFallback(.popToRoot, for: .routeNotInPath)
+    /// ```
+    ///
+    /// `.push` only applies to `routeNotInPath`. Set for another kind, it reports
+    /// `invalidSetting` and the fallback stays as it was.
+    public func setFallback(
+        _ fallback: NavigationFallback?,
+        for kind: NavigationIssue.Kind,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        if let problem = fallbackSettingProblem(fallback, for: kind) {
+            reportInvalidSetting(problem, file: file, line: line)
+            return
+        }
+        settings = settings.withFallback(fallback, for: kind)
+    }
+
     /// The sheet options a presentation uses: its own, or this router's defaults.
     public func sheetOptions(for presentation: Presentation) -> SheetOptions {
         presentation.style.sheetOptions ?? presentationDefaults.sheet
@@ -281,5 +368,85 @@ public final class TabRouter<Tab: Hashable & Codable & Sendable>: NavigationRout
         return tree.perform(on: self, file: file, line: line) { [unowned self] store in
             store.resolve(step(self, store), on: self, context)
         }
+    }
+}
+
+/// Conformances:
+/// - `TransactionParticipant`, so a transaction can change it on a working copy.
+extension TabRouter: TransactionParticipant {
+    /// Copies the committed snapshot.
+    func beginWorkingCopy() {
+        working = committed
+    }
+
+    /// Changes the working copy. Does nothing outside a transaction.
+    func updateWorkingCopy(_ change: (Snapshot) -> Snapshot) {
+        guard let working else {
+            return
+        }
+        self.working = change(working)
+    }
+
+    /// Writes the working copy once, when it differs, and swaps routers that changed.
+    func commitWorkingCopy() {
+        guard let next = working else {
+            return
+        }
+        working = nil
+        let previous = committed
+        let routersChanged = next.tabRouters.count != previous.tabRouters.count
+            || next.tabRouters.contains { tab, router in
+                previous.tabRouters[tab] !== router
+            }
+        guard next.state != previous.state || next.presented !== previous.presented || routersChanged else {
+            return
+        }
+        committed = next
+        commitTabRouters(from: previous.tabRouters, to: next.tabRouters)
+        commitPresented(from: previous.presented, to: next.presented)
+    }
+
+    /// Drops the working copy, and frees the names of routers that never joined.
+    func discardWorkingCopy() {
+        guard let dropped = working else {
+            return
+        }
+        working = nil
+        let created = dropped.tabRouters.values.filter { router in
+            !committed.tabRouters.values.contains { $0 === router }
+        }
+        let presentedCreated = dropped.presented.flatMap { $0 === committed.presented ? nil : $0 }
+        for router in created + (presentedCreated.map { [$0] } ?? []) {
+            tree.releaseFlowName(router.flowID)
+        }
+    }
+
+    /// Marks this router as in the tree.
+    func markAttached() {
+        isAttached = true
+    }
+
+    /// Marks this router as gone from the tree. Its calls return `.ignored` from now on.
+    func markDetached() {
+        isAttached = false
+    }
+
+    /// Detaches removed tab routers and attaches new ones.
+    private func commitTabRouters(from previous: [Tab: StackRouter], to next: [Tab: StackRouter]) {
+        for (tab, router) in previous where next[tab] !== router {
+            router.detachSubtree()
+        }
+        for router in next.values {
+            router.markAttached()
+        }
+    }
+
+    /// Detaches the old presented router and attaches the new one, if it changed.
+    private func commitPresented(from previous: StackRouter?, to next: StackRouter?) {
+        guard next !== previous else {
+            return
+        }
+        previous?.detachSubtree()
+        next?.markAttached()
     }
 }

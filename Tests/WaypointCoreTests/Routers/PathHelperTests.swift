@@ -52,9 +52,9 @@ struct PathHelperTests {
     @Test
     func pushManyIsOneChange() {
         let router = StackRouter()
-        var changes: [AppliedChange] = []
-        router.tree.didApply = { applied in
-            changes += applied
+        let changes = Recorder<AppliedChange>()
+        router.tree.onApplied { applied in
+            changes.record(contentsOf: applied)
         }
 
         router.push {
@@ -62,7 +62,7 @@ struct PathHelperTests {
             ProductRoute(id: 1)
         }
 
-        #expect(changes.map(\.change) == [.pushed([AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 1))])])
+        #expect(changes.values.map(\.change) == [.pushed([AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 1))])])
     }
 
     @Test

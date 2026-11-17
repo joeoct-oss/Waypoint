@@ -54,9 +54,7 @@ enum StackReducer {
         guard !routes.isEmpty else {
             return .unchanged
         }
-        var next = state
-        next.path.append(contentsOf: routes)
-        return .changed(next, [.pushed(routes)])
+        return .changed(state.withPath(state.path + routes), [.pushed(routes)])
     }
 
     /// Removes the top `count` routes. Zero or less changes nothing.
@@ -94,9 +92,7 @@ enum StackReducer {
         guard path != state.path else {
             return .unchanged
         }
-        var next = state
-        next.path = path
-        return .changed(next, [.replaced(from: state.path, to: path)])
+        return .changed(state.withPath(path), [.replaced(from: state.path, to: path)])
     }
 
     /// Keeps the bottom `count` routes and reports the rest as popped.
@@ -104,9 +100,7 @@ enum StackReducer {
         guard count < state.path.count else {
             return .unchanged
         }
-        var next = state
         let popped = Array(state.path[count...])
-        next.path.removeSubrange(count...)
-        return .changed(next, [.popped(popped)])
+        return .changed(state.withPath(Array(state.path[..<count])), [.popped(popped)])
     }
 }

@@ -18,10 +18,10 @@ public struct StackState: Sendable, Equatable, Codable, NavigationDescribable {
     ///
     /// The root screen belongs to the stack itself, not the path, as in
     /// `NavigationStack(path:)`. An empty path shows the root screen.
-    public var path: [AnyRoute]
+    public let path: [AnyRoute]
 
     /// The flow this stack presents, if any.
-    public var presentation: Presentation?
+    public let presentation: Presentation?
 
     /// The path, such as `[HomeRoute, ProductRoute(id: <private>)]`, then `+` and the
     /// presentation if there is one.
@@ -33,6 +33,16 @@ public struct StackState: Sendable, Equatable, Codable, NavigationDescribable {
     public init(path: [AnyRoute] = [], presentation: Presentation? = nil) {
         self.path = path
         self.presentation = presentation
+    }
+
+    /// The same state with another path.
+    func withPath(_ path: [AnyRoute]) -> StackState {
+        StackState(path: path, presentation: presentation)
+    }
+
+    /// The same state with another presented flow.
+    func withPresentation(_ presentation: Presentation?) -> StackState {
+        StackState(path: path, presentation: presentation)
     }
 
     /// The same line, with route fields revealed when asked.

@@ -121,9 +121,9 @@ private struct HiddenRoute: Route { }
 /// The key of the private route, for tests in other files.
 let hiddenRouteKey = HiddenRoute.routeKey
 
-/// Registers the private route, for tests in other files.
-func registerHiddenRoute(in registry: inout RouteRegistry) {
-    registry.register(HiddenRoute.self)
+/// The registry with the private route registered, for tests in other files.
+func registeringHiddenRoute(in registry: RouteRegistry) -> RouteRegistry {
+    registry.registering(HiddenRoute.self)
 }
 
 /// The private route, erased, for tests in other files.

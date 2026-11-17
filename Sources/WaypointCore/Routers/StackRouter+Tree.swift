@@ -19,43 +19,9 @@ extension StackRouter: TreeNode {
         presented.map { [$0] } ?? []
     }
 
-    /// The committed path.
+    /// The path as it is in the current transaction, or the committed one.
     var currentPath: [AnyRoute] {
-        working?.state.path ?? state.path
-    }
-}
-
-/// Conformances:
-/// - `TransactionParticipant`, so a transaction can change it on a working copy.
-extension StackRouter: TransactionParticipant {
-    /// Copies the state and the presented router.
-    func beginWorkingCopy() {
-        working = Working(state: state, presented: presented)
-    }
-
-    /// Writes the state once, and swaps the presented router if it changed.
-    func commitWorkingCopy() {
-        guard let working else {
-            return
-        }
-        self.working = nil
-        if working.state != state {
-            state = working.state
-        }
-        guard working.presented !== presented else {
-            return
-        }
-        presented?.detachSubtree()
-        presented = working.presented
-        presented?.isAttached = true
-    }
-
-    /// Drops the working copy, and frees the name of a presented router that never joined.
-    func discardWorkingCopy() {
-        if let created = working?.presented, created !== presented {
-            tree.releaseFlowName(created.flowID)
-        }
-        working = nil
+        current.state.path
     }
 }
 
@@ -64,30 +30,12 @@ extension StackRouter: TransactionParticipant {
 extension StackRouter: PresentingRouter {
     /// The working copy's presentation.
     var workingPresentation: Presentation? {
-        get {
-            working?.state.presentation
-        }
-        set {
-            working?.state.presentation = newValue
-        }
-    }
-
-    /// The working copy's presented router.
-    var workingPresented: StackRouter? {
-        get {
-            working?.presented
-        }
-        set {
-            working?.presented = newValue
-        }
+        current.state.presentation
     }
 
     /// The presented router as it is in the current transaction, or the committed one.
     var currentPresented: StackRouter? {
-        guard let working else {
-            return presented
-        }
-        return working.presented
+        current.presented
     }
 
     /// This stack.
@@ -99,16 +47,20 @@ extension StackRouter: PresentingRouter {
     var workingInFlowChildren: [any PresentingRouter] {
         []
     }
+
+    /// Presents a flow in the working copy, or clears it with `nil`.
+    func updateWorkingPresentation(_ presentation: Presentation?, presented router: StackRouter?) {
+        updateWorkingCopy { snapshot in
+            snapshot.presenting(presentation, by: router)
+        }
+    }
 }
 
 extension StackRouter {
     /// Applies a stack command to the working copy.
     func stackStep(_ command: StackCommand, in store: TransactionStore) -> StepResult {
         store.enlist(self)
-        guard let current = working?.state else {
-            return .unchanged
-        }
-        switch StackReducer.reduce(current, command, rootRoute: rootRoute) {
+        switch StackReducer.reduce(current.state, command, rootRoute: rootRoute) {
         case .changed(let next, let changes):
             return apply(next, changes, in: store)
         case .unchanged:
@@ -128,7 +80,9 @@ extension StackRouter {
 
     /// Stores the reduced state and records its changes.
     private func apply(_ next: StackState, _ changes: [NavigationChange], in store: TransactionStore) -> StepResult {
-        working?.state = next
+        updateWorkingCopy { snapshot in
+            snapshot.withState(next)
+        }
         store.record(changes, in: flowID)
         return .changed
     }

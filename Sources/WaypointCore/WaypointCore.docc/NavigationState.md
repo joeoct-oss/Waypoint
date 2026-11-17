@@ -6,7 +6,7 @@ Navigation is a tree of plain values that routers own and renderers draw.
 
 Everything on screen is described by value types: a stack's path, what it presents, which tab is selected. They are `Sendable`, `Equatable` and `Codable`, so you can compare them in tests, log them, save them and rebuild them.
 
-Routers own the state and are the only way to change it. Renderers read it and report changes the user makes, such as a swipe back, but never keep their own copy.
+Every field is a `let`, so a value can't change after it is made, and a value that breaks a rule can't be made: a tab state's selection is always one of its tabs, even when decoded. Routers own the state and are the only way to change it: each navigation call checks the change, then replaces the whole value. Renderers read it and report changes the user makes, such as a swipe back, but never keep their own copy.
 
 ```swift
 let router = StackRouter()
@@ -31,10 +31,10 @@ public struct StackState: Sendable, Equatable, Codable, NavigationDescribable {
     ///
     /// The root screen belongs to the stack itself, not the path, as in
     /// `NavigationStack(path:)`. An empty path shows the root screen.
-    public var path: [AnyRoute]
+    public let path: [AnyRoute]
 
     /// The flow this stack presents, if any.
-    public var presentation: Presentation?
+    public let presentation: Presentation?
 }
 ```
 
@@ -52,14 +52,14 @@ A flow presents at most one child flow at a time. The presented flow can present
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public struct Presentation: Sendable, Equatable, Codable, NavigationDescribable {
     /// How the flow is shown.
-    public var style: PresentationStyle
+    public let style: PresentationStyle
 
     /// The presented flow.
-    public var flow: FlowID
+    public let flow: FlowID
 
     /// The route of the presented flow's root screen, or `nil` when a
     /// coordinator builds the flow's root itself.
-    public var route: AnyRoute?
+    public let route: AnyRoute?
 }
 ```
 
@@ -80,13 +80,13 @@ public struct Presentation: Sendable, Equatable, Codable, NavigationDescribable 
 /// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
 public struct TabState<Tab: Hashable & Codable & Sendable>: Sendable, Equatable, Codable, NavigationDescribable {
     /// The tabs, in display order.
-    public var tabs: [Tab]
+    public let tabs: [Tab]
 
     /// The selected tab. Always one of `tabs`.
-    public var selection: Tab
+    public let selection: Tab
 
     /// The flow presented above the whole tab container, if any.
-    public var presentation: Presentation?
+    public let presentation: Presentation?
 }
 ```
 
@@ -130,9 +130,9 @@ public struct NavigationTree: Sendable, Equatable, Codable, NavigationDescribabl
         case root(FlowID, current: String, child: NavigationTree?)
     }
     /// The root flow and everything shown inside it.
-    public var root: Node
+    public let root: Node
     /// The flows presented over this one, by the flow that presented them.
-    public var presented: [FlowID: NavigationTree]
+    public let presented: [FlowID: NavigationTree]
 }
 ```
 

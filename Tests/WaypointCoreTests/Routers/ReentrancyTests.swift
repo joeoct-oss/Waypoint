@@ -18,19 +18,20 @@ struct ReentrancyTests {
     @Test
     func callDuringChangeIsQueuedAndRunsAfter() {
         let router = StackRouter()
-        var inner: NavigationOutcome?
-        router.tree.didApply = { changes in
-            guard inner == nil else {
+        let inner = Recorder<NavigationOutcome>()
+        let once = Once()
+        router.tree.onApplied { changes in
+            guard once.claim() else {
                 return
             }
-            inner = router.push(SettingsRoute())
+            inner.record(router.push(SettingsRoute()))
             #expect(router.state.path == [AnyRoute(HomeRoute())])
         }
 
         let outer = router.push(HomeRoute())
 
         #expect(outer == .applied)
-        #expect(inner == .queued)
+        #expect(inner.values == [.queued])
         #expect(router.state.path == [AnyRoute(HomeRoute()), AnyRoute(SettingsRoute())])
     }
 
@@ -39,12 +40,11 @@ struct ReentrancyTests {
         let router = StackRouter()
         router.present(SettingsRoute())
         let child = try #require(router.presented)
-        var queued = false
-        router.tree.didApply = { _ in
-            guard !queued else {
+        let once = Once()
+        router.tree.onApplied { _ in
+            guard once.claim() else {
                 return
             }
-            queued = true
             child.push(ProductRoute(id: 1))
             router.push(ProductRoute(id: 2))
             child.push(ProductRoute(id: 3))
@@ -59,37 +59,36 @@ struct ReentrancyTests {
     @Test
     func queuedFailureIsReportedWhenItRuns() {
         let router = StackRouter()
-        var reported: [NavigationIssue.Kind] = []
-        var queued = false
-        router.tree.didReport = { issue in
-            reported.append(issue.kind)
+        let reported = Recorder<NavigationIssue.Kind>()
+        let once = Once()
+        router.tree.onReported { issue in
+            reported.record(issue.kind)
         }
-        router.tree.didApply = { _ in
-            guard !queued else {
+        router.tree.onApplied { _ in
+            guard once.claim() else {
                 return
             }
-            queued = true
             router.popTo(SettingsRoute())
         }
 
         router.push(HomeRoute())
 
-        #expect(reported == [.routeNotInPath])
+        #expect(reported.values == [.routeNotInPath])
     }
 
     @Test
     func loopStopsAfterMaxQueuedChanges() {
         let router = StackRouter()
-        router.maxQueuedChanges = 4
-        var outcomes: [NavigationOutcome] = []
-        router.tree.didApply = { _ in
-            outcomes.append(router.push(HomeRoute()))
+        router.setMaxQueuedChanges(4)
+        let outcomes = Recorder<NavigationOutcome>()
+        router.tree.onApplied { _ in
+            outcomes.record(router.push(HomeRoute()))
         }
 
         router.push(HomeRoute())
 
         #expect(router.state.path.count == 5)
-        #expect(outcomes.filter { $0 == .queued }.count == 4)
+        #expect(outcomes.values.filter { $0 == .queued }.count == 4)
         #expect(outcomes.last?.failure?.issue.kind == .reentrantLoop)
     }
 
@@ -100,7 +99,7 @@ struct ReentrancyTests {
         let child = try #require(router.presented)
 
         #expect(router.maxQueuedChanges == 32)
-        child.maxQueuedChanges = 8
+        child.setMaxQueuedChanges(8)
         #expect(router.maxQueuedChanges == 8)
     }
 }

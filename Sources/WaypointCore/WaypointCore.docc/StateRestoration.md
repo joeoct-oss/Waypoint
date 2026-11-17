@@ -52,7 +52,10 @@ public struct RestoreOptions: Sendable {
     public static var `default`: RestoreOptions { get }
 
     /// Whether sheets and full-screen covers come back. Default: `true`.
-    public var includesPresentations: Bool
+    public let includesPresentations: Bool
+
+    /// Creates restore options. Every argument has a default.
+    public init(includesPresentations: Bool = true)
 }
 
 /// What a restore did.

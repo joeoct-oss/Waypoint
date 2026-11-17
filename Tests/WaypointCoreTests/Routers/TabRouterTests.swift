@@ -66,8 +66,7 @@ struct TabRouterTests {
 
     @Test
     func reselectingCanBeTurnedOff() {
-        let tabs = TabRouter(tabs: [MainTab.home, .shop], selection: .shop)
-        tabs.popsToRootOnReselect = false
+        let tabs = TabRouter(tabs: [MainTab.home, .shop], selection: .shop, popsToRootOnReselect: false)
         tabs.router(for: .shop).push(ProductRoute(id: 1))
 
         #expect(tabs.select(.shop) == .alreadyThere)

@@ -83,9 +83,9 @@ struct RouteTests {
 
     @Test
     func formerKeyOfAnotherRouteReportsDuplicate() throws {
-        var registry = RouteRegistry()
-        registry.register(OrderRoute.self)
-        registry.register(RouteFixtures.ClashingRoute.self)
+        let registry = RouteRegistry()
+            .registering(OrderRoute.self)
+            .registering(RouteFixtures.ClashingRoute.self)
 
         let key = OrderRoute.routeKey
         let clashing = RouteFixtures.ClashingRoute.routeKey.rawValue
@@ -95,8 +95,7 @@ struct RouteTests {
 
     @Test
     func privateRouteReportsUnstableKey() {
-        var registry = RouteRegistry()
-        registerHiddenRoute(in: &registry)
+        let registry = registeringHiddenRoute(in: RouteRegistry())
 
         #expect(registry.problems == [.unstableRouteKey(hiddenRouteKey)])
         #expect(throws: RouteDecodingError.unstableRouteKey(hiddenRouteKey)) {
@@ -106,8 +105,8 @@ struct RouteTests {
 
     @Test
     func emptyFormerKeyReportsInvalid() {
-        var registry = RouteRegistry()
-        registry.register(RouteFixtures.EmptyFormerKeyRoute.self)
+        let registry = RouteRegistry()
+            .registering(RouteFixtures.EmptyFormerKeyRoute.self)
 
         #expect(registry.problems == [.invalidRouteKey("")])
         #expect(registry.isRegistered(RouteFixtures.EmptyFormerKeyRoute.self))
@@ -115,9 +114,9 @@ struct RouteTests {
 
     @Test
     func registeringTwiceDoesNothing() {
-        var registry = RouteRegistry()
-        registry.register(OrderRoute.self)
-        registry.register(OrderRoute.self)
+        let registry = RouteRegistry()
+            .registering(OrderRoute.self)
+            .registering(OrderRoute.self)
 
         #expect(registry.problems.isEmpty)
         #expect(registry.registeredTypes.count == 1)
@@ -197,8 +196,8 @@ struct RouteTests {
 
     // A decoder with a registry that knows one route type.
     private func decoder<R: Route>(registering type: R.Type) -> JSONDecoder {
-        var registry = RouteRegistry()
-        registry.register(type)
+        let registry = RouteRegistry()
+            .registering(type)
         let decoder = JSONDecoder()
         decoder.userInfo[.routeRegistry] = registry
         return decoder

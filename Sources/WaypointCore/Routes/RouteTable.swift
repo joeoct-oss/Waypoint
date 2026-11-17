@@ -13,10 +13,10 @@
 /// the same code everywhere, and no central `switch` over routes is needed.
 public struct RouteTable<Payload> {
     /// Builders by route key.
-    private var builders: [RouteKey: (AnyRoute) -> Payload?] = [:]
+    private let builders: [RouteKey: (AnyRoute) -> Payload?]
 
     /// The route types registered for decoding, filled as destinations are registered.
-    public private(set) var registry = RouteRegistry()
+    public let registry: RouteRegistry
 
     /// Every registered route type.
     public var registeredTypes: [any Route.Type] {
@@ -24,17 +24,28 @@ public struct RouteTable<Payload> {
     }
 
     /// Creates an empty table.
-    public init() { }
+    public init() {
+        self.init(builders: [:], registry: RouteRegistry())
+    }
 
-    /// Registers how to build the payload for one route type. Registering a type again replaces
-    /// its destination.
+    /// A table with these builders and registry.
+    private init(builders: [RouteKey: (AnyRoute) -> Payload?], registry: RouteRegistry) {
+        self.builders = builders
+        self.registry = registry
+    }
+
+    /// The same table with a way to build the payload for one route type. Registering a type
+    /// again replaces its destination.
     ///
     /// Also registers the type for decoding.
-    public mutating func register<R: Route>(_ type: R.Type, _ make: @escaping (R) -> Payload) {
-        registry.register(type)
-        builders[R.routeKey] = { route in
+    public func registering<R: Route>(_ type: R.Type, _ make: @escaping (R) -> Payload) -> RouteTable {
+        let builder: (AnyRoute) -> Payload? = { route in
             route.as(R.self).map(make)
         }
+        return RouteTable(
+            builders: builders.merging([R.routeKey: builder]) { _, new in new },
+            registry: registry.registering(type)
+        )
     }
 
     /// The payload for a route, or `nil` if its type is not registered.

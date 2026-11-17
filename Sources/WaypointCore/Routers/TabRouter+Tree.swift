@@ -27,124 +27,48 @@ extension TabRouter: TreeNode {
 }
 
 /// Conformances:
-/// - `TransactionParticipant`, so a transaction can change it on a working copy.
-extension TabRouter: TransactionParticipant {
-    /// Copies the state, the presented router and the tab routers.
-    func beginWorkingCopy() {
-        working = Working(state: state, presented: presented, tabRouters: tabRouters)
-    }
-
-    /// Writes the state once, and swaps routers that changed.
-    func commitWorkingCopy() {
-        guard let working else {
-            return
-        }
-        self.working = nil
-        if working.state != state {
-            state = working.state
-        }
-        commitTabRouters(working.tabRouters)
-        commitPresented(working.presented)
-    }
-
-    /// Drops the working copy, and frees the names of routers that never joined.
-    func discardWorkingCopy() {
-        guard let working else {
-            return
-        }
-        self.working = nil
-        let created = working.tabRouters.values.filter { router in
-            !tabRouters.values.contains { $0 === router }
-        }
-        let presentedCreated = working.presented.flatMap { $0 === presented ? nil : $0 }
-        for router in created + (presentedCreated.map { [$0] } ?? []) {
-            tree.releaseFlowName(router.flowID)
-        }
-    }
-
-    /// Detaches removed tab routers and attaches new ones.
-    private func commitTabRouters(_ next: [Tab: StackRouter]) {
-        for (tab, router) in tabRouters where next[tab] !== router {
-            router.detachSubtree()
-        }
-        for router in next.values {
-            router.isAttached = true
-        }
-        tabRouters = next
-    }
-
-    /// Swaps the presented router if it changed.
-    private func commitPresented(_ next: StackRouter?) {
-        guard next !== presented else {
-            return
-        }
-        presented?.detachSubtree()
-        presented = next
-        presented?.isAttached = true
-    }
-}
-
-/// Conformances:
 /// - `PresentingRouter`, so it can present a flow above all its tabs.
 extension TabRouter: PresentingRouter {
     /// The working copy's presentation.
     var workingPresentation: Presentation? {
-        get {
-            working?.state.presentation
-        }
-        set {
-            working?.state.presentation = newValue
-        }
-    }
-
-    /// The working copy's presented router.
-    var workingPresented: StackRouter? {
-        get {
-            working?.presented
-        }
-        set {
-            working?.presented = newValue
-        }
+        current.state.presentation
     }
 
     /// The presented router as it is in the current transaction, or the committed one.
     var currentPresented: StackRouter? {
-        guard let working else {
-            return presented
-        }
-        return working.presented
+        current.presented
     }
 
     /// The selected tab's stack, as it is in the current transaction.
     var visibleStack: StackRouter? {
-        currentRouter(for: working?.state.selection ?? state.selection)
+        currentRouter(for: current.state.selection)
     }
 
     /// Each tab's router, which is inside this flow.
     var workingInFlowChildren: [any PresentingRouter] {
-        guard let working else {
-            return []
+        let snapshot = current
+        return snapshot.state.tabs.compactMap { snapshot.tabRouters[$0] }
+    }
+
+    /// Presents a flow in the working copy, or clears it with `nil`.
+    func updateWorkingPresentation(_ presentation: Presentation?, presented router: StackRouter?) {
+        updateWorkingCopy { snapshot in
+            snapshot.presenting(presentation, by: router)
         }
-        return working.state.tabs.compactMap { working.tabRouters[$0] }
     }
 }
 
 extension TabRouter {
     /// One tab's router as it is in the current transaction, or the committed one.
     func currentRouter(for tab: Tab) -> StackRouter? {
-        guard let working else {
-            return tabRouters[tab]
-        }
-        return working.tabRouters[tab]
+        current.tabRouters[tab]
     }
 
     /// Selects a tab, or pops the selected tab's stack when it is selected again.
     func selectStep(_ tab: Tab, in store: TransactionStore) -> StepResult {
         store.enlist(self)
-        guard let working else {
-            return .unchanged
-        }
-        guard tab == working.state.selection, popsToRootOnReselect, let stack = working.tabRouters[tab] else {
+        let snapshot = current
+        guard tab == snapshot.state.selection, popsToRootOnReselect, let stack = snapshot.tabRouters[tab] else {
             return tabStep(.select(tab), in: store)
         }
         return stack.stackStep(.popToRoot, in: store)
@@ -157,17 +81,16 @@ extension TabRouter {
             return result
         }
         let next = routers(for: tabs)
-        working?.tabRouters = next
+        updateWorkingCopy { snapshot in
+            snapshot.withTabRouters(next)
+        }
         return result
     }
 
     /// Applies a tab command to the working copy.
     private func tabStep(_ command: TabCommand<Tab>, in store: TransactionStore) -> StepResult {
         store.enlist(self)
-        guard let current = working?.state else {
-            return .unchanged
-        }
-        switch TabReducer.reduce(current, command) {
+        switch TabReducer.reduce(current.state, command) {
         case .changed(let next, let changes):
             return apply(next, changes, in: store)
         case .unchanged:
@@ -179,7 +102,7 @@ extension TabRouter {
 
     /// The existing router of each kept tab, and a new one for each new tab.
     private func routers(for tabs: [Tab]) -> [Tab: StackRouter] {
-        let existing = working?.tabRouters ?? tabRouters
+        let existing = current.tabRouters
         let pairs = tabs.map { tab in
             (tab, existing[tab] ?? newTabRouter(for: tab))
         }
@@ -196,7 +119,9 @@ extension TabRouter {
 
     /// Stores the reduced state and records its changes.
     private func apply(_ next: TabState<Tab>, _ changes: [NavigationChange], in store: TransactionStore) -> StepResult {
-        working?.state = next
+        updateWorkingCopy { snapshot in
+            snapshot.withState(next)
+        }
         store.record(changes, in: flowID)
         return .changed
     }

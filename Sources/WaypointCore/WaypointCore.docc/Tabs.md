@@ -43,19 +43,35 @@ Navigation methods return a `NavigationOutcome` and take an optional fallback, f
 /// - `Tab: Sendable`, so tab events can leave the main actor.
 @MainActor @Observable
 public final class TabRouter<Tab: Hashable & Codable & Sendable> {
+    /// Whether tapping the selected tab pops its stack to the root. Default: `true`.
+    public let popsToRootOnReselect: Bool
+
     /// The current state. Change it only through the methods below.
-    public private(set) var state: TabState<Tab>
+    public var state: TabState<Tab> { get }
 
     /// The selected tab.
     public var selection: Tab { get }
     /// The flow this router drives.
     public var flowID: FlowID { get }
     /// What to do when a call fails. Inherited by every tab's router.
-    public var fallbackPolicy: FallbackPolicy { get set }
+    public var fallbackPolicy: FallbackPolicy { get }
 
     /// Creates a tab container. `selection` should be one of `tabs`; if it
     /// isn't, the first tab is selected. `flow` names the container.
-    public init(tabs: [Tab], selection: Tab, flow: FlowID = FlowID("tabs"))
+    public init(
+        tabs: [Tab],
+        selection: Tab,
+        flow: FlowID = FlowID("tabs"),
+        popsToRootOnReselect: Bool = true
+    )
+
+    /// Sets one kind's fallback for this container and everything inside it.
+    public func setFallback(
+        _ fallback: NavigationFallback?,
+        for kind: NavigationIssue.Kind,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    )
 
     /// Selects a tab.
     ///
@@ -96,11 +112,8 @@ tabs.transaction {
 
 ### Tapping the selected tab again
 
-Tapping the tab that is already selected pops its stack to the root, as system apps do. It is on by default, and you can turn it off:
+Tapping the tab that is already selected pops its stack to the root, as system apps do. It is on by default, and you can turn it off when you create the container:
 
 ```swift
-extension TabRouter {
-    /// Whether tapping the selected tab pops its stack to the root. Default: `true`.
-    public var popsToRootOnReselect: Bool { get set }
-}
+let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home, popsToRootOnReselect: false)
 ```

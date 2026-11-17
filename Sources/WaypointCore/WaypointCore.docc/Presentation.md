@@ -28,7 +28,10 @@ extension StackRouter {
     /// The router of the presented flow, if any.
     public var presented: StackRouter? { get }
     /// Default presentation options for this router and its children.
-    public var presentationDefaults: PresentationDefaults { get set }
+    public var presentationDefaults: PresentationDefaults { get }
+
+    /// Sets the default presentation options for this router and its children.
+    public func setPresentationDefaults(_ defaults: PresentationDefaults)
 
     /// Presents `route` as the root screen of a new child flow.
     ///
@@ -123,16 +126,16 @@ public struct SheetOptions: Hashable, Codable, Sendable {
     /// A large sheet that the user can swipe away.
     public static var `default`: SheetOptions { get }
 
-    /// The sizes the sheet can rest at. Default: `[.large]`.
-    public var detents: [SheetDetent]
-    /// The size the sheet opens at. `nil` means the first detent.
-    public var selectedDetent: SheetDetent?
+    /// The sizes the sheet can rest at, never empty. Default: `[.large]`.
+    public let detents: [SheetDetent]
+    /// The size the sheet opens at, always one of `detents`. `nil` means the first detent.
+    public let selectedDetent: SheetDetent?
     /// The tallest a `.fitsContent` sheet can grow. Taller content scrolls. Default: `.large`.
-    public var fitsContentLimit: SheetDetent
+    public let fitsContentLimit: SheetDetent
     /// `nil` lets the platform decide.
-    public var showsDragIndicator: Bool?
+    public let showsDragIndicator: Bool?
     /// Whether the user can swipe the sheet away. Default: `true`.
-    public var allowsInteractiveDismiss: Bool
+    public let allowsInteractiveDismiss: Bool
 
     /// Creates sheet options. Every argument has a default.
     public init(
@@ -142,8 +145,19 @@ public struct SheetOptions: Hashable, Codable, Sendable {
         showsDragIndicator: Bool? = nil,
         allowsInteractiveDismiss: Bool = true
     )
+
+    /// The same options with other sizes, checked like `init`.
+    public func withDetents(_ detents: [SheetDetent], selected: SheetDetent? = nil) -> SheetOptions
+    /// The same options with another limit for `.fitsContent` sheets.
+    public func withFitsContentLimit(_ limit: SheetDetent) -> SheetOptions
+    /// The same options with the drag indicator shown, hidden, or left to the platform.
+    public func withDragIndicator(_ shows: Bool?) -> SheetOptions
+    /// The same options, with swiping the sheet away allowed or not.
+    public func withInteractiveDismiss(_ allowed: Bool) -> SheetOptions
 }
 ```
+
+Sheet options are always valid, so a renderer never meets one it can't show: an empty `detents` becomes `[.large]`, a `selectedDetent` that isn't one of `detents` becomes `nil`, and a `fitsContentLimit` of `.fitsContent`, which is not a limit, becomes `.large`. Decoded options are checked the same way.
 
 When the user drags a sheet to another size, the renderer reports it and `selectedDetent` changes, as with any other change the user makes. A size the platform cannot show falls back to `.large`, and an issue is reported in development.
 
@@ -182,13 +196,16 @@ public struct PresentationDefaults: Sendable, Equatable {
     public static var `default`: PresentationDefaults { get }
 
     /// Used by `.sheet` when a call doesn't pass its own options.
-    public var sheet: SheetOptions
+    public let sheet: SheetOptions
 
     /// Creates defaults. Every argument has a default.
     public init(sheet: SheetOptions = .default)
+
+    /// The same defaults with other sheet options.
+    public func withSheet(_ sheet: SheetOptions) -> PresentationDefaults
 }
 
-rootRouter.presentationDefaults.sheet = SheetOptions(detents: [.medium, .large])
+rootRouter.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
 ```
 
 The lookup order is: the call's own options, then the nearest router's `presentationDefaults`, then `SheetOptions.default`.

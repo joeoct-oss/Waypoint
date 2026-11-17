@@ -47,8 +47,14 @@ struct ShopApp: App {
 final class AppCoordinator: SwiftUIRootCoordinator {
     let router = RootRouter(AppRoot.login)
     let links: LinkInbox? = LinkInbox(domains: LinkDomains(hosts: ["example.com"], schemes: ["myshop"]))
-    let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
-    private(set) lazy var shop = ShopCoordinator(router: tabs.router(for: .shop))
+    let tabs: TabRouter<MainTab>
+    let shop: ShopCoordinator
+
+    init() {
+        let tabs = TabRouter(tabs: [MainTab.home, .shop, .profile], selection: .home)
+        self.tabs = tabs
+        self.shop = ShopCoordinator(router: tabs.router(for: .shop))
+    }
 
     func makeFlow(for root: AppRoot) -> some View {
         switch root {
@@ -65,11 +71,11 @@ final class AppCoordinator: SwiftUIRootCoordinator {
 
     func showMainFlow() {
         router.switch(to: .main)
-        links?.isReady = true
+        links?.markReady()
     }
 
     func showLoginFlow() {
-        links?.isReady = false
+        links?.markNotReady()
         router.switch(to: .login)
     }
 }
@@ -223,15 +229,16 @@ struct FilterView: View {
 `myshop://product/42` and `https://example.com/product/42` both open the product. Because the route declares its pattern, registering its destination is enough. A link that needs several steps uses a plan:
 
 ```swift
-matcher.register("/sale/:id") { link in
-    NavigationPlan {
-        DismissAll()
-        SelectTab(MainTab.shop)
-        SetPath(in: MainTab.shop) {
-            ProductRoute(id: try link.int("id"))
+let matcher = DeepLinkMatcher()
+    .registering("/sale/:id") { link in
+        NavigationPlan {
+            DismissAll()
+            SelectTab(MainTab.shop)
+            SetPath(in: MainTab.shop) {
+                ProductRoute(id: try link.int("id"))
+            }
         }
     }
-}
 ```
 
-`WaypointRoot(app)` sends every link to the app coordinator's inbox. If the link arrives during login, it waits. When the app coordinator's `showMainFlow()` switches to the main flow and sets `links?.isReady = true`, the link is applied in one step: the sheet closes, the shop tab is selected and the product is pushed, with one animation.
+`WaypointRoot(app)` sends every link to the app coordinator's inbox. If the link arrives during login, it waits. When the app coordinator's `showMainFlow()` switches to the main flow and calls `links?.markReady()`, the link is applied in one step: the sheet closes, the shop tab is selected and the product is pushed, with one animation.

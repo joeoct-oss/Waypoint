@@ -29,13 +29,15 @@ package final class RecordingLogHandler: LogHandler, @unchecked Sendable {
     /// Guards the recorded values.
     private let lock = NSLock()
 
-    /// The messages, in the order they arrived.
+    /// The messages, in the order they arrived. `var` because the router logs one at a time.
     private var recordedMessages: [LogMessage] = []
 
-    /// The interval events, in the order they arrived.
+    /// The interval events, in the order they arrived. `var` because intervals arrive one at a
+    /// time.
     private var recordedIntervals: [IntervalEvent] = []
 
-    /// The number of times `isEnabled(level:category:)` was asked.
+    /// The number of times `isEnabled(level:category:)` was asked. `var` because each check adds
+    /// one.
     private var recordedChecks = 0
 
     /// Whether the handler accepts messages.

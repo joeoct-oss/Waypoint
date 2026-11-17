@@ -122,7 +122,7 @@ struct PresentationRouterTests {
     @Test
     func presentationDefaultsAreInherited() throws {
         let router = StackRouter()
-        router.presentationDefaults.sheet = SheetOptions(detents: [.medium, .large])
+        router.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
         router.present(SettingsRoute())
         let child = try #require(router.presented)
 
@@ -133,7 +133,7 @@ struct PresentationRouterTests {
     @Test
     func sheetOptionsFollowLookupOrder() throws {
         let router = StackRouter()
-        router.presentationDefaults.sheet = SheetOptions(detents: [.medium])
+        router.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium])))
 
         router.present(SettingsRoute())
         let inherited = try #require(router.state.presentation)

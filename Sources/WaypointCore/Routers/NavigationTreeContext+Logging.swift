@@ -104,8 +104,7 @@ extension NavigationTreeContext {
         guard configuration.measuresIntervals(in: .navigation) else {
             return nil
         }
-        nextIntervalID += 1
-        let interval = LogInterval(name: "transaction", category: .navigation, id: nextIntervalID)
+        let interval = LogInterval(name: "transaction", category: .navigation, id: claimIntervalID())
         configuration.handler.beginInterval(interval)
         return interval
     }

@@ -39,9 +39,7 @@ enum TabReducer {
         guard tab != state.selection else {
             return .unchanged
         }
-        var next = state
-        next.selection = tab
-        return .changed(next, [selectionChange(from: state.selection, to: tab)])
+        return .changed(state.withSelection(tab), [selectionChange(from: state.selection, to: tab)])
     }
 
     /// Replaces the tabs. If the selected tab is removed, the first tab is selected.
@@ -52,12 +50,10 @@ enum TabReducer {
         guard tabs != state.tabs else {
             return .unchanged
         }
-        var next = state
-        next.tabs = tabs
+        let next = state.withTabs(tabs)
         guard !tabs.contains(state.selection) else {
             return .changed(next, [])
         }
-        next.selection = first
         return .changed(next, [selectionChange(from: state.selection, to: first)])
     }
 

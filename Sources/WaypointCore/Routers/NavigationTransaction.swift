@@ -50,12 +50,11 @@ public struct NavigationTransaction {
 
     /// Runs a transaction's closure and sums up its steps.
     static func run(
-        _ body: (inout NavigationTransaction) -> Void,
+        _ body: (NavigationTransaction) -> Void,
         on router: any PresentingRouter,
         in store: TransactionStore
     ) -> CallResult {
-        var transaction = NavigationTransaction(store: store, target: router)
-        body(&transaction)
+        body(NavigationTransaction(store: store, target: router))
         return store.transactionResult
     }
 
