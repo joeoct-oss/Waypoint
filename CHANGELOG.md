@@ -15,4 +15,5 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - The API articles now show restore options for skipping presentations, how an observer reads the whole tree after a change, and that the testing helpers work in both Swift Testing and XCTest. (#8)
 - Switch cases in the API articles put their body on its own line. (#8)
 - The app's navigation now lives in an app coordinator (`RootCoordinator`, `SwiftUIRootCoordinator`, `UIKitRootCoordinator`), drawn by `WaypointRoot(app)` or `WaypointRootViewController(app)`. The README and the example flows lead with it, and the `@SwitchRoot` property wrapper is removed: screens report, the app coordinator switches the root. (#8)
+- UIKit: `UIKitRootCoordinator` gains `makeWindow(for:options:)` and `receive(_:)` forwards, so a scene delegate's lifecycle methods only hand the OS's input to the app coordinator. (#8)
 - `README.md` with the Waypoint banner, a first look at the API, the products, requirements and links to every DocC article; an MIT `LICENSE`; and a complete `CONTRIBUTING.md` covering tests, code style, pull requests and merging. (#6)

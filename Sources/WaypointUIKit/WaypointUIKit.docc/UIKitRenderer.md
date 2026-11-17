@@ -81,8 +81,11 @@ final class ShopCoordinator: UIKitStackCoordinator {
     }
 }
 
-window.rootViewController = WaypointNavigationController(ShopCoordinator())
+let shop = ShopCoordinator()
+let navigationController = WaypointNavigationController(shop)
 ```
+
+A whole app shows its flows through an app coordinator, not by setting a window's root in a lifecycle method. See "Tabs and roots" below.
 
 ### Sheets and full-screen covers
 
@@ -158,4 +161,22 @@ extension LinkInbox {
 }
 ```
 
-The scene delegate only forwards what the OS hands it, such as `app.links?.receive(contexts)`. The app coordinator decides the rest.
+Most apps don't call the inbox directly. The app coordinator gives the scene delegate one-line forwards, so lifecycle methods hold no navigation logic:
+
+```swift
+extension UIKitRootCoordinator {
+    /// Makes the window for a new scene, shows the app coordinator's flow in it,
+    /// and hands its link inbox every URL, user activity and shortcut in `options`.
+    ///
+    /// Returns `nil` if `scene` is not a window scene.
+    public func makeWindow(for scene: UIScene, options: UIScene.ConnectionOptions) -> UIWindow?
+
+    /// Hands links to the app coordinator's inbox. Does nothing if `links` is `nil`.
+    public func receive(_ contexts: Set<UIOpenURLContext>)
+    public func receive(_ activity: NSUserActivity)
+    /// Returns whether the shortcut was handled, for the completion handler.
+    public func receive(_ item: UIApplicationShortcutItem) -> Bool
+}
+```
+
+The scene delegate in <doc:ExampleFlowsInUIKit> uses only these. Where to go next is always the app coordinator's call.
