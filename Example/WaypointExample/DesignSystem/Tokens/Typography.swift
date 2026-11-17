@@ -61,6 +61,11 @@ enum Typography {
         .preferredFont(forTextStyle: .footnote)
     }
 
+    static var uiButton: UIFont {
+        let size = UIFont.preferredFont(forTextStyle: .callout).pointSize
+        return .systemFont(ofSize: size, weight: .semibold)
+    }
+
     static var uiDisplay: UIFont {
         roundedFont(for: .title2, weight: .bold)
     }

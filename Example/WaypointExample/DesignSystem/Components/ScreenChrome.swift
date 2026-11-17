@@ -37,6 +37,7 @@ struct ScreenChrome: ViewModifier {
     func body(content: Content) -> some View {
         content
             .safeAreaInset(edge: .top, spacing: 0) { trailStrip }
+            .background(Palette.background.color)
             .navigationTitle(title)
             .toolbar { kindChip }
     }

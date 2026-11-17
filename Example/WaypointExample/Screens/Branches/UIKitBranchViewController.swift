@@ -31,6 +31,15 @@ final class UIKitBranchViewController: UIViewController {
         pin(scrollView, to: view)
     }
 
+    nonisolated private static func applyButtonFont(
+        to attributes: AttributeContainer
+    ) -> AttributeContainer {
+        // `var` because the font is set on a copy of the incoming attributes.
+        var styled = attributes
+        styled.font = Typography.uiButton
+        return styled
+    }
+
     private func makeScrollView() -> UIScrollView {
         let card = makeCard()
         let scrollView = UIScrollView()
@@ -175,6 +184,7 @@ final class UIKitBranchViewController: UIViewController {
         configuration.background.strokeColor = Palette.line.uiColor
         configuration.background.strokeWidth = 1
         configuration.background.cornerRadius = Radius.field
+        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer(Self.applyButtonFont)
         return configuration
     }
 
