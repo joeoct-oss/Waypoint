@@ -51,7 +51,8 @@ export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
 
 if ! "${WRANGLER[@]}" pages project list | grep -qw "$PROJECT"; then
     echo "==> Creating Pages project $PROJECT"
-    "${WRANGLER[@]}" pages project create "$PROJECT" --production-branch main
+    # --force: newer wrangler versions otherwise expect a Workers project directory here.
+    "${WRANGLER[@]}" pages project create "$PROJECT" --production-branch main --force
 fi
 
 echo "==> Deploying $SITE_DIR to $PROJECT"
@@ -60,4 +61,10 @@ echo "==> Deploying $SITE_DIR to $PROJECT"
     --branch main \
     --commit-dirty=true
 
-echo "Documentation is live at https://$PROJECT.pages.dev"
+# Pages adds a suffix when the project name is taken as a subdomain, so ask for the real one.
+SUBDOMAIN=$(curl -fsS \
+    -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+    "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT" |
+    python3 -c 'import json, sys; print(json.load(sys.stdin)["result"]["subdomain"])')
+
+echo "Documentation is live at https://$SUBDOMAIN/documentation"

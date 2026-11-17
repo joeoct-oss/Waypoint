@@ -49,7 +49,7 @@ It runs the package tests on the host, then every unit test target on the simula
 
 ## Documentation site
 
-The DocC documentation is published as a static site on Cloudflare Pages. Build it on a Mac, so the SwiftUI and UIKit pages have their symbols, then upload it:
+The DocC documentation is published as a static site on Cloudflare Pages at <https://waypoint-docs-9zj.pages.dev/documentation>. Build it on a Mac, so the SwiftUI and UIKit pages have their symbols, then upload it:
 
 ```sh
 scripts/build-docs.sh
