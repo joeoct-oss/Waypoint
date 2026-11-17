@@ -1,8 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-night.png">
-  <source media="(prefers-color-scheme: light)" srcset=".github/assets/banner-day.png">
-  <img alt="Waypoint. Connect every screen. Know every route. Typed, testable navigation for SwiftUI and UIKit." src=".github/assets/banner-night.png">
-</picture>
+![Waypoint. Connect every screen. Know every route. Typed, testable navigation for SwiftUI and UIKit.](.github/assets/banner-night.png)
 
 <p align="center">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-FF5BAA?style=flat-square&labelColor=0B0F2A">
