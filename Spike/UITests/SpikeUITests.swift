@@ -45,10 +45,16 @@ class SpikeTestCase: XCTestCase {
 
     func swipeBack() {
         // Start on the screen edge itself: iOS 17 ignores a drag that starts a few points in.
+        // iOS 17 needs a fast drag; on iOS 27 a fast drag can cancel inside a UIKit sheet,
+        // so a slower drag follows when the first one did not pop.
         let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
         let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5))
-        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .fast, thenHoldForDuration: 0)
-        settle()
+        let before = navTitle
+        for velocity: XCUIGestureVelocity in [.fast, 800] {
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: velocity, thenHoldForDuration: 0)
+            settle()
+            if navTitle != before { return }
+        }
     }
 
     func swipeDownSheet() {
@@ -109,6 +115,7 @@ class SpikeTestCase: XCTestCase {
         record("sheet pushToE (\(present))")
         swipeBack()
         record("sheet swipe back")
+        XCTAssertEqual(navTitle, "D")
         swipeDownSheet()
         record("sheet swipe down")
         selectTab("SwiftUI B")
