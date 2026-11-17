@@ -320,6 +320,27 @@ public final class StackRouter: NavigationRouter {
         tree.setLogging(configuration)
     }
 
+    /// The whole tree this router is in, one flow per line, for printing while debugging.
+    ///
+    /// ```text
+    /// tabs       home · [shop] · profile
+    /// ├ home     first screen
+    /// ├ shop     Product list (…) › Product (id: 42, …)
+    /// │ └ sheet checkout  Checkout (…)
+    /// └ profile  first screen
+    /// ```
+    ///
+    /// Route fields are hidden unless `revealingPrivateValues` is `true` or a route lists them
+    /// in `publicLogFields`. Symbols follow the tree's ``LogConfiguration/usesSymbols``.
+    public func debugTree(revealingPrivateValues: Bool = false) -> String {
+        let naming = RouteNaming(
+            format: .readable,
+            revealsPrivateValues: revealingPrivateValues,
+            usesSymbols: tree.logging.usesSymbols
+        )
+        return rootNode.readableTree(naming).rendered
+    }
+
     /// Sets the most calls that may be queued in one main-actor turn, for the whole tree.
     ///
     /// A limit below 1 would drop every call made from an observer, so it reports

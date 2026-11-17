@@ -81,15 +81,19 @@ extension PresentingRouter {
 
     /// An issue for a rejection on this flow.
     func draft(_ rejection: Rejection) -> IssueDraft {
-        IssueDraft(kind: rejection.kind, flow: flowID, message: rejection.message(path: currentPath))
+        let path = currentPath
+        return IssueDraft(kind: rejection.kind, flow: flowID) { naming in
+            rejection.message(path: path, naming: naming)
+        }
     }
 
     /// An issue for a route type with no destination.
     func unregisteredDraft(_ route: AnyRoute) -> IssueDraft {
-        let name = route.routeKey.typeName
-        let message = "No destination is registered for \(name). "
-            + "Register one with .destination(\(name).self) or in the coordinator's destinations."
-        return IssueDraft(kind: .unregisteredRoute, flow: flowID, message: message)
+        let key = route.routeKey
+        return IssueDraft(kind: .unregisteredRoute, flow: flowID) { naming in
+            "No destination is registered for \(naming.typeName(key)). "
+                + "Register one with .destination(\(key.typeName).self) or in the coordinator's destinations."
+        }
     }
 
     /// Stores the new child and records the change.

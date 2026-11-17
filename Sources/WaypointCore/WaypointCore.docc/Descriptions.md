@@ -44,6 +44,8 @@ Routers and coordinators don't conform. Their state lives on the main actor, whi
 
 ### The format
 
+These lines are the structured log format and the text of events, issues and test failures. The console's default is a readable format built on the same privacy rules, with friendly names such as "Product list"; see <doc:EventsAndLogging>.
+
 - `description` is one line. It starts with a fixed word: a case name, a route's type name or a flow name. Then come `key=value` pairs. Lists are `[a, b]`, and a change from one value to another is `a -> b`.
 - `debugDescription` starts with the `description` and adds detail, such as an issue's message or the whole tree.
 - Routes print by their key's `typeName`, the key without its module, such as `ProductRoute`. Saved snapshots and decoding errors use the full key, such as `Shop.ProductRoute`.
@@ -75,7 +77,7 @@ routeNotInPath flow=shop at=ShopCoordinator.swift:42
   Pass a fallback, such as popTo(HomeRoute.self, else: .popToRoot), or call setFallback(.popToRoot, for: .routeNotInPath).
 ```
 
-A tree's detailed form is the indented `debugTree()` output.
+A tree's detailed form is the indented `debugTree()` output, drawn in the readable format.
 
 ### Private by default
 

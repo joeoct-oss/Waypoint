@@ -105,7 +105,7 @@ enum RouteDescriber {
     }
 
     /// A tuple element's label, or `nil` for the positional labels `.0`, `.1` and so on.
-    private static func tupleLabel(_ label: String?) -> String? {
+    static func tupleLabel(_ label: String?) -> String? {
         guard let label, !label.hasPrefix(".") else {
             return nil
         }
