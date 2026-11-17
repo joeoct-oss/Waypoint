@@ -113,7 +113,7 @@ extension NavigationTreeContext {
         }
     }
 
-    /// Logs a call queued behind a change, at `.debug` (decision 0013).
+    /// Logs a call queued behind a change, at `.debug` (see the Concurrency article).
     func logQueued(_ flow: FlowID, file: StaticString, line: UInt) {
         let site = Self.callSite(file, line)
         log(.debug, .navigation, file: file, line: line) { naming in
@@ -123,7 +123,7 @@ extension NavigationTreeContext {
         }
     }
 
-    /// Logs a call on a router that left the tree, at `.debug` (decision 0013).
+    /// Logs a call on a router that left the tree, at `.debug` (see the Concurrency article).
     func logIgnored(_ flow: FlowID, file: StaticString, line: UInt) {
         let site = Self.callSite(file, line)
         log(.debug, .navigation, file: file, line: line) { naming in

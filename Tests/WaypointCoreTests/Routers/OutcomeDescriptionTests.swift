@@ -11,7 +11,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// Pins how outcomes, issues and failures print (decision 0010).
+/// Pins how outcomes, issues and failures print (see the Descriptions article).
 @Suite("Outcome descriptions")
 struct OutcomeDescriptionTests {
     let issue = NavigationIssue(

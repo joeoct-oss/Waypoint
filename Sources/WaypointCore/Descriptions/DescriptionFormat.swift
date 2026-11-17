@@ -6,7 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-/// Shared pieces of the description format (decision 0010).
+/// Shared pieces of the description format (see the Descriptions article).
 enum DescriptionFormat {
     /// Routes as a list, such as `[HomeRoute, ProductRoute(id: <private>)]`.
     static func list(_ routes: [AnyRoute], revealingPrivateValues: Bool) -> String {

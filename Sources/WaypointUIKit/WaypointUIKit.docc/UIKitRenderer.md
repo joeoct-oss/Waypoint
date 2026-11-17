@@ -41,6 +41,8 @@ public final class WaypointNavigationController: UINavigationController {
 
 A route with no destination never crashes. Debug builds push a "No destination for …" screen that names the route and the fix, and release builds refuse the push.
 
+> Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. Existing UIKit code that is not a coordinator will be able to show a flow and get its result back. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views.
+
 ### Coordinators
 
 ```swift

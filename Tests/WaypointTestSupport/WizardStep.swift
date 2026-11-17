@@ -8,7 +8,7 @@
 
 import WaypointCore
 
-/// A shared test route for a closed group of screens registered as one type: the allowed small enum from decision 0003.
+/// A shared test route for a closed group of screens registered as one type: the small enum that the Routes article allows.
 ///
 /// Conformances:
 /// - `String` raw value: gives each case a readable name in saved state.

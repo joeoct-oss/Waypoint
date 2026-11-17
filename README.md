@@ -145,11 +145,11 @@ final class AppCoordinator: SwiftUIRootCoordinator {
 
 @main
 struct ShopApp: App {
-    @State private var app = AppCoordinator()
-
     var body: some Scene {
         WindowGroup {
-            WaypointRoot(app)
+            WaypointRoot {
+                AppCoordinator()
+            }
         }
     }
 }

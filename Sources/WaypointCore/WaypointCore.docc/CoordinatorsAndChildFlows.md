@@ -178,6 +178,8 @@ extension StackRouter {
 
 Like every navigation method, these take an optional fallback, file and line, left out here.
 
+> Note: Two changes are coming to child flows. A pushed child coordinator shares its parent's stack and container, and only a coordinator that starts a new stack gets a container of its own. A flow will also be able to stand for a route value, registered with a factory that builds its coordinator, so a link, a held link or a restored state can open it. A parent will then receive a flow's result through a handler registered by flow type, so a result still arrives after the app is relaunched.
+
 ### Finding coordinators in the tree
 
 ```swift

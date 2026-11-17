@@ -59,6 +59,8 @@ extension StackRouter {
 }
 ```
 
+> Note: Two kinds of presentation are coming. Alerts and confirmation dialogs become presentations in the navigation state, shown by both renderers, with the tapped button returned as a typed result. And when something Waypoint didn't present is on screen, such as a share sheet or a payment sheet from another SDK, Waypoint will wait until it closes before presenting, or dismiss it first if the app chooses, and report it in the log.
+
 ### Styles
 
 ```swift
