@@ -82,6 +82,14 @@ extension StackRouter: PresentingRouter {
         }
     }
 
+    /// The presented router as it is in the current transaction, or the committed one.
+    var currentPresented: StackRouter? {
+        guard let working else {
+            return presented
+        }
+        return working.presented
+    }
+
     /// A stack has no routers inside its own flow.
     var workingInFlowChildren: [any PresentingRouter] {
         []

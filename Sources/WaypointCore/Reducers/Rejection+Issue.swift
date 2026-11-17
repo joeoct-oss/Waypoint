@@ -14,7 +14,7 @@ extension Rejection {
             return .emptyPath
         case .notEnoughRoutes:
             return .notEnoughRoutes
-        case .routeNotInPath:
+        case .routeNotInPath, .typeNotInPath:
             return .routeNotInPath
         case .unknownTab, .noTabs:
             return .unknownTab
@@ -32,6 +32,8 @@ extension Rejection {
             return Self.notEnoughRoutesMessage(requested: requested, available: available)
         case .routeNotInPath(let route):
             return Self.routeNotInPathMessage(route, path: path)
+        case .typeNotInPath(let key):
+            return Self.typeNotInPathMessage(key, path: path)
         case .unknownTab(let name):
             return Self.unknownTabMessage(name)
         case .noTabs:
@@ -57,6 +59,13 @@ extension Rejection {
         let pathText = DescriptionFormat.list(path, revealingPrivateValues: false)
         return "\(route.routeKey.typeName) is not in the path \(pathText). "
             + "Check contains(_:) first, or handle the .failed outcome."
+    }
+
+    /// Explains a typed `popTo` with no match.
+    private static func typeNotInPathMessage(_ key: RouteKey, path: [AnyRoute]) -> String {
+        let pathText = DescriptionFormat.list(path, revealingPrivateValues: false)
+        return "No \(key.typeName) in the path \(pathText) matches. "
+            + "Check last(_:) first, or handle the .failed outcome."
     }
 
     /// Explains a tab that is not one of the tabs.

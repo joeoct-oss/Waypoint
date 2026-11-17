@@ -110,6 +110,8 @@ final class NavigationTreeContext {
             return finishUnchanged(store)
         case .failed(let draft):
             return fail(store, draft.issue(file: file, line: line))
+        case .failedAt(let issue):
+            return fail(store, issue)
         }
     }
 

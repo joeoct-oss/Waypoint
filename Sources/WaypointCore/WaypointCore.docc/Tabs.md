@@ -87,8 +87,8 @@ A deep link often selects a tab, closes a sheet and sets the tab's path. Do it i
 ```swift
 tabs.transaction {
     $0.dismissAll()
-    $0.select(.shop)
-    $0.router(for: .shop).setPath {
+    $0.select(MainTab.shop)
+    $0.router(for: MainTab.shop).setPath {
         ProductListRoute(category: "all")
         ProductRoute(id: 42)
     }

@@ -255,7 +255,7 @@ public final class StackRouter: NavigationRouter {
     }
 
     /// Runs a call on this router as one transaction.
-    private func perform(
+    func perform(
         file: StaticString,
         line: UInt,
         _ step: @escaping (StackRouter, TransactionStore) -> StepResult

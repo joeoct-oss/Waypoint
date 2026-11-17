@@ -20,6 +20,9 @@ protocol PresentingRouter: TreeNode {
 
     /// The routers inside this flow that are not presented, such as each tab's stack.
     var workingInFlowChildren: [any PresentingRouter] { get }
+
+    /// The presented router as it is in the current transaction, or the committed one.
+    var currentPresented: StackRouter? { get }
 }
 
 extension PresentingRouter {

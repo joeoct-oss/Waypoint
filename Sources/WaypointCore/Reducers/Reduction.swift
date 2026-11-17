@@ -32,6 +32,8 @@ enum Rejection: Equatable, Sendable {
     case notEnoughRoutes(requested: Int, available: Int)
     /// A `popTo` route that is not in the path.
     case routeNotInPath(AnyRoute)
+    /// A typed `popTo` with no matching route of that type in the path.
+    case typeNotInPath(RouteKey)
     /// A tab that is not one of the container's tabs, by name.
     case unknownTab(String)
     /// A tab list with no tabs.

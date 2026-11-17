@@ -43,6 +43,8 @@ enum StepResult {
     case unchanged
     /// The step was refused. The transaction rolls back.
     case failed(IssueDraft)
+    /// A step inside a transaction was refused at its own call site. The transaction rolls back.
+    case failedAt(NavigationIssue)
 }
 
 /// An issue before the call site is attached.
@@ -74,6 +76,20 @@ final class TransactionStore {
     /// The changes so far, in order.
     private(set) var changes: [AppliedChange] = []
 
+    /// The first failed step of a transaction, if any. Later steps are skipped.
+    private(set) var failure: NavigationIssue?
+
+    /// Whether any step of a transaction changed something.
+    private(set) var hasChanged = false
+
+    /// What the whole transaction did, from its steps.
+    var transactionResult: StepResult {
+        if let failure {
+            return .failedAt(failure)
+        }
+        return hasChanged ? .changed : .unchanged
+    }
+
     /// Makes a working copy of the router, once per transaction.
     func enlist(_ participant: some TransactionParticipant) {
         guard enlisted.insert(ObjectIdentifier(participant)).inserted else {
@@ -86,6 +102,34 @@ final class TransactionStore {
     /// Records changes made in one flow.
     func record(_ changes: [NavigationChange], in flow: FlowID) {
         self.changes.append(contentsOf: changes.map { AppliedChange(flow: flow, change: $0) })
+    }
+
+    /// Records what one step of a transaction did, and returns it as an outcome.
+    func note(_ result: StepResult, file: StaticString, line: UInt) -> NavigationOutcome {
+        switch result {
+        case .changed:
+            return noteChanged()
+        case .unchanged:
+            return .alreadyThere
+        case .failed(let draft):
+            return noteFailure(draft.issue(file: file, line: line))
+        case .failedAt(let issue):
+            return noteFailure(issue)
+        }
+    }
+
+    /// Marks the transaction as changed.
+    private func noteChanged() -> NavigationOutcome {
+        hasChanged = true
+        return .applied
+    }
+
+    /// Keeps the first failure. The transaction rolls back when it ends.
+    func noteFailure(_ issue: NavigationIssue) -> NavigationOutcome {
+        if failure == nil {
+            failure = issue
+        }
+        return .failed(NavigationFailure(issue: failure ?? issue))
     }
 
     /// Writes every working copy back.

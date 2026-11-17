@@ -64,7 +64,7 @@ public final class StackRouter {
     @discardableResult public func popTo<R: Route>(_ route: R) -> NavigationOutcome
 
     /// Pops to the last route of type `R` that matches `predicate`.
-    @discardableResult public func popTo<R: Route>(_ type: R.Type, where predicate: (R) -> Bool = { _ in true }) -> NavigationOutcome
+    @discardableResult public func popTo<R: Route>(_ type: R.Type, where predicate: @escaping (R) -> Bool = { _ in true }) -> NavigationOutcome
 
     /// Empties the path, showing the root screen.
     @discardableResult public func popToRoot() -> NavigationOutcome
@@ -86,8 +86,9 @@ public final class StackRouter {
     /// Applies several changes as one: the state changes once, the renderer
     /// draws once, and observers get one batch.
     ///
-    /// If any step ends `.failed`, the whole transaction is rolled back.
-    @discardableResult public func transaction(_ body: (inout NavigationTransaction) -> Void) -> NavigationOutcome
+    /// If any step ends `.failed`, the whole transaction is rolled back, and
+    /// the outcome is that step's failure with the step's file and line.
+    @discardableResult public func transaction(_ body: @escaping (inout NavigationTransaction) -> Void) -> NavigationOutcome
 
     // Place in the tree
 
@@ -167,7 +168,27 @@ router.transaction {
 }
 ```
 
-`NavigationTransaction` has the same methods as the router. They apply to a working copy, which becomes the state when the closure returns.
+`NavigationTransaction` has the same methods as the router. They apply to a working copy, which becomes the state when the closure returns. Each step returns its own outcome, and after a failed step the rest are skipped.
+
+```swift
+/// Several navigation changes applied as one.
+@MainActor
+public struct NavigationTransaction {
+    // push, push { }, pop, popTo, popTo(_:where:), popToRoot, setPath { },
+    // present, dismiss, dismissAll and dismissFlow, as on the router.
+
+    /// Selects a tab, when the transaction's router is a tab container.
+    @discardableResult public func select<Tab: Hashable & Codable & Sendable>(_ tab: Tab) -> NavigationOutcome
+
+    /// The transaction on one tab's stack.
+    public func router<Tab: Hashable & Codable & Sendable>(for tab: Tab) -> NavigationTransaction
+
+    /// The transaction on the presented flow, as it is so far.
+    public var presented: NavigationTransaction? { get }
+}
+```
+
+The tab methods are generic, so name the tab type once: `$0.select(MainTab.shop)`.
 
 ### Outcomes
 
