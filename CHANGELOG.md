@@ -4,6 +4,10 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ## Unreleased
 
+### Changed
+
+- Source file headers name the author with their own email instead of the GitHub noreply address. (#140)
+
 ### Added
 
 - Swift package with three products: `WaypointCore` (UI-agnostic state engine), `Waypoint` (SwiftUI renderer) and `WaypointUIKit` (UIKit renderer). (#2)

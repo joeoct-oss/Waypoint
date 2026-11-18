@@ -73,7 +73,7 @@ New source files start with this header:
 //  FileName.swift
 //  Waypoint
 //
-//  Created by <your name> <<your git email>>.
+//  Created by <your name> <<your email>>.
 //  Copyright © <year> <your name>. MIT License.
 //
 ```
