@@ -1,17 +1,24 @@
 //
-//  ProductScreen.swift
+//  ProductRoute.swift
 //  WaypointExample
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// A screen a products stack can push.
+import WaypointCore
+
+// The product screen a products stack pushes. It carries only the product's id; the screen looks
+// the product up, so the route stays small enough to compare, log and save.
 //
 // Conformances:
-// - `Hashable`, so `NavigationStack` can keep screens in its path and tell them apart.
-enum ProductScreen: Hashable {
-    case product(Product)
+// - `Route`, so a Waypoint stack router can push it and find its destination.
+struct ProductRoute: Route {
+    static let publicLogFields: Set<String> = [
+        "id",
+    ]
+
+    let id: Int
 }
 
 // Where a products stack starts: browsing the shop, or searching it.

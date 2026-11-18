@@ -43,12 +43,14 @@ final class MainCoordinator {
         shop = ProductsCoordinator(
             start: .browse,
             membership: membership,
+            launchSteps: launch.shopSteps,
             onAddToCart: addToCart,
             onShowAccounts: onShowAccounts
         )
         search = ProductsCoordinator(
             start: .search,
             membership: membership,
+            launchSteps: .none,
             onAddToCart: addToCart,
             onShowAccounts: onShowAccounts
         )
