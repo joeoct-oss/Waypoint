@@ -47,6 +47,23 @@ extension StackRouter {
         }
     }
 
+    /// Reports that the screen started animating the push of `route`.
+    ///
+    /// Until ``rendererDidEndPush(of:)``, a push of an equal route is skipped under
+    /// ``DuplicatePushRule/skipWhileInFlight``. Changes no state.
+    package func rendererDidStartPush(of route: AnyRoute) {
+        pushInFlight = route
+    }
+
+    /// Reports that the push of `route` finished animating. A report for another route, from a
+    /// push that a newer one replaced, is ignored.
+    package func rendererDidEndPush(of route: AnyRoute) {
+        guard pushInFlight == route else {
+            return
+        }
+        pushInFlight = nil
+    }
+
     /// Pops to `count` routes, or reports a count the path can't match.
     private func reportedPopStep(
         toCount count: Int,

@@ -297,6 +297,7 @@ shop       ⚠︎ recovered: can't go back to a screen that isn't in the stack
              at ShopCoordinator.swift:28
 shop       ◂ back to the first screen (closed Product list (…) › Product (id: 42, …)) · by fallback
 shop       = already there (ShopCoordinator.swift:30)
+shop       = skipped: Product (id: 42, …) is still being pushed (ProductListView.swift:24)
 tabs       ↑ present sheet checkout: Checkout (…)
 shop       … queued until the current change ends (CartObserver.swift:36)
 checkout   ∅ ignored: this flow is closed (AddressView.swift:45)
@@ -339,6 +340,7 @@ tabs               home · [shop] · profile
 | A change the user made directly, such as a swipe back | `.info` | as above | `popped [ProductRoute(id: <private>)] flow=main origin=user` |
 | A presentation | `.info` | `presentation` | `presented sheet SettingsRoute flow=settings presenter=main` |
 | A call changed nothing | `.debug` | `navigation` | `alreadyThere flow=main at=ShopCoordinator.swift:42` |
+| A push skipped because the same route is still being pushed | `.debug` | `navigation` | `alreadyThere flow=main skippedPush=ProductRoute(id: <private>) at=ProductListView.swift:24` |
 | A call was queued behind a change | `.debug` | `navigation` | `reentrantChange flow=main at=ShopCoordinator.swift:42` |
 | A call on a router that left the tree | `.debug` | `navigation` | `staleNavigator flow=settings at=SettingsView.swift:18` |
 | A call recovered by a fallback | `.error` | `issues` | `notEnoughRoutes flow=main at=ShopCoordinator.swift:42`, then the message |

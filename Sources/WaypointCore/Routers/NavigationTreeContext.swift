@@ -192,7 +192,7 @@ final class NavigationTreeContext {
         for (issue, _) in store.issues {
             observers.reported?(issue)
         }
-        logUnchanged(outcome, flow: router.flowID, file: file, line: line)
+        logUnchanged(outcome, flow: router.flowID, skippedPush: store.skippedPush, file: file, line: line)
         return outcome
     }
 

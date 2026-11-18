@@ -145,7 +145,9 @@ struct StackMirrorTests {
         mirror.routerDidChange()
 
         #expect(mirror.shown.isEmpty)
-        #expect(clock.scheduledCount == 0)
+        #expect(!mirror.isHoldingChange)
+        // Only the end of the push is waiting, to clear the duplicate push window (#142).
+        #expect(clock.scheduledCount == 1)
     }
 
     @Test
@@ -280,6 +282,58 @@ struct StackMirrorTests {
 
         #expect(mirror.shown.count == 1)
         #expect(mirror.isHoldingChange)
+    }
+
+    @Test(arguments: [true, false])
+    func doubleTapPushesOnce(holdsTransitions: Bool) {
+        let router = StackRouter(configuration: .permissive)
+        let clock = ManualTransitionClock()
+        let mirror = StackMirror(router: router, holdsTransitions: holdsTransitions, clock: clock)
+        router.push(ProductRoute(id: 1))
+        mirror.routerDidChange()
+
+        clock.advance(by: .milliseconds(120))
+        let outcome = router.push(ProductRoute(id: 1))
+        mirror.routerDidChange()
+
+        #expect(outcome == .alreadyThere)
+        let expected = [AnyRoute(ProductRoute(id: 1))]
+        #expect(mirror.shown == expected)
+        #expect(router.state.path == expected)
+    }
+
+    @Test
+    func samePushAfterTheTransitionEndsGoesAhead() {
+        let router = StackRouter(configuration: .permissive)
+        let clock = ManualTransitionClock()
+        let mirror = Self.holdingMirror(router, clock)
+        router.push(ProductRoute(id: 1))
+        mirror.routerDidChange()
+
+        clock.advance(by: StackMirror.transitionDuration)
+        let outcome = router.push(ProductRoute(id: 1))
+        mirror.routerDidChange()
+
+        #expect(outcome == .applied)
+        #expect(mirror.shown.count == 2)
+    }
+
+    @Test
+    func onlyTheNewestPushReportsItsEnd() {
+        let router = StackRouter(configuration: .permissive)
+        let clock = ManualTransitionClock()
+        let mirror = StackMirror(router: router, holdsTransitions: false, clock: clock)
+        router.push(ProductRoute(id: 1))
+        mirror.routerDidChange()
+        router.pop()
+        mirror.routerDidChange()
+
+        clock.advance(by: .milliseconds(400))
+        router.push(ProductRoute(id: 1))
+        mirror.routerDidChange()
+        clock.advance(by: .milliseconds(300))
+
+        #expect(router.push(ProductRoute(id: 1)) == .alreadyThere)
     }
 }
 

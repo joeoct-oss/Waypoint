@@ -90,12 +90,29 @@ extension StackRouter {
         }
     }
 
-    /// Pushes routes after checking each has a destination.
+    /// Pushes routes after checking each has a destination, unless the duplicate push rule
+    /// skips them.
     func pushStep(_ routes: [AnyRoute], in store: TransactionStore) -> StepResult {
         if let missing = routes.first(where: { !tree.hasDestination(for: $0) }) {
             return .failed(unregisteredDraft(missing))
         }
+        if let skipped = duplicateOfPushInFlight(routes) {
+            store.noteSkippedPush(skipped)
+            return .unchanged
+        }
         return stackStep(.pushMany(routes), in: store)
+    }
+
+    /// The route of a push that repeats the one still being pushed, or `nil` when the push goes
+    /// ahead. Only a push of one route that equals the route in flight, still on top, repeats it.
+    private func duplicateOfPushInFlight(_ routes: [AnyRoute]) -> AnyRoute? {
+        guard duplicatePushRule == .skipWhileInFlight, let inFlight = pushInFlight else {
+            return nil
+        }
+        guard routes == [inFlight], currentPath.last == inFlight else {
+            return nil
+        }
+        return inFlight
     }
 
     /// Stores the reduced state and records its changes.
