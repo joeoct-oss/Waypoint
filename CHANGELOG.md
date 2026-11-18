@@ -11,6 +11,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ### Added
 
+- Renderer reports: what the user changes directly (swipe back, the back button and its long-press menu, a sheet dragged down, a tab tap) comes back to the router through `package` calls (`rendererDidPop(toCount:)`, `rendererDidDismiss()`, `rendererDidSelect(_:)`) that run like any change and are logged with `origin=user` ("· by user" in the readable log). A report that matches the state changes nothing, and a stack count the path can't match keeps the path and reports the new `rendererMismatch` issue. (#38)
 - Swift package with three products: `WaypointCore` (UI-agnostic state engine), `Waypoint` (SwiftUI renderer) and `WaypointUIKit` (UIKit renderer). (#2)
 - `scripts/test-linux.sh` runs the core build and tests on Linux, after `scripts/check-core-imports.sh` checks that `WaypointCore` imports only Foundation, Observation and Synchronization. `CONTRIBUTING.md` explains how to run them. (#35)
 - API design articles in the `WaypointCore` DocC catalog: Routes, Navigation state, Stack navigation, Presentation (with app-chosen sheet sizes) and Tabs. Signatures only; the API is implemented in later issues. (#42)

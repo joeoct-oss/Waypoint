@@ -348,6 +348,7 @@ public struct NavigationIssue: NavigationRecord {
         case fallbackFailed
         case reentrantLoop
         case invalidSetting
+        case rendererMismatch
     }
     /// What went wrong.
     public let kind: Kind
