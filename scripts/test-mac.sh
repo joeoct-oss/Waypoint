@@ -8,7 +8,7 @@
 #
 # Runs every test layer on a Mac: the package unit tests on the host, then all
 # unit test targets on the project simulator (including UIKit-only tests), then
-# the example app's UI tests once the example app exists.
+# the example app's UI tests in a project generated with Tuist.
 #
 # Usage: scripts/test-mac.sh
 # Environment: WAYPOINT_SIMULATOR overrides the simulator name (default waypoint-01).
@@ -59,14 +59,22 @@ DESTINATION="platform=iOS Simulator,id=$UDID"
 echo "==> xcodebuild test Waypoint-Package on $SIMULATOR_NAME"
 xcodebuild test -quiet -scheme Waypoint-Package -destination "$DESTINATION"
 
-if [[ -d Example ]]; then
-    echo "==> xcodebuild test example app on $SIMULATOR_NAME"
-    xcodebuild test -quiet \
-        -project Example/WaypointExample.xcodeproj \
-        -scheme WaypointExample \
-        -destination "$DESTINATION"
-else
-    echo "==> Example app not present yet (#3); skipping UI tests"
-fi
+# Runs Tuist through mise when mise pins it, and the installed Tuist otherwise.
+tuist_cmd() {
+    if command -v mise >/dev/null && [[ -f .mise.toml ]]; then
+        mise exec -- tuist "$@"
+    else
+        tuist "$@"
+    fi
+}
+
+echo "==> tuist generate example app"
+tuist_cmd generate --path Example --no-open
+
+echo "==> xcodebuild test example app on $SIMULATOR_NAME"
+xcodebuild test -quiet \
+    -workspace Example/WaypointExample.xcworkspace \
+    -scheme WaypointExample \
+    -destination "$DESTINATION"
 
 echo "All Mac tests passed."

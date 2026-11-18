@@ -1,0 +1,35 @@
+//
+//  Spacing.swift
+//  WaypointExample
+//
+//  Created by Yousef Mohamed <52625092+JoeOCT91@users.noreply.github.com>.
+//  Copyright © 2026 Yousef Mohamed. MIT License.
+//
+
+import CoreGraphics
+
+// Spacing on a 4 pt grid, from the design system.
+enum Spacing {
+    static let extraSmall: CGFloat = 4
+    static let small: CGFloat = 8
+    static let medium: CGFloat = 12
+    static let large: CGFloat = 16
+    static let extraLarge: CGFloat = 24
+    static let huge: CGFloat = 32
+}
+
+// Corner radii from the design system.
+enum Radius {
+    static let field: CGFloat = 12
+    static let card: CGFloat = 16
+    static let sheet: CGFloat = 22
+}
+
+// Sizes the design system fixes, such as the smallest touch target.
+enum Size {
+    static let minimumTouchTarget: CGFloat = 44
+    static let rowIcon: CGFloat = 42
+    static let cardIcon: CGFloat = 48
+    static let trailHeight: CGFloat = 30
+    static let placeholderIcon: CGFloat = 64
+}
