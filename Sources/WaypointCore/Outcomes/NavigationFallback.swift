@@ -33,6 +33,13 @@ public enum NavigationFallback: NavigationRecord {
     case dismissAll
     /// Dismiss everything and pop the root router's stack to its root screen.
     case resetToRoot
+    /// For `present` while a flow is already presented: dismiss that flow and everything above
+    /// it, then present the new route with the call's style, in one change.
+    ///
+    /// Use it where newer intent wins, such as a notification tap while a sheet is open. A
+    /// replacement made in code doesn't ask the presented flow for a leave confirmation; that
+    /// only applies to the user's own gestures. On any other call it fails with `fallbackFailed`.
+    case replacePresentation
     /// Run your own change. The name appears in logs and outcomes.
     case custom(_ name: String, @MainActor @Sendable (NavigationTransaction, NavigationIssue) -> Void)
 
@@ -49,6 +56,8 @@ public enum NavigationFallback: NavigationRecord {
             return "dismissAll"
         case .resetToRoot:
             return "resetToRoot"
+        case .replacePresentation:
+            return "replacePresentation"
         case .custom(let name, _):
             return "custom(\(name))"
         }
