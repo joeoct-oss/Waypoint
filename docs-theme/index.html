@@ -86,14 +86,12 @@
         header.hero .wrap {
             position: relative;
             padding-top: 28px;
-            padding-bottom: 88px;
         }
 
         .topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 72px;
         }
 
         .brand {
@@ -121,14 +119,307 @@
             color: #FFFFFF;
         }
 
+        /* The hero fills the first screen: top bar, centered message, scroll cue. */
+        header.hero {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100svh;
+        }
+
+        header.hero .wrap {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .hero-body {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            justify-content: center;
+            padding-bottom: 40px;
+        }
+
+        /* Twinkling stars behind the hero, drawn by the script at the end of the page. */
+        .starfield {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .starfield .dot {
+            position: absolute;
+            border-radius: 50%;
+            background: #EEF0FF;
+            animation: twinkle var(--duration, 4s) ease-in-out var(--delay, 0s) infinite;
+        }
+
+        .starfield .sparkle {
+            position: absolute;
+            width: var(--size, 12px);
+            height: var(--size, 12px);
+            animation: sparkle var(--duration, 6s) ease-in-out var(--delay, 0s) infinite;
+        }
+
+        .starfield .sparkle svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .shooting-star {
+            position: absolute;
+            top: 14%;
+            left: -10%;
+            width: 120px;
+            height: 1.5px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, transparent, rgba(238, 240, 255, 0.9));
+            opacity: 0;
+            transform: rotate(14deg);
+            animation: shoot 11s ease-in 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: var(--low, 0.25);
+            }
+
+            50% {
+                opacity: var(--high, 0.9);
+            }
+        }
+
+        @keyframes sparkle {
+            0%, 100% {
+                opacity: 0.15;
+                transform: scale(0.6) rotate(0deg);
+            }
+
+            50% {
+                opacity: 0.95;
+                transform: scale(1) rotate(45deg);
+            }
+        }
+
+        @keyframes shoot {
+            0% {
+                opacity: 0;
+                transform: translate(0, 0) rotate(14deg);
+            }
+
+            3% {
+                opacity: 1;
+            }
+
+            12% {
+                opacity: 0;
+                transform: translate(70vw, 17vw) rotate(14deg);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(70vw, 17vw) rotate(14deg);
+            }
+        }
+
+        /* The mark, animated: the trail draws in, the arrow moves on, the star twinkles. */
         .orbit {
             position: absolute;
-            right: 4%;
-            top: 96px;
-            width: 380px;
-            height: 380px;
-            opacity: 0.95;
+            top: 50%;
+            right: 5%;
+            width: min(440px, 36vw);
+            height: min(440px, 36vw);
+            transform: translateY(-46%);
+            overflow: visible;
             pointer-events: none;
+        }
+
+        .orbit .ring {
+            animation: ring-turn 30s linear infinite;
+        }
+
+        .orbit .trail {
+            opacity: 0;
+            stroke-dasharray: 1;
+            stroke-dashoffset: 1;
+            animation: draw 0.7s ease-out forwards;
+        }
+
+        .orbit .trail.t2 {
+            animation-delay: 0.6s;
+        }
+
+        .orbit .trail.t3 {
+            animation-delay: 1.2s;
+        }
+
+        .orbit .stop {
+            opacity: 0;
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: pop 0.4s ease-out forwards;
+        }
+
+        .orbit .stop.s1 {
+            animation-delay: 0.1s;
+        }
+
+        .orbit .stop.s2 {
+            animation-delay: 0.7s;
+        }
+
+        .orbit .stop.s3 {
+            animation-delay: 1.3s;
+        }
+
+        .orbit .arrow {
+            opacity: 0;
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: pop 0.4s ease-out 1.8s forwards, nudge 2.4s ease-in-out 2.4s infinite;
+        }
+
+        .orbit .star {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: star-twinkle 3.2s ease-in-out 2.2s infinite;
+        }
+
+        .orbit .glow {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: glow 3.2s ease-in-out 2.2s infinite;
+        }
+
+        .orbit .planet {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: breathe 5s ease-in-out infinite;
+        }
+
+        @keyframes draw {
+            0% {
+                opacity: 1;
+                stroke-dashoffset: 1;
+            }
+
+            100% {
+                opacity: 1;
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @keyframes pop {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes nudge {
+            0%, 100% {
+                transform: translateX(0);
+            }
+
+            50% {
+                transform: translateX(1.6px);
+            }
+        }
+
+        @keyframes star-twinkle {
+            0%, 100% {
+                transform: scale(1) rotate(0deg);
+            }
+
+            50% {
+                transform: scale(1.12) rotate(12deg);
+            }
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                opacity: 0.18;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.36;
+                transform: scale(1.35);
+            }
+        }
+
+        @keyframes breathe {
+            0%, 100% {
+                opacity: 0.85;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes ring-turn {
+            to {
+                stroke-dashoffset: -96;
+            }
+        }
+
+        .scroll-cue {
+            align-self: center;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding-bottom: 28px;
+            color: #A9AED6;
+            font-size: 13px;
+            text-decoration: none;
+            letter-spacing: 0.04em;
+        }
+
+        .scroll-cue svg {
+            width: 18px;
+            height: 18px;
+            animation: bob 2s ease-in-out infinite;
+        }
+
+        @keyframes bob {
+            0%, 100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(5px);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .starfield .dot,
+            .starfield .sparkle,
+            .shooting-star,
+            .orbit *,
+            .scroll-cue svg {
+                animation: none !important;
+            }
+
+            .orbit .trail {
+                opacity: 1;
+                stroke-dashoffset: 0;
+            }
+
+            .orbit .stop,
+            .orbit .arrow {
+                opacity: 1;
+            }
         }
 
         h1 {
@@ -247,26 +538,148 @@
             color: var(--muted);
         }
 
-        footer {
-            padding: 48px 0 56px;
-            color: var(--muted);
-            font-size: 14px;
+        /* Footer: the brand, the main links and the license, on the hero's deep space. */
+        footer.site-footer {
+            margin-top: 72px;
+            color: #A9AED6;
+            background:
+                radial-gradient(circle at 12% 0%, rgba(124, 140, 255, 0.16), transparent 40%),
+                #0B0F2A;
+            border-top: 1px solid #232A52;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1.6fr repeat(3, 1fr);
+            gap: 32px;
+            padding-top: 56px;
+            padding-bottom: 40px;
+        }
+
+        .footer-brand .brand {
+            color: #EEF0FF;
+        }
+
+        .footer-brand p {
+            max-width: 300px;
+            margin: 14px 0 0;
+            font-size: 15px;
+        }
+
+        .footer-brand .slogan {
+            color: #EEF0FF;
+            font-weight: 500;
+        }
+
+        .footer-col h4 {
+            margin: 6px 0 14px;
+            color: #EEF0FF;
+            font: 600 13px "JetBrains Mono", ui-monospace, monospace;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .footer-col ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .footer-col li {
+            margin: 0 0 10px;
+        }
+
+        .footer-col a {
+            color: #C9CEF5;
+            font-size: 15px;
+            text-decoration: none;
+        }
+
+        .footer-col a:hover {
+            color: #FF5BAA;
+        }
+
+        .footer-bottom {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 12px;
+            padding-top: 20px;
+            padding-bottom: 28px;
+            /* The rule spans the content only, not the side padding. */
+            background: linear-gradient(#232A52, #232A52) 24px 0 / calc(100% - 48px) 1px no-repeat;
+            font-size: 13px;
+        }
+
+        .footer-bottom .dot-sep {
+            color: #FF5BAA;
+        }
+
+        @media (max-width: 860px) {
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .footer-brand {
+                grid-column: 1 / -1;
+            }
         }
 
         @media (max-width: 720px) {
             .orbit {
-                opacity: 0.35;
+                top: auto;
+                right: auto;
+                bottom: 92px;
+                left: 50%;
+                width: 150px;
+                height: 150px;
+                transform: translateX(-50%);
             }
 
-            .topbar {
-                margin-bottom: 48px;
+            /* Room for the mark between the buttons and the scroll cue. */
+            .hero-body {
+                padding-bottom: 190px;
+            }
+
+            .topbar nav a {
+                margin-left: 14px;
+                font-size: 15px;
             }
         }
     </style>
 </head>
 <body>
     <header class="hero">
-        <img class="orbit" src="/images/waypoint/mark-night.svg" alt="">
+        <div class="starfield" aria-hidden="true">
+            <span class="shooting-star"></span>
+        </div>
+        <svg class="orbit" viewBox="0 0 64 64" aria-hidden="true">
+            <defs>
+                <linearGradient id="trail" gradientUnits="userSpaceOnUse" x1="16" y1="48" x2="32" y2="10">
+                    <stop offset="0" stop-color="#7C8CFF" stop-opacity="0.25"/>
+                    <stop offset=".6" stop-color="#7C8CFF"/>
+                    <stop offset="1" stop-color="#FF5BAA"/>
+                </linearGradient>
+            </defs>
+            <path class="ring" d="M50.24 19.70 A22 22 0 0 1 19.70 50.24" fill="none" stroke="#7C8CFF" stroke-opacity="0.45" stroke-width="1.4" stroke-dasharray="1.6 3.2" stroke-linecap="round"/>
+            <circle class="planet" cx="32" cy="32" r="4" fill="#C9D0FF"/>
+            <path class="trail t1" pathLength="1" d="M16.44 47.56 A22 22 0 0 1 10.00 32.00" fill="none" stroke="url(#trail)" stroke-width="1.2" stroke-linecap="round"/>
+            <path class="trail t2" pathLength="1" d="M10.00 32.00 A22 22 0 0 1 16.44 16.44" fill="none" stroke="url(#trail)" stroke-width="2.2" stroke-linecap="round"/>
+            <path class="trail t3" pathLength="1" d="M16.44 16.44 A22 22 0 0 1 24.84 11.20" fill="none" stroke="url(#trail)" stroke-width="3.2" stroke-linecap="round"/>
+            <circle class="stop s1" cx="16.44" cy="47.56" r="1.5" fill="#FFFFFF"/>
+            <circle class="stop s2" cx="10.00" cy="32.00" r="2" fill="#FFFFFF"/>
+            <circle class="stop s3" cx="16.44" cy="16.44" r="2.5" fill="#FFFFFF"/>
+            <g transform="translate(32.00 10.00)">
+                <path class="arrow" d="M5.5 0 L-5.5 -5 L-3 0 L-5.5 5 Z" fill="#FF5BAA"/>
+            </g>
+            <g transform="translate(47.56 16.44)">
+                <circle class="glow" r="5.22" fill="#EEF0FF" fill-opacity="0.18"/>
+                <g class="star">
+                    <path d="M0 -5.5 Q1.32 -1.32 5.5 0 Q1.32 1.32 0 5.5 Q-1.32 1.32 -5.5 0 Q-1.32 -1.32 0 -5.5Z" fill="#EEF0FF"/>
+                    <circle r=".9" fill="#0B0F2A"/>
+                </g>
+            </g>
+        </svg>
         <div class="wrap">
             <div class="topbar">
                 <a class="brand" href="/">
@@ -280,17 +693,25 @@
                     <a href="/documentation/waypointuikit/">UIKit</a>
                 </nav>
             </div>
-            <h1>Connect every screen. <em>Know every route.</em></h1>
-            <p class="lede">Typed, testable navigation for SwiftUI and UIKit. Screens report what happened, coordinators decide where to go, and every route is a plain Swift value.</p>
-            <div class="actions">
-                <a class="button primary" href="/documentation/">Read the documentation</a>
-                <a class="button secondary" href="/documentation/waypointcore/routes">Start with routes</a>
+            <div class="hero-body">
+                <h1>Connect every screen. <em>Know every route.</em></h1>
+                <p class="lede">Typed, testable navigation for SwiftUI and UIKit. Screens report what happened, coordinators decide where to go, and every route is a plain Swift value.</p>
+                <div class="actions">
+                    <a class="button primary" href="/documentation/">Read the documentation</a>
+                    <a class="button secondary" href="/documentation/waypointcore/routes">Start with routes</a>
+                </div>
             </div>
+            <a class="scroll-cue" href="#modules">
+                Explore
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </a>
         </div>
     </header>
 
     <main class="wrap">
-        <section>
+        <section id="modules">
             <h2>Three modules, one navigation model</h2>
             <p class="section-lede">The core holds the state. The renderers draw it, in SwiftUI or UIKit, or both in one app.</p>
             <div class="cards">
@@ -329,8 +750,91 @@
         </section>
     </main>
 
-    <footer class="wrap">
-        Waypoint is released under the MIT License.
+    <footer class="site-footer">
+        <div class="wrap footer-grid">
+            <div class="footer-brand">
+                <a class="brand" href="/">
+                    <img src="/images/waypoint/mark-night.svg" alt="">
+                    Waypoint
+                </a>
+                <p class="slogan">Connect every screen. Know every route.</p>
+                <p>Typed, testable navigation for SwiftUI and UIKit.</p>
+            </div>
+            <nav class="footer-col" aria-label="Modules">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="/documentation/waypointcore/">WaypointCore</a></li>
+                    <li><a href="/documentation/waypoint/">Waypoint (SwiftUI)</a></li>
+                    <li><a href="/documentation/waypointuikit/">WaypointUIKit</a></li>
+                </ul>
+            </nav>
+            <nav class="footer-col" aria-label="Guides">
+                <h4>Guides</h4>
+                <ul>
+                    <li><a href="/documentation/waypointcore/routes">Routes</a></li>
+                    <li><a href="/documentation/waypointcore/stacknavigation">Stack navigation</a></li>
+                    <li><a href="/documentation/waypointcore/coordinatorsandchildflows">Coordinators</a></li>
+                    <li><a href="/documentation/waypointcore/deeplinks">Deep links</a></li>
+                </ul>
+            </nav>
+            <nav class="footer-col" aria-label="More">
+                <h4>More</h4>
+                <ul>
+                    <li><a href="/documentation/waypointcore/testingyournavigation">Testing</a></li>
+                    <li><a href="/documentation/waypointcore/eventsandlogging">Events and logging</a></li>
+                    <li><a href="/documentation/">All documentation</a></li>
+                </ul>
+            </nav>
+        </div>
+        <div class="wrap footer-bottom">
+            <span>© 2026 Yousef Mohamed <span class="dot-sep">·</span> Released under the MIT License</span>
+            <span>Documentation built with DocC</span>
+        </div>
     </footer>
+
+    <script>
+        // Scatters the hero's stars: small twinkling dots and a few four-point sparkles in the
+        // mark's star shape. A fixed seed keeps the sky the same on every visit.
+        (function () {
+            var field = document.querySelector(".starfield");
+            var seed = 7;
+
+            function random() {
+                seed = (seed * 16807) % 2147483647;
+                return (seed - 1) / 2147483646;
+            }
+
+            var sparkle = '<svg viewBox="-6 -6 12 12"><path d="M0 -5.5 Q1.32 -1.32 5.5 0 Q1.32 1.32 0 5.5 ' +
+                'Q-1.32 1.32 -5.5 0 Q-1.32 -1.32 0 -5.5Z" fill="#EEF0FF"/></svg>';
+
+            for (var index = 0; index < 90; index += 1) {
+                var dot = document.createElement("span");
+                var size = random() < 0.85 ? 1 + random() * 1.2 : 2 + random() * 1.2;
+
+                dot.className = "dot";
+                dot.style.left = (random() * 100).toFixed(2) + "%";
+                dot.style.top = (random() * 100).toFixed(2) + "%";
+                dot.style.width = size.toFixed(1) + "px";
+                dot.style.height = size.toFixed(1) + "px";
+                dot.style.setProperty("--duration", (2.5 + random() * 4).toFixed(2) + "s");
+                dot.style.setProperty("--delay", (-random() * 6).toFixed(2) + "s");
+                dot.style.setProperty("--high", (0.5 + random() * 0.5).toFixed(2));
+                field.appendChild(dot);
+            }
+
+            for (var star = 0; star < 7; star += 1) {
+                var shape = document.createElement("span");
+
+                shape.className = "sparkle";
+                shape.innerHTML = sparkle;
+                shape.style.left = (4 + random() * 92).toFixed(2) + "%";
+                shape.style.top = (6 + random() * 84).toFixed(2) + "%";
+                shape.style.setProperty("--size", (8 + random() * 10).toFixed(0) + "px");
+                shape.style.setProperty("--duration", (4 + random() * 4).toFixed(2) + "s");
+                shape.style.setProperty("--delay", (-random() * 8).toFixed(2) + "s");
+                field.appendChild(shape);
+            }
+        })();
+    </script>
 </body>
 </html>
