@@ -79,11 +79,16 @@ extension XCUIApplication {
     }
 
     // Checks the frame before asking `isHittable`, because a button that exists while its screen is
-    // still being pushed has no frame yet, and `isHittable` then fails the test instead of
-    // returning false.
+    // still being pushed has no frame yet, and a row cut off by the bottom edge has no point to tap:
+    // `isHittable` then fails the test instead of returning false. A row only counts once its
+    // whole frame is inside the window.
     @MainActor
     private func isTappable(_ element: XCUIElement) -> Bool {
-        element.exists && !element.frame.isEmpty && element.isHittable
+        guard element.exists, !element.frame.isEmpty else {
+            return false
+        }
+        let window = windows.firstMatch.frame
+        return window.contains(element.frame) && element.isHittable
     }
 
     // Whether the main tab bar is on screen. A hidden tab bar can stay in the tree off screen, so
