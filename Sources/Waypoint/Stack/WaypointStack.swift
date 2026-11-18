@@ -26,8 +26,13 @@
     /// }
     /// ```
     ///
-    /// Push routes with the router, never with `NavigationLink(value:)`: SwiftUI hands the stack
-    /// a value it can't read back, so the push is refused and reported as `rendererMismatch`.
+    /// Push routes with the router or a navigator, never with `NavigationLink(value:)`: SwiftUI
+    /// hands the stack a value it can't read back, so the push is refused and reported as
+    /// `rendererMismatch`.
+    ///
+    /// Screens inside the stack can read its navigator with `@StackNavigation`, dismiss its flow
+    /// with `@DismissFlow`, or read the router with `@Environment(StackRouter.self)`. A stack made
+    /// with ``init(flow:router:root:)`` belongs to a flow, which `@FlowNavigation` finds.
     ///
     /// A stack keeps drawing the router it was first given. Pass another router and the stack
     /// starts again from that router's path.
@@ -47,6 +52,10 @@
         /// The router the app passed, or `nil` when the stack owns its router.
         private let givenRouter: StackRouter?
 
+        /// The flow this stack belongs to, declared on its router, or `nil` to leave the router's
+        /// declaration as it is.
+        private let flow: (any NavigationFlow.Type)?
+
         /// The stack's first screen.
         private let root: Root
 
@@ -56,21 +65,62 @@
 
         /// The stack.
         public var body: some View {
-            let router = givenRouter ?? ownRouter
+            let router = declaredRouter()
             StackHost(router: router, root: root)
                 .id(ObjectIdentifier(router))
         }
 
         /// Creates a stack with its own router.
         public init(@ViewBuilder root: () -> Root) {
-            self.givenRouter = nil
-            self.root = root()
+            self.init(router: nil, flow: nil, root: root)
         }
 
         /// Creates a stack for a router you own.
         public init(_ router: StackRouter, @ViewBuilder root: () -> Root) {
+            self.init(router: router, flow: nil, root: root)
+        }
+
+        /// Creates a stack that belongs to a flow, so `@FlowNavigation(flow)` finds it.
+        ///
+        /// ```swift
+        /// WaypointStack(flow: ShopFlow.self) {
+        ///     ProductListView()
+        ///         .destination(ProductRoute.self) { route, navigation in
+        ///             ProductView(model: ProductModel(id: route.id, navigation: navigation))
+        ///         }
+        /// }
+        /// ```
+        ///
+        /// The flow is declared on the router with `declareFlow(_:)`, so
+        /// `router.navigator(for:)` reports a `flowMismatch` when asked for another flow.
+        ///
+        /// - Parameters:
+        ///   - flow: The flow whose screens this stack shows.
+        ///   - router: A router you own, or `nil` for the stack's own. Default: `nil`.
+        ///   - root: The stack's first screen.
+        public init<Flow: NavigationFlow>(
+            flow: Flow.Type,
+            router: StackRouter? = nil,
+            @ViewBuilder root: () -> Root
+        ) {
+            self.init(router: router, flow: flow, root: root)
+        }
+
+        /// Creates a stack for `router`, or its own when `nil`, declared for `flow` when given.
+        init(router: StackRouter?, flow: (any NavigationFlow.Type)?, @ViewBuilder root: () -> Root) {
             self.givenRouter = router
+            self.flow = flow
             self.root = root()
+        }
+
+        /// The router this stack draws, declared for the stack's flow when it has one.
+        /// Declaring is idempotent and observed by nothing, so it is safe while drawing.
+        private func declaredRouter() -> StackRouter {
+            let router = givenRouter ?? ownRouter
+            if let flow {
+                router.declareFlow(flow)
+            }
+            return router
         }
     }
 
@@ -85,12 +135,18 @@
         /// What the stack shows, kept in step with the router. Made once for this router.
         @State private var mirror: StackMirror
 
-        /// The stack, with the router in the environment for destinations.
+        /// The nearest stack of each flow above this one.
+        @Environment(\.waypointFlowRouters) private var flowRouters
+
+        /// The stack, with the router in the environment for destinations, the navigation
+        /// wrappers and `@Environment(StackRouter.self)`.
         var body: some View {
             NavigationStack(path: path) {
                 root
             }
             .environment(\.waypointStackRouter, mirror.router)
+            .environment(\.waypointFlowRouters, flowRouters.adding(mirror.router))
+            .environment(mirror.router)
             .onChange(of: mirror.router.state.path) {
                 mirror.routerDidChange()
             }

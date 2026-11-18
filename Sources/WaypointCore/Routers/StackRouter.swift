@@ -90,6 +90,12 @@ public final class StackRouter: NavigationRouter {
     /// ``rendererDidEndPush(of:)`` change it.
     @ObservationIgnored var pushInFlight: AnyRoute?
 
+    /// The flow this stack was declared for, or `nil` when it was declared for none.
+    ///
+    /// `var` because a renderer or coordinator declares it after the router exists. Only
+    /// ``declareFlow(_:)`` changes it.
+    @ObservationIgnored private var declaredFlowType: (any NavigationFlow.Type)?
+
     /// The current state. Change it through the navigation methods below.
     public var state: StackState {
         committed.state
@@ -118,6 +124,11 @@ public final class StackRouter: NavigationRouter {
     /// Whether this router is still in the tree. When it isn't, every call returns `.ignored`.
     public var isActive: Bool {
         isAttached
+    }
+
+    /// The flow this stack was declared for with ``declareFlow(_:)``, or `nil`.
+    public var declaredFlow: (any NavigationFlow.Type)? {
+        declaredFlowType
     }
 
     /// The route types registered in this tree, for decoding and as destinations.
@@ -423,6 +434,18 @@ public final class StackRouter: NavigationRouter {
     /// The sheet options a presentation uses: its own, or this router's defaults.
     public func sheetOptions(for presentation: Presentation) -> SheetOptions {
         presentation.style.sheetOptions ?? presentationDefaults.sheet
+    }
+
+    /// Declares the flow whose screens this stack shows, so ``navigator(for:file:line:)`` can
+    /// tell when a view model asks for another flow's navigator.
+    ///
+    /// ```swift
+    /// router.declareFlow(ShopFlow.self)
+    /// ```
+    ///
+    /// `WaypointStack(flow:)` declares it for you. Declaring another flow replaces the first.
+    public func declareFlow<Flow: NavigationFlow>(_ flow: Flow.Type) {
+        declaredFlowType = flow
     }
 
     /// Registers a route type for decoding and as having a destination.

@@ -28,6 +28,29 @@
             _ type: R.Type,
             @ViewBuilder _ content: @escaping (R) -> Content
         ) -> some View {
+            let screen: (R, StackNavigator) -> Content = { route, _ in
+                content(route)
+            }
+            return modifier(DestinationModifier(content: screen))
+        }
+
+        /// Shows `route`'s screen, and hands it the stack's navigator for its view model.
+        ///
+        /// The blessed way to give a view model its navigation: the model keeps the navigator,
+        /// imports only `WaypointCore`, and is tested with a real router.
+        ///
+        /// ```swift
+        /// .destination(ProductRoute.self) { route, navigation in
+        ///     ProductView(model: ProductModel(id: route.id, navigation: navigation))
+        /// }
+        /// ```
+        ///
+        /// A model that only takes its flow's routes asks for
+        /// `navigation.scoped(to: ShopFlow.self)`.
+        public func destination<R: Route, Content: View>(
+            _ type: R.Type,
+            @ViewBuilder _ content: @escaping (R, StackNavigator) -> Content
+        ) -> some View {
             modifier(DestinationModifier(content: content))
         }
     }
@@ -39,8 +62,8 @@
     /// - `R: Route`: the route type this registers.
     /// - `Destination: View`: the screen it shows.
     struct DestinationModifier<R: Route, Destination: View>: ViewModifier {
-        /// Builds the screen for one route.
-        let content: (R) -> Destination
+        /// Builds the screen for one route, with the stack's navigator.
+        let content: (R, StackNavigator) -> Destination
 
         /// The router of the enclosing stack, if any.
         @Environment(\.waypointStackRouter) private var router
@@ -50,8 +73,9 @@
             // Registering is idempotent and observed by nothing, so it is safe while drawing,
             // and it happens before the first push the screen can make.
             router?.register(R.self)
+            let navigator = NavigatorLookup.destination(router, route: R.self, report: NavigationIssueLog.report)
             return view.navigationDestination(for: R.self) { route in
-                content(route)
+                content(route, navigator)
             }
         }
     }
@@ -59,5 +83,8 @@
     extension EnvironmentValues {
         /// The router of the nearest ``WaypointStack``, or `nil` outside one.
         @Entry var waypointStackRouter: StackRouter?
+
+        /// The nearest stack of each declared flow, for `@FlowNavigation`.
+        @Entry var waypointFlowRouters = FlowRouters()
     }
 #endif
