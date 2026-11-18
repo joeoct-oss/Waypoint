@@ -64,6 +64,37 @@ extension StackRouter {
         pushInFlight = nil
     }
 
+    /// Reports that the stack shows `route`, but no screen inside the stack registered a
+    /// destination for its type, so the screen can't be drawn.
+    ///
+    /// The tree knows the type, because another stack registered it or the configuration's
+    /// registry lists it, so the push itself went ahead. Keeps the path and reports
+    /// `missingDestination` at `.fault`, with the fix. Returns the issue, so the renderer can show
+    /// it.
+    @discardableResult
+    package func rendererFoundNoDestination(
+        for route: AnyRoute,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationIssue {
+        let issue = missingDestinationDraft(route).issue(file: file, line: line)
+        _ = tree.perform(on: self, file: file, line: line) { store in
+            store.keep(issue, level: .fault)
+            return .unchanged
+        }
+        return issue
+    }
+
+    /// The issue for a route this stack has no destination for.
+    private func missingDestinationDraft(_ route: AnyRoute) -> IssueDraft {
+        let key = route.routeKey
+        return IssueDraft(kind: .missingDestination, flow: flowID) { naming in
+            "No destination for \(naming.typeName(key)) in this stack. The tree knows the type, but no "
+                + "screen inside this stack registered it. Add .destination(\(key.typeName).self) { … } "
+                + "to the stack's first screen or to a screen pushed before it."
+        }
+    }
+
     /// Pops to `count` routes, or reports a count the path can't match.
     private func reportedPopStep(
         toCount count: Int,

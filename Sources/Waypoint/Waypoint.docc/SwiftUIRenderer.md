@@ -70,7 +70,42 @@ WaypointStack(router) {
 
 **One push per tap.** The stack tells its router when it starts showing a push and when that push ends (about 0.6 s later), on every system. Until then, a second push of the same route, such as the second tap of a fast double tap on a row, is skipped and returns `.alreadyThere`. See "One push per tap" in the core's stack navigation article to turn it off.
 
-A route with no destination never crashes. The registry is strict, so the router refuses a route type that no `destination(_:_:)` registered, with `unregisteredRoute` and the fallback you choose. Destinations register as the stack is first drawn, before any screen can push. A type registered in another stack of the tree but not in this one shows an empty screen; a debug screen that names the route and the fix is planned in #166.
+A route with no destination never crashes. The registry is strict, so the router refuses a route type that no `destination(_:_:)` registered, with `unregisteredRoute` and the fallback you choose. Destinations register as the stack is first drawn, before any screen can push.
+
+**A route with no destination in its own stack.** The router can know a type that this stack still can't draw: another stack of the tree registered it, or the root's `NavigationConfiguration` lists it in its registry for restoring. The push goes ahead, and when it ends (about 0.6 s later, or once a restored stack is first drawn) the stack checks that a screen inside it registered each route it shows. A type with none is reported once as `missingDestination` at `.fault` in the `issues` category, in every build, with the fix in its message, and the stack draws its missing-destination screen in place of SwiftUI's empty one. The router's path is kept, and the system Back button still goes back.
+
+- Debug builds show a screen titled "No destination for ProductRoute" that says why the push went ahead and shows the line that fixes it. It names the route's type, never its field values.
+- Release builds show a blank screen, so nothing about the app's code reaches its users.
+
+Choose your own screen, for every build, with `missingDestination(_:)` on the stack or any view above it:
+
+```swift
+extension View {
+    /// Chooses what the stacks inside this view show for a route with no
+    /// destination of their own.
+    public func missingDestination<Content: View>(
+        @ViewBuilder _ content: @escaping (MissingDestination) -> Content
+    ) -> some View
+}
+
+/// A route a stack shows, but no screen inside that stack registered a
+/// destination for.
+public struct MissingDestination {
+    public let route: AnyRoute
+    public let issue: NavigationIssue
+    /// The name of the route's type, such as `ProductRoute`.
+    public var routeTypeName: String { get }
+}
+```
+
+```swift
+WaypointStack(router) {
+    ShopView()
+}
+.missingDestination { missing in
+    UnavailableView(onBack: { router.pop() })
+}
+```
 
 > Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views. Tracked in #151.
 

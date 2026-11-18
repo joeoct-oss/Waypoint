@@ -194,6 +194,8 @@ enum ReadableLog {
             return "a setting was refused"
         case .rendererMismatch:
             return "the screen showed something the router can't match"
+        case .missingDestination:
+            return "this stack has no destination for this screen"
         }
     }
 
