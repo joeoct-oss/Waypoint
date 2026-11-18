@@ -23,8 +23,6 @@ final class ViewModelTests: XCTestCase {
     private static let missingRouter = "noRouterInScope"
     // Reviews take 2.5 seconds to arrive, so the wait for them is longer than the usual one.
     private static let reviewsTimeout: TimeInterval = 8
-    // What the Reviews button says while the reviews load.
-    private static let loadingLabel = "Loading…"
     private static let reviewsTapAttempts = 3
 
     func testEachStyleBuysTheSameWay() {
@@ -78,19 +76,31 @@ final class ViewModelTests: XCTestCase {
         XCTAssertTrue(issue.label.contains(Self.missingRouter), "the issue doesn't name noRouterInScope")
     }
 
-    // Taps Reviews until the button says it is loading. The product slides up as a cover, and a tap
-    // made while it still moves can miss the button, which would leave no reviews to wait for.
+    // Taps Reviews until the button turns off while the reviews load. The product slides up as a
+    // cover, and a tap made while it still moves can miss the button, which would leave no reviews
+    // to wait for. Polls by hand, because a predicate expectation checks only about once a second.
     private func loadReviews(in app: XCUIApplication) {
         let reviews = app.buttons[Identifiers.labDemoReviews]
-        let loading = NSPredicate(format: "label == %@", Self.loadingLabel)
         for _ in 0..<Self.reviewsTapAttempts {
             reviews.tapWhenReady()
-            let started = XCTNSPredicateExpectation(predicate: loading, object: reviews)
-            if XCTWaiter.wait(for: [started], timeout: UITestSteps.settleTime) == .completed {
+            if waitUntilLoading(reviews) {
                 return
             }
         }
         XCTFail("Reviews never started loading")
+    }
+
+    // Whether the Reviews button turned off within a second. A button that is gone also counts,
+    // since the reviews were pushed over it.
+    private func waitUntilLoading(_ reviews: XCUIElement) -> Bool {
+        let deadline = Date().addingTimeInterval(UITestSteps.settleTime)
+        while Date() < deadline {
+            if !reviews.exists || !reviews.isEnabled {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(UITestSteps.pollInterval))
+        }
+        return !reviews.exists || !reviews.isEnabled
     }
 
     private func open(
