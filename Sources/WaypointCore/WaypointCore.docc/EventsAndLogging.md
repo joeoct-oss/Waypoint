@@ -202,6 +202,7 @@ public struct LogConfiguration: Sendable {
     public static var disabled: LogConfiguration { get }
 
     public let handler: any LogHandler
+    public let usesDefaultHandler: Bool      // true when no handler was given
     public let minimumLevel: LogLevel        // default .notice
     public let categories: Set<LogCategory>? // nil: all
     public let revealsPrivateValues: Bool    // default false
@@ -210,7 +211,7 @@ public struct LogConfiguration: Sendable {
     public let treeLogging: TreeLogging      // default .off
 
     public init(
-        handler: any LogHandler = DisabledLogHandler(),
+        handler: (any LogHandler)? = nil,  // nil: the platform's default, see below
         minimumLevel: LogLevel = .notice,
         categories: Set<LogCategory>? = nil,
         revealsPrivateValues: Bool = false,
@@ -280,7 +281,61 @@ let logging = LogConfiguration.default
 let root = RootRouter(AppRoot.login, configuration: NavigationConfiguration(logging: logging))
 ```
 
-`WaypointCore` on its own logs nowhere: its default handler is `DisabledLogHandler`. The SwiftUI and UIKit products install a unified-log handler as the default. Any handler works, such as one that writes to a file or a test handler that records lines.
+A configuration made without a handler uses the platform's default (`usesDefaultHandler` is `true`). `WaypointCore` on its own logs nowhere, so tests and command-line tools stay quiet. The SwiftUI and UIKit renderers make the default the unified log: before a renderer draws a tree whose configuration has no handler, it writes the whole tree to one shared `OSLogHandler`. A handler you give is always kept, and `.disabled` turns logging off in renderers too. Any handler works, such as one that writes to a file or a test handler that records lines.
+
+#### The unified log and signposts
+
+`OSLogHandler` writes each line to Apple's unified log, one `Logger` category per `LogCategory`, built once, under one subsystem. The subsystem defaults to the app's bundle identifier plus `.waypoint`, such as `com.example.shop.waypoint`. Levels map one to one, with `.notice` written as the log's default level. Each line is one public string, because Waypoint already redacted it, so Console's "show private data" profile can't reveal more: turn on `revealsPrivateValues` in debug builds instead. The handler and `LogConfiguration.osLog` come with `import Waypoint` and `import WaypointUIKit`; there is no separate product to add.
+
+```swift
+// WaypointOSLog, re-exported by Waypoint and WaypointUIKit. Apple platforms only.
+
+/// Conformances:
+/// - `LogHandler`, so a router tree can write to it.
+public struct OSLogHandler: LogHandler {
+    public static var defaultSubsystem: String { get } // bundle identifier + ".waypoint"
+
+    public let subsystem: String
+
+    public init(subsystem: String = OSLogHandler.defaultSubsystem)
+}
+
+extension LogConfiguration {
+    public static func osLog(
+        subsystem: String = OSLogHandler.defaultSubsystem,
+        minimumLevel: LogLevel = .notice,
+        revealsPrivateValues: Bool = false
+    ) -> LogConfiguration
+}
+```
+
+You need `osLog` only to change the subsystem or to write the choice down; the renderers already use the unified log by default. A debug build that wants everything:
+
+```swift
+#if DEBUG
+let logging = LogConfiguration.osLog(minimumLevel: .debug, revealsPrivateValues: true)
+#else
+let logging = LogConfiguration.osLog()
+#endif
+```
+
+Lines show in Xcode's console and in Console.app, where you can filter by subsystem and category. From a terminal, debug and info lines need `--level debug`:
+
+```text
+log stream --level debug --predicate 'subsystem == "com.example.shop.waypoint"'
+log stream --level debug --predicate 'subsystem == "com.example.shop.waypoint" AND category == "issues"'
+```
+
+Each `LogInterval` becomes an `OSSignposter` interval in its category, so it shows on the os_signpost track in Instruments. Waypoint measures:
+
+| Interval | Category | From | To |
+| --- | --- | --- | --- |
+| `transaction` | `navigation` | a call starts applying | it is committed or rolled back |
+| `push` | `renderer` | the stack starts animating a push | the push finishes, or a newer push replaces it |
+
+Deep link and restore intervals come with those features. Signpost names must be fixed strings, so an interval with another name, such as one an add-on measures, is drawn as `interval` with its name in the message.
+
+Issues a SwiftUI property wrapper finds with no router above it, such as `noRouterInScope`, go to the same default subsystem in the `issues` category as faults.
 
 Every message is built only after the level, the category and the handler's `isEnabled(level:category:)` all agree, in that order, so a disabled line costs one comparison.
 
@@ -309,7 +364,7 @@ tabs       ↓ dismiss checkout
 | `▸` | push | `⚠︎` | an issue a fallback recovered |
 | `◂` | back | `✖︎` | a failed call |
 | `↻` | the stack was set | `=` | nothing changed |
-| `↑` | present | `…` | queued behind a change |
+| `↑` | present | `…` | queued behind a change, or held until a transition ends |
 | `↓` | dismiss | `∅` | ignored: the flow is closed |
 | `⇥` | tab selected | `≡` | the stack after a change |
 
@@ -347,8 +402,9 @@ tabs               home · [shop] · profile
 | A call failed | `.fault` | `issues` | `routeNotInPath flow=main at=ShopCoordinator.swift:42`, then the message |
 | A route type problem at registration | `.error` | `issues` | `invalidRouteKey key=""` |
 | A changed stack, with `.changedStacks` | `.info` | `navigation` | `stack flow=main path=[HomeRoute]` |
+| A change the screen holds until a transition ends, on iOS 17 | `.debug` | `renderer` | `heldChange flow=main wait=450ms` |
 
-Each transaction is also one `LogInterval` named `transaction` in the `navigation` category, begun and ended even when the transaction fails, so a handler can draw it as a signpost. Intervals are measured only when the `navigation` category is enabled at the minimum level.
+Each transaction is also one `LogInterval` named `transaction` in the `navigation` category, begun and ended even when the transaction fails, and each push the screen animates is one named `push` in the `renderer` category, so a handler can draw them as signposts. Intervals are measured only when their category is enabled at the minimum level.
 
 Privacy needs no separate log type: in both formats, route fields stay hidden unless they are listed in `publicLogFields` or `revealsPrivateValues` is on.
 

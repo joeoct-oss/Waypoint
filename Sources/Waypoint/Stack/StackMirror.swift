@@ -161,12 +161,14 @@ final class StackMirror {
         }
     }
 
-    /// Waits for the running transition to end, then shows the newest path. One hold at a time.
+    /// Waits for the running transition to end, then shows the newest path. One hold at a time,
+    /// logged at `.debug` in `renderer`.
     private func hold(for wait: Duration) {
         guard !isHolding else {
             return
         }
         isHolding = true
+        router.rendererDidHoldChange(for: wait)
         clock.run(after: wait) { [weak self] in
             self?.endHold()
         }

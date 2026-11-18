@@ -90,6 +90,13 @@ public final class StackRouter: NavigationRouter {
     /// ``rendererDidEndPush(of:)`` change it.
     @ObservationIgnored var pushInFlight: AnyRoute?
 
+    /// The interval measuring the push the renderer is still animating, or `nil` when none is or
+    /// intervals aren't measured.
+    ///
+    /// `var` because pushes start and end. Only `beginPushInterval()` and `endPushInterval()`
+    /// change it.
+    @ObservationIgnored var pushInterval: LogInterval?
+
     /// The flow this stack was declared for, or `nil` when it was declared for none.
     ///
     /// `var` because a renderer or coordinator declares it after the router exists. Only

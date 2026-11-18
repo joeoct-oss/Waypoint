@@ -180,17 +180,28 @@ extension NavigationTreeContext {
 
     /// Starts the interval of one transaction, when intervals are measured.
     func beginTransactionInterval() -> LogInterval? {
-        let configuration = logging
-        guard configuration.measuresIntervals(in: .navigation) else {
-            return nil
-        }
-        let interval = LogInterval(name: "transaction", category: .navigation, id: claimIntervalID())
-        configuration.handler.beginInterval(interval)
-        return interval
+        beginInterval(named: "transaction", in: .navigation)
     }
 
     /// Ends the interval of one transaction, also when it failed.
     func endTransactionInterval(_ interval: LogInterval?) {
+        endInterval(interval)
+    }
+
+    /// Starts an interval named `name` in `category`, when intervals of that category are
+    /// measured, with the tree's next interval id.
+    func beginInterval(named name: String, in category: LogCategory) -> LogInterval? {
+        let configuration = logging
+        guard configuration.measuresIntervals(in: category) else {
+            return nil
+        }
+        let interval = LogInterval(name: name, category: category, id: claimIntervalID())
+        configuration.handler.beginInterval(interval)
+        return interval
+    }
+
+    /// Ends `interval`, or does nothing for `nil`.
+    func endInterval(_ interval: LogInterval?) {
         guard let interval else {
             return
         }
