@@ -8,10 +8,10 @@
 
 import SwiftUI
 
-// The main tabs: Shop, Search, Cart and Account, each with its own coordinator and stack. Guests see only
-// Shop and Search, with Sign in in the shop's bar. The main coordinator makes the tabs once and keeps them,
-// so each tab keeps its place while the reader switches tabs. Cart's tab shows how many products the cart
-// holds.
+// The main tabs: Shop, Search, Cart and Account, each with its own coordinator and stack. Guests
+// see only Shop and Search, with Sign in in the shop's bar. The main coordinator makes the tabs
+// once and keeps them, so each tab keeps its place while the reader switches tabs. Cart's tab shows
+// how many products the cart holds.
 @MainActor
 final class MainCoordinator {
     private static let guestTabs: [MainTab] = [

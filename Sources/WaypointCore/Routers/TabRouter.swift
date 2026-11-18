@@ -321,7 +321,9 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// Sets the default presentation options for this router and its children.
     ///
     /// ```swift
-    /// tabs.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
+    /// let detents: [SheetDetent] = [.medium, .large]
+    /// let sheet = SheetOptions(detents: detents)
+    /// tabs.setPresentationDefaults(PresentationDefaults(sheet: sheet))
     /// ```
     public func setPresentationDefaults(_ defaults: PresentationDefaults) {
         settings = settings.withPresentationDefaults(defaults)

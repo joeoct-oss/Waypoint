@@ -8,8 +8,8 @@
 
 import XCTest
 
-// The Navigation Lab's entry points: both branches, every flow of both kinds, and the launch arguments
-// that open an entry directly.
+// The Navigation Lab's entry points: both branches, every flow of both kinds, and the launch
+// arguments that open an entry directly.
 @MainActor
 final class LabTests: XCTestCase {
     func testLabShowsBothBranches() {

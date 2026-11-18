@@ -8,23 +8,25 @@
 
 import SwiftUI
 
-// The accounts flow: Welcome at the root, with Sign in and the three steps of Create account pushed above
-// it, Reset password as a sheet over Sign in, and the terms as a sheet over Choose a password. The steps
-// share one draft, so going back keeps what the reader typed. Every way out (signing in, creating an
-// account or continuing as a guest) reports to the app coordinator, which switches the root once.
+// The accounts flow: Welcome at the root, with Sign in and the three steps of Create account pushed
+// above it, Reset password as a sheet over Sign in, and the terms as a sheet over Choose a
+// password. The steps share one draft, so going back keeps what the reader typed. Every way out
+// (signing in, creating an account or continuing as a guest) reports to the app coordinator, which
+// switches the root once.
 //
 // Conformances:
-// - `Observable` (from `@Observable`), so `AuthFlowView` redraws when the path or the sheet changes.
+// - `Observable` (from `@Observable`), so `AuthFlowView` redraws when the path or the sheet
+//   changes.
 @MainActor
 @Observable
 final class AuthCoordinator {
     private let onFinish: (Membership) -> Void
     private let draft: SignUpDraft
-    // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the stack makes
-    // itself.
+    // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the
+    // stack makes itself.
     private(set) var path: [AuthScreen]
-    // `var` because `showResetPassword()`, `showTerms()` and `dismissSheet()` change it, and `syncSheet(_:)`
-    // takes a swipe down.
+    // `var` because `showResetPassword()`, `showTerms()` and `dismissSheet()` change it, and
+    // `syncSheet(_:)` takes a swipe down.
     private(set) var presentedSheet: AuthSheet?
 
     init(onFinish: @escaping (Membership) -> Void) {

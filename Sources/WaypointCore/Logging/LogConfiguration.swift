@@ -11,7 +11,12 @@
 ///
 /// ```swift
 /// #if DEBUG
-/// router.setLogging(LogConfiguration(handler: myHandler, minimumLevel: .debug, treeLogging: .changedStacks))
+/// let logging = LogConfiguration(
+///     handler: myHandler,
+///     minimumLevel: .debug,
+///     treeLogging: .changedStacks
+/// )
+/// router.setLogging(logging)
 /// #endif
 /// ```
 ///

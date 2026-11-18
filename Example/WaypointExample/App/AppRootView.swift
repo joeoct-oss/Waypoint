@@ -8,8 +8,9 @@
 
 import SwiftUI
 
-// Makes this window's app coordinator once and draws its current root. `WaypointRoot { AppCoordinator(...) }`
-// takes this view's place once the SwiftUI renderer is built, with the same shape: one coordinator per window.
+// Makes this window's app coordinator once and draws its current root. `WaypointRoot {
+// AppCoordinator(...) }` takes this view's place once the SwiftUI renderer is built, with the same
+// shape: one coordinator per window.
 struct AppRootView: View {
     @State private var app: AppCoordinator
 

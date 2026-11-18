@@ -355,7 +355,9 @@ public final class StackRouter: NavigationRouter {
     /// Sets the default presentation options for this router and its children.
     ///
     /// ```swift
-    /// router.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
+    /// let detents: [SheetDetent] = [.medium, .large]
+    /// let sheet = SheetOptions(detents: detents)
+    /// router.setPresentationDefaults(PresentationDefaults(sheet: sheet))
     /// ```
     public func setPresentationDefaults(_ defaults: PresentationDefaults) {
         settings = settings.withPresentationDefaults(defaults)

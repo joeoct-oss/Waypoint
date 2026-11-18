@@ -14,16 +14,20 @@ let package = Package(
         .library(name: "WaypointUIKit", targets: ["WaypointUIKit"]),
     ],
     targets: [
-        // UI-agnostic state engine. Foundation and Observation only, so it builds and tests on Linux.
+        // UI-agnostic state engine. Foundation and Observation only, so it builds and tests on
+        // Linux.
         .target(name: "WaypointCore"),
-        // SwiftUI renderer. Its files are wrapped in `#if canImport(SwiftUI)`, so it compiles empty on Linux.
+        // SwiftUI renderer. Its files are wrapped in `#if canImport(SwiftUI)`, so it compiles empty
+        // on Linux.
         .target(name: "Waypoint", dependencies: ["WaypointCore"]),
-        // UIKit renderer. Its files are wrapped in `#if canImport(UIKit)`, so it compiles empty on Linux.
+        // UIKit renderer. Its files are wrapped in `#if canImport(UIKit)`, so it compiles empty on
+        // Linux.
         .target(name: "WaypointUIKit", dependencies: ["WaypointCore"]),
         // Shared fixtures for the test targets. Internal test code, not a product.
         .target(name: "WaypointTestSupport", dependencies: ["WaypointCore"], path: "Tests/WaypointTestSupport"),
         .testTarget(name: "WaypointCoreTests", dependencies: ["WaypointCore", "WaypointTestSupport"]),
-        // Renderer tests compile empty where SwiftUI or UIKit is missing, like the renderers themselves.
+        // Renderer tests compile empty where SwiftUI or UIKit is missing, like the renderers
+        // themselves.
         .testTarget(name: "WaypointTests", dependencies: ["Waypoint", "WaypointTestSupport"]),
         .testTarget(name: "WaypointUIKitTests", dependencies: ["WaypointUIKit", "WaypointTestSupport"]),
     ],

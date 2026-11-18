@@ -8,9 +8,9 @@
 
 import SwiftUI
 
-// The Navigation Lab: one row per branch, each opening the five demo flows in both kinds. The screen
-// reports the branch the reader picks, and the account coordinator opens it. The bar already shows the
-// Lab's name, so the list's header shows only its slogan.
+// The Navigation Lab: one row per branch, each opening the five demo flows in both kinds. The
+// screen reports the branch the reader picks, and the account coordinator opens it. The bar already
+// shows the Lab's name, so the list's header shows only its slogan.
 struct LabView: View {
     let onSelectBranch: (Branch) -> Void
 

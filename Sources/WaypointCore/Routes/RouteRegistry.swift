@@ -14,10 +14,10 @@ import Foundation
 /// apps never touch it. Registering checks every key at once, so mistakes show up on the first
 /// launch in development and in tests, before any saved state is read:
 ///
-/// - A former key that belongs to another route reports ``RouteDecodingError/duplicateRouteKey(_:types:)``.
-///   The current key wins.
-/// - A `private`, `fileprivate` or local route type reports ``RouteDecodingError/unstableRouteKey(_:)``.
-///   It works in memory but is not saved.
+/// - A former key that belongs to another route reports
+///   ``RouteDecodingError/duplicateRouteKey(_:types:)``. The current key wins.
+/// - A `private`, `fileprivate` or local route type reports
+///   ``RouteDecodingError/unstableRouteKey(_:)``. It works in memory but is not saved.
 /// - An empty or malformed former key reports ``RouteDecodingError/invalidRouteKey(_:)``.
 ///
 /// To decode navigation state, put the registry in the decoder's `userInfo`:

@@ -228,7 +228,8 @@ The tab methods are generic, so name the tab type once: `$0.select(MainTab.shop)
 /// What a navigation call did.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum NavigationOutcome: NavigationRecord {
     /// The call did what it says.
     case applied
@@ -276,7 +277,8 @@ The built-in defaults change nothing unless the intent is clear. Popping more ro
 /// A navigation call that could not be done as asked.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public struct NavigationIssue: NavigationRecord {
     /// Conformances:
     /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
@@ -318,7 +320,8 @@ public struct NavigationIssue: NavigationRecord {
 /// also appears in logs and outcomes.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum NavigationFallback: NavigationRecord {
     /// Do nothing. The state stays as it was.
     case none
@@ -348,7 +351,8 @@ public struct FallbackPolicy: Sendable {
 /// A call whose fallback also failed.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public struct NavigationFailure: NavigationRecord {
     /// Why the call failed.
     public let issue: NavigationIssue

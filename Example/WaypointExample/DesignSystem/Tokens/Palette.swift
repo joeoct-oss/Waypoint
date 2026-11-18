@@ -6,12 +6,12 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// The color tokens from the example app's design system, built on the Waypoint identity's Constellation
-// palette. Text pairs pass 4.5:1 on their backgrounds in both appearances.
+// The color tokens from the example app's design system, built on the Waypoint identity's
+// Constellation palette. Text pairs pass 4.5:1 on their backgrounds in both appearances.
 //
-// Two roles carry meaning: `accent` (Nova) marks where you are, such as the current route and the SwiftUI
-// kind, and `brand` (Star line) marks what you can do, such as actions, links and the UIKit kind.
-// A call recovered by a fallback is `warning`, never `error`, because the call worked.
+// Two roles carry meaning: `accent` (Nova) marks where you are, such as the current route and the
+// SwiftUI kind, and `brand` (Star line) marks what you can do, such as actions, links and the UIKit
+// kind. A call recovered by a fallback is `warning`, never `error`, because the call worked.
 enum Palette {
     static let background = ColorToken(light: 0xF7F8FF, dark: 0x0B0F2A)
     static let surface = ColorToken(light: 0xFFFFFF, dark: 0x151A3D)

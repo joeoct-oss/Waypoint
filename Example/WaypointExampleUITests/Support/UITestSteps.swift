@@ -36,8 +36,8 @@ extension XCUIElement {
         typeText(text)
     }
 
-    // Turns on the switch inside a toggle row. Tapping the row's middle can land on its label, which does
-    // nothing.
+    // Turns on the switch inside a toggle row. Tapping the row's middle can land on its label,
+    // which does nothing.
     @MainActor
     func turnOn() {
         XCTAssertTrue(waitForExistence(timeout: UITestSteps.timeout))
@@ -62,8 +62,9 @@ extension XCUIApplication {
         return isTappable(element)
     }
 
-    // Checks the frame before asking `isHittable`, because a button that exists while its screen is still
-    // being pushed has no frame yet, and `isHittable` then fails the test instead of returning false.
+    // Checks the frame before asking `isHittable`, because a button that exists while its screen is
+    // still being pushed has no frame yet, and `isHittable` then fails the test instead of
+    // returning false.
     @MainActor
     private func isTappable(_ element: XCUIElement) -> Bool {
         element.exists && !element.frame.isEmpty && element.isHittable

@@ -8,9 +8,9 @@
 
 import SwiftUI
 
-// The account tab: the profile at the root, orders and settings pushed above it, and the Navigation Lab
-// under settings with the twenty demo entries. Sign out reports to the app coordinator, which switches
-// the root back to sign in.
+// The account tab: the profile at the root, orders and settings pushed above it, and the Navigation
+// Lab under settings with the twenty demo entries. Sign out reports to the app coordinator, which
+// switches the root back to sign in.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `AccountFlowView` redraws when the path changes.
@@ -18,8 +18,8 @@ import SwiftUI
 @Observable
 final class AccountCoordinator {
     private let onSignOut: () -> Void
-    // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the stack makes
-    // itself.
+    // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the
+    // stack makes itself.
     private(set) var path: [AccountScreen]
 
     init(

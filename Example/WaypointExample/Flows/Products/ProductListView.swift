@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// Shop: every product, with Filter in the navigation bar, and Sign in for guests. The screen reports each
-// choice.
+// Shop: every product, with Filter in the navigation bar, and Sign in for guests. The screen
+// reports each choice.
 struct ProductListView: View {
     let showsSignIn: Bool
     let onSelect: (Product) -> Void

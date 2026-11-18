@@ -8,9 +8,9 @@
 
 import SwiftUI
 
-// Reset password, as a sheet over Sign in: an email field and Send link. Sending turns the sheet into its
-// Link sent state, and Done there (or Cancel before sending) reports to the accounts coordinator, which
-// closes the sheet.
+// Reset password, as a sheet over Sign in: an email field and Send link. Sending turns the sheet
+// into its Link sent state, and Done there (or Cancel before sending) reports to the accounts
+// coordinator, which closes the sheet.
 struct ForgotPasswordView: View {
     let onDone: () -> Void
     let onCancel: () -> Void

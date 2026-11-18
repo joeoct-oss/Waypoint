@@ -22,7 +22,8 @@ router.debugTree()
 /// One applied change, with where it came from.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public struct NavigationEvent: NavigationRecord {
     /// The flow that changed.
     public let flow: FlowID
@@ -37,7 +38,8 @@ public struct NavigationEvent: NavigationRecord {
 /// Who asked for a change.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum NavigationOrigin: NavigationRecord {
     /// App code called a router or a handle.
     case app
@@ -54,7 +56,8 @@ public enum NavigationOrigin: NavigationRecord {
 /// Conformances:
 /// - `Hashable`, to group the events of one transaction.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events
+///   and test failures.
 public struct TransactionID: Hashable, Sendable, NavigationDescribable { }
 ```
 

@@ -8,13 +8,13 @@
 
 import SwiftUI
 
-// The cart tab: the cart at the root, and checkout presented full screen as its own flow. Placing the
-// order empties the cart and shows Order placed in place of checkout; Continue shopping there closes
-// checkout and reports to the main tabs, which open Shop, as Keep shopping in the cart does.
+// The cart tab: the cart at the root, and checkout presented full screen as its own flow. Placing
+// the order empties the cart and shows Order placed in place of checkout; Continue shopping there
+// closes checkout and reports to the main tabs, which open Shop, as Keep shopping in the cart does.
 //
 // Conformances:
-// - `Observable` (from `@Observable`), so `CartFlowView` and the tab's badge redraw when the cart or
-//   checkout changes.
+// - `Observable` (from `@Observable`), so `CartFlowView` and the tab's badge redraw when the cart
+//   or checkout changes.
 @MainActor
 @Observable
 final class CartCoordinator {
@@ -34,8 +34,8 @@ final class CartCoordinator {
     private let onShopMore: () -> Void
     // `var` because `add(_:)` adds to it and `placeOrder()` empties it.
     private(set) var products: [Product]
-    // `var` because `showCheckout()` and `dismissCheckout()` change it, and `syncCheckout(_:)` takes the
-    // system's own dismissal.
+    // `var` because `showCheckout()` and `dismissCheckout()` change it, and `syncCheckout(_:)`
+    // takes the system's own dismissal.
     private(set) var isCheckingOut: Bool
     // `var` because `placeOrder()` sets it, and `showCheckout()` clears it for the next order.
     private(set) var hasPlacedOrder: Bool
