@@ -23,6 +23,9 @@ final class ViewModelTests: XCTestCase {
     private static let missingRouter = "noRouterInScope"
     // Reviews take 2.5 seconds to arrive, so the wait for them is longer than the usual one.
     private static let reviewsTimeout: TimeInterval = 8
+    // What the Reviews button says while the reviews load.
+    private static let loadingLabel = "Loading…"
+    private static let reviewsTapAttempts = 3
 
     func testEachStyleBuysTheSameWay() {
         let app = ExampleApp.launch(lab: true)
@@ -44,7 +47,7 @@ final class ViewModelTests: XCTestCase {
         open(.lateResult, in: app)
 
         app.buttons[Identifiers.labOpenLateDemo].tapWhenReady()
-        app.buttons[Identifiers.labDemoReviews].tapWhenReady()
+        loadReviews(in: app)
         app.buttons[Identifiers.labDemoClose].tapWhenReady()
 
         let outcome = app.staticTexts[Identifiers.labLateOutcome]
@@ -58,7 +61,7 @@ final class ViewModelTests: XCTestCase {
         open(.lateResult, in: app)
 
         app.buttons[Identifiers.labOpenLateDemo].tapWhenReady()
-        app.buttons[Identifiers.labDemoReviews].tapWhenReady()
+        loadReviews(in: app)
 
         let reviews = app.descendants(matching: .any)[Identifiers.labDemoReviewsScreen]
         XCTAssertTrue(reviews.waitForExistence(timeout: Self.reviewsTimeout))
@@ -73,6 +76,21 @@ final class ViewModelTests: XCTestCase {
         let issue = app.descendants(matching: .any)[Identifiers.labMissingRouter]
         XCTAssertTrue(issue.waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(issue.label.contains(Self.missingRouter), "the issue doesn't name noRouterInScope")
+    }
+
+    // Taps Reviews until the button says it is loading. The product slides up as a cover, and a tap
+    // made while it still moves can miss the button, which would leave no reviews to wait for.
+    private func loadReviews(in app: XCUIApplication) {
+        let reviews = app.buttons[Identifiers.labDemoReviews]
+        let loading = NSPredicate(format: "label == %@", Self.loadingLabel)
+        for _ in 0..<Self.reviewsTapAttempts {
+            reviews.tapWhenReady()
+            let started = XCTNSPredicateExpectation(predicate: loading, object: reviews)
+            if XCTWaiter.wait(for: [started], timeout: UITestSteps.settleTime) == .completed {
+                return
+            }
+        }
+        XCTFail("Reviews never started loading")
     }
 
     private func open(
