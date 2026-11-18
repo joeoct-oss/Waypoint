@@ -11,7 +11,8 @@
 /// `Tab` is usually an app enum, such as a `MainTab` with `home`, `shop` and `profile` cases.
 ///
 /// Conformances:
-/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and
+///   described in logs.
 /// - `Tab: NavigationTab`, the app's tab type.
 public struct TabState<Tab: NavigationTab>: NavigationStateValue {
     /// The tabs, in display order.

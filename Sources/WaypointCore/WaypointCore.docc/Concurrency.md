@@ -4,6 +4,8 @@ Which types live on the main actor, and which values can go anywhere.
 
 ## Overview
 
+> Note: Draft until #24. The API in this article is planned, not built, and can still change when #24 lands.
+
 Waypoint is written in the Swift 6 language mode with strict concurrency checking. The rules are short:
 
 | Kind | Isolation | Examples |
@@ -50,7 +52,7 @@ func showOnboardingIfNeeded() {
 
 - The call returns `.queued`. If it fails when it runs, it reports an issue and runs its fallback like any other call.
 - Each queued call logs `reentrantChange` at the debug level, with its file and line. It isn't an issue: navigating from an observer or `onAppear` is allowed.
-- An observer that navigates on every change would loop. After `maxQueuedChanges` queued calls in one turn (32 by default, set with `setMaxQueuedChanges(_:)` on any router in the tree), the rest are dropped and `reentrantLoop` is reported.
+- An observer that navigates on every change would loop. After `maxQueuedChanges` queued calls in one turn (32 by default, set once in the root's `NavigationConfiguration`), the rest are dropped and `reentrantLoop` is reported.
 - Guards are the exception. A guard decides on a change, so a navigation call inside `evaluate` is rejected. Return `.redirect` instead.
 
 ### Navigators that outlive their flow
@@ -60,7 +62,8 @@ A navigator holds its router weakly, with the flow it was made for. When that fl
 ```swift
 func showReviews() async {
     await reviews.load(productID: id)
-    navigation.push(ReviewsRoute(id: id))   // returns .ignored if the user already closed the screen
+    // Returns .ignored if the user already closed the screen.
+    navigation.push(ReviewsRoute(id: id))
 }
 ```
 

@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// Sign in: email and password, with a way to reset the password. The screen reports each choice, and the
-// accounts coordinator decides where it goes. Any email and password sign in.
+// Sign in: email and password, with a way to reset the password. The screen reports each choice,
+// and the accounts coordinator decides where it goes. Any email and password sign in.
 struct SignInView: View {
     let onSignIn: () -> Void
     let onForgotPassword: () -> Void

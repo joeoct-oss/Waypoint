@@ -4,6 +4,8 @@ Group screens into flows, nest them, and get a result back when a flow ends.
 
 ## Overview
 
+> Note: Draft until #36. The API in this article is planned, not built, and can still change when #36 lands.
+
 A coordinator is your own object that owns one router, the flow's dependencies and its logic. Screens report what happened through outputs, closures you pass in, and the coordinator decides where to go next. Screens never import Waypoint.
 
 Coordinators are optional. A plain stack with a few `.destination` lines needs none. Add one when a flow has logic or dependencies worth keeping in one place.
@@ -172,13 +174,16 @@ extension StackRouter {
     /// Pushes a child flow's first screen onto this stack. The child shares
     /// this stack but has its own router for its own routes.
     @discardableResult
-    public func push<C: StackCoordinator>(_ child: C, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    public func push<C: StackCoordinator>(
+        _ child: C,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 }
 ```
 
 Like every navigation method, these take an optional fallback, file and line, left out here.
 
-> Note: Two changes are coming to child flows. A pushed child coordinator shares its parent's stack and container, and only a coordinator that starts a new stack gets a container of its own. A flow will also be able to stand for a route value, registered with a factory that builds its coordinator, so a link, a held link or a restored state can open it. A parent will then receive a flow's result through a handler registered by flow type, so a result still arrives after the app is relaunched.
+> Note: Two changes are coming to child flows. A pushed child coordinator shares its parent's stack and container, and only a coordinator that starts a new stack gets a container of its own. A flow will also be able to stand for a route value, registered with a factory that builds its coordinator, so a link, a held link or a restored state can open it. A parent will then receive a flow's result through a handler registered by flow type, so a result still arrives after the app is relaunched. Tracked in #151 and #152.
 
 ### Finding coordinators in the tree
 

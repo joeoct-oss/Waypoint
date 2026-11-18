@@ -13,7 +13,8 @@
 /// own sheet sizes.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
 /// - `CustomStringConvertible`, so presentation styles print their sizes as `[medium, large]`.
 public enum SheetDetent: NavigationValue, CustomStringConvertible {
     /// About half the available height.

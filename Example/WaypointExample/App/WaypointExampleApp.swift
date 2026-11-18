@@ -8,9 +8,9 @@
 
 import SwiftUI
 
-// The example app. It holds only what every window shares (the launch options, and app-wide services
-// when the app has some), and asks the app coordinator for each window's view. Each window gets its own
-// coordinator, so two windows never share a path.
+// The example app. It holds only what every window shares (the launch options, and app-wide
+// services when the app has some), and asks the app coordinator for each window's view. Each window
+// gets its own coordinator, so two windows never share a path.
 @main
 struct WaypointExampleApp: App {
     private let launch: LaunchOptions

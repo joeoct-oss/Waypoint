@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// Draws the main tabs the reader can see with the system tab bar, which is Liquid Glass from iOS 26. Each
-// tab hosts its own stack.
+// Draws the main tabs the reader can see with the system tab bar, which is Liquid Glass from iOS
+// 26. Each tab hosts its own stack.
 struct MainTabView: View {
     let main: MainCoordinator
 

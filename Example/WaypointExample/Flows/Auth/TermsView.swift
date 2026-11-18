@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// The shop's terms, as a sheet over Choose a password, with Done. Closing it leaves the password step as
-// the reader left it.
+// The shop's terms, as a sheet over Choose a password, with Done. Closing it leaves the password
+// step as the reader left it.
 struct TermsView: View {
     let onDone: () -> Void
 

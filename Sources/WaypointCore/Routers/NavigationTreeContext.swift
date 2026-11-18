@@ -10,23 +10,18 @@
 /// the flow names in use. The root router creates it, and every router inside gets the same one.
 @MainActor
 final class NavigationTreeContext {
-    /// Route types registered for decoding and as having a destination.
+    /// The tree's settings, given once to the root router, with every route type registered
+    /// since.
     ///
     /// `var` because destinations are registered one by one as renderers and coordinators set
-    /// up. Only ``register(_:)`` changes it.
-    private(set) var registry = RouteRegistry()
+    /// up. Only ``register(_:)`` changes it, and only its registry.
+    private(set) var configuration: NavigationConfiguration
 
-    /// How the tree logs, and how many calls may be queued in one turn.
-    ///
-    /// `var` because the app and renderers set them after the root router exists. Only
-    /// ``setLogging(_:)`` and ``setMaxQueuedChanges(_:)`` change it.
-    private var settings = Settings()
-
-    /// The seams for observers, logging, strict mode and the app's failure handlers.
+    /// The seams for observers, logging, strict mode and the failure handlers.
     ///
     /// `var` because observers join after the tree exists. Only the `on…` functions and
     /// ``addFailureHandler(_:)`` change it.
-    private var observers = Observers()
+    private var observers: Observers
 
     /// Whether a transaction is being applied or queued calls are running, and the queue.
     ///
@@ -46,45 +41,48 @@ final class NavigationTreeContext {
     /// changes it.
     private var intervalCount: UInt64 = 0
 
-    /// Whether pushes check that the route type has a destination. Turned on by the first
-    /// registration, so a tree without destinations, such as one in a unit test, is not checked.
-    var checksDestinations: Bool {
-        !registry.isEmpty
+    /// Why a setting given to the tree was replaced by its default, or `nil`.
+    let configurationProblem: String?
+
+    /// Route types registered for decoding and as having a destination.
+    var registry: RouteRegistry {
+        configuration.registry
     }
 
     /// How the tree logs. Default: ``LogConfiguration/default``.
     var logging: LogConfiguration {
-        settings.logging
+        configuration.logging
     }
 
     /// The most calls that may be queued in one main-actor turn. Default: 32.
     var maxQueuedChanges: Int {
-        settings.maxQueuedChanges
+        configuration.maxQueuedChanges
+    }
+
+    /// A tree with these settings. A setting that can't be used is replaced by its default, and
+    /// ``configurationProblem`` says why, so the root router can report it once it exists.
+    init(configuration: NavigationConfiguration) {
+        let checked = configuration.validated()
+        self.configuration = checked.configuration
+        self.configurationProblem = checked.problem
+        self.observers = Observers()
+        if let handler = configuration.onNavigationFailure {
+            addFailureHandler { failure in
+                handler(failure)
+            }
+        }
+        for problem in configuration.registry.problems {
+            logRegistryProblem(problem)
+        }
     }
 
     /// Registers a route type for decoding and as having a destination.
     func register<R: Route>(_ type: R.Type) {
         let known = registry.problems.count
-        registry = registry.registering(type)
+        configuration = configuration.withRegistry(registry.registering(type))
         for problem in registry.problems.dropFirst(known) {
             logRegistryProblem(problem)
         }
-    }
-
-    /// Sets how the tree logs.
-    func setLogging(_ configuration: LogConfiguration) {
-        settings = settings.withLogging(configuration)
-    }
-
-    /// Sets the queue limit, or returns why it can't: a limit below 1 would drop every call
-    /// made from an observer.
-    func setMaxQueuedChanges(_ limit: Int) -> String? {
-        guard limit >= 1 else {
-            return "maxQueuedChanges must be at least 1, so \(limit) was not set. "
-                + "It stays \(settings.maxQueuedChanges)."
-        }
-        settings = settings.withMaxQueuedChanges(limit)
-        return nil
     }
 
     /// Calls `observer` with the changes of each committed transaction, while it is still being
@@ -105,13 +103,10 @@ final class NavigationTreeContext {
         observers = observers.withFinished(observer)
     }
 
-    /// Whether a route may be shown: always before any registration, then only when its type is
-    /// registered.
+    /// Whether a route may be shown: any route when the registry is permissive, otherwise only
+    /// a registered type.
     func hasDestination(for route: AnyRoute) -> Bool {
-        guard checksDestinations else {
-            return true
-        }
-        return registry.type(for: route.routeKey) != nil
+        registry.allows(route)
     }
 
     /// Adds a handler for calls that failed and could not be recovered.

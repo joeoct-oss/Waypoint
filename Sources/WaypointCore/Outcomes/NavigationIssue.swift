@@ -14,7 +14,8 @@
 /// Two issues are equal when every field is equal, including the file and line.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public struct NavigationIssue: NavigationRecord {
     /// What kind of mistake an issue is.
     ///
@@ -49,6 +50,11 @@ public struct NavigationIssue: NavigationRecord {
         /// A router setting that would break a rule, such as `maxQueuedChanges` below 1. The
         /// setting keeps its old value.
         case invalidSetting
+
+        /// A renderer reported a screen the router can't match, such as more screens than the
+        /// path holds. The router keeps its state. A `NavigationLink(value:)` inside a Waypoint
+        /// stack causes it.
+        case rendererMismatch
     }
 
     /// What went wrong.

@@ -11,7 +11,8 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The named conformance sets (see the "Why these conformances" article): each type has the set its documentation names.
+/// The named conformance sets (see the "Why these conformances" article): each type has the set its
+/// documentation names.
 @Suite("Conformance sets")
 struct ConformanceSetTests {
     @Test

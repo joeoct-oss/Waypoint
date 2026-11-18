@@ -4,6 +4,8 @@ See what changed, where it came from, and why a call did not do what you asked.
 
 ## Overview
 
+> Note: The logging part of this article is built. The events part is a draft until #23 and can still change when it lands.
+
 Every change to the navigation state produces a `NavigationEvent`. Events come from router state, never from view lifecycle callbacks like `onAppear`, so they match what is really on screen in both renderers.
 
 ```swift
@@ -20,7 +22,8 @@ router.debugTree()
 /// One applied change, with where it came from.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public struct NavigationEvent: NavigationRecord {
     /// The flow that changed.
     public let flow: FlowID
@@ -35,7 +38,8 @@ public struct NavigationEvent: NavigationRecord {
 /// Who asked for a change.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum NavigationOrigin: NavigationRecord {
     /// App code called a router or a handle.
     case app
@@ -52,7 +56,8 @@ public enum NavigationOrigin: NavigationRecord {
 /// Conformances:
 /// - `Hashable`, to group the events of one transaction.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events
+///   and test failures.
 public struct TransactionID: Hashable, Sendable, NavigationDescribable { }
 ```
 
@@ -82,7 +87,9 @@ extension StackRouter {   // also on TabRouter and RootRouter
 
     /// A closure observer, for one-liners.
     @discardableResult
-    public func onEvents(_ handler: @escaping @MainActor ([NavigationEvent]) -> Void) -> ObservationToken
+    public func onEvents(
+        _ handler: @escaping @MainActor ([NavigationEvent]) -> Void
+    ) -> ObservationToken
 
     /// The whole tree, one flow per line. See "The navigation tree" below.
     public func debugTree(revealingPrivateValues: Bool = false) -> String
@@ -132,7 +139,14 @@ public enum LogLevel: Int, Sendable, Comparable {
 /// - `Hashable`, so categories can be kept in a set.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct LogCategory: Hashable, Sendable {
-    public static let navigation, presentation, tabs, flows, links, restoration, renderer, issues: LogCategory
+    public static let navigation: LogCategory
+    public static let presentation: LogCategory
+    public static let tabs: LogCategory
+    public static let flows: LogCategory
+    public static let links: LogCategory
+    public static let restoration: LogCategory
+    public static let renderer: LogCategory
+    public static let issues: LogCategory
 
     public init(_ name: String)
 }
@@ -244,24 +258,7 @@ public enum TreeLogging: Sendable, Equatable {
     case wholeTree
 }
 
-extension StackRouter {
-    /// How this router's whole tree logs. Shared by every router in the tree.
-    public var logging: LogConfiguration { get }
-
-    /// Sets how the whole tree logs. Set it once, on the root.
-    public func setLogging(_ configuration: LogConfiguration)
-
-    /// The whole tree this router is in, one flow per line, for printing while debugging.
-    public func debugTree(revealingPrivateValues: Bool = false) -> String
-}
-
-extension TabRouter {
-    /// How this router's whole tree logs. Shared by every router in the tree.
-    public var logging: LogConfiguration { get }
-
-    /// Sets how the whole tree logs. Set it once, on the root.
-    public func setLogging(_ configuration: LogConfiguration)
-
+extension StackRouter {   // also on TabRouter
     /// The whole tree this router is in, one flow per line, for printing while debugging.
     public func debugTree(revealingPrivateValues: Bool = false) -> String
 }
@@ -272,12 +269,15 @@ extension Route {
 }
 ```
 
+Logging is set once for the whole tree, in the `NavigationConfiguration` given to the root router (see <doc:StackNavigation>). Every router reads it through `configuration.logging`, and none can change it:
+
 ```swift
 #if DEBUG
-let root = RootRouter(AppRoot.login, logging: .init(minimumLevel: .debug, treeLogging: .changedStacks))
+let logging = LogConfiguration(minimumLevel: .debug, treeLogging: .changedStacks)
 #else
-let root = RootRouter(AppRoot.login)
+let logging = LogConfiguration.default
 #endif
+let root = RootRouter(AppRoot.login, configuration: NavigationConfiguration(logging: logging))
 ```
 
 `WaypointCore` on its own logs nowhere: its default handler is `DisabledLogHandler`. The SwiftUI and UIKit products install a unified-log handler as the default. Any handler works, such as one that writes to a file or a test handler that records lines.
@@ -336,6 +336,7 @@ tabs               home · [shop] · profile
 | --- | --- | --- | --- |
 | A change was applied | `.info` | `navigation`, `presentation` or `tabs` | `pushed [ProductRoute(id: <private>)] flow=main` |
 | A change made by a fallback | `.info` | as above | `popped [HomeRoute] flow=main origin=fallback` |
+| A change the user made directly, such as a swipe back | `.info` | as above | `popped [ProductRoute(id: <private>)] flow=main origin=user` |
 | A presentation | `.info` | `presentation` | `presented sheet SettingsRoute flow=settings presenter=main` |
 | A call changed nothing | `.debug` | `navigation` | `alreadyThere flow=main at=ShopCoordinator.swift:42` |
 | A call was queued behind a change | `.debug` | `navigation` | `reentrantChange flow=main at=ShopCoordinator.swift:42` |

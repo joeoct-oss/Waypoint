@@ -8,8 +8,8 @@
 
 import Observation
 
-// The selected main tab, shared by the main coordinator and the tabs' own coordinators, so a flow in one
-// tab can send the reader to another, such as Add to cart opening Cart.
+// The selected main tab, shared by the main coordinator and the tabs' own coordinators, so a flow
+// in one tab can send the reader to another, such as Add to cart opening Cart.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so the tab bar redraws when a flow selects another tab.

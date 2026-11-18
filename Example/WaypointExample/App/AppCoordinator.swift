@@ -9,15 +9,17 @@
 import SwiftUI
 
 // The app's navigation starts here (decision 0009). The app asks for each window's view with
-// `makeWindow(launch:)`, and each call makes a new coordinator, so two iPad windows never share a root or
-// a stack. The coordinator owns the root: the splash, then the accounts flow or the main tabs, and it
-// switches between them when a flow reports that the reader signed in, chose to browse as a guest, or
-// signed out. Screens report, coordinators decide: `make…Flow()` builds a flow, `show…()` navigates.
+// `makeWindow(launch:)`, and each call makes a new coordinator, so two iPad windows never share a
+// root or a stack. The coordinator owns the root: the splash, then the accounts flow or the main
+// tabs, and it switches between them when a flow reports that the reader signed in, chose to browse
+// as a guest, or signed out. Screens report, coordinators decide: `make…Flow()` builds a flow,
+// `show…()` navigates.
 //
-// Until the SwiftUI renderer is built, coordinators keep plain SwiftUI state (a root, a path, a selected
-// tab, a presented sheet). Each piece is the seam for one Waypoint router: the root becomes a root router,
-// paths become stack routers, the tab selection a tab router, and `makeWindow(launch:)` returns
-// `WaypointRoot { AppCoordinator(...) }`. The screens and their callbacks stay as they are.
+// Until the SwiftUI renderer is built, coordinators keep plain SwiftUI state (a root, a path, a
+// selected tab, a presented sheet). Each piece is the seam for one Waypoint router: the root
+// becomes a root router, paths become stack routers, the tab selection a tab router, and
+// `makeWindow(launch:)` returns `WaypointRoot { AppCoordinator(...) }`. The screens and their
+// callbacks stay as they are.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so the window redraws when the root switches.

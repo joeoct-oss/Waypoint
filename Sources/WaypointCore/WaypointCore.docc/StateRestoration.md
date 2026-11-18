@@ -14,7 +14,7 @@ let data = try root.snapshotData()
 root.restore(from: data)
 ```
 
-> Note: State restoration is not available yet. Routes are `Codable` from the start, so it can be added without changing them.
+> Note: Draft until #16. State restoration is not built yet. Routes are `Codable` from the start, so it can be added without changing them.
 
 ### Snapshot API
 
@@ -25,7 +25,8 @@ root.restore(from: data)
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 /// - `Codable`, so it can be saved, restored and logged.
 /// - `Equatable`, so tests and the router can compare values.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events
+///   and test failures.
 public struct NavigationSnapshot: Sendable, Codable, Equatable, NavigationDescribable {
     public static let currentVersion: Int
     public let version: Int
@@ -61,7 +62,8 @@ public struct RestoreOptions: Sendable {
 /// What a restore did.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum RestoreOutcome: NavigationRecord {
     /// Everything came back.
     case restored

@@ -6,10 +6,13 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ### Changed
 
+- The route registry is strict in every build: a route type with no registered destination fails with `unregisteredRoute` and runs its fallback, even before anything is registered. Tests and previews ask for `RouteRegistry.permissive` in the root's `NavigationConfiguration`; registering never changes the mode (`RouteRegistry.Mode`, `strict`, `permissive`, `allows(_:)`). (#144)
+- Settings for the whole tree are given once to the root router in one `NavigationConfiguration` (logging, `maxQueuedChanges`, a starting `registry` and `onNavigationFailure`), passed as `configuration:` to `StackRouter`, `TabRouter` and, later, `RootRouter`. Every router reads it through `configuration`, and none can change it: `setLogging(_:)`, `setMaxQueuedChanges(_:)`, `onNavigationFailure(_:)` and the `logging` and `maxQueuedChanges` properties are removed from routers. A queue limit below 1 reports `invalidSetting` at the root initializer's documented `file` and `line` and uses 32. Fallbacks and presentation defaults stay on every router. (#143)
 - Source file headers name the author with their own email instead of the GitHub noreply address. (#140)
 
 ### Added
 
+- Renderer reports: what the user changes directly (swipe back, the back button and its long-press menu, a sheet dragged down, a tab tap) comes back to the router through `package` calls (`rendererDidPop(toCount:)`, `rendererDidDismiss()`, `rendererDidSelect(_:)`) that run like any change and are logged with `origin=user` ("· by user" in the readable log). A report that matches the state changes nothing, and a stack count the path can't match keeps the path and reports the new `rendererMismatch` issue. (#38)
 - Swift package with three products: `WaypointCore` (UI-agnostic state engine), `Waypoint` (SwiftUI renderer) and `WaypointUIKit` (UIKit renderer). (#2)
 - `scripts/test-linux.sh` runs the core build and tests on Linux, after `scripts/check-core-imports.sh` checks that `WaypointCore` imports only Foundation, Observation and Synchronization. `CONTRIBUTING.md` explains how to run them. (#35)
 - API design articles in the `WaypointCore` DocC catalog: Routes, Navigation state, Stack navigation, Presentation (with app-chosen sheet sizes) and Tabs. Signatures only; the API is implemented in later issues. (#42)
@@ -57,3 +60,6 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - Each module card on the documentation landing page has its own artwork in the Waypoint identity, in light and dark, instead of the generic placeholder. (#134)
 - The module cards on the documentation landing page are three full-width rows, WaypointCore first, with each picture beside its text. (#136)
 - The documentation site has a sun and moon toggle in the top bar for light and dark, in place of the Light/Dark/Auto picker at the bottom of each page. The choice is remembered; first visits follow the system. (#138)
+- The documentation reading column is 900 px wide, so code lines up to 100 columns show without sideways scrolling. (#163)
+- Comment lines wrap at 100 columns, checked by `scripts/check-comment-width.sh` from `scripts/test-linux.sh`. Existing comments and the code examples in doc comments are rewrapped to fit, and the long signatures in the API articles put one parameter per line, so no code block on the documentation site scrolls sideways. (#164)
+- Each API article for API that isn't built yet opens with "Draft until #n", and every note about a coming change names its issue. New notes cover one configuration for the whole tree (#143), a strict registry (#144), replacing a presentation and outcome helpers (#145), route hints (#146), system links in release builds (#147), leave confirmation (#155) and popovers (#156). (#159)

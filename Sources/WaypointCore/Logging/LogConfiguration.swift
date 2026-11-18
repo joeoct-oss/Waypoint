@@ -6,13 +6,17 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-/// How a whole router tree logs. Set it once on the root router; every router in the tree uses
-/// it, and there is no global logger, so parallel tests don't share one.
+/// How a whole router tree logs. Give it once to the root router, in its
+/// ``NavigationConfiguration``; every router in the tree uses it, and there is no global logger,
+/// so parallel tests don't share one.
 ///
 /// ```swift
-/// #if DEBUG
-/// router.setLogging(LogConfiguration(handler: myHandler, minimumLevel: .debug, treeLogging: .changedStacks))
-/// #endif
+/// let logging = LogConfiguration(
+///     handler: myHandler,
+///     minimumLevel: .debug,
+///     treeLogging: .changedStacks
+/// )
+/// let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
 /// ```
 ///
 /// Conformances:

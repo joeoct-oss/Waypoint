@@ -18,6 +18,9 @@ cd "$(dirname "$0")/.."
 echo "==> Checking WaypointCore imports"
 scripts/check-core-imports.sh
 
+echo "==> Checking comment line width"
+scripts/check-comment-width.sh
+
 echo "==> swift build"
 swift build
 

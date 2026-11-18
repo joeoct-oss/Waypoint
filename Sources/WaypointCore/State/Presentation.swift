@@ -12,7 +12,8 @@
 /// gives a chain of modals.
 ///
 /// Conformances:
-/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and
+///   described in logs.
 public struct Presentation: NavigationStateValue {
     /// How the flow is shown.
     public let style: PresentationStyle

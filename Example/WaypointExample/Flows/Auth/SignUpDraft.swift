@@ -8,8 +8,8 @@
 
 import Observation
 
-// What the reader has typed while creating an account. The accounts coordinator keeps one draft for the
-// whole journey, so going back a step and forward again keeps every typed value.
+// What the reader has typed while creating an account. The accounts coordinator keeps one draft for
+// the whole journey, so going back a step and forward again keeps every typed value.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so each step redraws as its fields change.

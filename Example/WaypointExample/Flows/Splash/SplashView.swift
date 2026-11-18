@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// The first screen: the brand while the app starts. It reports when it is done, and the app coordinator
-// picks the next root. The launch options set how long it stays.
+// The first screen: the brand while the app starts. It reports when it is done, and the app
+// coordinator picks the next root. The launch options set how long it stays.
 struct SplashView: View {
     let duration: Duration
     let onFinished: () -> Void

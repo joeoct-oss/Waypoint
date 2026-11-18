@@ -24,6 +24,8 @@ Every route is `Hashable`, `Codable` and `Sendable` through the `Route` protocol
 
 Routes hold identifiers and small inputs, never models or view models. That keeps them cheap to compare, store, log and deep link into.
 
+> Note: A route will be able to carry an optional hint, such as the product a list already loaded, marked `@RouteHint`. The screen uses it for its first frame only, and it is never saved, compared, logged or linked, so the screen must work without it. Tracked in #146.
+
 A small enum is still fine for a closed group of screens, such as the steps of a wizard. It is registered as one type:
 
 ```swift
@@ -45,7 +47,8 @@ enum CheckoutStep: Route {
 /// `Codable` is required so routes can be restored and deep linked into.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
 public protocol Route: NavigationValue {
     /// The flow this route belongs to.
     ///
@@ -112,7 +115,8 @@ Each one fails loudly in development, never crashes in release, and fails the te
 /// The stable name of a route type, used when a route is saved, decoded or logged.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
 /// - `NavigationDescribable`, so logs and test failures print it in the shared format.
 public struct RouteKey: NavigationValue, NavigationDescribable {
     /// The full key, such as `Shop.ProductRoute`.
@@ -178,8 +182,10 @@ Routers, state, events and snapshots hold routes of many types, so they store th
 /// A route of any type, with its stable key.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events
+///   and test failures.
 public struct AnyRoute: NavigationValue, NavigationDescribable {
     /// The wrapped route's key.
     public var routeKey: RouteKey { get }
@@ -202,6 +208,12 @@ public struct AnyRoute: NavigationValue, NavigationDescribable {
 
 Decoding an `AnyRoute` needs to know which concrete type a key stands for. Registering a destination for a route type also registers it for decoding, so most apps never touch the registry.
 
+The registry is also what lets a route be shown. It is strict in every build: pushing or presenting a route type with no registered destination fails with `unregisteredRoute`, runs its fallback and is logged, even before anything is registered. The mode is chosen once, in the root's `NavigationConfiguration`, and registering never changes it. Tests and previews that push routes with no destinations ask for a permissive registry by name:
+
+```swift
+let router = StackRouter(configuration: NavigationConfiguration(registry: .permissive))
+```
+
 An erased route is saved as its key and its value, such as `{"route": "Shop.ProductRoute", "value": {"id": 42}}`. Encoding needs nothing else. Decoding reads the registry from the decoder's `userInfo`:
 
 ```swift
@@ -223,7 +235,24 @@ public struct RouteRegistry: Sendable {
     public var registeredTypes: [any Route.Type] { get }
 
     /// Creates an empty registry.
-    public init()
+    /// Whether a route type must be registered before it can be shown.
+    public enum Mode: Sendable {
+        /// Only registered route types can be pushed or presented. The default.
+        case strict
+        /// Any route can be pushed or presented, for tests and previews.
+        case permissive
+    }
+
+    /// An empty strict registry. The default.
+    public static var strict: RouteRegistry { get }
+    /// An empty registry that lets any route be shown, for tests and previews.
+    public static var permissive: RouteRegistry { get }
+
+    /// Chosen when the registry is made; registering never changes it.
+    public let mode: Mode
+
+    /// Creates an empty registry.
+    public init(mode: Mode = .strict)
 
     /// The same registry with a route type added under its `routeKey` and
     /// its `formerRouteKeys`.
@@ -235,6 +264,10 @@ public struct RouteRegistry: Sendable {
 
     /// Whether this route type is registered under its current key.
     public func isRegistered<R: Route>(_ type: R.Type) -> Bool
+
+    /// Whether a route may be shown: any route when permissive, only a
+    /// registered type when strict.
+    public func allows(_ route: AnyRoute) -> Bool
 
     /// The route type for a current or former key.
     public func type(for key: RouteKey) -> (any Route.Type)?
@@ -255,7 +288,8 @@ extension CodingUserInfoKey {
 ///
 /// Conformances:
 /// - `Error`, so it can be thrown.
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum RouteDecodingError: Error, NavigationRecord {
     case unknownRouteKey(RouteKey)
     case invalidPayload(RouteKey)
@@ -287,7 +321,10 @@ public struct RouteTable<Payload> {
     /// The same table with a way to build the payload for one route type.
     ///
     /// Also registers the type for decoding.
-    public func registering<R: Route>(_ type: R.Type, _ make: @escaping (R) -> Payload) -> RouteTable
+    public func registering<R: Route>(
+        _ type: R.Type,
+        _ make: @escaping (R) -> Payload
+    ) -> RouteTable
 
     /// The payload for a route, or `nil` if its type is not registered.
     public func payload(for route: AnyRoute) -> Payload?

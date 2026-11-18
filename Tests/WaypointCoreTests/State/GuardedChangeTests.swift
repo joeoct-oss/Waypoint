@@ -104,23 +104,25 @@ struct GuardedChangeTests {
     }
 
     @Test
-    func queueLimitBelowOneIsRefused() {
-        let router = StackRouter()
-        let reported = Recorder<NavigationIssue.Kind>()
-        router.tree.onReported { issue in
-            reported.record(issue.kind)
-        }
+    func queueLimitBelowOneIsRefused() throws {
+        let handler = RecordingLogHandler()
+        let logging = LogConfiguration(handler: handler, format: .structured)
+        let configuration = NavigationConfiguration(logging: logging, maxQueuedChanges: 0)
 
-        router.setMaxQueuedChanges(0)
+        let line: UInt = #line + 1
+        let router = StackRouter(configuration: configuration)
 
-        #expect(router.maxQueuedChanges == 32)
-        let expectedKinds: [NavigationIssue.Kind] = [.invalidSetting]
-        #expect(reported.values == expectedKinds)
+        #expect(router.configuration.maxQueuedChanges == 32)
+        let message = try #require(handler.messages.first)
+        #expect(handler.messages.count == 1)
+        #expect(message.level == .fault)
+        #expect(message.text.hasPrefix("invalidSetting flow=main"))
+        #expect(message.line == line)
     }
 
     @Test
     func pushFallbackOnlySetsForRouteNotInPath() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let reported = Recorder<NavigationIssue.Kind>()
         router.tree.onReported { issue in
             reported.record(issue.kind)

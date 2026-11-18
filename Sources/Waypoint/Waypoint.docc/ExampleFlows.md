@@ -4,6 +4,8 @@ Login, tabs, a detail push, a sheet and a deep link, in one small SwiftUI app.
 
 ## Overview
 
+> Note: Draft until #3. The API in this article is planned, not built, and can still change when #3 lands.
+
 These five flows cover what most apps need. They build on each other: the app starts at login, switches to tabs, pushes a product, opens a filter sheet and answers a link.
 
 ### 1. Login, then the main tabs
@@ -252,4 +254,4 @@ let matcher = DeepLinkMatcher()
 
 `WaypointRoot` sends every link to the app coordinator's inbox. If the link arrives during login, it waits. When the app coordinator's `showMainFlow()` switches to the main flow and calls `links?.markReady()`, the link is applied in one step: the sheet closes, the shop tab is selected and the product is pushed, with one animation.
 
-This example holds every link until sign-in by marking the inbox ready in `showMainFlow()`. Per-link requirements, where the app coordinator holds only the links that need sign-in and saves them across relaunches, are coming; see the Deep links article in WaypointCore.
+This example holds every link until sign-in by marking the inbox ready in `showMainFlow()`. Per-link requirements, where the app coordinator holds only the links that need sign-in and saves them across relaunches, are coming in #150; see the Deep links article in WaypointCore.

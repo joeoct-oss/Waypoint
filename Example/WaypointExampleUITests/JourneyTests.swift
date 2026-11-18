@@ -8,9 +8,9 @@
 
 import XCTest
 
-// The shop's user journeys, one test for each story on the design canvas: launch by session, sign in,
-// sign up, reset password, the guest's tabs, search and save, checkout from Cart, an order's detail and
-// the Lab under Settings.
+// The shop's user journeys, one test for each story on the design canvas: launch by session, sign
+// in, sign up, reset password, the guest's tabs, search and save, checkout from Cart, an order's
+// detail and the Lab under Settings.
 @MainActor
 final class JourneyTests: XCTestCase {
     // XCTest takes a few seconds to launch the app and wait for it to settle, longer than the usual

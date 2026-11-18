@@ -19,8 +19,10 @@
 /// name a type.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events
+///   and test failures.
 public struct AnyRoute: NavigationValue, NavigationDescribable {
     /// The wrapped route.
     package let base: any Route

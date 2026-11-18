@@ -4,6 +4,8 @@ Swap whole flows, such as login and the main tabs.
 
 ## Overview
 
+> Note: Draft until #37. The API in this article is planned, not built, and can still change when #37 lands.
+
 Apps replace their whole screen at a few moments: from launch to login, from login to the main tabs, and back to login on logout. `RootRouter` holds which root is showing and replaces the whole subtree when it switches. The old flow and every router inside it are released.
 
 ```swift
@@ -87,8 +89,14 @@ public final class RootRouter<Root: NavigationRoot>: NavigationRouter {
 
     /// Creates a root router showing `initial`.
     ///
-    /// `logging` sets how the whole tree logs. See <doc:EventsAndLogging>.
-    public init(_ initial: Root, logging: LogConfiguration = .default)
+    /// `configuration` holds the settings of the whole tree, such as logging and
+    /// the failure handler. See <doc:StackNavigation>.
+    public init(
+        _ initial: Root,
+        configuration: NavigationConfiguration = .default,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    )
 
     /// Sets one kind's fallback for every router below this one.
     public func setFallback(
@@ -105,10 +113,11 @@ public final class RootRouter<Root: NavigationRoot>: NavigationRouter {
     /// Everything presented is dismissed first. Returns `.alreadyThere` if
     /// `root` is showing. Emits a `rootChanged` event.
     @discardableResult
-    public func `switch`(to root: Root, file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome
-
-    /// Called when a call fails and its fallback fails too, anywhere in the tree.
-    public func onNavigationFailure(_ handler: @escaping @MainActor (NavigationFailure) -> Void)
+    public func `switch`(
+        to root: Root,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome
 }
 ```
 

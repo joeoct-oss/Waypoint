@@ -20,7 +20,8 @@
 /// and outcomes.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum NavigationFallback: NavigationRecord {
     /// Do nothing. The outcome is `.failed`.
     case none

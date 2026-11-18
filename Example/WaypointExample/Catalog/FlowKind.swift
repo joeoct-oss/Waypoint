@@ -9,8 +9,8 @@
 // The UI framework a flow is built with.
 //
 // Conformances:
-// - `String` raw values, so a launch argument such as `-kind swiftui` names a kind, and accessibility
-//   identifiers use the same word.
+// - `String` raw values, so a launch argument such as `-kind swiftui` names a kind, and
+//   accessibility identifiers use the same word.
 // - `CaseIterable`, so every flow row offers both kinds in one order.
 enum FlowKind: String, CaseIterable {
     case swiftUI = "swiftui"

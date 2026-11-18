@@ -18,7 +18,7 @@ import WaypointTestSupport
 struct TransactionTests {
     @Test
     func transactionAppliesOnceWithAllChanges() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
         let applied = Recorder<[AppliedChange]>()
         router.tree.onApplied { changes in
@@ -48,7 +48,7 @@ struct TransactionTests {
 
     @Test
     func observationFiresOncePerTransaction() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let fired = FireCounter()
         withObservationTracking {
             _ = router.state
@@ -69,7 +69,7 @@ struct TransactionTests {
 
     @Test
     func failedStepRollsBackTransaction() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
 
         let line: UInt = #line + 3
@@ -88,14 +88,14 @@ struct TransactionTests {
 
     @Test
     func emptyTransactionIsAlreadyThere() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
 
         #expect(router.transaction { _ in } == .alreadyThere)
     }
 
     @Test
     func transactionCanNavigateAPresentedFlow() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
 
         router.transaction {
             $0.present(SettingsRoute())
@@ -110,7 +110,7 @@ struct TransactionTests {
 
     @Test
     func rolledBackPresentationLeavesNoChild() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
 
         router.transaction {
             $0.present(SettingsRoute())
@@ -125,7 +125,7 @@ struct TransactionTests {
 
     @Test
     func tabTransactionChangesTabsAndStacksTogether() {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
         tabs.present(SettingsRoute())
 
         let outcome = tabs.transaction {
@@ -146,7 +146,7 @@ struct TransactionTests {
 
     @Test
     func selectOnAStackTransactionFails() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
 
         let outcome = router.transaction {
             $0.select(MainTab.shop)
@@ -157,7 +157,7 @@ struct TransactionTests {
 
     @Test
     func transactionDuringChangeIsQueued() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let inner = Recorder<NavigationOutcome>()
         let once = Once()
         router.tree.onApplied { _ in

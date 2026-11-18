@@ -21,14 +21,27 @@ extension NavigationTreeContext {
         }
     }
 
-    /// `pushed [ProductRoute(id: <private>)] flow=main`, with `origin=fallback` for a fallback.
+    /// `pushed [ProductRoute(id: <private>)] flow=main`, with `origin=fallback` for a fallback and
+    /// `origin=user` for a change the user made directly.
     /// A presentation names the flow that presented it as `presenter=`, since the presented
     /// flow is already in the change.
     private static func structuredChangeLine(_ applied: AppliedChange, naming: RouteNaming) -> String {
         let change = applied.change.debugDescription(revealingPrivateValues: naming.revealsPrivateValues)
         let key = isPresentation(applied.change) ? "presenter" : "flow"
-        let origin = applied.origin == .fallback ? " origin=fallback" : ""
+        let origin = structuredOrigin(applied.origin)
         return "\(change) \(key)=\(applied.flow)\(origin)"
+    }
+
+    /// ` origin=fallback` or ` origin=user`, or nothing for a change app code asked for.
+    private static func structuredOrigin(_ origin: ChangeOrigin) -> String {
+        switch origin {
+        case .app:
+            return ""
+        case .fallback:
+            return " origin=fallback"
+        case .user:
+            return " origin=user"
+        }
     }
 
     /// Whether a change presents or dismisses a flow.

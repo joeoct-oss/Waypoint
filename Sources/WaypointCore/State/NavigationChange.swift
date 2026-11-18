@@ -11,7 +11,8 @@
 /// Routers emit applied changes as events, and tests can compare them.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum NavigationChange: NavigationRecord {
     /// Routes were pushed, bottom first.
     case pushed([AnyRoute])

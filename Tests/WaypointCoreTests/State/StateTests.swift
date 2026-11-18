@@ -11,7 +11,8 @@ import Testing
 import WaypointCore
 import WaypointTestSupport
 
-/// State values: saving, restoring, presentation styles and descriptions (#45, see the Descriptions article).
+/// State values: saving, restoring, presentation styles and descriptions (#45, see the Descriptions
+/// article).
 @Suite("Navigation state")
 struct StateTests {
     let filter = Presentation(style: .sheet, flow: FlowID("filter"), route: AnyRoute(SettingsRoute()))
