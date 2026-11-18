@@ -26,8 +26,9 @@
     /// }
     /// ```
     ///
-    /// Push routes with the router, never with `NavigationLink(value:)`: SwiftUI hands the stack
-    /// a value it can't read back, so the push is refused and reported as `rendererMismatch`.
+    /// Push routes with the router or a ``WaypointLink``, never with `NavigationLink(value:)`:
+    /// SwiftUI hands the stack a value it can't read back, so the push is refused and reported as
+    /// `rendererMismatch`, in release builds too.
     ///
     /// A stack keeps drawing the router it was first given. Pass another router and the stack
     /// starts again from that router's path.

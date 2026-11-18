@@ -8,12 +8,17 @@
 
 import SwiftUI
 
-// A product: its picture, name, price and description, with Save to the wish list in the bar and
-// Add to cart at the bottom, for guests and signed-in readers alike.
-struct ProductDetailView: View {
+// A product: its picture, name, price and description, a related product the coordinator links
+// to, Save to the wish list in the bar and Add to cart at the bottom, for guests and signed-in
+// readers alike.
+//
+// Conformances:
+// - `Related: View`: the link to the related product, which the coordinator draws.
+struct ProductDetailView<Related: View>: View {
     let product: Product
     let onAddToCart: () -> Void
     let onSave: () -> Void
+    @ViewBuilder let related: Related
 
     var body: some View {
         ScrollView {
@@ -25,6 +30,7 @@ struct ProductDetailView: View {
                 Text(product.summary)
                     .font(Typography.body)
                     .foregroundStyle(Palette.textSecondary.color)
+                relatedSection
             }
             .padding(Spacing.large)
         }
@@ -37,6 +43,18 @@ struct ProductDetailView: View {
             Button("Save", systemImage: "heart", action: onSave)
                 .accessibilityIdentifier(Identifiers.productSave)
         }
+    }
+
+    private var relatedSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.small) {
+            Text("You might also like")
+                .font(Typography.headline)
+                .foregroundStyle(Palette.text.color)
+            related
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(Identifiers.relatedProduct)
+        }
+        .padding(.top, Spacing.large)
     }
 
     private var picture: some View {
