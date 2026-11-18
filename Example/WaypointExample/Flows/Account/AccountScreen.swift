@@ -6,8 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// A screen the account stack can push: orders, addresses and their form, settings, and the Navigation
-// Lab under settings.
+// A screen the account stack can push: orders, addresses and their form, settings, and the
+// Navigation Lab under settings.
 //
 // Conformances:
 // - `Hashable`, so `NavigationStack` can keep screens in its path and tell them apart.
@@ -20,6 +20,7 @@ enum AccountScreen: Hashable {
     case lab
     case labBranch(Branch)
     case labFlow(FlowEntry)
+    case labStory(ViewModelStory)
 
     static let rootTrail = [
         "account",
@@ -43,12 +44,14 @@ enum AccountScreen: Hashable {
             return branch.title
         case .labFlow(let entry):
             return entry.flow.title
+        case .labStory(let story):
+            return story.title
         }
     }
 
     var kind: FlowKind? {
         switch self {
-        case .orders, .order, .addresses, .addAddress, .settings, .lab:
+        case .orders, .order, .addresses, .addAddress, .settings, .lab, .labStory:
             return nil
         case .labBranch(let branch):
             return branch.hostKind
@@ -75,6 +78,8 @@ enum AccountScreen: Hashable {
             return Self.labTrail(to: branch)
         case .labFlow(let entry):
             return Self.labTrail(to: entry)
+        case .labStory(let story):
+            return AccountScreen.lab.trail + [story.code]
         }
     }
 

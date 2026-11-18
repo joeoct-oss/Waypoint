@@ -64,6 +64,20 @@ enum Identifiers {
     static let settingsButton = "account.settings"
     static let labButton = "settings.lab"
     static let lab = "lab"
+    static let labStylePicker = "lab.style.picker"
+    static let labStyleSample = "lab.style.sample"
+    static let labTryStyle = "lab.style.try"
+    static let labOpenLateDemo = "lab.late.open"
+    static let labLateOutcome = "lab.late.outcome"
+    static let labOpenReviews = "lab.noRouter.openReviews"
+    static let labMissingRouter = "lab.noRouter.issue"
+    static let labPreviewSample = "lab.preview.sample"
+    static let labDemoProduct = "lab.demo.product"
+    static let labDemoAddToCart = "lab.demo.addToCart"
+    static let labDemoReviews = "lab.demo.reviews"
+    static let labDemoReviewsScreen = "lab.demo.reviewsScreen"
+    static let labDemoCart = "lab.demo.cart"
+    static let labDemoClose = "lab.demo.close"
 
     static func product(id: Int) -> String {
         "product.\(id)"
@@ -87,6 +101,10 @@ enum Identifiers {
 
     static func entry(_ entry: FlowEntry) -> String {
         "\(entry.branch.rawValue).\(entry.flow.rawValue).\(entry.kind.rawValue)"
+    }
+
+    static func labStory(_ story: ViewModelStory) -> String {
+        "lab.story.\(story.rawValue)"
     }
 
     static func placeholder(_ entry: FlowEntry) -> String {
