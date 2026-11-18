@@ -2,6 +2,10 @@
 
 Thank you for helping. This guide covers how changes are made: tests first, where they run, the code style, and how a pull request goes from branch to `main`.
 
+## Setup
+
+Tool versions (Tuist, SwiftLint and Periphery) are pinned in [`.mise.toml`](.mise.toml). On a Mac, run `brew install mise`, then `scripts/bootstrap.sh`. On Linux, `scripts/bootstrap.sh` alone installs the pinned SwiftLint into `.tools/bin`, because Tuist and Periphery only run on macOS. swift-format is the toolchain's `swift format`, so it needs no install.
+
 ## Start with an issue
 
 Every change starts from an issue. Name the branch after it:

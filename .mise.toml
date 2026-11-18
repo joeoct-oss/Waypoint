@@ -1,0 +1,16 @@
+# Developer tool versions for Waypoint: the one place they are written.
+# Install them with scripts/bootstrap.sh. Upgrading a tool is a one-line change here.
+# swift-format is not listed: it ships with the Swift toolchain as `swift format`.
+
+[tools]
+tuist = "4.218.1"
+swiftlint = "0.65.1"
+periphery = "3.8.0"
+
+[env]
+# The expected major.minor of the toolchain's `swift format` (Xcode on the Mac, the cloud toolchain).
+WAYPOINT_SWIFT_FORMAT = "6.4"
+# Checksums of the SwiftLint Linux release zips, used by scripts/bootstrap.sh where mise can't run.
+# Update them together with the swiftlint version above.
+WAYPOINT_SWIFTLINT_LINUX_AMD64_SHA256 = "caeed6f4a679c35539ffaf124f6c4ab4a8416917f7d8796279dc52b74026059d"
+WAYPOINT_SWIFTLINT_LINUX_ARM64_SHA256 = "9ffa52f478e6d8eb485d37d14715ffac90abc81c58f3370d598bf75be05605f8"

@@ -10,3 +10,4 @@ Example/*.xcodeproj
 Example/*.xcworkspace
 Example/Derived/
 .wrangler/
+.tools/

@@ -11,7 +11,7 @@ The `App` asks for each window's view with `AppCoordinator.makeWindow(services:l
 
 ## Generate and run
 
-The Xcode project is generated with [Tuist](https://tuist.dev) from `Project.swift`; no `.xcodeproj` or `.xcworkspace` is committed.
+The Xcode project is generated with [Tuist](https://tuist.dev) from `Project.swift`; no `.xcodeproj` or `.xcworkspace` is committed. Its version is pinned in `.mise.toml`; see [Setup](../CONTRIBUTING.md#setup).
 
 ```sh
 tuist generate --path Example --no-open
