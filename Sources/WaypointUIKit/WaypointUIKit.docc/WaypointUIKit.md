@@ -2,6 +2,10 @@
 
 Draw Waypoint navigation with UIKit, and mix it with SwiftUI.
 
+@Metadata {
+    @PageImage(purpose: card, source: "waypointuikit-card", alt: "A UIKit screen presenting a sheet, with the way back to the root.")
+}
+
 ## Overview
 
 WaypointUIKit is the UIKit renderer for `WaypointCore`. It drives a `UINavigationController`, presents sheets and full-screen covers, and draws tab bar controllers from the same routers the SwiftUI renderer uses. A UIKit flow can present a SwiftUI flow and the reverse, because both renderers draw the same router tree.
