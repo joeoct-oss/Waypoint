@@ -120,7 +120,7 @@ extension TabRouter {
     }
 
     /// Applies a tab command to the working copy.
-    private func tabStep(_ command: TabCommand<Tab>, in store: TransactionStore) -> StepResult {
+    func tabStep(_ command: TabCommand<Tab>, in store: TransactionStore) -> StepResult {
         store.enlist(self)
         switch TabReducer.reduce(current.state, command) {
         case .changed(let next, let changes):

@@ -49,6 +49,11 @@ public struct NavigationIssue: NavigationRecord {
         /// A router setting that would break a rule, such as `maxQueuedChanges` below 1. The
         /// setting keeps its old value.
         case invalidSetting
+
+        /// A renderer reported a screen the router can't match, such as more screens than the
+        /// path holds. The router keeps its state. A `NavigationLink(value:)` inside a Waypoint
+        /// stack causes it.
+        case rendererMismatch
     }
 
     /// What went wrong.
