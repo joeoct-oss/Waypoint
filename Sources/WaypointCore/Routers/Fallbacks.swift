@@ -14,11 +14,39 @@ struct FallbackContext {
     /// The route of a `popTo` route call, for the `.push` fallback.
     let route: AnyRoute?
 
+    /// The route and style of a `present` call, for the `.replacePresentation` fallback.
+    let presentation: PresentationRequest?
+
     /// The file of the call.
     let file: StaticString
 
     /// The line of the call.
     let line: UInt
+
+    /// A context for one call. `route` and `presentation` are only given by the calls that use
+    /// them.
+    init(
+        explicit: NavigationFallback?,
+        route: AnyRoute? = nil,
+        presentation: PresentationRequest? = nil,
+        file: StaticString,
+        line: UInt
+    ) {
+        self.explicit = explicit
+        self.route = route
+        self.presentation = presentation
+        self.file = file
+        self.line = line
+    }
+}
+
+/// What a `present` call asked for, kept so the `.replacePresentation` fallback can present it.
+struct PresentationRequest {
+    /// The route to present as the new flow's root screen.
+    let route: AnyRoute
+
+    /// How to present it.
+    let style: PresentationStyle
 }
 
 extension TransactionStore {
@@ -82,6 +110,8 @@ extension TransactionStore {
             return issueOf(router.dismissAllStep(in: self), context)
         case .resetToRoot:
             return issueOf(resetStep(from: router), context)
+        case .replacePresentation:
+            return issueOf(replacePresentationStep(context.presentation, on: router), context)
         case .custom(_, let change):
             return runCustom(change, on: router, after: issue)
         }
@@ -120,6 +150,23 @@ extension TransactionStore {
         }
         let changed = dismissed.isChanged || popped.isChanged
         return changed ? .changed : .unchanged
+    }
+
+    /// Dismisses the router's presented flow with everything above it, then presents the call's
+    /// route.
+    private func replacePresentationStep(
+        _ request: PresentationRequest?,
+        on router: any PresentingRouter
+    ) -> StepResult {
+        guard let request else {
+            let message = "The .replacePresentation fallback only applies to present."
+            return .failed(IssueDraft(kind: .fallbackFailed, flow: router.flowID, message: message))
+        }
+        let dismissed = router.dismissStep(in: self)
+        if case .failed = dismissed {
+            return dismissed
+        }
+        return router.presentStep(request.route, style: request.style, in: self)
     }
 
     /// Runs a custom fallback through a transaction value. Its first failed step is its issue.

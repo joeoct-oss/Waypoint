@@ -37,7 +37,8 @@ extension StackRouter {
     /// Presents `route` as the root screen of a new child flow.
     ///
     /// If a flow is already presented, returns `.failed` with
-    /// `alreadyPresenting` unless a fallback says otherwise.
+    /// `alreadyPresenting` unless a fallback says otherwise, such as
+    /// `.replacePresentation`.
     @discardableResult
     public func present<R: Route>(
         _ route: R,
@@ -67,7 +68,23 @@ extension StackRouter {
 
 > Note: Two kinds of presentation are coming. Alerts and confirmation dialogs become presentations in the navigation state, shown by both renderers, with the tapped button returned as a typed result. And when something Waypoint didn't present is on screen, such as a share sheet or a payment sheet from another SDK, Waypoint will wait until it closes before presenting, or dismiss it first if the app chooses, and report it in the log. Tracked in #154 and #153.
 
-> Note: Three more changes are coming. A popover style anchored to a view, which becomes a sheet in compact width (#156). A `replacePresentation` fallback that dismisses what is showing and presents the new flow in one call, and `outcome.didChange` and `outcome.failure` helpers so a call site needs no long `switch` (#145). And a leave confirmation set at run time with `router.setLeaveConfirmation(_:)`, which asks before swipe back, a sheet drag or Back, next to the fixed `allowsInteractiveDismiss` below (#155).
+> Note: Two more changes are coming. A popover style anchored to a view, which becomes a sheet in compact width (#156). And a leave confirmation set at run time with `router.setLeaveConfirmation(_:)`, which asks before swipe back, a sheet drag or Back, next to the fixed `allowsInteractiveDismiss` below (#155).
+
+### Replacing what is presented
+
+A flow presents one flow at a time. When newer intent should win, such as a notification tap while a sheet is open, pass `.replacePresentation`: it dismisses the presented flow and everything above it, then presents the new route with the call's style, in one change.
+
+```swift
+func showOrder(id: Order.ID) {
+    router.present(OrderRoute(id: id), else: .replacePresentation)
+}
+```
+
+The outcome is `.recovered(alreadyPresenting, by: .replacePresentation)` when something was replaced, and `.applied` when nothing was presented. If the new route can't be presented, the dismissal is rolled back too. A replacement made in code doesn't ask the presented flow for a leave confirmation; that applies only to the user's own gestures (#155). To replace across the app, set it once as the router's fallback for `alreadyPresenting`:
+
+```swift
+router.setFallback(.replacePresentation, for: .alreadyPresenting)
+```
 
 ### Styles
 
