@@ -8,9 +8,9 @@
 
 import SwiftUI
 
-// A product: its picture, name, price and description, a related product the coordinator links
-// to, Save to the wish list in the bar and Add to cart at the bottom, for guests and signed-in
-// readers alike.
+// A product: its illustration on a wide backdrop, name, price and description, a related product
+// the coordinator links to, Save to the wish list in the bar and Add to cart at the bottom, for
+// guests and signed-in readers alike.
 //
 // Conformances:
 // - `Related: View`: the link to the related product, which the coordinator draws.
@@ -24,9 +24,7 @@ struct ProductDetailView<Related: View>: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 picture
-                Text(product.price, format: .currency(code: "USD"))
-                    .font(Typography.title)
-                    .foregroundStyle(Palette.text.color)
+                titles
                 Text(product.summary)
                     .font(Typography.body)
                     .foregroundStyle(Palette.textSecondary.color)
@@ -58,12 +56,22 @@ struct ProductDetailView<Related: View>: View {
     }
 
     private var picture: some View {
-        Image(systemName: product.symbolName)
-            .font(.system(size: 72))
-            .foregroundStyle(Palette.brand.color)
-            .frame(maxWidth: .infinity, minHeight: 220)
-            .background(Palette.brandSubtle.color, in: RoundedRectangle(cornerRadius: Radius.card))
-            .accessibilityHidden(true)
+        ProductIllustration(artwork: product.artwork, drawsBackdrop: false)
+            .frame(maxWidth: .infinity)
+            .frame(height: Size.productHero)
+            .background(ProductBackdrop(artwork: product.artwork))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.banner))
+    }
+
+    private var titles: some View {
+        VStack(alignment: .leading, spacing: Spacing.extraSmall) {
+            Text(product.name)
+                .font(Typography.title)
+                .foregroundStyle(Palette.text.color)
+            Text(product.price, format: .currency(code: "USD").precision(.fractionLength(0)))
+                .font(Typography.headline)
+                .foregroundStyle(Palette.accent.color)
+        }
     }
 
     private var addButton: some View {

@@ -26,6 +26,22 @@ struct ProductRoute: Route {
     var preview: Product?
 }
 
+// The collection screen a products stack pushes from Shop's banner. Like `ProductRoute`, it carries
+// the collection's id, and the banner hands the collection over as `preview`.
+//
+// Conformances:
+// - `Route`, so a Waypoint stack router can push it and find its destination.
+struct CollectionRoute: Route {
+    static let publicLogFields: Set<String> = [
+        "id",
+    ]
+
+    let id: String
+
+    @RouteHint
+    var preview: ProductCollection?
+}
+
 // Where a products stack starts: browsing the shop, or searching it.
 enum ProductsStart {
     case browse

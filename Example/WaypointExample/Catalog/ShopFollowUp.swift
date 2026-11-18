@@ -7,7 +7,7 @@
 //
 
 // The change made 150 ms into the launch push: go back one screen, go back to the shop, or open a
-// link that replaces the stack with the Lunar Clock.
+// link that replaces the stack with the Star Chart Print.
 //
 // Conformances:
 // - `String` raw values, so a launch argument's text can name a case.

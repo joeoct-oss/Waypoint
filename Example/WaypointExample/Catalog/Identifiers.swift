@@ -46,12 +46,17 @@ enum Identifiers {
     static let confirmClearData = "settings.clearData.confirm"
     static let mainTabs = "main.tabs"
     static let productList = "shop.products"
+    static let collectionScreen = "shop.collection"
     static let settingsButton = "account.settings"
     static let labButton = "settings.lab"
     static let lab = "lab"
 
     static func product(id: Int) -> String {
         "product.\(id)"
+    }
+
+    static func collection(id: String) -> String {
+        "collection.\(id)"
     }
 
     static func order(id: Int) -> String {

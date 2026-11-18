@@ -33,6 +33,11 @@ struct ScreenChrome: ViewModifier {
         trail.count <= 1
     }
 
+    // A tab's root shows the tab bar; every screen pushed above it hides it.
+    private var tabBarVisibility: Visibility {
+        isRoot ? .automatic : .hidden
+    }
+
     private var titleDisplayMode: NavigationBarItem.TitleDisplayMode {
         isRoot ? .large : .inline
     }
@@ -74,6 +79,7 @@ struct ScreenChrome: ViewModifier {
             .navigationBarTitleDisplayMode(titleDisplayMode)
             .navigationSubtitle(trailText)
             .toolbar { kindItem }
+            .toolbar(tabBarVisibility, for: .tabBar)
     }
 
     private func makeTrailStrip() -> some View {
@@ -90,6 +96,7 @@ struct ScreenChrome: ViewModifier {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(titleDisplayMode)
             .toolbar { kindItem }
+            .toolbar(tabBarVisibility, for: .tabBar)
     }
 }
 

@@ -30,6 +30,7 @@ final class JourneyTests: XCTestCase {
     private static let wrongPassword = "wrong"
     private static let signUpName = "Nova Reader"
     private static let cartProductID = 1
+    private static let cartProductTitle = "Orbit Lamp"
     private static let savedProductID = 2
     private static let orderID = 1042
 
@@ -145,12 +146,9 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(placed.waitForExistence(timeout: UITestSteps.timeout))
         app.buttons[Identifiers.continueShopping].tapWhenReady()
 
-        // Shop keeps its place, so it still shows the product the order started from.
-        let shopSelected = XCTNSPredicateExpectation(
-            predicate: NSPredicate(format: "isSelected == true"),
-            object: app.tabBars.buttons[Self.shopTitle]
-        )
-        wait(for: [shopSelected], timeout: UITestSteps.timeout)
+        // Shop keeps its place, so it still shows the product the order started from, with the tab
+        // bar hidden as on every pushed screen.
+        XCTAssertTrue(app.navigationBars[Self.cartProductTitle].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertFalse(placed.exists)
     }
 

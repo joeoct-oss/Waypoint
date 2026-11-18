@@ -8,23 +8,20 @@
 
 import SwiftUI
 
-// A product the reader might also like, under a product's description: its picture, name and price,
-// with a chevron, because a tap opens it.
+// A product the reader might also like, under a product's description: its illustration, name and
+// price, with a chevron, because a tap opens it.
 struct RelatedProductRow: View {
     let product: Product
 
     var body: some View {
         HStack(spacing: Spacing.medium) {
-            IconTile(
-                symbolName: product.symbolName,
-                size: Size.rowIcon,
-                tint: Palette.brand,
-                fill: Palette.brandSubtle
-            )
+            ProductIllustration(artwork: product.artwork, drawsBackdrop: true)
+                .frame(width: Size.rowIcon, height: Size.rowIcon)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.field))
             Text(product.name)
                 .font(Typography.headline)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text(product.price, format: .currency(code: "USD"))
+            Text(product.price, format: .currency(code: "USD").precision(.fractionLength(0)))
                 .font(Typography.callout.weight(.semibold))
             Image(systemName: "chevron.right")
                 .font(Typography.footnote.weight(.semibold))
