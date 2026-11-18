@@ -197,8 +197,8 @@ struct RendererReportTests {
     @Test
     func userChangesReadAsByUser() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.setLogging(LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withSymbols(false))
+        let logging = LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withSymbols(false)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
         router.push(ProductRoute(id: 1))
 
         router.rendererDidPop(toCount: 0)
@@ -209,8 +209,8 @@ struct RendererReportTests {
     @Test
     func userChangesLogWithUserOrigin() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.setLogging(LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withFormat(.structured))
+        let logging = LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withFormat(.structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
         router.push(ProductRoute(id: 1))
 
         router.rendererDidPop(toCount: 0)

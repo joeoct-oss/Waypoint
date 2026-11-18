@@ -116,8 +116,6 @@ root.onEvents { _ in
 
 Use `snapshot()` instead of `debugTree()` when you want a value to compare or save. The tree before a transaction is the one the previous call saw.
 
-> Note: Logging will be set once for the whole tree, in a `NavigationConfiguration` value on the root, instead of on any router. Tracked in #143.
-
 ### Diagnostic logging
 
 Waypoint logs what it does and why, at levels you choose. Logging is on at `.notice` by default, so problems show up and normal changes stay quiet. On Apple platforms it goes to the unified log. Route values are private in logs unless you mark fields as public.
@@ -251,24 +249,7 @@ public enum TreeLogging: Sendable, Equatable {
     case wholeTree
 }
 
-extension StackRouter {
-    /// How this router's whole tree logs. Shared by every router in the tree.
-    public var logging: LogConfiguration { get }
-
-    /// Sets how the whole tree logs. Set it once, on the root.
-    public func setLogging(_ configuration: LogConfiguration)
-
-    /// The whole tree this router is in, one flow per line, for printing while debugging.
-    public func debugTree(revealingPrivateValues: Bool = false) -> String
-}
-
-extension TabRouter {
-    /// How this router's whole tree logs. Shared by every router in the tree.
-    public var logging: LogConfiguration { get }
-
-    /// Sets how the whole tree logs. Set it once, on the root.
-    public func setLogging(_ configuration: LogConfiguration)
-
+extension StackRouter {   // also on TabRouter
     /// The whole tree this router is in, one flow per line, for printing while debugging.
     public func debugTree(revealingPrivateValues: Bool = false) -> String
 }
@@ -279,12 +260,15 @@ extension Route {
 }
 ```
 
+Logging is set once for the whole tree, in the `NavigationConfiguration` given to the root router (see <doc:StackNavigation>). Every router reads it through `configuration.logging`, and none can change it:
+
 ```swift
 #if DEBUG
-let root = RootRouter(AppRoot.login, logging: .init(minimumLevel: .debug, treeLogging: .changedStacks))
+let logging = LogConfiguration(minimumLevel: .debug, treeLogging: .changedStacks)
 #else
-let root = RootRouter(AppRoot.login)
+let logging = LogConfiguration.default
 #endif
+let root = RootRouter(AppRoot.login, configuration: NavigationConfiguration(logging: logging))
 ```
 
 `WaypointCore` on its own logs nowhere: its default handler is `DisabledLogHandler`. The SwiftUI and UIKit products install a unified-log handler as the default. Any handler works, such as one that writes to a file or a test handler that records lines.

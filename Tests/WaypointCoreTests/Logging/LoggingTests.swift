@@ -24,14 +24,14 @@ struct LoggingTests {
         #expect(configuration.categories == nil)
         #expect(!configuration.revealsPrivateValues)
         #expect(!configuration.isEnabled(level: .fault, category: .issues))
-        #expect(StackRouter().logging.handler is DisabledLogHandler)
+        #expect(StackRouter().configuration.logging.handler is DisabledLogHandler)
     }
 
     @Test
     func disabledHandlerNeverBuildsMessage() {
         let handler = RecordingLogHandler(accepts: false)
-        let router = StackRouter()
-        router.setLogging(LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured))
+        let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
         let built = Recorder<String>()
 
         router.tree.log(.fault, .issues, file: #fileID, line: #line) { _ in
@@ -49,8 +49,8 @@ struct LoggingTests {
     @Test
     func levelBelowMinimumIsSkippedBeforeAskingTheHandler() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.setLogging(LogConfiguration(handler: handler, minimumLevel: .notice, format: .structured))
+        let logging = LogConfiguration(handler: handler, minimumLevel: .notice, format: .structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
 
         router.push(HomeRoute())
         router.setPath {
@@ -64,15 +64,14 @@ struct LoggingTests {
     @Test
     func disabledCategoryIsSkipped() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
         let presentationOnly: Set<LogCategory> = [.presentation]
-        let configuration = LogConfiguration(
+        let logging = LogConfiguration(
             handler: handler,
             minimumLevel: .debug,
             categories: presentationOnly,
             format: .structured
         )
-        router.setLogging(configuration)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
 
         router.push(HomeRoute())
         router.present(SettingsRoute())
@@ -85,8 +84,9 @@ struct LoggingTests {
     @Test
     func changesAreLoggedAtInfoInTheirCategory() {
         let handler = RecordingLogHandler()
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
-        tabs.setLogging(LogConfiguration(handler: handler, minimumLevel: .info, format: .structured))
+        let logging = LogConfiguration(handler: handler, minimumLevel: .info, format: .structured)
+        let configuration = NavigationConfiguration(logging: logging)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: configuration)
 
         tabs.select(.shop)
         tabs.router(for: .shop).push(HomeRoute())
@@ -101,14 +101,15 @@ struct LoggingTests {
     @Test
     func childRouterSharesTheConfiguration() throws {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
+        let logging = LogConfiguration(handler: handler, minimumLevel: .info, format: .structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
         router.present(SettingsRoute())
         let child = try #require(router.presented)
+        handler.removeAll()
 
-        router.setLogging(LogConfiguration(handler: handler, minimumLevel: .info, format: .structured))
         child.push(HomeRoute())
 
-        #expect(child.logging.minimumLevel == .info)
+        #expect(child.configuration.logging.minimumLevel == .info)
         let expectedTexts = ["pushed [HomeRoute] flow=\(child.flowID)"]
         #expect(handler.texts == expectedTexts)
     }
@@ -116,8 +117,8 @@ struct LoggingTests {
     @Test
     func privateValuesAreRedactedByDefault() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.setLogging(LogConfiguration(handler: handler, minimumLevel: .info, format: .structured))
+        let logging = LogConfiguration(handler: handler, minimumLevel: .info, format: .structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
 
         router.push(ProductRoute(id: 7))
 
@@ -128,8 +129,8 @@ struct LoggingTests {
     @Test
     func publicLogFieldsAreShown() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.setLogging(LogConfiguration(handler: handler, minimumLevel: .info, format: .structured))
+        let logging = LogConfiguration(handler: handler, minimumLevel: .info, format: .structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
 
         router.push(RouteFixtures.SearchRoute(id: 3, query: "shoes"))
 
@@ -141,14 +142,13 @@ struct LoggingTests {
     @Test
     func revealsPrivateValuesShowsEverything() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        let configuration = LogConfiguration(
+        let logging = LogConfiguration(
             handler: handler,
             minimumLevel: .info,
             revealsPrivateValues: true,
             format: .structured
         )
-        router.setLogging(configuration)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
 
         router.push(ProductRoute(id: 7))
 
@@ -159,16 +159,16 @@ struct LoggingTests {
     @Test
     func fallbackChangesSayWhereTheyCameFrom() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.push(HomeRoute())
         let navigationOnly: Set<LogCategory> = [.navigation]
-        let configuration = LogConfiguration(
+        let logging = LogConfiguration(
             handler: handler,
             minimumLevel: .info,
             categories: navigationOnly,
             format: .structured
         )
-        router.setLogging(configuration)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
+        router.push(HomeRoute())
+        handler.removeAll()
 
         router.popTo(SettingsRoute(), else: .popToRoot)
 
@@ -179,10 +179,11 @@ struct LoggingTests {
     @Test
     func everyIssueIsLoggedWithItsCallSite() throws {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.push(HomeRoute())
         let issuesOnly: Set<LogCategory> = [.issues]
-        router.setLogging(LogConfiguration(handler: handler, categories: issuesOnly, format: .structured))
+        let logging = LogConfiguration(handler: handler, categories: issuesOnly, format: .structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
+        router.push(HomeRoute())
+        handler.removeAll()
 
         let recoveredLine: UInt = #line + 1
         router.pop(count: 2)
@@ -203,19 +204,19 @@ struct LoggingTests {
     @Test
     func unchangedQueuedAndIgnoredCallsLogAtDebug() throws {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.present(SettingsRoute())
-        let child = try #require(router.presented)
-        router.dismiss()
-        router.push(HomeRoute())
         let navigationOnly: Set<LogCategory> = [.navigation]
-        let configuration = LogConfiguration(
+        let logging = LogConfiguration(
             handler: handler,
             minimumLevel: .debug,
             categories: navigationOnly,
             format: .structured
         )
-        router.setLogging(configuration)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
+        router.present(SettingsRoute())
+        let child = try #require(router.presented)
+        router.dismiss()
+        router.push(HomeRoute())
+        handler.removeAll()
         let once = Once()
         router.tree.onApplied { _ in
             guard once.claim() else {
@@ -242,8 +243,8 @@ struct LoggingTests {
     @Test
     func registryProblemsAreLoggedAsErrors() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.setLogging(LogConfiguration(handler: handler, format: .structured))
+        let logging = LogConfiguration(handler: handler, format: .structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
 
         router.register(RouteFixtures.EmptyFormerKeyRoute.self)
 
@@ -256,8 +257,8 @@ struct LoggingTests {
     @Test
     func eachTransactionIsOneIntervalAlsoWhenItFails() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.setLogging(LogConfiguration(handler: handler, format: .structured))
+        let logging = LogConfiguration(handler: handler, format: .structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
 
         router.transaction {
             $0.push(HomeRoute())
@@ -279,10 +280,11 @@ struct LoggingTests {
     @Test
     func intervalsAreSkippedWhenTheCategoryIsOff() {
         let handler = RecordingLogHandler()
-        let router = StackRouter()
-        router.push(HomeRoute())
         let issuesOnly: Set<LogCategory> = [.issues]
-        router.setLogging(LogConfiguration(handler: handler, categories: issuesOnly, format: .structured))
+        let logging = LogConfiguration(handler: handler, categories: issuesOnly, format: .structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
+        router.push(HomeRoute())
+        handler.removeAll()
 
         router.push(HomeRoute())
 

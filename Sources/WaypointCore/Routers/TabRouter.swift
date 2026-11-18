@@ -133,16 +133,11 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         tree.registry
     }
 
-    /// The most calls that may be queued while changes are applied, in one main-actor turn.
-    /// Shared by the whole tree. Default: 32.
-    public var maxQueuedChanges: Int {
-        tree.maxQueuedChanges
-    }
-
-    /// How this router's whole tree logs. Shared by every router in the tree.
-    /// Default: ``LogConfiguration/default``.
-    public var logging: LogConfiguration {
-        tree.logging
+    /// The settings of the whole tree, given once to the root router. Every router in the tree
+    /// reads the same value, and none can change it. The registry holds every route type
+    /// registered since.
+    public var configuration: NavigationConfiguration {
+        tree.configuration
     }
 
     /// Default presentation options for this container, its tabs and their children.
@@ -177,13 +172,18 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     ///   - flow: The container's name in logs, events and saved state. Default: `tabs`.
     ///   - popsToRootOnReselect: Whether tapping the selected tab pops its stack to the root.
     ///     Default: `true`.
+    /// - configuration: The settings of the whole tree. Default:
+    ///     ``NavigationConfiguration/default``.
     public init(
         tabs: [Tab],
         selection: Tab,
         flow: FlowID = FlowID("tabs"),
-        popsToRootOnReselect: Bool = true
+        popsToRootOnReselect: Bool = true,
+        configuration: NavigationConfiguration = .default,
+        file: StaticString = #fileID,
+        line: UInt = #line
     ) {
-        let tree = NavigationTreeContext()
+        let tree = NavigationTreeContext(configuration: configuration)
         let state = TabState(tabs: tabs, selection: selection)
         self.tree = tree
         self.flowID = tree.claimFlowName(flow.name)
@@ -196,6 +196,9 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
             (tab, makeTabRouter(for: tab, attached: true))
         }
         self.committed = Snapshot(state: state, presented: nil, tabRouters: Dictionary(uniqueKeysWithValues: routers))
+        if let problem = tree.configurationProblem {
+            reportInvalidSetting(problem, file: file, line: line)
+        }
     }
 
     /// The stack router of one tab.
@@ -277,15 +280,6 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         }
     }
 
-    /// Sets how this router's whole tree logs. Set it once, on the root.
-    ///
-    /// ```swift
-    /// tabs.setLogging(LogConfiguration.default.withMinimumLevel(.debug))
-    /// ```
-    public func setLogging(_ configuration: LogConfiguration) {
-        tree.setLogging(configuration)
-    }
-
     /// The whole tree this router is in, one flow per line, for printing while debugging.
     ///
     /// ```text
@@ -305,17 +299,6 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
             usesSymbols: tree.logging.usesSymbols
         )
         return rootNode.readableTree(naming).rendered
-    }
-
-    /// Sets the most calls that may be queued in one main-actor turn, for the whole tree.
-    ///
-    /// A limit below 1 would drop every call made from an observer, so it reports
-    /// `invalidSetting` and the limit stays as it was.
-    public func setMaxQueuedChanges(_ limit: Int, file: StaticString = #fileID, line: UInt = #line) {
-        guard let problem = tree.setMaxQueuedChanges(limit) else {
-            return
-        }
-        reportInvalidSetting(problem, file: file, line: line)
     }
 
     /// Sets the default presentation options for this router and its children.
@@ -354,18 +337,6 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// The sheet options a presentation uses: its own, or this router's defaults.
     public func sheetOptions(for presentation: Presentation) -> SheetOptions {
         presentation.style.sheetOptions ?? presentationDefaults.sheet
-    }
-
-    /// Adds a handler for calls anywhere in this router's tree that failed and could not be
-    /// recovered, so the app can show a message or report it. Each failure reaches it once.
-    ///
-    /// ```swift
-    /// rootRouter.onNavigationFailure { failure in
-    ///     crashReporter.record(failure.description)
-    /// }
-    /// ```
-    public func onNavigationFailure(_ handler: @escaping @MainActor (NavigationFailure) -> Void) {
-        tree.addFailureHandler(handler)
     }
 
     /// Registers a route type for decoding and as having a destination. See
