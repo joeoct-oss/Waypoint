@@ -311,7 +311,8 @@ public final class StackRouter: NavigationRouter {
         line: UInt = #line
     ) -> NavigationOutcome {
         let erased = AnyRoute(route)
-        return perform(file: file, line: line, fallback: fallback) { router, store in
+        let request = PresentationRequest(route: erased, style: style)
+        return perform(file: file, line: line, fallback: fallback, presentation: request) { router, store in
             router.presentStep(erased, style: style, in: store)
         }
     }
@@ -440,9 +441,16 @@ public final class StackRouter: NavigationRouter {
         line: UInt,
         fallback: NavigationFallback?,
         route: AnyRoute? = nil,
+        presentation: PresentationRequest? = nil,
         _ step: @escaping (StackRouter, TransactionStore) -> StepResult
     ) -> NavigationOutcome {
-        let context = FallbackContext(explicit: fallback, route: route, file: file, line: line)
+        let context = FallbackContext(
+            explicit: fallback,
+            route: route,
+            presentation: presentation,
+            file: file,
+            line: line
+        )
         return tree.perform(on: self, file: file, line: line) { [unowned self] store in
             store.resolve(step(self, store), on: self, context)
         }

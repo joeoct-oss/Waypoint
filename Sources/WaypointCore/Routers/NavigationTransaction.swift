@@ -163,7 +163,8 @@ public struct NavigationTransaction {
         line: UInt = #line
     ) -> NavigationOutcome {
         let erased = AnyRoute(route)
-        return onRouter(context(fallback, file, line)) { router in
+        let request = PresentationRequest(route: erased, style: style)
+        return onRouter(context(fallback, file, line, presentation: request)) { router in
             router.presentStep(erased, style: style, in: store)
         }
     }
@@ -289,9 +290,16 @@ public struct NavigationTransaction {
         _ fallback: NavigationFallback?,
         _ file: StaticString,
         _ line: UInt,
-        route: AnyRoute? = nil
+        route: AnyRoute? = nil,
+        presentation: PresentationRequest? = nil
     ) -> FallbackContext {
-        FallbackContext(explicit: fallback, route: route, file: file, line: line)
+        FallbackContext(
+            explicit: fallback,
+            route: route,
+            presentation: presentation,
+            file: file,
+            line: line
+        )
     }
 
     /// The issue for a step on a value that names no router.

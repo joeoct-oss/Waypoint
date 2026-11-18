@@ -24,6 +24,9 @@
 /// A route's key is its module and type name, such as `Shop.ProductRoute`, so routes declare no
 /// key. See ``RouteKey``.
 ///
+/// The coordinator supplies a screen's model from the route's id. To show what a list already
+/// loaded at once, mark an optional field ``RouteHint``; it is never saved, compared or described.
+///
 /// Conformances:
 /// - `NavigationValue`, so the router can compare routes and find them in a path, routes can be
 ///   saved, restored and built from links, and they can be logged and tracked off the main actor.

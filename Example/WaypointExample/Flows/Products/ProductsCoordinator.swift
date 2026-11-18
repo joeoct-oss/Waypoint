@@ -66,9 +66,11 @@ final class ProductsCoordinator {
         }
     }
 
+    // Shows the product the list handed over at once, or looks it up by id after a link or a
+    // restore.
     @ViewBuilder
     func makeProductFlow(for route: ProductRoute) -> some View {
-        if let product = Product.find(id: route.id) {
+        if let product = route.preview ?? Product.find(id: route.id) {
             makeProductFlow(product)
         }
     }
@@ -84,7 +86,11 @@ final class ProductsCoordinator {
     }
 
     func showProduct(_ product: Product) {
-        router.push(ProductRoute(id: product.id))
+        let route = ProductRoute(
+            id: product.id,
+            preview: product
+        )
+        router.push(route)
     }
 
     func showFilters() {

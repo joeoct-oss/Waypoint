@@ -27,6 +27,8 @@ Every link source sends to one `LinkInbox`. The inbox holds a link until the app
 
 ### Routes that can be linked to
 
+A link carries ids, so `init(link:)` builds the route from them alone. A route's `@RouteHint` field is `nil` when it comes from a link, and the screen loads by id (see <doc:Routes#Loaded-models-and-hints>).
+
 ```swift
 /// A route that can be opened from a URL.
 ///

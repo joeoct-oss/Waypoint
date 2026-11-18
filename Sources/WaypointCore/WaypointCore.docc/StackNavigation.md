@@ -332,16 +332,23 @@ public enum NavigationOutcome: NavigationRecord {
     /// The call failed and no fallback succeeded. The state is unchanged.
     case failed(NavigationFailure)
 
+    /// Whether the call changed the state: `applied`, or `recovered`
+    /// because its fallback ran. `false` for every other outcome.
+    public var didChange: Bool { get }
     /// The failure, or `nil` for any other outcome.
     public var failure: NavigationFailure? { get }
 }
 ```
 
-Most code ignores the outcome. Code that needs to know can check it:
+Most code ignores the outcome. Code that needs to know asks one question instead of switching over every case:
 
 ```swift
-if case .failed = router.popTo(CheckoutRoute.self) {
+if router.popTo(CheckoutRoute.self).failure != nil {
     showCheckoutExpired()
+}
+
+if router.present(OrderRoute(id: id), else: .replacePresentation).didChange {
+    analytics.track(.orderOpened)
 }
 ```
 
@@ -421,6 +428,9 @@ public enum NavigationFallback: NavigationRecord {
     case dismissAll
     /// Dismisses everything and pops the root stack to its root screen.
     case resetToRoot
+    /// For `present` while a flow is presented: dismiss it and everything
+    /// above it, then present, in one change. Fails on any other call.
+    case replacePresentation
     /// Run your own change. The name appears in logs and outcomes.
     case custom(
         _ name: String,

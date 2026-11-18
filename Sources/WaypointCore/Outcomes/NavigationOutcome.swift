@@ -35,6 +35,19 @@ public enum NavigationOutcome: NavigationRecord {
     /// The call failed and no fallback succeeded. The state is unchanged.
     case failed(NavigationFailure)
 
+    /// Whether the call changed the state: `applied`, or `recovered` because its fallback ran.
+    ///
+    /// `false` for `alreadyThere`, `ignored` and `failed`, and for `queued`, whose call hasn't
+    /// run yet.
+    public var didChange: Bool {
+        switch self {
+        case .applied, .recovered:
+            return true
+        case .alreadyThere, .queued, .ignored, .failed:
+            return false
+        }
+    }
+
     /// The failure, or `nil` for any other outcome.
     public var failure: NavigationFailure? {
         guard case .failed(let failure) = self else {

@@ -22,9 +22,7 @@ router.push(ProductRoute(id: 42))
 
 Every route is `Hashable`, `Codable` and `Sendable` through the `Route` protocol. <doc:WhyTheseConformances> explains what each one is for.
 
-Routes hold identifiers and small inputs, never models or view models. That keeps them cheap to compare, store, log and deep link into.
-
-> Note: A route will be able to carry an optional hint, such as the product a list already loaded, marked `@RouteHint`. The screen uses it for its first frame only, and it is never saved, compared, logged or linked, so the screen must work without it. Tracked in #146.
+Routes hold identifiers and small inputs, never models or view models. That keeps them cheap to compare, store, log and deep link into. <doc:Routes#Loaded-models-and-hints> shows how a screen gets its model.
 
 A small enum is still fine for a closed group of screens, such as the steps of a wizard. It is registered as one type:
 
@@ -70,6 +68,69 @@ public protocol Route: NavigationValue {
 extension Route {
     /// This route type's key, from its module and type name.
     public static var routeKey: RouteKey { get }
+}
+```
+
+### Loaded models and hints
+
+A route carries identity, and the coordinator supplies the model. The destination builds the screen's model from the route's id, and the model asks the app's store or cache for the data:
+
+```swift
+.destination(ProductRoute.self) { route in
+    ProductView(
+        model: ProductModel(
+            id: route.id,
+            store: store
+        )
+    )
+}
+```
+
+This is what makes every screen work from a link and after a restore, where only the id is known. Callbacks don't go in routes either: a screen reports its outputs, such as "Buy tapped on product 42", and the coordinator decides what comes next.
+
+When a list already loaded the product, a hint lets the next screen show it at once. Mark one optional field `@RouteHint` and fill it when you push:
+
+```swift
+// Conformances:
+// - `Route`, so it can be pushed, presented and saved.
+struct ProductRoute: Route {
+    let id: Product.ID
+
+    @RouteHint
+    var preview: Product?
+}
+
+router.push(
+    ProductRoute(
+        id: product.id,
+        preview: product
+    )
+)
+```
+
+The screen shows `preview` for its first frame, then refreshes by id. A hint is not part of the route:
+
+- **Never saved.** Encoding writes nothing for it, so saved state holds `{"id": 42}`. A restored route, and a route built from a link, has `nil`.
+- **Never compared.** Two routes with the same id are equal and hash the same, whatever their hints hold. `popTo`, `contains` and duplicate checks see one route.
+- **Never described.** Logs, events and test failures leave the field out, even when private values are revealed or the field is listed in `publicLogFields`.
+
+So a hint is a first frame only, and the screen must work without it. Don't put state the screen needs in a hint; it is gone after a restore. The hinted value needs only `Sendable`, not `Hashable` or `Codable`, so a plain model struct works. Leave the field out when you push and it is `nil`: `ProductRoute(id: 42)`.
+
+```swift
+/// A value a route carries for its screen's first frame only.
+///
+/// Conformances:
+/// - `Sendable`, because routes cross actors.
+/// - `Hashable`, so a hinted route still compares and hashes by its identity only.
+/// - `Codable`, so a hinted route still saves; the hint itself is never written.
+/// - `Value: Sendable`, so a route that holds the hint stays `Sendable`.
+@propertyWrapper
+public struct RouteHint<Value: Sendable>: Sendable, Hashable, Codable {
+    /// The hinted value, or `nil` after saving, restoring or building the route from a link.
+    public let wrappedValue: Value?
+
+    /// A hint with this value, or with none.
+    public init(wrappedValue: Value?)
 }
 ```
 
