@@ -4,7 +4,7 @@ Show stacks, sheets, tabs and roots in SwiftUI.
 
 ## Overview
 
-> Note: Stacks are built (#11): `WaypointStack`, `destination(_:_:)`, swipe-back sync and the Waypoint link (#147). The rest of this article is planned, not built, and can still change: the flow initializer and the navigator destination (#25), coordinators (#36), sheets and full-screen covers (#12), tabs (#13), roots (#37, #148), incoming links (#15) and previews (#25).
+> Note: Stacks are built (#11): `WaypointStack`, `destination(_:_:)`, swipe-back sync and the Waypoint link (#147). So are the flow initializer, the navigator destination and previews (#25). The rest of this article is planned, not built, and can still change: coordinators (#36), sheets and full-screen covers (#12), tabs (#13), roots (#37, #148) and incoming links (#15).
 
 Each entry view takes a router, or makes one for you, and draws its state. Screens are registered by route type. SwiftUI applies one `navigationDestination(for:)` per registered type, so screens are never wrapped in `AnyView`.
 
@@ -25,9 +25,9 @@ public struct WaypointStack<Root: View>: View {
     public init(_ router: StackRouter, @ViewBuilder root: () -> Root)
 
     /// Creates a stack that belongs to a flow, so `@FlowNavigation(Flow.self)`
-    /// finds it. Planned in #25.
-    public init<F: NavigationFlow>(
-        flow: F.Type,
+    /// finds it. The flow is declared on the router with `declareFlow(_:)`.
+    public init<Flow: NavigationFlow>(
+        flow: Flow.Type,
         router: StackRouter? = nil,
         @ViewBuilder root: () -> Root
     )
@@ -40,8 +40,8 @@ extension View {
         @ViewBuilder _ content: @escaping (R) -> Content
     ) -> some View
 
-    /// The same, and also hands the screen a navigator for its view model.
-    /// Planned in #25.
+    /// The same, and also hands the screen the stack's navigator for its
+    /// view model.
     public func destination<R: Route, Content: View>(
         _ type: R.Type,
         @ViewBuilder _ content: @escaping (R, StackNavigator) -> Content
@@ -61,6 +61,8 @@ WaypointStack(router) {
 ```
 
 `destination(_:_:)` also registers the route type with the stack's router. Put it on the stack's first screen, or on any screen inside the stack.
+
+**Navigation inside the stack.** Every screen in the stack can read its navigator with `@StackNavigation`, dismiss its flow with `@DismissFlow`, or read the router with `@Environment(StackRouter.self)`. A stack made with `WaypointStack(flow: ShopFlow.self)` is also found by `@FlowNavigation(ShopFlow.self)`. See <doc:NavigatingFromViewsAndViewModels>.
 
 **What the user does comes back.** A swipe back, the Back button and its long-press menu reach the router as one pop each, logged with `origin=user`. The router's path is always what the screen shows.
 
@@ -316,11 +318,18 @@ extension View {
 Views that read navigation from the environment need a router above them. In previews, add one:
 
 ```swift
-#Preview { ProductView(id: 1).waypointPreview() }
+#Preview {
+    ProductView(id: 1)
+        .waypointPreview(flow: ShopFlow.self)
+}
 
 extension View {
     /// Wraps the view in a stack with a fresh router whose registry is permissive, so
     /// environment navigation works and pushes need no registered destination.
     public func waypointPreview() -> some View
+
+    /// The same, with the stack declared for `flow`, so `@FlowNavigation(flow)`
+    /// finds it.
+    public func waypointPreview<Flow: NavigationFlow>(flow: Flow.Type) -> some View
 }
 ```
