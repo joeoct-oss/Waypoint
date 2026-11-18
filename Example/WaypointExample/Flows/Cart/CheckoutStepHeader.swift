@@ -42,8 +42,8 @@ struct CheckoutStepHeader: View {
     }
 }
 
-// The card behind a group of rows, as checkout and Account draw it: the surface color with a hairline
-// border.
+// The card behind a group of rows, as checkout and Account draw it: the surface color with a
+// hairline border.
 //
 // Conformances:
 // - `ViewModifier`, so `rowsCard()` can apply it to any group of rows.

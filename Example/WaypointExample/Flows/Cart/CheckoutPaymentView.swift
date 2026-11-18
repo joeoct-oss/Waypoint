@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// Checkout's second step: the saved card, chosen, with Continue to review at the bottom. The example
-// app has one card, so there is nothing else to pick. The screen reports Continue.
+// Checkout's second step: the saved card, chosen, with Continue to review at the bottom. The
+// example app has one card, so there is nothing else to pick. The screen reports Continue.
 struct CheckoutPaymentView: View {
     let onContinue: () -> Void
 
