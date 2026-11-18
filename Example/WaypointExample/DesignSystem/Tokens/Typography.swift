@@ -9,9 +9,10 @@
 import SwiftUI
 import UIKit
 
-// The type roles from the design system, mapped to Dynamic Type text styles so every screen scales with
-// the reader's text size. The design's families (Inter for the app, Unbounded for brand moments,
-// JetBrains Mono for what Waypoint prints) map to the system's default, rounded and monospaced designs.
+// The type roles from the design system, mapped to Dynamic Type text styles so every screen scales
+// with the reader's text size. The design's families (Inter for the app, Unbounded for brand
+// moments, JetBrains Mono for what Waypoint prints) map to the system's default, rounded and
+// monospaced designs.
 enum Typography {
     static var largeTitle: Font {
         .largeTitle.weight(.bold)

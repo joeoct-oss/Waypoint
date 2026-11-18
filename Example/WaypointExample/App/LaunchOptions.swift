@@ -8,9 +8,9 @@
 
 import Foundation
 
-// What the launch arguments ask for: start signed in or as a guest, open the Navigation Lab, open one of
-// its entries, keep the splash up longer, or push products onto the shop with a change mid-push. UI tests use them to start a journey or open any Lab entry
-// directly.
+// What the launch arguments ask for: start signed in or as a guest, open the Navigation Lab, open
+// one of its entries, keep the splash up longer, or push products onto the shop with a change
+// mid-push. UI tests use them to start a journey or open any Lab entry directly.
 struct LaunchOptions {
     private static let defaultSplashDuration = Duration.seconds(1)
 
@@ -45,7 +45,8 @@ struct LaunchOptions {
     }
 
     // Conformances:
-    // - `Value: RawRepresentable` with `String` raw values, so a launch argument's text can name a case.
+    // - `Value: RawRepresentable` with `String` raw values, so a launch argument's text can name a
+    //   case.
     private static func value<Value: RawRepresentable>(
         _ type: Value.Type,
         for argument: LaunchArgument,

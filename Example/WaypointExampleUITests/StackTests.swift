@@ -8,9 +8,9 @@
 
 import XCTest
 
-// The shop's stack runs on Waypoint's SwiftUI renderer (#11). These check that pushes and pops draw for
-// real, that what the user does by hand comes back to the router, and that a change landing while a push
-// still animates is not lost, which needs the transition hold on iOS 17.
+// The shop's stack runs on Waypoint's SwiftUI renderer (#11). These check that pushes and pops draw
+// for real, that what the user does by hand comes back to the router, and that a change landing
+// while a push still animates is not lost, which needs the transition hold on iOS 17.
 @MainActor
 final class StackTests: XCTestCase {
     private static let shopTitle = "Shop"
@@ -39,8 +39,9 @@ final class StackTests: XCTestCase {
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
     }
 
-    // After a swipe back, the router's path is the shop again: the next product is pushed onto the shop,
-    // so one Back returns to it. Had the swipe not reached the router, Back would show the lamp.
+    // After a swipe back, the router's path is the shop again: the next product is pushed onto the
+    // shop, so one Back returns to it. Had the swipe not reached the router, Back would show the
+    // lamp.
     func testSwipeBackReachesRouter() {
         let app = ExampleApp.launch(signedIn: true)
         app.buttons[Identifiers.product(id: Self.lampID)].tapWhenReady()

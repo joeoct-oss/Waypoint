@@ -8,11 +8,11 @@
 
 import SwiftUI
 
-// One step of creating an account under the bar's Create account title: the step's own title, its fields,
-// and Continue (or Start shopping on the last step). The fields write the coordinator's draft, so going
-// back keeps what the reader typed. Continue closes the keyboard first, so going back never brings it up
-// over Continue. The screen reports Continue and Read the terms, and the accounts coordinator decides what
-// comes next.
+// One step of creating an account under the bar's Create account title: the step's own title, its
+// fields, and Continue (or Start shopping on the last step). The fields write the coordinator's
+// draft, so going back keeps what the reader typed. Continue closes the keyboard first, so going
+// back never brings it up over Continue. The screen reports Continue and Read the terms, and the
+// accounts coordinator decides what comes next.
 struct CreateAccountStepView: View {
     let step: CreateAccountStep
     @Bindable var draft: SignUpDraft

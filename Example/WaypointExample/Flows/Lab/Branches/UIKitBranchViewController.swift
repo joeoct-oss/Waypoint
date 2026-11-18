@@ -9,8 +9,8 @@
 import UIKit
 
 // The UIKit branch: the same five flows as the SwiftUI branch, in a system inset-grouped table. The
-// controller reports the entry the reader picks, and the app coordinator opens it. The table scrolls
-// under the system bars, which are Liquid Glass from iOS 26.
+// controller reports the entry the reader picks, and the app coordinator opens it. The table
+// scrolls under the system bars, which are Liquid Glass from iOS 26.
 //
 // Conformances:
 // - `UITableViewDataSource`, so the table asks this controller for one row per flow.

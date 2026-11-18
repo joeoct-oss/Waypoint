@@ -148,7 +148,12 @@ public final class StackRouter: NavigationRouter {
     ///
     /// - Parameters:
     ///   - flow: The flow's name in logs, events and saved state. Default: `main`.
-    ///   - configuration: The settings of the whole tree. Default: ``NavigationConfiguration/default``.
+    ///   - configuration: The settings of the whole tree. Default:
+    ///     ``NavigationConfiguration/default``.
+    ///   - file: The file that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
+    ///   - line: The line that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
     public convenience init(
         flow: FlowID = FlowID("main"),
         configuration: NavigationConfiguration = .default,
@@ -163,7 +168,12 @@ public final class StackRouter: NavigationRouter {
     /// - Parameters:
     ///   - root: The route of the root screen.
     ///   - flow: The flow's name in logs, events and saved state. Default: `main`.
-    ///   - configuration: The settings of the whole tree. Default: ``NavigationConfiguration/default``.
+    ///   - configuration: The settings of the whole tree. Default:
+    ///     ``NavigationConfiguration/default``.
+    ///   - file: The file that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
+    ///   - line: The line that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
     public convenience init<R: Route>(
         root: R,
         flow: FlowID = FlowID("main"),
@@ -356,7 +366,9 @@ public final class StackRouter: NavigationRouter {
     /// Sets the default presentation options for this router and its children.
     ///
     /// ```swift
-    /// router.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
+    /// let detents: [SheetDetent] = [.medium, .large]
+    /// let sheet = SheetOptions(detents: detents)
+    /// router.setPresentationDefaults(PresentationDefaults(sheet: sheet))
     /// ```
     public func setPresentationDefaults(_ defaults: PresentationDefaults) {
         settings = settings.withPresentationDefaults(defaults)

@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// The button that launches a flow of one kind: a system bordered button in the kind's color, so it keeps
-// the platform's shape, press feedback and accessibility on every iOS version.
+// The button that launches a flow of one kind: a system bordered button in the kind's color, so it
+// keeps the platform's shape, press feedback and accessibility on every iOS version.
 struct KindButton: View {
     let kind: FlowKind
     let onSelect: () -> Void

@@ -10,7 +10,8 @@
 /// the fallback and its issue.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public struct NavigationFailure: NavigationRecord {
     /// Why the call failed.
     public let issue: NavigationIssue

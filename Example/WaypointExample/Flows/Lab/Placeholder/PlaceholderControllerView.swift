@@ -11,7 +11,8 @@ import SwiftUI
 // Hosts the UIKit placeholder in the app's SwiftUI stack.
 //
 // Conformances:
-// - `UIViewControllerRepresentable`, so SwiftUI can push a UIKit flow's placeholder like any other screen.
+// - `UIViewControllerRepresentable`, so SwiftUI can push a UIKit flow's placeholder like any other
+//   screen.
 struct PlaceholderControllerView: UIViewControllerRepresentable {
     let entry: FlowEntry
 

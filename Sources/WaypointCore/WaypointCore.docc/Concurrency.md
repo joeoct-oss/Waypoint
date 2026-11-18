@@ -62,7 +62,8 @@ A navigator holds its router weakly, with the flow it was made for. When that fl
 ```swift
 func showReviews() async {
     await reviews.load(productID: id)
-    navigation.push(ReviewsRoute(id: id))   // returns .ignored if the user already closed the screen
+    // Returns .ignored if the user already closed the screen.
+    navigation.push(ReviewsRoute(id: id))
 }
 ```
 

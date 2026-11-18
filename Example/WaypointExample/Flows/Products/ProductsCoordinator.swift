@@ -9,13 +9,14 @@
 import SwiftUI
 import WaypointCore
 
-// A stack of products: the shop or search at the root and a product pushed above it, with the filters
-// and the wish list as sheets. Add to cart reports to the main tabs, which add the product to the cart and
-// open Cart; a guest's Sign in reports to the app coordinator, which switches to the accounts flow.
+// A stack of products: the shop or search at the root and a product pushed above it, with the
+// filters and the wish list as sheets. Add to cart reports to the main tabs, which add the product
+// to the cart and open Cart; a guest's Sign in reports to the app coordinator, which switches to
+// the accounts flow.
 //
-// The stack runs on Waypoint: `router` owns the path, `ProductsFlowView` draws it with `WaypointStack`, and
-// a swipe back comes back to the router by itself. The sheets are still plain SwiftUI state until
-// Waypoint's sheets are built.
+// The stack runs on Waypoint: `router` owns the path, `ProductsFlowView` draws it with
+// `WaypointStack`, and a swipe back comes back to the router by itself. The sheets are still plain
+// SwiftUI state until Waypoint's sheets are built.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the sheet changes.
@@ -31,10 +32,11 @@ final class ProductsCoordinator {
     private let launchSteps: ShopLaunchSteps
     private let onAddToCart: (Product) -> Void
     private let onShowAccounts: () -> Void
-    // `var` because `showFilters()`, `showWishlist()` and `dismissSheet()` change it, and `syncSheet(_:)`
-    // takes a swipe down.
+    // `var` because `showFilters()`, `showWishlist()` and `dismissSheet()` change it, and
+    // `syncSheet(_:)` takes a swipe down.
     private(set) var presentedSheet: ProductSheet?
-    // `var` because `playLaunchSteps()` plays them once, and the shop appears again on every tab switch.
+    // `var` because `playLaunchSteps()` plays them once, and the shop appears again on every tab
+    // switch.
     private var hasPlayedLaunchSteps: Bool
 
     init(
@@ -109,8 +111,8 @@ final class ProductsCoordinator {
         presentedSheet = sheet
     }
 
-    // Pushes the launch products in one change, then makes the follow-up change while that push still
-    // animates. Runs once, when the shop first appears.
+    // Pushes the launch products in one change, then makes the follow-up change while that push
+    // still animates. Runs once, when the shop first appears.
     func playLaunchSteps() async {
         guard !hasPlayedLaunchSteps, !launchSteps.productIDs.isEmpty else {
             return

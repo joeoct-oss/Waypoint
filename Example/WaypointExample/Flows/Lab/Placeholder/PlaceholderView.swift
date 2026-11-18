@@ -8,7 +8,8 @@
 
 import SwiftUI
 
-// The SwiftUI placeholder for a flow: its icon, name and summary, and a line naming the entry that opened it.
+// The SwiftUI placeholder for a flow: its icon, name and summary, and a line naming the entry that
+// opened it.
 struct PlaceholderView: View {
     let entry: FlowEntry
 

@@ -8,8 +8,8 @@
 
 import WaypointCore
 
-// The product screen a products stack pushes. It carries only the product's id; the screen looks the
-// product up, so the route stays small enough to compare, log and save.
+// The product screen a products stack pushes. It carries only the product's id; the screen looks
+// the product up, so the route stays small enough to compare, log and save.
 //
 // Conformances:
 // - `Route`, so a Waypoint stack router can push it and find its destination.

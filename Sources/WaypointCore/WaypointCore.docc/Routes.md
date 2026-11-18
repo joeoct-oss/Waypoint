@@ -47,7 +47,8 @@ enum CheckoutStep: Route {
 /// `Codable` is required so routes can be restored and deep linked into.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
 public protocol Route: NavigationValue {
     /// The flow this route belongs to.
     ///
@@ -114,7 +115,8 @@ Each one fails loudly in development, never crashes in release, and fails the te
 /// The stable name of a route type, used when a route is saved, decoded or logged.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
 /// - `NavigationDescribable`, so logs and test failures print it in the shared format.
 public struct RouteKey: NavigationValue, NavigationDescribable {
     /// The full key, such as `Shop.ProductRoute`.
@@ -180,8 +182,10 @@ Routers, state, events and snapshots hold routes of many types, so they store th
 /// A route of any type, with its stable key.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events
+///   and test failures.
 public struct AnyRoute: NavigationValue, NavigationDescribable {
     /// The wrapped route's key.
     public var routeKey: RouteKey { get }
@@ -284,7 +288,8 @@ extension CodingUserInfoKey {
 ///
 /// Conformances:
 /// - `Error`, so it can be thrown.
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum RouteDecodingError: Error, NavigationRecord {
     case unknownRouteKey(RouteKey)
     case invalidPayload(RouteKey)
@@ -316,7 +321,10 @@ public struct RouteTable<Payload> {
     /// The same table with a way to build the payload for one route type.
     ///
     /// Also registers the type for decoding.
-    public func registering<R: Route>(_ type: R.Type, _ make: @escaping (R) -> Payload) -> RouteTable
+    public func registering<R: Route>(
+        _ type: R.Type,
+        _ make: @escaping (R) -> Payload
+    ) -> RouteTable
 
     /// The payload for a route, or `nil` if its type is not registered.
     public func payload(for route: AnyRoute) -> Payload?

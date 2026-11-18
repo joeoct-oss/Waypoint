@@ -8,9 +8,9 @@
 
 import XCTest
 
-// Launches the example app for a UI test: from the splash (held longer when a test needs to see it),
-// signed in, as a guest, or straight into the Navigation Lab, one of its branches or one of its twenty
-// entries.
+// Launches the example app for a UI test: from the splash (held longer when a test needs to see
+// it), signed in, as a guest, or straight into the Navigation Lab, one of its branches or one of
+// its twenty entries.
 enum ExampleApp {
     private static let yes = "YES"
 

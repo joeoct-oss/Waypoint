@@ -11,7 +11,8 @@
 /// Snapshots, deep link plans and debug output use this form.
 ///
 /// Conformances:
-/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and
+///   described in logs.
 public struct NavigationTree: NavigationStateValue {
     /// One flow in the tree.
     ///
@@ -35,7 +36,8 @@ public struct NavigationTree: NavigationStateValue {
     public let presented: [FlowID: NavigationTree]
 
     /// The path from the root to what is on screen, such as
-    /// `root(app) current=main > tabs(main) selection=shop > stack(shop)[ProductRoute(id: <private>)]`.
+    /// `root(app) current=main > tabs(main) selection=shop > stack(shop)[ProductRoute(id:
+    /// <private>)]`.
     public var description: String {
         debugDescription(revealingPrivateValues: false)
     }

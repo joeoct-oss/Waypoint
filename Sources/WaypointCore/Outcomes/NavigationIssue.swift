@@ -14,7 +14,8 @@
 /// Two issues are equal when every field is equal, including the file and line.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public struct NavigationIssue: NavigationRecord {
     /// What kind of mistake an issue is.
     ///

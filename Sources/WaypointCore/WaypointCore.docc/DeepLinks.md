@@ -102,7 +102,8 @@ let matcher = DeepLinkMatcher()
 /// Steps over the navigation tree, applied as one transaction.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public struct NavigationPlan: NavigationRecord {
     public init(@NavigationPlanBuilder _ steps: () throws -> [NavigationStep]) rethrows
 }

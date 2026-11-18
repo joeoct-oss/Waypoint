@@ -8,7 +8,8 @@
 
 import SwiftUI
 
-// Search: the system search field, always shown under the bar, over the products whose name matches.
+// Search: the system search field, always shown under the bar, over the products whose name
+// matches.
 struct SearchView: View {
     let onSelect: (Product) -> Void
 

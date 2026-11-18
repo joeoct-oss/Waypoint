@@ -113,7 +113,11 @@ public final class RootRouter<Root: NavigationRoot>: NavigationRouter {
     /// Everything presented is dismissed first. Returns `.alreadyThere` if
     /// `root` is showing. Emits a `rootChanged` event.
     @discardableResult
-    public func `switch`(to root: Root, file: StaticString = #fileID, line: UInt = #line) -> NavigationOutcome
+    public func `switch`(
+        to root: Root,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> NavigationOutcome
 }
 ```
 

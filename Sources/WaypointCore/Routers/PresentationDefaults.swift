@@ -12,7 +12,9 @@
 /// `presentationDefaults`, then ``SheetOptions/default``.
 ///
 /// ```swift
-/// rootRouter.setPresentationDefaults(PresentationDefaults(sheet: SheetOptions(detents: [.medium, .large])))
+/// let detents: [SheetDetent] = [.medium, .large]
+/// let sheet = SheetOptions(detents: detents)
+/// rootRouter.setPresentationDefaults(PresentationDefaults(sheet: sheet))
 /// ```
 ///
 /// Conformances:

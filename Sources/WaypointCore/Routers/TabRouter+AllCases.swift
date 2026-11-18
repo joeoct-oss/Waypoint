@@ -17,7 +17,12 @@ extension TabRouter where Tab: CaseIterable {
     ///   - flow: The container's name in logs, events and saved state. Default: `tabs`.
     ///   - popsToRootOnReselect: Whether tapping the selected tab pops its stack to the root.
     ///     Default: `true`.
-    ///   - configuration: The settings of the whole tree. Default: ``NavigationConfiguration/default``.
+    ///   - configuration: The settings of the whole tree. Default:
+    ///     ``NavigationConfiguration/default``.
+    ///   - file: The file that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
+    ///   - line: The line that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
     public convenience init(
         selection: Tab,
         flow: FlowID = FlowID("tabs"),

@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// A row on Home for one branch: its icon in the host kind's color, its name, what hosts it, and the flows
-// it can launch.
+// A row on Home for one branch: its icon in the host kind's color, its name, what hosts it, and the
+// flows it can launch.
 struct BranchRow: View {
     let branch: Branch
     let onSelect: () -> Void

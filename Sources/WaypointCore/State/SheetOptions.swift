@@ -12,7 +12,8 @@
 /// ``PresentationDefaults``, and a single call can still choose its own options.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
 public struct SheetOptions: NavigationValue {
     /// A large sheet that the user can swipe away.
     public static var `default`: SheetOptions {
