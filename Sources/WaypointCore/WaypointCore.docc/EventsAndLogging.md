@@ -340,6 +340,7 @@ tabs               home · [shop] · profile
 | --- | --- | --- | --- |
 | A change was applied | `.info` | `navigation`, `presentation` or `tabs` | `pushed [ProductRoute(id: <private>)] flow=main` |
 | A change made by a fallback | `.info` | as above | `popped [HomeRoute] flow=main origin=fallback` |
+| A change the user made directly, such as a swipe back | `.info` | as above | `popped [ProductRoute(id: <private>)] flow=main origin=user` |
 | A presentation | `.info` | `presentation` | `presented sheet SettingsRoute flow=settings presenter=main` |
 | A call changed nothing | `.debug` | `navigation` | `alreadyThere flow=main at=ShopCoordinator.swift:42` |
 | A call was queued behind a change | `.debug` | `navigation` | `reentrantChange flow=main at=ShopCoordinator.swift:42` |

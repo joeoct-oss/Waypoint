@@ -32,6 +32,9 @@ enum ChangeOrigin: Sendable, Equatable {
     case app
     /// A fallback ran because the call that was asked for failed.
     case fallback
+
+    /// The user changed the screen directly, such as a swipe back, and the renderer reported it.
+    case user
 }
 
 /// One change, with the flow it happened in and who asked for it.
@@ -197,11 +200,12 @@ final class TransactionStore {
 
     /// Runs `body` with its changes marked as coming from a fallback.
     func asFallback<Result>(_ body: () -> Result) -> Result {
-        origin = .fallback
-        defer {
-            origin = .app
-        }
-        return body()
+        marked(.fallback, body)
+    }
+
+    /// Runs `body` with its changes marked as coming from the user, through a renderer report.
+    func asUser<Result>(_ body: () -> Result) -> Result {
+        marked(.user, body)
     }
 
     /// Runs `body` with no earlier failure, and returns the issue of its first failed step, if
@@ -227,6 +231,16 @@ final class TransactionStore {
         for participant in participants {
             participant.discardWorkingCopy()
         }
+    }
+
+    /// Runs `body` with its changes marked with `marking`, then restores the origin before it.
+    private func marked<Result>(_ marking: ChangeOrigin, _ body: () -> Result) -> Result {
+        let previous = origin
+        origin = marking
+        defer {
+            origin = previous
+        }
+        return body()
     }
 
     /// Marks the transaction as changed.

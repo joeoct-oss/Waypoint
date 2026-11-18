@@ -98,9 +98,21 @@ enum ReadableLog {
 
     /// One applied change. `path` is the flow's path after the change, for "back to".
     static func change(_ applied: AppliedChange, path: [AnyRoute]?, naming: RouteNaming) -> String {
-        let origin = applied.origin == .fallback ? " · by fallback" : ""
+        let origin = originText(applied.origin)
         let (marker, sentence) = describe(applied.change, path: path, naming: naming)
         return line(applied.flow, marker, sentence + origin, symbols: naming.usesSymbols)
+    }
+
+    /// ` · by fallback` or ` · by user`, or nothing for a change app code asked for.
+    private static func originText(_ origin: ChangeOrigin) -> String {
+        switch origin {
+        case .app:
+            return ""
+        case .fallback:
+            return " · by fallback"
+        case .user:
+            return " · by user"
+        }
     }
 
     /// An issue: a headline, the message, and the call site.
@@ -174,6 +186,8 @@ enum ReadableLog {
             return "too many calls were made while changes were applied"
         case .invalidSetting:
             return "a setting was refused"
+        case .rendererMismatch:
+            return "the screen showed something the router can't match"
         }
     }
 
