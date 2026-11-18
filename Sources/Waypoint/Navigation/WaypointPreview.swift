@@ -47,7 +47,7 @@
         let flow: (any NavigationFlow.Type)?
 
         /// The preview's router. Made once for the preview's lifetime.
-        @State private var router = StackRouter(configuration: .permissive)
+        @State private var router = StackRouter(configuration: NavigationConfiguration(registry: .permissive))
 
         /// The view inside a stack.
         func body(content: Content) -> some View {
