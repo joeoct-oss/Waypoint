@@ -8,9 +8,11 @@
 
 import SwiftUI
 
-// The account tab: the profile at the root (or Sign in for a guest), orders and settings pushed
-// above it, and the Navigation Lab under settings with the twenty demo entries. Orders need an
-// account, so the account gate asks a guest to sign in first. Sign out ends the session and leaves
+// The account tab: the profile at the root (or Sign in for a guest), orders, addresses and settings
+// pushed above it, and the Navigation Lab under settings with the twenty demo entries. Orders and
+// Addresses need an account, so the account gate asks a guest to sign in first. Add a new address
+// pushes the form; saving keeps the address in the address book, which checkout shares, and goes
+// back to the list. Sign out ends the session and leaves
 // the reader where they are, as a guest. Clear all data reports to the app coordinator, which
 // clears the store and starts the window over.
 //
@@ -20,6 +22,7 @@ import SwiftUI
 @Observable
 final class AccountCoordinator {
     private let session: Session
+    private let addressBook: AddressBook
     private let gate: AccountGate
     private let onClearAllData: () -> Void
     // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the
@@ -29,10 +32,12 @@ final class AccountCoordinator {
     init(
         launch: LaunchOptions,
         session: Session,
+        addressBook: AddressBook,
         gate: AccountGate,
         onClearAllData: @escaping () -> Void
     ) {
         self.session = session
+        self.addressBook = addressBook
         self.gate = gate
         self.onClearAllData = onClearAllData
         path = Self.makePath(for: launch)
@@ -58,6 +63,7 @@ final class AccountCoordinator {
             account: session.account,
             onSignIn: { self.showSignIn() },
             onShowOrders: { self.openOrders() },
+            onShowAddresses: { self.openAddresses() },
             onShowSettings: { self.showSettings() },
             onSignOut: { self.signOut() }
         )
@@ -91,6 +97,24 @@ final class AccountCoordinator {
 
     func showOrder(_ order: Order) {
         path.append(.order(order))
+    }
+
+    func openAddresses() {
+        gate.requireAccount { self.showAddresses() }
+    }
+
+    func showAddresses() {
+        path.append(.addresses)
+    }
+
+    func showAddAddress() {
+        path.append(.addAddress)
+    }
+
+    // Keeps the form's address in the address book and goes back to the list.
+    func addAddress(_ address: Address) {
+        addressBook.add(address)
+        path.removeLast()
     }
 
     func showSettings() {
@@ -128,6 +152,10 @@ final class AccountCoordinator {
             makeOrdersFlow()
         case .order(let order):
             makeOrderFlow(order)
+        case .addresses:
+            makeAddressesFlow()
+        case .addAddress:
+            makeAddAddressFlow()
         case .settings:
             makeSettingsFlow()
         case .lab:
@@ -145,6 +173,20 @@ final class AccountCoordinator {
 
     private func makeOrderFlow(_ order: Order) -> some View {
         OrderDetailView(order: order)
+    }
+
+    private func makeAddressesFlow() -> some View {
+        AddressesView(
+            addresses: addressBook.addresses,
+            onAddAddress: { self.showAddAddress() }
+        )
+    }
+
+    private func makeAddAddressFlow() -> some View {
+        AddAddressView(
+            asksToKeep: false,
+            onSave: { address, _ in self.addAddress(address) }
+        )
     }
 
     private func makeSettingsFlow() -> some View {

@@ -37,4 +37,5 @@ enum Size {
     static let productHero: CGFloat = 220
     static let bannerArtWidth: CGFloat = 132
     static let bannerArtHeight: CGFloat = 80
+    static let radio: CGFloat = 24
 }

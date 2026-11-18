@@ -35,10 +35,24 @@ enum Identifiers {
     static let navigationIssue = "navigation.issue"
     static let wishlist = "product.wishlist"
     static let checkout = "cart.checkout"
+    static let checkoutAddress = "checkout.address"
+    static let closeCheckout = "checkout.close"
+    static let addAddress = "address.add"
+    static let addressSaved = "address.saved"
+    static let addressLabel = "address.form.label"
+    static let addressStreet = "address.form.street"
+    static let addressCity = "address.form.city"
+    static let addressPostcode = "address.form.postcode"
+    static let addressKeep = "address.form.keep"
+    static let saveAddress = "address.form.save"
+    static let continueToPayment = "checkout.continueToPayment"
+    static let continueToReview = "checkout.continueToReview"
+    static let reviewAddress = "checkout.review.address"
     static let placeOrder = "checkout.placeOrder"
     static let orderPlaced = "checkout.orderPlaced"
     static let continueShopping = "checkout.continueShopping"
     static let ordersButton = "account.orders"
+    static let addressesButton = "account.addresses"
     static let accountSignIn = "account.signIn"
     static let accountName = "account.name"
     static let signOut = "account.signOut"
@@ -57,6 +71,10 @@ enum Identifiers {
 
     static func collection(id: String) -> String {
         "collection.\(id)"
+    }
+
+    static func address(label: String) -> String {
+        "address.\(label)"
     }
 
     static func order(id: Int) -> String {

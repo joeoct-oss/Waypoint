@@ -33,6 +33,10 @@ final class JourneyTests: XCTestCase {
     private static let cartProductTitle = "Orbit Lamp"
     private static let savedProductID = 2
     private static let orderID = 1042
+    private static let newAddressLabel = "Studio"
+    private static let newAddressStreet = "9 Nova Lane"
+    private static let newAddressCity = "Springfield"
+    private static let newAddressPostcode = "40233"
 
     func testLaunchOpensShopForEveryone() {
         let firstLaunch = ExampleApp.launch(splashSeconds: Self.splashSeconds)
@@ -69,7 +73,8 @@ final class JourneyTests: XCTestCase {
             in: app
         )
 
-        XCTAssertTrue(app.buttons[Identifiers.placeOrder].waitForExistence(timeout: UITestSteps.timeout))
+        let addressStep = app.descendants(matching: .any)[Identifiers.checkoutAddress]
+        XCTAssertTrue(addressStep.waitForExistence(timeout: UITestSteps.timeout))
     }
 
     func testWrongPasswordShowsError() {
@@ -141,6 +146,8 @@ final class JourneyTests: XCTestCase {
         addProductToCart(in: app)
 
         app.buttons[Identifiers.checkout].tapWhenReady()
+        app.buttons[Identifiers.continueToPayment].tapWhenReady()
+        app.buttons[Identifiers.continueToReview].tapWhenReady()
         app.buttons[Identifiers.placeOrder].tapWhenReady()
         let placed = app.descendants(matching: .any)[Identifiers.orderPlaced]
         XCTAssertTrue(placed.waitForExistence(timeout: UITestSteps.timeout))
@@ -150,6 +157,38 @@ final class JourneyTests: XCTestCase {
         // bar hidden as on every pushed screen.
         XCTAssertTrue(app.navigationBars[Self.cartProductTitle].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertFalse(placed.exists)
+    }
+
+    // MA-05: Add a new address pushes a form inside checkout. Saving goes back to the address step
+    // with the new address chosen, Review delivers to it, and Account, Addresses lists it too.
+    func testCheckoutAddsAddress() {
+        let app = ExampleApp.launch(signedIn: true)
+        addProductToCart(in: app)
+        app.buttons[Identifiers.checkout].tapWhenReady()
+
+        app.buttons[Identifiers.addAddress].tapWhenReady()
+        app.textFields[Identifiers.addressLabel].type(Self.newAddressLabel)
+        app.textFields[Identifiers.addressStreet].type(Self.newAddressStreet)
+        app.textFields[Identifiers.addressCity].type(Self.newAddressCity)
+        app.textFields[Identifiers.addressPostcode].type(Self.newAddressPostcode)
+        app.buttons[Identifiers.saveAddress].tapWhenReady()
+
+        let toast = app.descendants(matching: .any)[Identifiers.addressSaved]
+        XCTAssertTrue(toast.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.buttons[Identifiers.address(label: Self.newAddressLabel)].isSelected)
+        app.buttons[Identifiers.continueToPayment].tapWhenReady()
+        app.buttons[Identifiers.continueToReview].tapWhenReady()
+        let delivery = app.descendants(matching: .any)[Identifiers.reviewAddress]
+        XCTAssertTrue(delivery.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(delivery.label.contains(Self.newAddressStreet), "review delivers elsewhere")
+
+        app.goBack()
+        app.goBack()
+        app.buttons[Identifiers.closeCheckout].tapWhenReady()
+        app.openTab(Self.accountTitle)
+        app.buttons[Identifiers.addressesButton].tapWhenReady()
+        let saved = app.descendants(matching: .any)[Identifiers.address(label: Self.newAddressLabel)]
+        XCTAssertTrue(saved.waitForExistence(timeout: UITestSteps.timeout))
     }
 
     func testOrdersPushDetail() {

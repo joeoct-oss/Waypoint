@@ -8,14 +8,15 @@
 
 import WaypointCore
 
-// The services every window shares: the local store, the session, the auth service, and the
-// navigation configuration each stack router gets, which logs navigation issues to `issues`. The
-// `App` makes them once and hands them to each window's app coordinator. `clearAll()` removes
-// everything the app keeps and signs the reader out.
+// The services every window shares: the local store, the session, the saved addresses, the auth
+// service, and the navigation configuration each stack router gets, which logs navigation issues to
+// `issues`. The `App` makes them once and hands them to each window's app coordinator. `clearAll()`
+// removes everything the app keeps, signs the reader out and puts the sample addresses back.
 @MainActor
 final class AppServices {
     let store: LocalStore
     let session: Session
+    let addresses: AddressBook
     let auth: any AuthService
     let issues: IssueLog
     let navigation: NavigationConfiguration
@@ -31,6 +32,7 @@ final class AppServices {
         }
         self.store = store
         self.session = session
+        addresses = AddressBook(store: store)
         auth = MockAuthService(store: store)
         let issues = IssueLog()
         let logging = LogConfiguration.default.withHandler(IssueLogHandler(issues: issues))
@@ -41,5 +43,6 @@ final class AppServices {
     func clearAll() {
         store.clearAll()
         session.signOut()
+        addresses.reload()
     }
 }

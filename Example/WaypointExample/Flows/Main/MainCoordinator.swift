@@ -34,7 +34,9 @@ final class MainCoordinator {
         let tabs = TabSelection(selected: launch.opensLab ? .account : .shop)
         let cart = CartCoordinator(
             store: services.store,
+            addressBook: services.addresses,
             gate: gate,
+            navigation: services.navigation,
             onShopMore: { tabs.select(.shop) }
         )
         let addToCart = { (product: Product) in
@@ -68,6 +70,7 @@ final class MainCoordinator {
         account = AccountCoordinator(
             launch: launch,
             session: services.session,
+            addressBook: services.addresses,
             gate: gate,
             onClearAllData: onClearAllData
         )

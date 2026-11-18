@@ -10,8 +10,9 @@
 import Foundation
 
 // Everything the example app keeps between launches: the signed-in account, the accounts made on
-// this device, the cart and the wish list. It lives in its own `UserDefaults` domain, so Clear all
-// data in Settings removes all of it at once and leaves the system's own settings alone.
+// this device, the cart, the wish list and the saved addresses. It lives in its own `UserDefaults`
+// domain, so Clear all data in Settings removes all of it at once and leaves the system's own
+// settings alone.
 @MainActor
 final class LocalStore {
     private static let domain = "dev.waypoint.example.data"
@@ -22,6 +23,14 @@ final class LocalStore {
 
     private static func encodeAccount(_ account: Account) -> Data? {
         try? JSONEncoder().encode(account)
+    }
+
+    private static func decodeAddresses(_ data: Data) -> [Address]? {
+        try? JSONDecoder().decode([Address].self, from: data)
+    }
+
+    private static func encodeAddresses(_ addresses: [Address]) -> Data? {
+        try? JSONEncoder().encode(addresses)
     }
 
     private let defaults: UserDefaults
@@ -62,6 +71,16 @@ final class LocalStore {
         }
     }
 
+    // `nil` until the reader saves an address, so a fresh install starts with the samples.
+    var addresses: [Address]? {
+        get {
+            defaults.data(forKey: Key.addresses.rawValue).flatMap(Self.decodeAddresses)
+        }
+        set {
+            defaults.set(newValue.flatMap(Self.encodeAddresses), forKey: Key.addresses.rawValue)
+        }
+    }
+
     init() {
         defaults = UserDefaults(suiteName: Self.domain) ?? .standard
     }
@@ -81,5 +100,6 @@ extension LocalStore {
         case registeredEmails
         case cart
         case wishlist
+        case addresses
     }
 }

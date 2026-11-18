@@ -8,12 +8,14 @@
 
 import SwiftUI
 
-// Account: the reader's profile with Sign out, or Sign in for a guest, and Orders and Settings for
-// everyone. The screen reports each choice; the account coordinator decides what needs an account.
+// Account: the reader's profile with Sign out, or Sign in for a guest, and Orders, Addresses and
+// Settings for everyone. The screen reports each choice; the account coordinator decides what needs
+// an account.
 struct AccountView: View {
     let account: Account?
     let onSignIn: () -> Void
     let onShowOrders: () -> Void
+    let onShowAddresses: () -> Void
     let onShowSettings: () -> Void
     let onSignOut: () -> Void
 
@@ -25,6 +27,8 @@ struct AccountView: View {
             Section {
                 Button("Orders", systemImage: "shippingbox", action: onShowOrders)
                     .accessibilityIdentifier(Identifiers.ordersButton)
+                Button("Addresses", systemImage: "mappin.and.ellipse", action: onShowAddresses)
+                    .accessibilityIdentifier(Identifiers.addressesButton)
                 Button("Settings", systemImage: "gearshape", action: onShowSettings)
                     .accessibilityIdentifier(Identifiers.settingsButton)
             }
