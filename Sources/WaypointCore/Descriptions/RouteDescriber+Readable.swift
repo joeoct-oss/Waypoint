@@ -30,7 +30,7 @@ extension RouteDescriber {
         if mirror.displayStyle == .enum {
             return readableCase(of: route, mirror: mirror, name: name, visibility: visible)
         }
-        return readableFields(Array(mirror.children), name: name, visibility: visible)
+        return readableFields(describedFields(of: mirror), name: name, visibility: visible)
     }
 
     /// `Name`, `Name (id: 42)`, `Name (id: 42, …)` or `Name (…)`.

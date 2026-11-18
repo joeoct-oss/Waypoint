@@ -8,8 +8,10 @@
 
 import WaypointCore
 
-// The product screen a products stack pushes. It carries only the product's id; the screen looks
-// the product up, so the route stays small enough to compare, log and save.
+// The product screen a products stack pushes. It carries the product's id, and the coordinator
+// looks the product up, so the route stays small enough to compare, log and save. A list that
+// already has the product hands it over as `preview` for the first frame; a link or a restore
+// leaves it `nil`.
 //
 // Conformances:
 // - `Route`, so a Waypoint stack router can push it and find its destination.
@@ -19,6 +21,9 @@ struct ProductRoute: Route {
     ]
 
     let id: Int
+
+    @RouteHint
+    var preview: Product?
 }
 
 // Where a products stack starts: browsing the shop, or searching it.
