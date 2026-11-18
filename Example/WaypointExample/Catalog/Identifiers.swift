@@ -31,6 +31,8 @@ enum Identifiers {
     static let terms = "auth.terms"
     static let productSave = "product.save"
     static let addToCart = "product.addToCart"
+    static let relatedProduct = "product.related"
+    static let navigationIssue = "navigation.issue"
     static let wishlist = "product.wishlist"
     static let checkout = "cart.checkout"
     static let placeOrder = "checkout.placeOrder"

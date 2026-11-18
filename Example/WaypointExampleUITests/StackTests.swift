@@ -10,8 +10,8 @@ import XCTest
 
 // The shop's stack runs on Waypoint's SwiftUI renderer (#11). These check that pushes and pops draw
 // for real, that what the user does by hand comes back to the router, that a change landing
-// while a push still animates is not lost, which needs the transition hold on iOS 17, and that a
-// double tap pushes once.
+// while a push still animates is not lost, which needs the transition hold on iOS 17, that a
+// double tap pushes once, and that a Waypoint link pushes through the router.
 @MainActor
 final class StackTests: XCTestCase {
     private static let shopTitle = "Shop"
@@ -69,6 +69,26 @@ final class StackTests: XCTestCase {
         XCTAssertTrue(app.navigationBars[Self.mugTitle].waitForExistence(timeout: UITestSteps.timeout))
         app.goBack()
 
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    // The lamp's page links to the mug with a `WaypointLink` (#147). The tap pushes through the
+    // router: the mug shows, nothing is reported, and Back walks the router's path, the lamp and
+    // then the shop.
+    func testWaypointLinkPushesThroughRouter() {
+        let app = ExampleApp.launch(signedIn: true)
+        app.buttons[Identifiers.product(id: Self.lampID)].tapWhenReady()
+        XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: UITestSteps.timeout))
+
+        let relatedLink = app.buttons[Identifiers.relatedProduct]
+        XCTAssertTrue(app.reveal(relatedLink))
+        relatedLink.tap()
+
+        XCTAssertTrue(app.navigationBars[Self.mugTitle].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertFalse(app.descendants(matching: .any)[Identifiers.navigationIssue].exists)
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
     }
 

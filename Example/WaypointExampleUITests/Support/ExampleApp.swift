@@ -10,7 +10,8 @@ import XCTest
 
 // Launches the example app for a UI test, always from a fresh install: as a guest from the splash
 // (held longer when a test needs to see it), signed in, or straight into the Navigation Lab, one of
-// its branches or one of its twenty entries.
+// its branches or one of its twenty entries. `systemLinks` draws the product page's related link as
+// a system `NavigationLink`.
 enum ExampleApp {
     private static let yes = "YES"
 
@@ -23,7 +24,8 @@ enum ExampleApp {
         kind: FlowKind? = nil,
         splashSeconds: Int? = nil,
         shopPath: [Int] = [],
-        shopFollowUp: ShopFollowUp? = nil
+        shopFollowUp: ShopFollowUp? = nil,
+        systemLinks: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = arguments(
@@ -34,7 +36,8 @@ enum ExampleApp {
             kind: kind,
             splashSeconds: splashSeconds,
             shopPath: shopPath,
-            shopFollowUp: shopFollowUp
+            shopFollowUp: shopFollowUp,
+            systemLinks: systemLinks
         )
         app.launch()
         return app
@@ -48,7 +51,8 @@ enum ExampleApp {
         kind: FlowKind?,
         splashSeconds: Int?,
         shopPath: [Int],
-        shopFollowUp: ShopFollowUp?
+        shopFollowUp: ShopFollowUp?,
+        systemLinks: Bool
     ) -> [String] {
         let path = shopPath.isEmpty ? nil : shopPath.map(String.init).joined(separator: ",")
         let values: [(LaunchArgument, String?)] = [
@@ -61,6 +65,7 @@ enum ExampleApp {
             (LaunchArgument.splashSeconds, splashSeconds.map(String.init)),
             (LaunchArgument.shopPath, path),
             (LaunchArgument.shopFollowUp, shopFollowUp?.rawValue),
+            (LaunchArgument.systemLinks, systemLinks ? yes : nil),
         ]
         return values.flatMap { argumentPair($0.0, $0.1) }
     }
