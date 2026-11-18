@@ -26,9 +26,9 @@
     /// }
     /// ```
     ///
-    /// Push routes with the router or a navigator, never with `NavigationLink(value:)`: SwiftUI
-    /// hands the stack a value it can't read back, so the push is refused and reported as
-    /// `rendererMismatch`.
+    /// Push routes with the router or a ``WaypointLink``, never with `NavigationLink(value:)`:
+    /// SwiftUI hands the stack a value it can't read back, so the push is refused and reported as
+    /// `rendererMismatch`, in release builds too.
     ///
     /// Screens inside the stack can read its navigator with `@StackNavigation`, dismiss its flow
     /// with `@DismissFlow`, or read the router with `@Environment(StackRouter.self)`. A stack made

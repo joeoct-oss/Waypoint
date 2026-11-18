@@ -11,8 +11,9 @@
 // -kind swiftui` opens one of its entries, and `-splashSeconds 5` keeps the splash up longer, so a
 // test can see it. `-shopPath 1,2,3` pushes those products onto the shop in one change, and
 // `-shopFollowUp popToRoot` makes one more change 150 ms into that push, while it still animates
-// (`pop`, `popToRoot` or `link`). UI tests pass them, and the app reads them through
-// `UserDefaults`, which parses `-name value` pairs.
+// (`pop`, `popToRoot` or `link`). `-systemLinks YES` draws the product page's related link as a
+// system `NavigationLink`, so a UI test can check how Waypoint reports one. UI tests pass them, and
+// the app reads them through `UserDefaults`, which parses `-name value` pairs.
 //
 // Conformances:
 // - `String` raw values, so each argument's name is its `UserDefaults` key.
@@ -26,6 +27,7 @@ enum LaunchArgument: String {
     case splashSeconds
     case shopPath
     case shopFollowUp
+    case systemLinks
 
     var flag: String {
         "-\(rawValue)"

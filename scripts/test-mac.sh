@@ -8,7 +8,8 @@
 #
 # Runs every test layer on a Mac: the package unit tests on the host, then all
 # unit test targets on the project simulator (including UIKit-only tests), then
-# the example app's UI tests in a project generated with Tuist.
+# the example app's UI tests in a project generated with Tuist, and the system
+# link test once more in the release configuration.
 #
 # Usage: scripts/test-mac.sh
 # Environment: WAYPOINT_SIMULATOR overrides the simulator name (default waypoint-01).
@@ -76,5 +77,15 @@ xcodebuild test -quiet \
     -workspace Example/WaypointExample.xcworkspace \
     -scheme WaypointExample \
     -destination "$DESTINATION"
+
+# A system link must be reported in release builds too (#147), so its UI test runs again with the
+# app and the tests built in the release configuration.
+echo "==> xcodebuild test system link report (Release) on $SIMULATOR_NAME"
+xcodebuild test -quiet \
+    -workspace Example/WaypointExample.xcworkspace \
+    -scheme WaypointExample \
+    -configuration Release \
+    -destination "$DESTINATION" \
+    -only-testing:WaypointExampleUITests/SystemLinkTests
 
 echo "All Mac tests passed."
