@@ -6,7 +6,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ### Changed
 
-- Source file headers name the author with their own email instead of the GitHub noreply address. (#163)
+- Source file headers name the author with their own email instead of the GitHub noreply address. (#140)
 
 ### Added
 
