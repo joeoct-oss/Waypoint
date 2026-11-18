@@ -9,6 +9,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - The route registry is strict in every build: a route type with no registered destination fails with `unregisteredRoute` and runs its fallback, even before anything is registered. Tests and previews ask for `RouteRegistry.permissive` in the root's `NavigationConfiguration`; registering never changes the mode (`RouteRegistry.Mode`, `strict`, `permissive`, `allows(_:)`). (#144)
 - Settings for the whole tree are given once to the root router in one `NavigationConfiguration` (logging, `maxQueuedChanges`, a starting `registry` and `onNavigationFailure`), passed as `configuration:` to `StackRouter`, `TabRouter` and, later, `RootRouter`. Every router reads it through `configuration`, and none can change it: `setLogging(_:)`, `setMaxQueuedChanges(_:)`, `onNavigationFailure(_:)` and the `logging` and `maxQueuedChanges` properties are removed from routers. A queue limit below 1 reports `invalidSetting` at the root initializer's documented `file` and `line` and uses 32. Fallbacks and presentation defaults stay on every router. (#143)
 - Source file headers name the author with their own email instead of the GitHub noreply address. (#140)
+- `scripts/check-comment-width.sh` has the same file header as every other file. (#187)
 
 ### Added
 
