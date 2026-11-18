@@ -17,7 +17,7 @@ import WaypointTestSupport
 struct PresentationRouterTests {
     @Test
     func presentSetsPresentationAndCreatesChildRouter() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
 
         let outcome = router.present(SettingsRoute(), style: .fullScreenCover)
 
@@ -33,7 +33,7 @@ struct PresentationRouterTests {
 
     @Test
     func presentedFlowsAreNamedAfterTheirRoute() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
 
         router.present(SettingsRoute())
         let child = try #require(router.presented)
@@ -45,7 +45,7 @@ struct PresentationRouterTests {
 
     @Test
     func presentWhilePresentingIsRejected() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let first = router.presented
 
@@ -57,7 +57,7 @@ struct PresentationRouterTests {
 
     @Test
     func presentedFlowNavigatesOnItsOwn() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
 
@@ -70,12 +70,12 @@ struct PresentationRouterTests {
 
     @Test
     func dismissWithNothingPresentedIsAlreadyThere() {
-        #expect(StackRouter().dismiss() == .alreadyThere)
+        #expect(StackRouter(configuration: .permissive).dismiss() == .alreadyThere)
     }
 
     @Test
     func dismissRemovesWholeSubtree() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
         child.present(HomeRoute())
@@ -93,7 +93,7 @@ struct PresentationRouterTests {
 
     @Test
     func dismissFlowAsksThePresenter() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
         child.push(ProductRoute(id: 1))
@@ -104,14 +104,14 @@ struct PresentationRouterTests {
 
     @Test
     func dismissFlowOnRootFails() {
-        let outcome = StackRouter().dismissFlow()
+        let outcome = StackRouter(configuration: .permissive).dismissFlow()
 
         #expect(outcome.failure?.issue.kind == .notPresented)
     }
 
     @Test
     func dismissAllDismissesEverythingAbove() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         try #require(router.presented).present(HomeRoute())
 
@@ -122,7 +122,7 @@ struct PresentationRouterTests {
 
     @Test
     func presentationDefaultsAreInherited() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let detents: [SheetDetent] = [.medium, .large]
         let defaults = PresentationDefaults(sheet: SheetOptions(detents: detents))
         router.setPresentationDefaults(defaults)
@@ -130,12 +130,12 @@ struct PresentationRouterTests {
         let child = try #require(router.presented)
 
         #expect(child.presentationDefaults.sheet.detents == detents)
-        #expect(StackRouter().presentationDefaults.sheet == .default)
+        #expect(StackRouter(configuration: .permissive).presentationDefaults.sheet == .default)
     }
 
     @Test
     func sheetOptionsFollowLookupOrder() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let defaultDetents: [SheetDetent] = [.medium]
         let ownDetents: [SheetDetent] = [.fitsContent]
         let defaults = PresentationDefaults(sheet: SheetOptions(detents: defaultDetents))

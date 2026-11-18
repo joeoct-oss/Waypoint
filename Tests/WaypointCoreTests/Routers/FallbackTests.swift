@@ -18,7 +18,7 @@ import WaypointTestSupport
 struct FallbackTests {
     @Test
     func perCallFallbackBeatsRouterPolicy() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
         router.setFallback(.popToRoot, for: .routeNotInPath)
 
@@ -31,7 +31,7 @@ struct FallbackTests {
 
     @Test
     func routerPolicyBeatsBuiltInDefault() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
         router.setFallback(.popToRoot, for: .routeNotInPath)
         router.setFallback(NavigationFallback.none, for: .notEnoughRoutes)
@@ -51,7 +51,7 @@ struct FallbackTests {
 
     @Test
     func childInheritsFallbackPolicy() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.setFallback(.popToRoot, for: .routeNotInPath)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
@@ -66,7 +66,7 @@ struct FallbackTests {
 
     @Test
     func fallbackRunsInSameTransaction() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
         router.push(ProductRoute(id: 1))
         let batches = Recorder<[AppliedChange]>()
@@ -94,6 +94,7 @@ struct FallbackTests {
     func fallbackFailureRollsBack() throws {
         let failures = Recorder<NavigationFailure>()
         let configuration = NavigationConfiguration(
+            registry: .permissive,
             onNavigationFailure: { failure in
                 failures.record(failure)
             }
@@ -118,6 +119,7 @@ struct FallbackTests {
     func customFallbackFailureRollsBackItsOwnSteps() throws {
         let failures = Recorder<NavigationFailure>()
         let configuration = NavigationConfiguration(
+            registry: .permissive,
             onNavigationFailure: { failure in
                 failures.record(failure)
             }
@@ -140,7 +142,7 @@ struct FallbackTests {
 
     @Test
     func fallbackRunsOnceNoChain() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.setFallback(.popToRoot, for: .emptyPath)
         router.setFallback(.popToRoot, for: .routeNotInPath)
         let fallback = NavigationFallback.custom("popMissing") { transaction, _ in
@@ -154,7 +156,7 @@ struct FallbackTests {
 
     @Test
     func customFallbackGetsTheIssueAndCanNavigate() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
         let seen = Recorder<NavigationIssue.Kind>()
         let showHome = NavigationFallback.custom("showHome") { transaction, issue in
@@ -175,7 +177,7 @@ struct FallbackTests {
 
     @Test
     func dismissAllFallback() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
 
@@ -190,7 +192,7 @@ struct FallbackTests {
 
     @Test
     func resetToRootDismissesEverythingAndPopsTheRoot() throws {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, configuration: .permissive)
         let shop = tabs.router(for: .shop)
         shop.push(ProductRoute(id: 1))
         tabs.present(SettingsRoute())
@@ -205,7 +207,7 @@ struct FallbackTests {
 
     @Test
     func tabFallbackPopsSelectedTab() {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, configuration: .permissive)
         tabs.router(for: .shop).push(ProductRoute(id: 1))
 
         let outcome = tabs.select(.profile, else: .popToRoot)
@@ -216,7 +218,7 @@ struct FallbackTests {
 
     @Test
     func failedStepInTransactionUsesItsFallback() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
 
         let outcome = router.transaction {
@@ -232,7 +234,7 @@ struct FallbackTests {
 
     @Test
     func recoveredAndFailedIssuesAreReported() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let reported = Recorder<NavigationIssue.Kind>()
         router.tree.onReported { issue in
             reported.record(issue.kind)
@@ -247,7 +249,7 @@ struct FallbackTests {
 
     @Test
     func strictModeSeamSeesEveryOutcome() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
         router.dismiss()

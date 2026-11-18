@@ -44,12 +44,6 @@ final class NavigationTreeContext {
     /// Why a setting given to the tree was replaced by its default, or `nil`.
     let configurationProblem: String?
 
-    /// Whether pushes check that the route type has a destination. Turned on by the first
-    /// registration, so a tree without destinations, such as one in a unit test, is not checked.
-    var checksDestinations: Bool {
-        !registry.isEmpty
-    }
-
     /// Route types registered for decoding and as having a destination.
     var registry: RouteRegistry {
         configuration.registry
@@ -109,13 +103,10 @@ final class NavigationTreeContext {
         observers = observers.withFinished(observer)
     }
 
-    /// Whether a route may be shown: always before any registration, then only when its type is
-    /// registered.
+    /// Whether a route may be shown: any route when the registry is permissive, otherwise only
+    /// a registered type.
     func hasDestination(for route: AnyRoute) -> Bool {
-        guard checksDestinations else {
-            return true
-        }
-        return registry.type(for: route.routeKey) != nil
+        registry.allows(route)
     }
 
     /// Adds a handler for calls that failed and could not be recovered.

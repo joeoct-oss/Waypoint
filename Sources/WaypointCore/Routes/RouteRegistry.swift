@@ -11,7 +11,16 @@ import Foundation
 /// Maps route keys to route types, so erased routes can be encoded and decoded.
 ///
 /// The root router owns one registry and fills it while destinations are registered, so most
-/// apps never touch it. Registering checks every key at once, so mistakes show up on the first
+/// apps never touch it.
+///
+/// A registry is strict unless it was made with ``permissive``: pushing or presenting a route
+/// type that isn't registered fails with `unregisteredRoute` and runs its fallback, even when
+/// nothing is registered yet. The mode is chosen once and never changes by itself. Tests and
+/// previews that push routes without destinations ask for a permissive registry by name:
+///
+/// ```swift
+/// let router = StackRouter(configuration: NavigationConfiguration(registry: .permissive))
+/// ``` Registering checks every key at once, so mistakes show up on the first
 /// launch in development and in tests, before any saved state is read:
 ///
 /// - A former key that belongs to another route reports ``RouteDecodingError/duplicateRouteKey(_:types:)``.
@@ -37,6 +46,17 @@ public struct RouteRegistry: Sendable {
         case value
     }
 
+    /// Whether a route type must be registered before it can be shown.
+    ///
+    /// Conformances:
+    /// - `Sendable`, so a registry that holds it can be shared with the whole tree.
+    public enum Mode: Sendable {
+        /// Only registered route types can be pushed or presented. The default.
+        case strict
+        /// Any route can be pushed or presented, for tests and previews without destinations.
+        case permissive
+    }
+
     /// A registered route type and whether the key is its current one.
     private struct Entry: Sendable {
         /// The route type.
@@ -46,8 +66,23 @@ public struct RouteRegistry: Sendable {
         let isCurrent: Bool
     }
 
+    /// An empty registry that shows only registered route types. The default.
+    public static var strict: RouteRegistry {
+        RouteRegistry()
+    }
+
+    /// An empty registry that lets any route be shown, for tests and previews. Registered types
+    /// are still used for decoding.
+    public static var permissive: RouteRegistry {
+        RouteRegistry(mode: .permissive)
+    }
+
     /// Route types by current and former key.
     private let entries: [RouteKey: Entry]
+
+    /// Whether a route type must be registered before it can be shown. Chosen when the registry
+    /// is made; registering never changes it.
+    public let mode: Mode
 
     /// Problems found while registering, in the order they were found.
     ///
@@ -59,21 +94,17 @@ public struct RouteRegistry: Sendable {
         entries.values.filter(\.isCurrent).map(\.type)
     }
 
-    /// Whether no route type is registered.
-    var isEmpty: Bool {
-        entries.isEmpty
-    }
-
-    /// Creates an empty registry.
-    public init() {
+    /// Creates an empty registry. Default: strict.
+    public init(mode: Mode = .strict) {
         let noEntries: [RouteKey: Entry] = [:]
         let noProblems: [RouteDecodingError] = []
-        self.init(entries: noEntries, problems: noProblems)
+        self.init(entries: noEntries, mode: mode, problems: noProblems)
     }
 
-    /// A registry with these entries and problems.
-    private init(entries: [RouteKey: Entry], problems: [RouteDecodingError]) {
+    /// A registry with these entries, mode and problems.
+    private init(entries: [RouteKey: Entry], mode: Mode, problems: [RouteDecodingError]) {
         self.entries = entries
+        self.mode = mode
         self.problems = problems
     }
 
@@ -143,6 +174,12 @@ public struct RouteRegistry: Sendable {
         return entry.isCurrent && entry.type == type
     }
 
+    /// Whether a route may be pushed or presented: any route in a permissive registry, and only
+    /// a registered type in a strict one.
+    public func allows(_ route: AnyRoute) -> Bool {
+        mode == .permissive || type(for: route.routeKey) != nil
+    }
+
     /// The route type for a current or former key.
     public func type(for key: RouteKey) -> (any Route.Type)? {
         entries[key]?.type
@@ -175,6 +212,7 @@ public struct RouteRegistry: Sendable {
         let added = [key: Entry(type: type, isCurrent: true)]
         return RouteRegistry(
             entries: entries.merging(added) { _, new in new },
+            mode: mode,
             problems: problems + unstable + duplicate
         )
     }
@@ -183,14 +221,16 @@ public struct RouteRegistry: Sendable {
     private func withFormerKey<R: Route>(_ former: RouteKey, of type: R.Type) -> RouteRegistry {
         guard former.isWellFormed else {
             let invalid: [RouteDecodingError] = [.invalidRouteKey(former.rawValue)]
-            return RouteRegistry(entries: entries, problems: problems + invalid)
+            return RouteRegistry(entries: entries, mode: mode, problems: problems + invalid)
         }
         if let existing = entries[former] {
-            return RouteRegistry(entries: entries, problems: problems + takenFormerKeyProblems(former, existing, type))
+            let taken = takenFormerKeyProblems(former, existing, type)
+            return RouteRegistry(entries: entries, mode: mode, problems: problems + taken)
         }
         let added = [former: Entry(type: type, isCurrent: false)]
         return RouteRegistry(
             entries: entries.merging(added) { _, new in new },
+            mode: mode,
             problems: problems
         )
     }
