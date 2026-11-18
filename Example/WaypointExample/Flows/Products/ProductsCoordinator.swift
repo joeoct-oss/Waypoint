@@ -11,8 +11,8 @@ import WaypointCore
 
 // A stack of products: the shop or search at the root and a product pushed above it, with the
 // filters and the wish list as sheets. Add to cart reports to the main tabs, which add the product
-// to the cart and open Cart; a guest's Sign in reports to the app coordinator, which switches to
-// the accounts flow.
+// to the cart and open Cart. Save needs an account, so the account gate asks a guest to sign in
+// first; then the product joins the wish list, which the local store keeps.
 //
 // The stack runs on Waypoint: `router` owns the path, `ProductsFlowView` draws it with
 // `WaypointStack`, and a swipe back comes back to the router by itself. The sheets are still plain
@@ -28,10 +28,10 @@ final class ProductsCoordinator {
 
     let router: StackRouter
     private let start: ProductsStart
-    private let membership: Membership
+    private let store: LocalStore
+    private let gate: AccountGate
     private let launchSteps: ShopLaunchSteps
     private let onAddToCart: (Product) -> Void
-    private let onShowAccounts: () -> Void
     // `var` because `showFilters()`, `showWishlist()` and `dismissSheet()` change it, and
     // `syncSheet(_:)` takes a swipe down.
     private(set) var presentedSheet: ProductSheet?
@@ -41,16 +41,16 @@ final class ProductsCoordinator {
 
     init(
         start: ProductsStart,
-        membership: Membership,
+        store: LocalStore,
+        gate: AccountGate,
         launchSteps: ShopLaunchSteps,
-        onAddToCart: @escaping (Product) -> Void,
-        onShowAccounts: @escaping () -> Void
+        onAddToCart: @escaping (Product) -> Void
     ) {
         self.start = start
-        self.membership = membership
+        self.store = store
+        self.gate = gate
         self.launchSteps = launchSteps
         self.onAddToCart = onAddToCart
-        self.onShowAccounts = onShowAccounts
         router = StackRouter(flow: start.flowID)
         presentedSheet = nil
         hasPlayedLaunchSteps = false
@@ -99,8 +99,8 @@ final class ProductsCoordinator {
         onAddToCart(product)
     }
 
-    func showAccounts() {
-        onShowAccounts()
+    func save(_ product: Product) {
+        gate.requireAccount { self.addToWishlist(product) }
     }
 
     func dismissSheet() {
@@ -109,6 +109,13 @@ final class ProductsCoordinator {
 
     func syncSheet(_ sheet: ProductSheet?) {
         presentedSheet = sheet
+    }
+
+    private func addToWishlist(_ product: Product) {
+        if !store.wishlistProductIDs.contains(product.id) {
+            store.wishlistProductIDs.append(product.id)
+        }
+        showWishlist()
     }
 
     // Pushes the launch products in one change, then makes the follow-up change while that push
@@ -150,10 +157,8 @@ final class ProductsCoordinator {
 
     private func makeShopFlow() -> some View {
         ProductListView(
-            showsSignIn: membership == .guest,
             onSelect: { self.showProduct($0) },
-            onFilter: { self.showFilters() },
-            onSignIn: { self.showAccounts() }
+            onFilter: { self.showFilters() }
         )
         .screenChrome(
             title: MainTab.shop.title,
@@ -177,7 +182,7 @@ final class ProductsCoordinator {
 
     private func makeWishlistFlow() -> some View {
         WishlistView(
-            products: Product.sampleWishlist,
+            products: Product.products(withIDs: store.wishlistProductIDs),
             onDone: { self.dismissSheet() }
         )
     }
@@ -185,9 +190,8 @@ final class ProductsCoordinator {
     private func makeProductFlow(_ product: Product) -> some View {
         ProductDetailView(
             product: product,
-            canBuy: membership == .member,
             onAddToCart: { self.addToCart(product) },
-            onSave: { self.showWishlist() }
+            onSave: { self.save(product) }
         )
         .screenChrome(
             title: product.name,

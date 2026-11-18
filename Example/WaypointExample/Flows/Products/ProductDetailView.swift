@@ -9,10 +9,9 @@
 import SwiftUI
 
 // A product: its picture, name, price and description, with Save to the wish list in the bar and
-// Add to cart for signed-in readers.
+// Add to cart at the bottom, for guests and signed-in readers alike.
 struct ProductDetailView: View {
     let product: Product
-    let canBuy: Bool
     let onAddToCart: () -> Void
     let onSave: () -> Void
 
@@ -29,15 +28,8 @@ struct ProductDetailView: View {
             }
             .padding(Spacing.large)
         }
-        .bottomActionBar { bottomBar }
+        .bottomActionBar { addButton }
         .toolbar { saveItem }
-    }
-
-    @ViewBuilder
-    private var bottomBar: some View {
-        if canBuy {
-            addButton
-        }
     }
 
     private var saveItem: some ToolbarContent {

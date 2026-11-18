@@ -8,9 +8,11 @@
 
 import SwiftUI
 
-// The cart tab: the cart at the root, and checkout presented full screen as its own flow. Placing
-// the order empties the cart and shows Order placed in place of checkout; Continue shopping there
-// closes checkout and reports to the main tabs, which open Shop, as Keep shopping in the cart does.
+// The cart tab: the cart at the root, and checkout presented full screen as its own flow. Check out
+// needs an account, so the account gate asks a guest to sign in first. Placing the order empties
+// the cart and shows Order placed in place of checkout; Continue shopping there closes checkout and
+// reports to the main tabs, which open Shop, as Keep shopping in the cart does. The local store
+// keeps the cart between launches.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `CartFlowView` and the tab's badge redraw when the cart
@@ -31,6 +33,8 @@ final class CartCoordinator {
         "order placed",
     ]
 
+    private let store: LocalStore
+    private let gate: AccountGate
     private let onShopMore: () -> Void
     // `var` because `add(_:)` adds to it and `placeOrder()` empties it.
     private(set) var products: [Product]
@@ -40,9 +44,15 @@ final class CartCoordinator {
     // `var` because `placeOrder()` sets it, and `showCheckout()` clears it for the next order.
     private(set) var hasPlacedOrder: Bool
 
-    init(onShopMore: @escaping () -> Void) {
+    init(
+        store: LocalStore,
+        gate: AccountGate,
+        onShopMore: @escaping () -> Void
+    ) {
+        self.store = store
+        self.gate = gate
         self.onShopMore = onShopMore
-        products = Product.sampleCart
+        products = Product.products(withIDs: store.cartProductIDs)
         isCheckingOut = false
         hasPlacedOrder = false
     }
@@ -50,7 +60,7 @@ final class CartCoordinator {
     func makeCartFlow() -> some View {
         CartView(
             products: products,
-            onCheckout: { self.showCheckout() },
+            onCheckout: { self.checkOut() },
             onShopMore: { self.showShop() }
         )
         .screenChrome(
@@ -64,6 +74,10 @@ final class CartCoordinator {
         NavigationStack {
             makeCheckoutScreen()
         }
+    }
+
+    func checkOut() {
+        gate.requireAccount { self.showCheckout() }
     }
 
     func showCheckout() {
@@ -80,10 +94,12 @@ final class CartCoordinator {
             return
         }
         products.append(product)
+        saveCart()
     }
 
     func placeOrder() {
         products = []
+        saveCart()
         hasPlacedOrder = true
     }
 
@@ -122,6 +138,10 @@ final class CartCoordinator {
         )
     }
 
+    private func saveCart() {
+        store.cartProductIDs = products.map(\.id)
+    }
+
     private func makeOrderPlacedFlow() -> some View {
         OrderPlacedView(onContinueShopping: { self.continueShopping() })
             .screenChrome(
@@ -129,12 +149,5 @@ final class CartCoordinator {
                 kind: nil,
                 trail: Self.orderPlacedTrail
             )
-    }
-}
-
-extension Product {
-    // The two products every cart starts with, so checkout always has something to show.
-    static var sampleCart: [Product] {
-        Array(all.prefix(2))
     }
 }

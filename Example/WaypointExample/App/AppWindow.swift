@@ -1,5 +1,5 @@
 //
-//  AppRootView.swift
+//  AppWindow.swift
 //  WaypointExample
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
@@ -8,10 +8,11 @@
 
 import SwiftUI
 
-// Makes this window's app coordinator once and draws its current root. `WaypointRoot {
-// AppCoordinator(...) }` takes this view's place once the SwiftUI renderer is built, with the same
-// shape: one coordinator per window.
-struct AppRootView: View {
+// Holds one window's app coordinator, made once, and draws its current root. Apps never write this
+// view: they call `AppCoordinator.makeWindow(services:launch:)`. Once the SwiftUI renderer is
+// built, `makeWindow` returns `WaypointRoot { AppCoordinator(...) }` instead and this file goes
+// away, with the same shape: one coordinator per window.
+struct AppWindow: View {
     @State private var app: AppCoordinator
 
     init(makeCoordinator: () -> AppCoordinator) {

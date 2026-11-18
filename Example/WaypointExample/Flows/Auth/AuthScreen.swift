@@ -6,18 +6,15 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// A screen the accounts flow can push above Welcome.
+// A screen the accounts flow can push above Sign in.
 //
 // Conformances:
 // - `Hashable`, so `NavigationStack` can keep screens in its path and tell them apart.
 enum AuthScreen: Hashable {
-    case signIn
     case createAccount(CreateAccountStep)
 
     var title: String {
         switch self {
-        case .signIn:
-            return "Sign in"
         case .createAccount:
             return "Create account"
         }
@@ -25,10 +22,8 @@ enum AuthScreen: Hashable {
 
     var trail: [String] {
         switch self {
-        case .signIn:
-            return AuthTrail.welcome + ["sign in"]
         case .createAccount(let step):
-            return AuthTrail.welcome + step.trail
+            return AuthTrail.signIn + step.trail
         }
     }
 }
@@ -104,7 +99,7 @@ enum AuthSheet: Identifiable {
 
 // The route trail at the root of the accounts flow.
 enum AuthTrail {
-    static let welcome = [
-        "welcome",
+    static let signIn = [
+        "sign in",
     ]
 }

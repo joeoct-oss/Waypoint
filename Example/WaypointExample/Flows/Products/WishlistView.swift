@@ -8,24 +8,28 @@
 
 import SwiftUI
 
-// The wish list, as a small sheet that can grow: the saved products, closed with Done.
+// The wish list, as a small sheet that can grow: the products the reader saved, closed with Done.
 struct WishlistView: View {
     let products: [Product]
     let onDone: () -> Void
 
     var body: some View {
         NavigationStack {
-            List(products) { product in
-                LabeledContent(product.name) {
-                    Text(product.price, format: .currency(code: "USD"))
-                }
-            }
-            .navigationTitle("Wish list")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { doneItem }
+            list
+                .navigationTitle("Wish list")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { doneItem }
         }
         .accessibilityIdentifier(Identifiers.wishlist)
         .presentationDetents(WishlistDetents.all)
+    }
+
+    private var list: some View {
+        List(products) { product in
+            LabeledContent(product.name) {
+                Text(product.price, format: .currency(code: "USD"))
+            }
+        }
     }
 
     private var doneItem: some ToolbarContent {
@@ -42,12 +46,5 @@ enum WishlistDetents {
             .medium,
             .large,
         ]
-    }
-}
-
-extension Product {
-    // The products every wish list starts with.
-    static var sampleWishlist: [Product] {
-        Array(all.suffix(3))
     }
 }

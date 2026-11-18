@@ -8,8 +8,11 @@
 
 import SwiftUI
 
-// Account: the reader's profile, with orders, settings and sign out.
+// Account: the reader's profile with Sign out, or Sign in for a guest, and Orders and Settings for
+// everyone. The screen reports each choice; the account coordinator decides what needs an account.
 struct AccountView: View {
+    let account: Account?
+    let onSignIn: () -> Void
     let onShowOrders: () -> Void
     let onShowSettings: () -> Void
     let onSignOut: () -> Void
@@ -17,7 +20,7 @@ struct AccountView: View {
     var body: some View {
         List {
             Section {
-                profile
+                header
             }
             Section {
                 Button("Orders", systemImage: "shippingbox", action: onShowOrders)
@@ -25,23 +28,55 @@ struct AccountView: View {
                 Button("Settings", systemImage: "gearshape", action: onShowSettings)
                     .accessibilityIdentifier(Identifiers.settingsButton)
             }
-            Section {
-                Button("Sign out", role: .destructive, action: onSignOut)
-            }
+            signOutSection
         }
         .exampleList()
     }
 
-    private var profile: some View {
+    @ViewBuilder
+    private var header: some View {
+        if let account {
+            makeProfile(account)
+        } else {
+            signInPrompt
+        }
+    }
+
+    @ViewBuilder
+    private var signOutSection: some View {
+        if account != nil {
+            Section {
+                Button("Sign out", role: .destructive, action: onSignOut)
+                    .accessibilityIdentifier(Identifiers.signOut)
+            }
+        }
+    }
+
+    private var signInPrompt: some View {
+        VStack(alignment: .leading, spacing: Spacing.medium) {
+            Text("Sign in to see your orders and save products.")
+                .font(Typography.callout)
+                .foregroundStyle(Palette.textSecondary.color)
+            PrimaryActionButton(
+                title: "Sign in or create account",
+                identifier: Identifiers.accountSignIn,
+                action: onSignIn
+            )
+        }
+        .padding(.vertical, Spacing.extraSmall)
+    }
+
+    private func makeProfile(_ account: Account) -> some View {
         HStack(spacing: Spacing.medium) {
             Image(systemName: "person.crop.circle.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(Palette.brand.color)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Nova Reader")
+                Text(account.name)
                     .font(Typography.headline)
-                Text("nova@example.com")
+                    .accessibilityIdentifier(Identifiers.accountName)
+                Text(account.email)
                     .font(Typography.footnote)
                     .foregroundStyle(Palette.textSecondary.color)
             }
