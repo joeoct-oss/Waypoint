@@ -12,6 +12,7 @@ import XCTest
 enum UITestSteps {
     static let timeout: TimeInterval = 5
     static let pollInterval: TimeInterval = 0.1
+    static let settleTime: TimeInterval = 1
 }
 
 extension XCUIElement {
@@ -68,27 +69,71 @@ extension XCUIApplication {
         )
     }
 
-    // Lists build rows lazily, so a row below the fold exists only after scrolling to it.
+    // Lists build rows lazily, so a row below the fold exists only after scrolling to it. Waits for
+    // the screen to finish sliding in before scrolling, so a row that was about to show is not
+    // scrolled away, and scrolls back down for a row that ends up under the navigation bar.
     @MainActor
     func reveal(_ element: XCUIElement) -> Bool {
         _ = element.waitForExistence(timeout: UITestSteps.timeout)
-        for _ in 0..<4 where !isTappable(element) {
-            swipeUp()
+        for _ in 0..<4 where !waitUntilTappable(element) {
+            if isAboveVisibleArea(element) {
+                swipeDown()
+            } else {
+                swipeUp()
+            }
+        }
+        return waitUntilTappable(element)
+    }
+
+    // Polls for a short while, since a pushed screen's rows reach their place only once the push
+    // ends, and says whether the element got there.
+    @MainActor
+    private func waitUntilTappable(_ element: XCUIElement) -> Bool {
+        let deadline = Date().addingTimeInterval(UITestSteps.settleTime)
+        while Date() < deadline {
+            if isTappable(element) {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(UITestSteps.pollInterval))
         }
         return isTappable(element)
     }
 
-    // Checks the frame before asking `isHittable`, because a button that exists while its screen is
-    // still being pushed has no frame yet, and a row cut off by the bottom edge has no point to tap:
-    // `isHittable` then fails the test instead of returning false. A row only counts once its
-    // whole frame is inside the window.
+    // Whether the element sits above the visible area, under the navigation bar, rather than below
+    // it or not built yet.
+    @MainActor
+    private func isAboveVisibleArea(_ element: XCUIElement) -> Bool {
+        guard element.exists, !element.frame.isEmpty else {
+            return false
+        }
+        return element.frame.minY < visibleArea.minY
+    }
+
+    // Checks the frame alone and never asks `isHittable`, because `isHittable` fails the test
+    // instead of returning false when XCTest finds no point to tap, as it does for a row while its
+    // screen is still sliding in. A row counts once its whole frame is between the navigation bar
+    // and the window's bottom edge. Every list this reveals sits on a pushed screen, which hides
+    // the tab bar.
     @MainActor
     private func isTappable(_ element: XCUIElement) -> Bool {
         guard element.exists, !element.frame.isEmpty else {
             return false
         }
+        return visibleArea.contains(element.frame)
+    }
+
+    // The part of the window below the navigation bar, where a row is not covered by anything.
+    @MainActor
+    private var visibleArea: CGRect {
         let window = windows.firstMatch.frame
-        return window.contains(element.frame) && element.isHittable
+        let navigationBar = navigationBars.firstMatch
+        let top = navigationBar.exists ? max(window.minY, navigationBar.frame.maxY) : window.minY
+        return CGRect(
+            x: window.minX,
+            y: top,
+            width: window.width,
+            height: max(0, window.maxY - top)
+        )
     }
 
     // Whether the main tab bar is on screen. A hidden tab bar can stay in the tree off screen, so
