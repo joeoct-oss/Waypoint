@@ -205,3 +205,68 @@ main .contenttable {
 main .contenttable .title {
     padding-top: 24px !important;
 }
+
+/* Landing page module cards: one row per module, picture beside the text, core first (#136). */
+.TopicsLinkCardGrid .row.with-columns {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+}
+
+.TopicsLinkCardGrid .column {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+}
+
+.TopicsLinkCardGrid .column:has(a[href$="/waypointcore"]) {
+    order: -1;
+}
+
+.TopicsLinkCardGrid .card.large {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    height: auto !important;
+    min-height: 0 !important;
+    border: 1px solid var(--color-grid) !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    background: var(--color-card-background) !important;
+}
+
+.TopicsLinkCardGrid .card.large .card-cover-wrap {
+    flex: 0 0 42% !important;
+    align-self: stretch !important;
+    border-radius: 0 !important;
+}
+
+.TopicsLinkCardGrid .card.large .card-cover,
+.TopicsLinkCardGrid .card.large .card-cover img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
+.TopicsLinkCardGrid .card.large .details {
+    flex: 1 1 auto !important;
+    padding: 20px 28px !important;
+}
+
+.TopicsLinkCardGrid .card.large .title {
+    font-family: "Unbounded", "Inter", sans-serif !important;
+    font-size: 20px !important;
+    font-weight: 600 !important;
+}
+
+/* Phones: the picture goes back above the text. */
+@media (max-width: 600px) {
+    .TopicsLinkCardGrid .card.large {
+        flex-direction: column !important;
+    }
+
+    .TopicsLinkCardGrid .card.large .card-cover-wrap {
+        flex-basis: auto !important;
+    }
+}

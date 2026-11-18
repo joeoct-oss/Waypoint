@@ -51,3 +51,4 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - The code style rules have one home, `CODE_STYLE.md`. `CONTRIBUTING.md` links to it, and the pull request template asks that every doc a change affects is updated in the same pull request. (#128)
 - The documentation site has a 280 px sidebar, a 15 px type scale and one centered reading column, with tighter spacing between sections. (#132)
 - Each module card on the documentation landing page has its own artwork in the Waypoint identity, in light and dark, instead of the generic placeholder. (#134)
+- The module cards on the documentation landing page are three full-width rows, WaypointCore first, with each picture beside its text. (#136)
