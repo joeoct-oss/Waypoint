@@ -296,7 +296,10 @@ public struct RouteTable<Payload> {
     /// The same table with a way to build the payload for one route type.
     ///
     /// Also registers the type for decoding.
-    public func registering<R: Route>(_ type: R.Type, _ make: @escaping (R) -> Payload) -> RouteTable
+    public func registering<R: Route>(
+        _ type: R.Type,
+        _ make: @escaping (R) -> Payload
+    ) -> RouteTable
 
     /// The payload for a route, or `nil` if its type is not registered.
     public func payload(for route: AnyRoute) -> Payload?

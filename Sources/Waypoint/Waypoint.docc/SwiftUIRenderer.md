@@ -26,7 +26,11 @@ public struct WaypointStack<Root: View>: View {
 
     /// Creates a stack that belongs to a flow, so `@FlowNavigation(Flow.self)`
     /// finds it.
-    public init<F: NavigationFlow>(flow: F.Type, router: StackRouter? = nil, @ViewBuilder root: () -> Root)
+    public init<F: NavigationFlow>(
+        flow: F.Type,
+        router: StackRouter? = nil,
+        @ViewBuilder root: () -> Root
+    )
 }
 
 extension View {

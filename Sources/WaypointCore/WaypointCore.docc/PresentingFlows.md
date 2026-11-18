@@ -47,13 +47,19 @@ extension StackRouter {
     /// Dismisses the flow this router presents.
     ///
     /// Returns `.alreadyThere` when nothing is presented.
-    @discardableResult public func dismiss(else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func dismiss(
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 
     /// Dismisses every flow presented above this router.
-    @discardableResult public func dismissAll(else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func dismissAll(
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 
     /// Asks whoever presented this router's flow to dismiss it.
-    @discardableResult public func dismissFlow(else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func dismissFlow(
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
     /// The sheet options a presentation uses: its own, or this router's defaults.
     public func sheetOptions(for presentation: Presentation) -> SheetOptions
 }
@@ -90,7 +96,10 @@ public struct PresentationStyle: NavigationValue, NavigationDescribable {
     public static func sheet(_ options: SheetOptions) -> PresentationStyle
 
     /// A sheet with the given sizes. The first size is selected.
-    public static func sheet(detents: [SheetDetent], selected: SheetDetent? = nil) -> PresentationStyle
+    public static func sheet(
+        detents: [SheetDetent],
+        selected: SheetDetent? = nil
+    ) -> PresentationStyle
 }
 ```
 

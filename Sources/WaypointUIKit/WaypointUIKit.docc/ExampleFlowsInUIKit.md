@@ -21,7 +21,11 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
     let app = AppCoordinator()
 
-    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options: UIScene.ConnectionOptions) {
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) {
         window = app.makeWindow(for: scene, options: options)
     }
 
@@ -108,7 +112,10 @@ extension AppCoordinator {
     }
 
     func makeProfileFlow() -> UIViewController {
-        WaypointNavigationController(router: tabs.router(for: .profile), root: ProfileViewController())
+        WaypointNavigationController(
+            router: tabs.router(for: .profile),
+            root: ProfileViewController()
+        )
     }
 }
 ```

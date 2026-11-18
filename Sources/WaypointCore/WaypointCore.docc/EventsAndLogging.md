@@ -87,7 +87,9 @@ extension StackRouter {   // also on TabRouter and RootRouter
 
     /// A closure observer, for one-liners.
     @discardableResult
-    public func onEvents(_ handler: @escaping @MainActor ([NavigationEvent]) -> Void) -> ObservationToken
+    public func onEvents(
+        _ handler: @escaping @MainActor ([NavigationEvent]) -> Void
+    ) -> ObservationToken
 
     /// The whole tree, one flow per line. See "The navigation tree" below.
     public func debugTree(revealingPrivateValues: Bool = false) -> String
@@ -137,7 +139,14 @@ public enum LogLevel: Int, Sendable, Comparable {
 /// - `Hashable`, so categories can be kept in a set.
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public struct LogCategory: Hashable, Sendable {
-    public static let navigation, presentation, tabs, flows, links, restoration, renderer, issues: LogCategory
+    public static let navigation: LogCategory
+    public static let presentation: LogCategory
+    public static let tabs: LogCategory
+    public static let flows: LogCategory
+    public static let links: LogCategory
+    public static let restoration: LogCategory
+    public static let renderer: LogCategory
+    public static let issues: LogCategory
 
     public init(_ name: String)
 }
