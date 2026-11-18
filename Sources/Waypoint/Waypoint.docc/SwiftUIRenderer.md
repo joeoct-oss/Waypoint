@@ -4,11 +4,11 @@ Show stacks, sheets, tabs and roots in SwiftUI.
 
 ## Overview
 
-> Note: Draft until #11. The API in this article is planned, not built, and can still change when #11 lands.
+> Note: Stacks are built (#11): `WaypointStack`, `destination(_:_:)`, and swipe-back sync. The rest of this article is planned, not built, and can still change: the flow initializer and the navigator destination (#25), the Waypoint link (#147), coordinators (#36), sheets and full-screen covers (#12), tabs (#13), roots (#37, #148), incoming links (#15) and previews (#25).
 
 Each entry view takes a router, or makes one for you, and draws its state. Screens are registered by route type. SwiftUI applies one `navigationDestination(for:)` per registered type, so screens are never wrapped in `AnyView`.
 
-The renderer keeps no navigation state of its own. It mirrors the router's path into a `NavigationPath` and reports user pops, sheet dismissals, sheet size changes and tab taps back to the router.
+The renderer keeps no navigation state of its own. It mirrors the router's path into a `NavigationPath` and reports user pops back to the router. Sheet dismissals, sheet size changes and tab taps are reported the same way once sheets (#12) and tabs (#13) are built.
 
 ### Stacks
 
@@ -25,7 +25,7 @@ public struct WaypointStack<Root: View>: View {
     public init(_ router: StackRouter, @ViewBuilder root: () -> Root)
 
     /// Creates a stack that belongs to a flow, so `@FlowNavigation(Flow.self)`
-    /// finds it.
+    /// finds it. Planned in #25.
     public init<F: NavigationFlow>(flow: F.Type, router: StackRouter? = nil, @ViewBuilder root: () -> Root)
 }
 
@@ -37,6 +37,7 @@ extension View {
     ) -> some View
 
     /// The same, and also hands the screen a navigator for its view model.
+    /// Planned in #25.
     public func destination<R: Route, Content: View>(
         _ type: R.Type,
         @ViewBuilder _ content: @escaping (R, StackNavigator) -> Content
@@ -44,7 +45,24 @@ extension View {
 }
 ```
 
-A route with no destination never crashes. Debug builds show a "No destination for …" screen that names the route and the fix, and release builds refuse the push.
+```swift
+let router = StackRouter()
+
+WaypointStack(router) {
+    ProductListView(onSelect: { router.push(ProductRoute(id: $0)) })
+        .destination(ProductRoute.self) { route in
+            ProductView(id: route.id)
+        }
+}
+```
+
+`destination(_:_:)` also registers the route type with the stack's router. Put it on the stack's first screen, or on any screen inside the stack.
+
+**What the user does comes back.** A swipe back, the Back button and its long-press menu reach the router as one pop each, logged with `origin=user`. The router's path is always what the screen shows.
+
+**Changes during a transition.** A multi-step push or pop runs as one animation. On iOS 17, SwiftUI drops a path change that lands while a push or pop still animates, so there the stack holds the change and shows the router's newest path when the transition ends (about 0.6 s). Later systems apply it at once.
+
+A route with no destination never crashes. Once any destination is registered, the router refuses a route type that has none, with `unregisteredRoute` and the fallback you choose. A type registered in another stack of the tree but not in this one shows an empty screen; a debug screen that names the route and the fix is planned in #166.
 
 > Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views. Tracked in #151.
 
