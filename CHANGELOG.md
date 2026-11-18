@@ -60,4 +60,5 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - Each module card on the documentation landing page has its own artwork in the Waypoint identity, in light and dark, instead of the generic placeholder. (#134)
 - The module cards on the documentation landing page are three full-width rows, WaypointCore first, with each picture beside its text. (#136)
 - The documentation site has a sun and moon toggle in the top bar for light and dark, in place of the Light/Dark/Auto picker at the bottom of each page. The choice is remembered; first visits follow the system. (#138)
+- The documentation reading column is 900 px wide, so code lines up to 100 columns show without sideways scrolling. (#163)
 - Each API article for API that isn't built yet opens with "Draft until #n", and every note about a coming change names its issue. New notes cover one configuration for the whole tree (#143), a strict registry (#144), replacing a presentation and outcome helpers (#145), route hints (#146), system links in release builds (#147), leave confirmation (#155) and popovers (#156). (#159)

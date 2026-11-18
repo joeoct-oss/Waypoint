@@ -110,15 +110,18 @@ h2.nav-title::after {
     font-size: 16px;
 }
 
-/* One reading column, centered, with matching margins on both sides. */
+/*
+ * One reading column, centered, with matching margins on both sides. 900 px, padding included,
+ * holds a 100-column code line at 13 px without sideways scrolling (#163).
+ */
 .documentation-hero__content,
 .doc-content .container,
 .contenttable .container {
-    max-width: 760px !important;
+    max-width: 900px !important;
     margin-left: auto !important;
     margin-right: auto !important;
-    padding-left: 40px !important;
-    padding-right: 40px !important;
+    padding-left: 32px !important;
+    padding-right: 32px !important;
     box-sizing: content-box;
 }
 
