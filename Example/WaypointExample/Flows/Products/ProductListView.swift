@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// Shop: the "Nebula nights" banner, two products picked as cards, then the rest of the shop as rows,
-// with Filter in the navigation bar. The screen reports each choice.
+// Shop: the "Nebula nights" banner, two products picked as cards, then the rest of the shop as
+// rows, with Filter in the navigation bar. The screen reports each choice.
 struct ProductListView: View {
     private static let pickedCount = 2
 

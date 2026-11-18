@@ -8,9 +8,9 @@
 
 import SwiftUI
 
-// A product: its illustration on a wide backdrop, name, price and description, a related product the coordinator links
-// to, Save to the wish list in the bar and Add to cart at the bottom, for guests and signed-in
-// readers alike.
+// A product: its illustration on a wide backdrop, name, price and description, a related product
+// the coordinator links to, Save to the wish list in the bar and Add to cart at the bottom, for
+// guests and signed-in readers alike.
 //
 // Conformances:
 // - `Related: View`: the link to the related product, which the coordinator draws.
