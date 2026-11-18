@@ -9,7 +9,8 @@
 import SwiftUI
 
 // Account: the reader's profile with Sign out, or Sign in for a guest, and Orders, Addresses and
-// Settings for everyone. The screen reports each choice; the account coordinator decides what needs an account.
+// Settings for everyone. The screen reports each choice; the account coordinator decides what needs
+// an account.
 struct AccountView: View {
     let account: Account?
     let onSignIn: () -> Void

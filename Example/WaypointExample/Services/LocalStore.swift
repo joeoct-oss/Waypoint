@@ -10,8 +10,9 @@
 import Foundation
 
 // Everything the example app keeps between launches: the signed-in account, the accounts made on
-// this device, the cart, the wish list and the saved addresses. It lives in its own `UserDefaults` domain, so Clear all
-// data in Settings removes all of it at once and leaves the system's own settings alone.
+// this device, the cart, the wish list and the saved addresses. It lives in its own `UserDefaults`
+// domain, so Clear all data in Settings removes all of it at once and leaves the system's own
+// settings alone.
 @MainActor
 final class LocalStore {
     private static let domain = "dev.waypoint.example.data"
