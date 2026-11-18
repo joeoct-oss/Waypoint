@@ -2,7 +2,7 @@
 //  RouteTableTests.swift
 //  Waypoint
 //
-//  Created by Yousef Mohamed <52625092+JoeOCT91@users.noreply.github.com>.
+//  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
