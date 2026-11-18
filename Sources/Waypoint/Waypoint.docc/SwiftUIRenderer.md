@@ -60,7 +60,7 @@ WaypointStack(router) {
 
 **What the user does comes back.** A swipe back, the Back button and its long-press menu reach the router as one pop each, logged with `origin=user`. The router's path is always what the screen shows.
 
-**Changes during a transition.** A multi-step push or pop runs as one animation. On iOS 17, SwiftUI drops a path change that lands while a push or pop still animates, so there the stack holds the change and shows the router's newest path when the transition ends (about 0.6 s). Later systems apply it at once.
+**Changes during a transition.** A multi-step push or pop runs as one animation. On iOS 17, SwiftUI drops a path change that lands while a push or pop still animates, so there the stack holds the change and shows the router's newest path when the transition ends (about 0.6 s). A change that replaces screens, such as a link from one product to another, is shown there as a pop back to the screens both paths share, then a push. Later systems apply every change at once.
 
 A route with no destination never crashes. The registry is strict, so the router refuses a route type that no `destination(_:_:)` registered, with `unregisteredRoute` and the fallback you choose. Destinations register as the stack is first drawn, before any screen can push. A type registered in another stack of the tree but not in this one shows an empty screen; a debug screen that names the route and the fix is planned in #166.
 

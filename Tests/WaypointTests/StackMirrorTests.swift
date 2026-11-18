@@ -91,18 +91,46 @@ struct StackMirrorTests {
     }
 
     @Test
-    func stackIsDrawnAgainWhenTransitionEnds() {
+    func replacementGoesBackThenForward() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
         let mirror = Self.holdingMirror(router, clock)
+        router.push {
+            HomeRoute()
+            ProductRoute(id: 1)
+        }
+        mirror.routerDidChange()
+        clock.advance(by: .milliseconds(600))
+
+        router.setPath {
+            HomeRoute()
+            ProductRoute(id: 4)
+        }
+        mirror.routerDidChange()
+
+        let back = [AnyRoute(HomeRoute())]
+        #expect(mirror.shown == back)
+        #expect(mirror.isHoldingChange)
+
+        clock.advance(by: .milliseconds(600))
+
+        #expect(mirror.shown == router.state.path)
+        #expect(!mirror.isHoldingChange)
+    }
+
+    @Test
+    func replacementInOneStepOnLaterSystems() {
+        let router = StackRouter(configuration: .permissive)
+        let mirror = StackMirror(router: router, holdsTransitions: false, clock: ManualTransitionClock())
         router.push(ProductRoute(id: 1))
         mirror.routerDidChange()
 
-        clock.advance(by: .milliseconds(599))
-        #expect(mirror.redrawCount == 0)
-        clock.advance(by: .milliseconds(1))
+        router.setPath {
+            ProductRoute(id: 4)
+        }
+        mirror.routerDidChange()
 
-        #expect(mirror.redrawCount == 1)
+        #expect(mirror.shown == router.state.path)
     }
 
     @Test
@@ -118,7 +146,6 @@ struct StackMirrorTests {
 
         #expect(mirror.shown.isEmpty)
         #expect(clock.scheduledCount == 0)
-        #expect(mirror.redrawCount == 0)
     }
 
     @Test

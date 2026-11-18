@@ -49,10 +49,10 @@ final class StackMirror {
     /// ``screenDidShow(count:)`` change it.
     private(set) var shown: [AnyRoute]
 
-    /// Goes up by one each time the screen must be drawn again from `shown`: after it showed
-    /// something the router refused, and, where changes are held, after each transition ends.
+    /// Goes up by one each time the screen must be drawn again from `shown`, because it showed
+    /// something the router refused.
     ///
-    /// `var` because each redraw adds one. Only ``screenDidShow(count:)`` and `show(_:)` change it.
+    /// `var` because each refused change adds one. Only ``screenDidShow(count:)`` changes it.
     private(set) var redrawCount = 0
 
     /// When the last transition started, or `nil` before the first.
@@ -63,7 +63,7 @@ final class StackMirror {
 
     /// Whether a held change waits for the running transition to end.
     ///
-    /// `var` because a hold starts and ends. Only ``routerDidChange()`` and `endHold()` change it.
+    /// `var` because a hold starts and ends. Only `hold(for:)` and `endHold()` change it.
     @ObservationIgnored private var isHolding = false
 
     /// Whether a change is waiting for the running transition to end.
@@ -92,16 +92,10 @@ final class StackMirror {
             return
         }
         guard holdsTransitions, let wait = remainingTransition() else {
-            show(router.state.path)
+            showNewest()
             return
         }
-        guard !isHolding else {
-            return
-        }
-        isHolding = true
-        clock.run(after: wait) { [weak self] in
-            self?.endHold()
-        }
+        hold(for: wait)
     }
 
     /// Takes what the screen shows after the user changed it: fewer routes is a pop, reported to
@@ -120,17 +114,36 @@ final class StackMirror {
         router.rendererDidPop(toCount: Self.sharedPrefixCount(kept, router.state.path))
     }
 
-    /// Shows `routes` and starts a transition. Where changes are held, the stack is also drawn
-    /// again once the transition ends, because iOS 17 can still drop a change when a transition
-    /// runs longer than usual, such as the first push on a device that just started.
+    /// Shows the router's newest path.
+    ///
+    /// Where changes are held, a path that replaces screens, such as a link from one product to
+    /// another, is shown in two steps: first back to the screens both paths share, then, when that
+    /// transition ends, forward to the new ones. iOS 17 drops a replacement made in one step.
+    private func showNewest() {
+        let target = router.state.path
+        let shared = Self.sharedPrefixCount(shown, target)
+        guard holdsTransitions, shared < shown.count, shared < target.count else {
+            show(target)
+            return
+        }
+        show(Array(target.prefix(shared)))
+        hold(for: Self.transitionDuration)
+    }
+
+    /// Shows `routes` and starts a transition.
     private func show(_ routes: [AnyRoute]) {
         shown = routes
         lastTransition = clock.now
-        guard holdsTransitions else {
+    }
+
+    /// Waits for the running transition to end, then shows the newest path. One hold at a time.
+    private func hold(for wait: Duration) {
+        guard !isHolding else {
             return
         }
-        clock.run(after: Self.transitionDuration) { [weak self] in
-            self?.redrawCount += 1
+        isHolding = true
+        clock.run(after: wait) { [weak self] in
+            self?.endHold()
         }
     }
 
@@ -140,7 +153,7 @@ final class StackMirror {
         guard shown != router.state.path else {
             return
         }
-        show(router.state.path)
+        showNewest()
     }
 
     /// How long the running transition still runs, or `nil` when none does.
