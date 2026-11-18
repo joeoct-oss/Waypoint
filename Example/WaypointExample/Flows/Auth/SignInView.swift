@@ -11,6 +11,7 @@ import SwiftUI
 // Sign in, the root of the accounts sheet: email and password, Sign in, and ways to create an
 // account or reset the password. The screen reports each choice, and the accounts coordinator
 // decides where it goes. Cancel closes the sheet and drops the action that asked for an account.
+// Sign in closes the keyboard first, so an error and the other ways in stay in view.
 struct SignInView: View {
     let isWorking: Bool
     let errorMessage: String?
@@ -21,6 +22,8 @@ struct SignInView: View {
 
     @State private var email = ""
     @State private var password = ""
+    // `var` because SwiftUI moves focus between the fields, and Sign in clears it.
+    @FocusState private var focusedField: Field?
 
     private var canSignIn: Bool {
         !email.isEmpty && !password.isEmpty && !isWorking
@@ -33,6 +36,7 @@ struct SignInView: View {
             otherWays
         }
         .exampleForm()
+        .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier(Identifiers.signIn)
         .toolbar { cancelItem }
         .bottomActionBar { signInButton }
@@ -44,9 +48,11 @@ struct SignInView: View {
                 .textContentType(.username)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
+                .focused($focusedField, equals: .email)
                 .accessibilityIdentifier(Identifiers.signInEmail)
             SecureField("Password", text: $password)
                 .textContentType(.password)
+                .focused($focusedField, equals: .password)
                 .accessibilityIdentifier(Identifiers.signInPassword)
         } header: {
             header
@@ -88,6 +94,18 @@ struct SignInView: View {
     }
 
     private func signIn() {
+        focusedField = nil
         onSignIn(email, password)
+    }
+}
+
+extension SignInView {
+    // The fields that can hold the keyboard's focus.
+    //
+    // Conformances:
+    // - `Hashable`, so `@FocusState` can tell which field has focus.
+    private enum Field: Hashable {
+        case email
+        case password
     }
 }

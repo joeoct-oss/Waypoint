@@ -9,7 +9,8 @@
 import SwiftUI
 
 // Settings: app preferences, and under Developer the Navigation Lab for trying every demo flow and
-// Clear all data, which asks to confirm and then reports to the account coordinator.
+// Clear all data, which asks to confirm next to the button and then reports to the account
+// coordinator.
 struct SettingsView: View {
     let onShowLab: () -> Void
     let onClearAllData: () -> Void
@@ -27,8 +28,7 @@ struct SettingsView: View {
                     Label("Navigation Lab", systemImage: "flask")
                 }
                 .accessibilityIdentifier(Identifiers.labButton)
-                Button("Clear all data", systemImage: "trash", role: .destructive, action: confirmClear)
-                    .accessibilityIdentifier(Identifiers.clearData)
+                clearButton
             } header: {
                 Text("Developer")
             } footer: {
@@ -36,15 +36,20 @@ struct SettingsView: View {
             }
         }
         .exampleList()
-        .confirmationDialog(
-            "Clear all data?",
-            isPresented: $isConfirmingClear,
-            titleVisibility: .visible
-        ) {
-            clearActions
-        } message: {
-            Text("This signs you out and empties your cart and wish list.")
-        }
+    }
+
+    private var clearButton: some View {
+        Button("Clear all data", systemImage: "trash", role: .destructive, action: confirmClear)
+            .accessibilityIdentifier(Identifiers.clearData)
+            .confirmationDialog(
+                "Clear all data?",
+                isPresented: $isConfirmingClear,
+                titleVisibility: .visible
+            ) {
+                clearActions
+            } message: {
+                Text("This signs you out and empties your cart and wish list.")
+            }
     }
 
     private var clearActions: some View {
