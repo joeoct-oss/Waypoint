@@ -49,10 +49,10 @@ final class StackMirror {
     /// ``screenDidShow(count:)`` change it.
     private(set) var shown: [AnyRoute]
 
-    /// Goes up by one each time the screen must be drawn again from `shown`, because it showed
-    /// something the router refused.
+    /// Goes up by one each time the screen must be drawn again from `shown`: after it showed
+    /// something the router refused, and, where changes are held, after each transition ends.
     ///
-    /// `var` because each refused change adds one. Only ``screenDidShow(count:)`` changes it.
+    /// `var` because each redraw adds one. Only ``screenDidShow(count:)`` and `show(_:)` change it.
     private(set) var redrawCount = 0
 
     /// When the last transition started, or `nil` before the first.
@@ -120,10 +120,18 @@ final class StackMirror {
         router.rendererDidPop(toCount: Self.sharedPrefixCount(kept, router.state.path))
     }
 
-    /// Shows `routes` and starts a transition.
+    /// Shows `routes` and starts a transition. Where changes are held, the stack is also drawn
+    /// again once the transition ends, because iOS 17 can still drop a change when a transition
+    /// runs longer than usual, such as the first push on a device that just started.
     private func show(_ routes: [AnyRoute]) {
         shown = routes
         lastTransition = clock.now
+        guard holdsTransitions else {
+            return
+        }
+        clock.run(after: Self.transitionDuration) { [weak self] in
+            self?.redrawCount += 1
+        }
     }
 
     /// Ends a hold by showing the router's newest path, never a replay of the held ones.

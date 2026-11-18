@@ -66,7 +66,6 @@ struct StackMirrorTests {
 
         #expect(mirror.shown.count == 3)
         #expect(mirror.isHoldingChange)
-        #expect(clock.scheduledCount == 1)
 
         clock.advance(by: .milliseconds(450))
 
@@ -88,7 +87,22 @@ struct StackMirrorTests {
         mirror.routerDidChange()
 
         #expect(mirror.shown.isEmpty)
-        #expect(clock.scheduledCount == 0)
+        #expect(!mirror.isHoldingChange)
+    }
+
+    @Test
+    func stackIsDrawnAgainWhenTransitionEnds() {
+        let router = StackRouter(configuration: .permissive)
+        let clock = ManualTransitionClock()
+        let mirror = Self.holdingMirror(router, clock)
+        router.push(ProductRoute(id: 1))
+        mirror.routerDidChange()
+
+        clock.advance(by: .milliseconds(599))
+        #expect(mirror.redrawCount == 0)
+        clock.advance(by: .milliseconds(1))
+
+        #expect(mirror.redrawCount == 1)
     }
 
     @Test
@@ -104,6 +118,7 @@ struct StackMirrorTests {
 
         #expect(mirror.shown.isEmpty)
         #expect(clock.scheduledCount == 0)
+        #expect(mirror.redrawCount == 0)
     }
 
     @Test
