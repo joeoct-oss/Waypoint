@@ -23,6 +23,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@500;600;700&display=swap">
+    <script>
+        // Hides what the motion script brings in until it runs, so nothing flashes first.
+        if (window.matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+            document.documentElement.classList.add("motion");
+        }
+    </script>
     <style>
         :root {
             --space: #0B0F2A;
@@ -142,7 +148,8 @@
             padding-bottom: 40px;
         }
 
-        /* Twinkling stars behind the hero, drawn by the script at the end of the page. */
+        /* Stars behind the hero, scattered by js/landing.js: twinkling dots far away, a few
+           four-point sparkles nearer, and the odd shooting star. */
         .starfield {
             position: absolute;
             inset: 0;
@@ -150,18 +157,23 @@
             pointer-events: none;
         }
 
+        .starfield .layer {
+            position: absolute;
+            inset: -24px;
+        }
+
         .starfield .dot {
             position: absolute;
             border-radius: 50%;
             background: #EEF0FF;
-            animation: twinkle var(--duration, 4s) ease-in-out var(--delay, 0s) infinite;
+            opacity: var(--high, 0.7);
         }
 
         .starfield .sparkle {
             position: absolute;
             width: var(--size, 12px);
             height: var(--size, 12px);
-            animation: sparkle var(--duration, 6s) ease-in-out var(--delay, 0s) infinite;
+            opacity: 0.5;
         }
 
         .starfield .sparkle svg {
@@ -172,15 +184,33 @@
 
         .shooting-star {
             position: absolute;
-            top: 14%;
-            left: -10%;
-            width: 120px;
+            width: 140px;
             height: 1.5px;
             border-radius: 2px;
-            background: linear-gradient(90deg, transparent, rgba(238, 240, 255, 0.9));
-            opacity: 0;
-            transform: rotate(14deg);
-            animation: shoot 11s ease-in 3s infinite;
+            background: linear-gradient(90deg, transparent, rgba(238, 240, 255, 0.95));
+            transform-origin: 100% 50%;
+        }
+
+        /* The mark. Without the script (or with reduced motion) it shows finished and still. */
+        .orbit {
+            position: absolute;
+            top: 50%;
+            right: 5%;
+            width: min(440px, 36vw);
+            height: min(440px, 36vw);
+            transform: translateY(-46%);
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .starfield .dot {
+                animation: twinkle var(--duration, 4s) ease-in-out var(--delay, 0s) infinite;
+            }
+
+            .scroll-cue svg {
+                animation: bob 2s ease-in-out infinite;
+            }
         }
 
         @keyframes twinkle {
@@ -193,184 +223,26 @@
             }
         }
 
-        @keyframes sparkle {
-            0%, 100% {
-                opacity: 0.15;
-                transform: scale(0.6) rotate(0deg);
-            }
-
-            50% {
-                opacity: 0.95;
-                transform: scale(1) rotate(45deg);
-            }
+        /* While the motion script starts, the parts it brings in stay hidden, so they don't
+           flash in their final place first. The script clears the class if GSAP is missing. */
+        .motion .orbit .trail,
+        .motion .orbit .stop,
+        .motion .orbit .arrow-g,
+        .motion .orbit .star-g,
+        .motion .orbit .planet,
+        .motion .orbit .ring,
+        .motion .hero-body > *,
+        .motion .scroll-cue {
+            visibility: hidden;
         }
 
-        @keyframes shoot {
-            0% {
-                opacity: 0;
-                transform: translate(0, 0) rotate(14deg);
-            }
-
-            3% {
-                opacity: 1;
-            }
-
-            12% {
-                opacity: 0;
-                transform: translate(70vw, 17vw) rotate(14deg);
-            }
-
-            100% {
-                opacity: 0;
-                transform: translate(70vw, 17vw) rotate(14deg);
-            }
-        }
-
-        /* The mark, animated: the trail draws in, the arrow moves on, the star twinkles. */
-        .orbit {
-            position: absolute;
-            top: 50%;
-            right: 5%;
-            width: min(440px, 36vw);
-            height: min(440px, 36vw);
-            transform: translateY(-46%);
-            overflow: visible;
-            pointer-events: none;
-        }
-
-        .orbit .ring {
-            animation: ring-turn 30s linear infinite;
-        }
-
-        .orbit .trail {
+        .orbit .ripple,
+        .orbit .pulse {
             opacity: 0;
-            stroke-dasharray: 1;
-            stroke-dashoffset: 1;
-            animation: draw 0.7s ease-out forwards;
         }
 
-        .orbit .trail.t2 {
-            animation-delay: 0.6s;
-        }
-
-        .orbit .trail.t3 {
-            animation-delay: 1.2s;
-        }
-
-        .orbit .stop {
-            opacity: 0;
-            transform-box: fill-box;
-            transform-origin: center;
-            animation: pop 0.4s ease-out forwards;
-        }
-
-        .orbit .stop.s1 {
-            animation-delay: 0.1s;
-        }
-
-        .orbit .stop.s2 {
-            animation-delay: 0.7s;
-        }
-
-        .orbit .stop.s3 {
-            animation-delay: 1.3s;
-        }
-
-        .orbit .arrow {
-            opacity: 0;
-            transform-box: fill-box;
-            transform-origin: center;
-            animation: pop 0.4s ease-out 1.8s forwards, nudge 2.4s ease-in-out 2.4s infinite;
-        }
-
-        .orbit .star {
-            transform-box: fill-box;
-            transform-origin: center;
-            animation: star-twinkle 3.2s ease-in-out 2.2s infinite;
-        }
-
-        .orbit .glow {
-            transform-box: fill-box;
-            transform-origin: center;
-            animation: glow 3.2s ease-in-out 2.2s infinite;
-        }
-
-        .orbit .planet {
-            transform-box: fill-box;
-            transform-origin: center;
-            animation: breathe 5s ease-in-out infinite;
-        }
-
-        @keyframes draw {
-            0% {
-                opacity: 1;
-                stroke-dashoffset: 1;
-            }
-
-            100% {
-                opacity: 1;
-                stroke-dashoffset: 0;
-            }
-        }
-
-        @keyframes pop {
-            0% {
-                opacity: 0;
-                transform: scale(0.3);
-            }
-
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        @keyframes nudge {
-            0%, 100% {
-                transform: translateX(0);
-            }
-
-            50% {
-                transform: translateX(1.6px);
-            }
-        }
-
-        @keyframes star-twinkle {
-            0%, 100% {
-                transform: scale(1) rotate(0deg);
-            }
-
-            50% {
-                transform: scale(1.12) rotate(12deg);
-            }
-        }
-
-        @keyframes glow {
-            0%, 100% {
-                opacity: 0.18;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.36;
-                transform: scale(1.35);
-            }
-        }
-
-        @keyframes breathe {
-            0%, 100% {
-                opacity: 0.85;
-            }
-
-            50% {
-                opacity: 1;
-            }
-        }
-
-        @keyframes ring-turn {
-            to {
-                stroke-dashoffset: -96;
-            }
+        h1 .word {
+            display: inline-block;
         }
 
         .scroll-cue {
@@ -389,7 +261,6 @@
         .scroll-cue svg {
             width: 18px;
             height: 18px;
-            animation: bob 2s ease-in-out infinite;
         }
 
         @keyframes bob {
@@ -399,26 +270,6 @@
 
             50% {
                 transform: translateY(5px);
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .starfield .dot,
-            .starfield .sparkle,
-            .shooting-star,
-            .orbit *,
-            .scroll-cue svg {
-                animation: none !important;
-            }
-
-            .orbit .trail {
-                opacity: 1;
-                stroke-dashoffset: 0;
-            }
-
-            .orbit .stop,
-            .orbit .arrow {
-                opacity: 1;
             }
         }
 
@@ -651,7 +502,8 @@
 <body>
     <header class="hero">
         <div class="starfield" aria-hidden="true">
-            <span class="shooting-star"></span>
+            <div class="layer far"></div>
+            <div class="layer near"></div>
         </div>
         <svg class="orbit" viewBox="0 0 64 64" aria-hidden="true">
             <defs>
@@ -661,22 +513,30 @@
                     <stop offset="1" stop-color="#FF5BAA"/>
                 </linearGradient>
             </defs>
-            <path class="ring" d="M50.24 19.70 A22 22 0 0 1 19.70 50.24" fill="none" stroke="#7C8CFF" stroke-opacity="0.45" stroke-width="1.4" stroke-dasharray="1.6 3.2" stroke-linecap="round"/>
-            <circle class="planet" cx="32" cy="32" r="4" fill="#C9D0FF"/>
-            <path class="trail t1" pathLength="1" d="M16.44 47.56 A22 22 0 0 1 10.00 32.00" fill="none" stroke="url(#trail)" stroke-width="1.2" stroke-linecap="round"/>
-            <path class="trail t2" pathLength="1" d="M10.00 32.00 A22 22 0 0 1 16.44 16.44" fill="none" stroke="url(#trail)" stroke-width="2.2" stroke-linecap="round"/>
-            <path class="trail t3" pathLength="1" d="M16.44 16.44 A22 22 0 0 1 24.84 11.20" fill="none" stroke="url(#trail)" stroke-width="3.2" stroke-linecap="round"/>
-            <circle class="stop s1" cx="16.44" cy="47.56" r="1.5" fill="#FFFFFF"/>
-            <circle class="stop s2" cx="10.00" cy="32.00" r="2" fill="#FFFFFF"/>
-            <circle class="stop s3" cx="16.44" cy="16.44" r="2.5" fill="#FFFFFF"/>
-            <g transform="translate(32.00 10.00)">
-                <path class="arrow" d="M5.5 0 L-5.5 -5 L-3 0 L-5.5 5 Z" fill="#FF5BAA"/>
-            </g>
-            <g transform="translate(47.56 16.44)">
-                <circle class="glow" r="5.22" fill="#EEF0FF" fill-opacity="0.18"/>
-                <g class="star">
-                    <path d="M0 -5.5 Q1.32 -1.32 5.5 0 Q1.32 1.32 0 5.5 Q-1.32 1.32 -5.5 0 Q-1.32 -1.32 0 -5.5Z" fill="#EEF0FF"/>
-                    <circle r=".9" fill="#0B0F2A"/>
+            <g class="orbit-scroll">
+                <g class="orbit-drift">
+                    <path class="ring" d="M50.24 19.70 A22 22 0 0 1 19.70 50.24" fill="none" stroke="#7C8CFF" stroke-opacity="0.45" stroke-width="1.4" stroke-dasharray="1.6 3.2" stroke-linecap="round"/>
+                    <circle class="planet" cx="32" cy="32" r="4" fill="#C9D0FF"/>
+                    <path class="trail t1" pathLength="1" d="M16.44 47.56 A22 22 0 0 1 10.00 32.00" fill="none" stroke="url(#trail)" stroke-width="1.2" stroke-linecap="round"/>
+                    <path class="trail t2" pathLength="1" d="M10.00 32.00 A22 22 0 0 1 16.44 16.44" fill="none" stroke="url(#trail)" stroke-width="2.2" stroke-linecap="round"/>
+                    <path class="trail t3" pathLength="1" d="M16.44 16.44 A22 22 0 0 1 24.84 11.20" fill="none" stroke="url(#trail)" stroke-width="3.2" stroke-linecap="round"/>
+                    <circle class="ripple" cx="16.44" cy="47.56" r="1.5" fill="none" stroke="#EEF0FF" stroke-width=".5"/>
+                    <circle class="ripple" cx="10.00" cy="32.00" r="2" fill="none" stroke="#EEF0FF" stroke-width=".5"/>
+                    <circle class="ripple" cx="16.44" cy="16.44" r="2.5" fill="none" stroke="#EEF0FF" stroke-width=".5"/>
+                    <circle class="stop s1" cx="16.44" cy="47.56" r="1.5" fill="#FFFFFF"/>
+                    <circle class="stop s2" cx="10.00" cy="32.00" r="2" fill="#FFFFFF"/>
+                    <circle class="stop s3" cx="16.44" cy="16.44" r="2.5" fill="#FFFFFF"/>
+                    <circle class="pulse" r="1.1" fill="#FFFFFF"/>
+                    <g class="arrow-g" transform="translate(32 10)">
+                        <path class="arrow" d="M5.5 0 L-5.5 -5 L-3 0 L-5.5 5 Z" fill="#FF5BAA"/>
+                    </g>
+                    <g class="star-g" transform="translate(47.56 16.44)">
+                        <g class="glow" fill-opacity="0.18"><circle r="5.22" fill="#EEF0FF"/></g>
+                        <g class="star">
+                            <path d="M0 -5.5 Q1.32 -1.32 5.5 0 Q1.32 1.32 0 5.5 Q-1.32 1.32 -5.5 0 Q-1.32 -1.32 0 -5.5Z" fill="#EEF0FF"/>
+                            <circle r=".9" fill="#0B0F2A"/>
+                        </g>
+                    </g>
                 </g>
             </g>
         </svg>
@@ -792,49 +652,9 @@
         </div>
     </footer>
 
-    <script>
-        // Scatters the hero's stars: small twinkling dots and a few four-point sparkles in the
-        // mark's star shape. A fixed seed keeps the sky the same on every visit.
-        (function () {
-            var field = document.querySelector(".starfield");
-            var seed = 7;
-
-            function random() {
-                seed = (seed * 16807) % 2147483647;
-                return (seed - 1) / 2147483646;
-            }
-
-            var sparkle = '<svg viewBox="-6 -6 12 12"><path d="M0 -5.5 Q1.32 -1.32 5.5 0 Q1.32 1.32 0 5.5 ' +
-                'Q-1.32 1.32 -5.5 0 Q-1.32 -1.32 0 -5.5Z" fill="#EEF0FF"/></svg>';
-
-            for (var index = 0; index < 90; index += 1) {
-                var dot = document.createElement("span");
-                var size = random() < 0.85 ? 1 + random() * 1.2 : 2 + random() * 1.2;
-
-                dot.className = "dot";
-                dot.style.left = (random() * 100).toFixed(2) + "%";
-                dot.style.top = (random() * 100).toFixed(2) + "%";
-                dot.style.width = size.toFixed(1) + "px";
-                dot.style.height = size.toFixed(1) + "px";
-                dot.style.setProperty("--duration", (2.5 + random() * 4).toFixed(2) + "s");
-                dot.style.setProperty("--delay", (-random() * 6).toFixed(2) + "s");
-                dot.style.setProperty("--high", (0.5 + random() * 0.5).toFixed(2));
-                field.appendChild(dot);
-            }
-
-            for (var star = 0; star < 7; star += 1) {
-                var shape = document.createElement("span");
-
-                shape.className = "sparkle";
-                shape.innerHTML = sparkle;
-                shape.style.left = (4 + random() * 92).toFixed(2) + "%";
-                shape.style.top = (6 + random() * 84).toFixed(2) + "%";
-                shape.style.setProperty("--size", (8 + random() * 10).toFixed(0) + "px");
-                shape.style.setProperty("--duration", (4 + random() * 4).toFixed(2) + "s");
-                shape.style.setProperty("--delay", (-random() * 8).toFixed(2) + "s");
-                field.appendChild(shape);
-            }
-        })();
-    </script>
+    <script defer src="/js/vendor/gsap/gsap.min.js"></script>
+    <script defer src="/js/vendor/gsap/MotionPathPlugin.min.js"></script>
+    <script defer src="/js/vendor/gsap/ScrollTrigger.min.js"></script>
+    <script defer src="/js/landing.js"></script>
 </body>
 </html>
