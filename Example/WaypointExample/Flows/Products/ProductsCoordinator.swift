@@ -10,10 +10,11 @@ import SwiftUI
 import Waypoint
 import WaypointCore
 
-// A stack of products: the shop or search at the root, a collection from Shop's banner and a product
-// pushed above it, with the filters and the wish list as sheets. Add to cart reports to the main tabs, which add the product
-// to the cart and open Cart. Save needs an account, so the account gate asks a guest to sign in
-// first; then the product joins the wish list, which the local store keeps.
+// A stack of products: the shop or search at the root, a collection from Shop's banner and a
+// product pushed above it, with the filters and the wish list as sheets. Add to cart reports to the
+// main tabs, which add the product to the cart and open Cart. Save needs an account, so the account
+// gate asks a guest to sign in first; then the product joins the wish list, which the local store
+// keeps.
 //
 // The stack runs on Waypoint: `router` owns the path, `ProductsFlowView` draws it with
 // `WaypointStack`, and a swipe back comes back to the router by itself. A product page links to a
