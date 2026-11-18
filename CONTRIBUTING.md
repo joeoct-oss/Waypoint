@@ -10,7 +10,7 @@ Tool versions (Tuist, SwiftLint and Periphery) are pinned in [`.mise.toml`](.mis
 
 Every change starts from an issue. Name the branch after it:
 
-```
+```text
 <type>/<issue-number>-<short-kebab-description>
 ```
 
