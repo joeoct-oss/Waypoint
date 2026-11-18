@@ -150,6 +150,10 @@ public final class StackRouter: NavigationRouter {
     ///   - flow: The flow's name in logs, events and saved state. Default: `main`.
     ///   - configuration: The settings of the whole tree. Default:
     ///     ``NavigationConfiguration/default``.
+    ///   - file: The file that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
+    ///   - line: The line that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
     public convenience init(
         flow: FlowID = FlowID("main"),
         configuration: NavigationConfiguration = .default,
@@ -166,6 +170,10 @@ public final class StackRouter: NavigationRouter {
     ///   - flow: The flow's name in logs, events and saved state. Default: `main`.
     ///   - configuration: The settings of the whole tree. Default:
     ///     ``NavigationConfiguration/default``.
+    ///   - file: The file that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
+    ///   - line: The line that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
     public convenience init<R: Route>(
         root: R,
         flow: FlowID = FlowID("main"),
