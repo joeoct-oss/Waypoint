@@ -74,3 +74,134 @@ main h1 {
 code {
     font-variant-ligatures: none;
 }
+
+/* Layout: a narrow sidebar, calmer type and one centered reading column (#132). */
+
+/* Sidebar: 280 px instead of about a third of the window. DocC sets its width inline. */
+@media (min-width: 1024px) {
+    .sidebar .aside {
+        width: 280px !important;
+    }
+}
+
+.navigator-card-item,
+.navigator-card-item .leaf-link,
+.navigator .filter input {
+    font-size: 14px !important;
+}
+
+.navigator-card-item.is-group {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+.navigator-head,
+.navigator .card-link {
+    font-size: 15px !important;
+}
+
+/* Navigation bar: a smaller mark and name. */
+h2.nav-title::before {
+    width: 22px;
+    height: 22px;
+}
+
+h2.nav-title::after {
+    font-size: 16px;
+}
+
+/* One reading column, centered, with matching margins on both sides. */
+.documentation-hero__content,
+.doc-content .container,
+.contenttable .container {
+    max-width: 760px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 40px !important;
+    padding-right: 40px !important;
+    box-sizing: content-box;
+}
+
+/* The large page-type picture behind the title competes with the title; drop it. */
+.documentation-hero .icon {
+    display: none !important;
+}
+
+.documentation-hero,
+.documentation-hero__content {
+    min-height: 0 !important;
+}
+
+.documentation-hero__content {
+    padding-top: 36px !important;
+    padding-bottom: 20px !important;
+}
+
+/* Type scale: 15 px body, headings that step down evenly. */
+main .content p,
+main .content li,
+main .abstract,
+main .contenttable .abstract,
+main .link-block .abstract {
+    font-size: 15px !important;
+    line-height: 1.6 !important;
+}
+
+main .documentation-hero .abstract {
+    font-size: 17px !important;
+}
+
+main h1 {
+    font-size: clamp(26px, 3vw, 32px) !important;
+    line-height: 1.15 !important;
+}
+
+main h2:not(.nav-title) {
+    font-size: 22px !important;
+    line-height: 1.25 !important;
+}
+
+main h3 {
+    font-size: 17px !important;
+    font-family: "Inter", sans-serif !important;
+    font-weight: 600 !important;
+}
+
+main .eyebrow,
+main .documentation-hero .eyebrow {
+    font-size: 14px !important;
+}
+
+main .link-block .link,
+main .contenttable .link {
+    font-size: 15px !important;
+}
+
+/* Code: a size that sits with 15 px text. */
+main pre,
+main pre code,
+main .source,
+main .declaration-source {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+}
+
+main p code,
+main li code {
+    font-size: 0.92em;
+}
+
+/* Section spacing: less empty space between parts of the page. */
+main .primary-content > .content,
+main .description {
+    margin-top: 28px !important;
+    margin-bottom: 28px !important;
+}
+
+main .contenttable {
+    padding-top: 8px !important;
+}
+
+main .contenttable .title {
+    padding-top: 24px !important;
+}
