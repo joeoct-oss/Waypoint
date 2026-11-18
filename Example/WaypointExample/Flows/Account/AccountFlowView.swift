@@ -8,7 +8,8 @@
 
 import SwiftUI
 
-// Draws the account stack from its coordinator.
+// Draws the account stack from its coordinator, and the Lab's view and view-model demos full screen
+// over it.
 struct AccountFlowView: View {
     let account: AccountCoordinator
 
@@ -16,6 +17,12 @@ struct AccountFlowView: View {
         NavigationStack(path: Binding(reading: account.path, writing: account.syncPath)) {
             account.makeAccountFlow()
                 .navigationDestination(for: AccountScreen.self) { account.makeDestination(for: $0) }
+        }
+        .fullScreenCover(
+            item: Binding(reading: account.labDemos.presentedDemo, writing: account.labDemos.syncDemo),
+            onDismiss: account.labDemos.releaseDemo
+        ) {
+            account.labDemos.makeDemoFlow(for: $0)
         }
     }
 }

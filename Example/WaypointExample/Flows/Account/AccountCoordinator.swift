@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import WaypointCore
 
 // The account tab: the profile at the root (or Sign in for a guest), orders, addresses and settings
 // pushed above it, and the Navigation Lab under settings with the twenty demo entries. Orders and
@@ -25,6 +26,8 @@ final class AccountCoordinator {
     private let addressBook: AddressBook
     private let gate: AccountGate
     private let onClearAllData: () -> Void
+    // Runs the Lab's view and view-model demos, each full screen on a Waypoint stack of its own.
+    let labDemos: LabDemoCoordinator
     // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the
     // stack makes itself.
     private(set) var path: [AccountScreen]
@@ -34,12 +37,14 @@ final class AccountCoordinator {
         session: Session,
         addressBook: AddressBook,
         gate: AccountGate,
+        navigation: NavigationConfiguration,
         onClearAllData: @escaping () -> Void
     ) {
         self.session = session
         self.addressBook = addressBook
         self.gate = gate
         self.onClearAllData = onClearAllData
+        labDemos = LabDemoCoordinator(navigation: navigation)
         path = Self.makePath(for: launch)
     }
 
@@ -133,6 +138,14 @@ final class AccountCoordinator {
         path.append(.labFlow(entry))
     }
 
+    func showLabStory(_ story: ViewModelStory) {
+        path.append(.labStory(story))
+    }
+
+    func showLabDemo(_ demo: LabDemo) {
+        labDemos.showDemo(demo)
+    }
+
     func signOut() {
         session.signOut()
     }
@@ -164,6 +177,8 @@ final class AccountCoordinator {
             makeLabBranchFlow(branch)
         case .labFlow(let entry):
             makeLabPlaceholderFlow(entry)
+        case .labStory(let story):
+            makeLabStoryFlow(story)
         }
     }
 
@@ -197,7 +212,10 @@ final class AccountCoordinator {
     }
 
     private func makeLabFlow() -> some View {
-        LabView(onSelectBranch: { self.showLabBranch($0) })
+        LabView(
+            onSelectBranch: { self.showLabBranch($0) },
+            onSelectStory: { self.showLabStory($0) }
+        )
     }
 
     @ViewBuilder
@@ -226,6 +244,39 @@ final class AccountCoordinator {
         case .uiKit:
             makeUIKitPlaceholder(entry)
         }
+    }
+
+    @ViewBuilder
+    private func makeLabStoryFlow(_ story: ViewModelStory) -> some View {
+        switch story {
+        case .style:
+            makeNavigationStyleFlow()
+        case .lateResult:
+            makeLateResultFlow()
+        case .noRouter:
+            makeNoRouterFlow()
+        case .preview:
+            makePreviewHelpFlow()
+        }
+    }
+
+    private func makeNavigationStyleFlow() -> some View {
+        NavigationStyleView(onTry: { self.showLabDemo(.style($0)) })
+    }
+
+    private func makeLateResultFlow() -> some View {
+        LateResultView(
+            demos: labDemos,
+            onOpen: { self.showLabDemo(.lateResult) }
+        )
+    }
+
+    private func makeNoRouterFlow() -> some View {
+        NoRouterView()
+    }
+
+    private func makePreviewHelpFlow() -> some View {
+        PreviewHelpView()
     }
 
     private func makeSwiftUIPlaceholder(_ entry: FlowEntry) -> some View {

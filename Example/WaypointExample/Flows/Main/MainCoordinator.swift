@@ -72,6 +72,7 @@ final class MainCoordinator {
             session: services.session,
             addressBook: services.addresses,
             gate: gate,
+            navigation: services.navigation,
             onClearAllData: onClearAllData
         )
     }
