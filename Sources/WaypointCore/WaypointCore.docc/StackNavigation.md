@@ -50,9 +50,8 @@ public final class StackRouter {
     /// The route types registered in this tree.
     public var registry: RouteRegistry { get }
 
-    /// The most calls that may be queued while changes are applied, in one
-    /// turn. Shared by the whole tree. Default: 32.
-    public var maxQueuedChanges: Int { get }
+    /// The settings of the whole tree, given once to the root router.
+    public var configuration: NavigationConfiguration { get }
 
     // Handles
 
@@ -62,15 +61,24 @@ public final class StackRouter {
     public var fallbackPolicy: FallbackPolicy { get }
 
     /// Creates a root router with an empty path. `flow` names it in logs,
-    /// events and saved state.
-    public init(flow: FlowID = FlowID("main"))
+    /// events and saved state, and `configuration` holds the settings of the
+    /// whole tree.
+    public convenience init(
+        flow: FlowID = FlowID("main"),
+        configuration: NavigationConfiguration = .default,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    )
 
     /// Creates a root router whose root screen shows `root`, so `popTo(root)`
     /// pops to the root.
-    public init<R: Route>(root: R, flow: FlowID = FlowID("main"))
-
-    /// Sets the queue limit. Below 1 reports `invalidSetting` and keeps the old limit.
-    public func setMaxQueuedChanges(_ limit: Int, file: StaticString = #fileID, line: UInt = #line)
+    public convenience init<R: Route>(
+        root: R,
+        flow: FlowID = FlowID("main"),
+        configuration: NavigationConfiguration = .default,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    )
 
     /// Sets one kind's fallback for this flow and its children, or clears it with `nil`.
     /// `.push` for any kind but `routeNotInPath` reports `invalidSetting` and changes nothing.
@@ -160,7 +168,52 @@ public final class StackRouter {
 
 > Note: One push per tap is coming. A second push of the same route while the first one is still being shown will be skipped and return `.alreadyThere`, so a quick double tap pushes one screen. It will be on by default, and a router can turn it off. Tracked in #142.
 
-> Note: Settings for the whole tree, such as logging, the queued change limit and the failure handler, will move into one `NavigationConfiguration` value set once on the root. Settings for one flow, such as fallbacks and presentation defaults, stay on every router. Tracked in #143.
+### Settings for the whole tree
+
+Settings that apply to the whole tree are given once, to the root router, in one `NavigationConfiguration`. Every router in the tree reads the same value through `configuration`, and none can change it, so a line in a leaf coordinator never changes the whole app. Settings for one flow, such as fallbacks and presentation defaults, stay on every router and apply to its children.
+
+```swift
+let configuration = NavigationConfiguration(
+    logging: LogConfiguration.default.withMinimumLevel(.debug),
+    onNavigationFailure: { failure in
+        crashReporter.record(failure.description)
+    }
+)
+let router = StackRouter(root: HomeRoute(), configuration: configuration)
+```
+
+```swift
+/// The settings of a whole router tree, given once to the root router.
+///
+/// Conformances:
+/// - `Sendable`, so the configuration can be built anywhere and handed to the root router.
+public struct NavigationConfiguration: Sendable {
+    /// Every setting at its default.
+    public static var `default`: NavigationConfiguration { get }
+
+    /// How the whole tree logs. Default: `LogConfiguration.default`. See <doc:EventsAndLogging>.
+    public let logging: LogConfiguration
+    /// The most calls queued in one main-actor turn. Default: 32. Below 1, the
+    /// root router reports `invalidSetting` and uses 32. See <doc:Concurrency>.
+    public let maxQueuedChanges: Int
+    /// The route types known before any destination is registered, such as the
+    /// ones restored state needs. Default: an empty registry. See <doc:Routes>.
+    public let registry: RouteRegistry
+    /// Called for each call anywhere in the tree that failed and could not be
+    /// recovered. Default: `nil`.
+    public let onNavigationFailure: (@MainActor (NavigationFailure) -> Void)?
+
+    /// Every argument has a default.
+    public init(
+        logging: LogConfiguration = .default,
+        maxQueuedChanges: Int = 32,
+        registry: RouteRegistry = RouteRegistry(),
+        onNavigationFailure: (@MainActor (NavigationFailure) -> Void)? = nil
+    )
+}
+```
+
+`TabRouter` and `RootRouter` take the same `configuration:` argument when they are the root. Routers inside the tree, such as a tab's stack or a presented flow, are made by their parent and share its configuration.
 
 ### Building paths
 
@@ -366,13 +419,9 @@ extension NavigationOutcome {
     /// The issue a `.recovered` call recovered from, or `nil`.
     public var recoveredIssue: NavigationIssue? { get }
 }
-
-extension StackRouter {   // also on TabRouter
-    /// Adds a handler for calls anywhere in the tree that failed and could not
-    /// be recovered. Each failure reaches it once.
-    public func onNavigationFailure(_ handler: @escaping @MainActor (NavigationFailure) -> Void)
-}
 ```
+
+A call that fails and can't be recovered reaches the tree's `onNavigationFailure` handler once, set in the root's `NavigationConfiguration` (see "Settings for the whole tree" above).
 
 Inside a transaction, each step takes its own `else:` and uses the same order. A step whose fallback succeeds counts as recovered, and the transaction's outcome is the first recovery. A step that still fails rolls back the whole transaction. A fallback's own steps never run another fallback.
 

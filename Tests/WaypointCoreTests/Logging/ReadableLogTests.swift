@@ -20,8 +20,8 @@ struct ReadableLogTests {
         _ handler: RecordingLogHandler,
         _ configuration: LogConfiguration = LogConfiguration()
     ) -> StackRouter {
-        let router = StackRouter()
-        router.setLogging(configuration.withHandler(handler).withMinimumLevel(.debug))
+        let logging = configuration.withHandler(handler).withMinimumLevel(.debug)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
         return router
     }
 
@@ -100,8 +100,9 @@ struct ReadableLogTests {
     @Test
     func tabChangesNameBothTabs() {
         let handler = RecordingLogHandler()
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
-        tabs.setLogging(LogConfiguration(handler: handler, minimumLevel: .info))
+        let logging = LogConfiguration(handler: handler, minimumLevel: .info)
+        let configuration = NavigationConfiguration(logging: logging)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: configuration)
 
         tabs.select(.shop)
 
@@ -195,8 +196,9 @@ struct ReadableLogTests {
     @Test
     func changedStacksFollowEachChange() throws {
         let handler = RecordingLogHandler()
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
-        tabs.setLogging(LogConfiguration(handler: handler, minimumLevel: .info, treeLogging: .changedStacks))
+        let logging = LogConfiguration(handler: handler, minimumLevel: .info, treeLogging: .changedStacks)
+        let configuration = NavigationConfiguration(logging: logging)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: configuration)
 
         tabs.router(for: .shop).push(ProductRoute(id: 7))
         tabs.select(.shop)

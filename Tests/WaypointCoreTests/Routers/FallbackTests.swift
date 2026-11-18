@@ -92,11 +92,13 @@ struct FallbackTests {
 
     @Test
     func fallbackFailureRollsBack() throws {
-        let router = StackRouter()
         let failures = Recorder<NavigationFailure>()
-        router.onNavigationFailure { failure in
-            failures.record(failure)
-        }
+        let configuration = NavigationConfiguration(
+            onNavigationFailure: { failure in
+                failures.record(failure)
+            }
+        )
+        let router = StackRouter(configuration: configuration)
 
         let outcome = router.popTo(SettingsRoute(), else: .dismissAll)
         let pushOutcome = router.pop(else: .push)
@@ -114,12 +116,14 @@ struct FallbackTests {
 
     @Test
     func customFallbackFailureRollsBackItsOwnSteps() throws {
-        let router = StackRouter()
-        router.push(HomeRoute())
         let failures = Recorder<NavigationFailure>()
-        router.onNavigationFailure { failure in
-            failures.record(failure)
-        }
+        let configuration = NavigationConfiguration(
+            onNavigationFailure: { failure in
+                failures.record(failure)
+            }
+        )
+        let router = StackRouter(configuration: configuration)
+        router.push(HomeRoute())
         let fallback = NavigationFallback.custom("pushThenFail") { transaction, _ in
             transaction.push(ProductRoute(id: 9))
             transaction.popTo(SettingsRoute())
