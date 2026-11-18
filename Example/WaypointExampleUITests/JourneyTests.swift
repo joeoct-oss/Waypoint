@@ -145,7 +145,12 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(placed.waitForExistence(timeout: UITestSteps.timeout))
         app.buttons[Identifiers.continueShopping].tapWhenReady()
 
-        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+        // Shop keeps its place, so it still shows the product the order started from.
+        let shopSelected = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "isSelected == true"),
+            object: app.tabBars.buttons[Self.shopTitle]
+        )
+        wait(for: [shopSelected], timeout: UITestSteps.timeout)
         XCTAssertFalse(placed.exists)
     }
 
@@ -186,7 +191,9 @@ final class JourneyTests: XCTestCase {
         app.openTab(Self.accountTitle)
         app.buttons[Identifiers.settingsButton].tapWhenReady()
         app.buttons[Identifiers.clearData].tapWhenReady()
-        app.buttons[Identifiers.confirmClearData].tapWhenReady()
+        // On iOS 27 the confirmation is a popover whose button holds a second button with the same
+        // identifier, so the test taps the first.
+        app.buttons[Identifiers.confirmClearData].firstMatch.tapWhenReady()
 
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
         app.openTab(Self.cartTitle)
