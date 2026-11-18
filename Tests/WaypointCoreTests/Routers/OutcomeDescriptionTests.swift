@@ -69,7 +69,7 @@ struct OutcomeDescriptionTests {
     @Test
     @MainActor
     func issueMessagesKeepRouteFieldsPrivate() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 7))
 
         let message = router.popTo(SettingsRoute()).failure?.issue.message ?? ""

@@ -17,7 +17,7 @@ import WaypointTestSupport
 struct TabRouterTests {
     @Test
     func selectTabChangesSelection() {
-        let tabs = TabRouter(selection: MainTab.home)
+        let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
 
         #expect(tabs.select(.shop) == .applied)
         #expect(tabs.selection == .shop)
@@ -26,7 +26,7 @@ struct TabRouterTests {
 
     @Test
     func caseIterableTabsShowEveryCaseInOrder() {
-        let tabs = TabRouter(selection: MainTab.shop)
+        let tabs = TabRouter(selection: MainTab.shop, configuration: .permissive)
 
         #expect(tabs.state.tabs == MainTab.allCases)
         #expect(tabs.selection == .shop)
@@ -35,7 +35,12 @@ struct TabRouterTests {
 
     @Test
     func explicitTabsOverrideAllCases() {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, popsToRootOnReselect: false)
+        let tabs = TabRouter(
+            tabs: MainTab.homeAndShop,
+            selection: .home,
+            popsToRootOnReselect: false,
+            configuration: .permissive
+        )
 
         #expect(tabs.state.tabs == MainTab.homeAndShop)
         #expect(!tabs.popsToRootOnReselect)
@@ -43,7 +48,7 @@ struct TabRouterTests {
 
     @Test
     func selectUnknownTabFails() {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
 
         let outcome = tabs.select(.profile)
 
@@ -53,14 +58,14 @@ struct TabRouterTests {
 
     @Test
     func initWithUnknownSelectionSelectsFirstTab() {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .profile)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .profile, configuration: .permissive)
 
         #expect(tabs.selection == .home)
     }
 
     @Test
     func tabsKeepIndependentStacks() {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
 
         tabs.router(for: .shop).push(ProductRoute(id: 1))
         tabs.router(for: .home).push(SettingsRoute())
@@ -76,7 +81,7 @@ struct TabRouterTests {
 
     @Test
     func reselectingPopsTabToRoot() {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, configuration: .permissive)
         tabs.router(for: .shop).push(ProductRoute(id: 1))
 
         #expect(tabs.select(.shop) == .applied)
@@ -85,7 +90,12 @@ struct TabRouterTests {
 
     @Test
     func reselectingCanBeTurnedOff() {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, popsToRootOnReselect: false)
+        let tabs = TabRouter(
+            tabs: MainTab.homeAndShop,
+            selection: .shop,
+            popsToRootOnReselect: false,
+            configuration: .permissive
+        )
         tabs.router(for: .shop).push(ProductRoute(id: 1))
 
         #expect(tabs.select(.shop) == .alreadyThere)
@@ -94,7 +104,7 @@ struct TabRouterTests {
 
     @Test
     func setTabsReleasesRemovedTabs() {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, configuration: .permissive)
         let shop = tabs.router(for: .shop)
         let newTabs: [MainTab] = [.home, .profile]
 
@@ -108,14 +118,14 @@ struct TabRouterTests {
     @Test
     func routerForUnknownTabIsInactive() {
         let homeOnly: [MainTab] = [.home]
-        let tabs = TabRouter(tabs: homeOnly, selection: .home)
+        let tabs = TabRouter(tabs: homeOnly, selection: .home, configuration: .permissive)
 
         #expect(tabs.router(for: .shop).push(HomeRoute()) == .ignored)
     }
 
     @Test
     func tabRouterPresentsAboveAllTabs() throws {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
 
         #expect(tabs.present(SettingsRoute()) == .applied)
 
@@ -128,7 +138,7 @@ struct TabRouterTests {
 
     @Test
     func stacksInsideTabsShareTheTree() throws {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
         let shop = tabs.router(for: .shop)
 
         shop.present(SettingsRoute())

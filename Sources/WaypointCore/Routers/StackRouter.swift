@@ -118,16 +118,11 @@ public final class StackRouter: NavigationRouter {
         tree.registry
     }
 
-    /// The most calls that may be queued while changes are applied, in one main-actor turn.
-    /// Shared by the whole tree. Default: 32. Calls past it report `reentrantLoop`.
-    public var maxQueuedChanges: Int {
-        tree.maxQueuedChanges
-    }
-
-    /// How this router's whole tree logs. Shared by every router in the tree.
-    /// Default: ``LogConfiguration/default``.
-    public var logging: LogConfiguration {
-        tree.logging
+    /// The settings of the whole tree, given once to the root router. Every router in the tree
+    /// reads the same value, and none can change it. The registry holds every route type
+    /// registered since.
+    public var configuration: NavigationConfiguration {
+        tree.configuration
     }
 
     /// Default presentation options for this router and its children. Unless set here, they
@@ -151,26 +146,52 @@ public final class StackRouter: NavigationRouter {
 
     /// Creates a root router with an empty path.
     ///
-    /// - Parameter flow: The flow's name in logs, events and saved state. Default: `main`.
-    public init(flow: FlowID = FlowID("main")) {
-        let tree = NavigationTreeContext()
-        self.tree = tree
-        self.flowID = tree.claimFlowName(flow.name)
-        self.rootRoute = nil
-        self.parentNode = nil
-        self.committed = Snapshot(state: StackState(), presented: nil)
-        self.isAttached = true
+    /// - Parameters:
+    ///   - flow: The flow's name in logs, events and saved state. Default: `main`.
+    ///   - configuration: The settings of the whole tree. Default: ``NavigationConfiguration/default``.
+    public convenience init(
+        flow: FlowID = FlowID("main"),
+        configuration: NavigationConfiguration = .default,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        self.init(rootRoute: nil, flow: flow, configuration: configuration, file: file, line: line)
     }
 
     /// Creates a root router whose root screen shows `root`, so `popTo(root)` pops to the root.
-    public init<R: Route>(root: R, flow: FlowID = FlowID("main")) {
-        let tree = NavigationTreeContext()
+    ///
+    /// - Parameters:
+    ///   - root: The route of the root screen.
+    ///   - flow: The flow's name in logs, events and saved state. Default: `main`.
+    ///   - configuration: The settings of the whole tree. Default: ``NavigationConfiguration/default``.
+    public convenience init<R: Route>(
+        root: R,
+        flow: FlowID = FlowID("main"),
+        configuration: NavigationConfiguration = .default,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) {
+        self.init(rootRoute: AnyRoute(root), flow: flow, configuration: configuration, file: file, line: line)
+    }
+
+    /// Creates a root router and its tree, and reports a setting the tree could not use.
+    private init(
+        rootRoute: AnyRoute?,
+        flow: FlowID,
+        configuration: NavigationConfiguration,
+        file: StaticString,
+        line: UInt
+    ) {
+        let tree = NavigationTreeContext(configuration: configuration)
         self.tree = tree
         self.flowID = tree.claimFlowName(flow.name)
-        self.rootRoute = AnyRoute(root)
+        self.rootRoute = rootRoute
         self.parentNode = nil
         self.committed = Snapshot(state: StackState(), presented: nil)
         self.isAttached = true
+        if let problem = tree.configurationProblem {
+            reportInvalidSetting(problem, file: file, line: line)
+        }
     }
 
     /// Creates a router for a flow presented by `parent`. It joins the tree when the
@@ -311,15 +332,6 @@ public final class StackRouter: NavigationRouter {
         }
     }
 
-    /// Sets how this router's whole tree logs. Set it once, on the root.
-    ///
-    /// ```swift
-    /// router.setLogging(LogConfiguration.default.withMinimumLevel(.debug))
-    /// ```
-    public func setLogging(_ configuration: LogConfiguration) {
-        tree.setLogging(configuration)
-    }
-
     /// The whole tree this router is in, one flow per line, for printing while debugging.
     ///
     /// ```text
@@ -339,17 +351,6 @@ public final class StackRouter: NavigationRouter {
             usesSymbols: tree.logging.usesSymbols
         )
         return rootNode.readableTree(naming).rendered
-    }
-
-    /// Sets the most calls that may be queued in one main-actor turn, for the whole tree.
-    ///
-    /// A limit below 1 would drop every call made from an observer, so it reports
-    /// `invalidSetting` and the limit stays as it was.
-    public func setMaxQueuedChanges(_ limit: Int, file: StaticString = #fileID, line: UInt = #line) {
-        guard let problem = tree.setMaxQueuedChanges(limit) else {
-            return
-        }
-        reportInvalidSetting(problem, file: file, line: line)
     }
 
     /// Sets the default presentation options for this router and its children.
@@ -388,23 +389,12 @@ public final class StackRouter: NavigationRouter {
         presentation.style.sheetOptions ?? presentationDefaults.sheet
     }
 
-    /// Adds a handler for calls anywhere in this router's tree that failed and could not be
-    /// recovered, so the app can show a message or report it. Each failure reaches it once.
-    ///
-    /// ```swift
-    /// rootRouter.onNavigationFailure { failure in
-    ///     crashReporter.record(failure.description)
-    /// }
-    /// ```
-    public func onNavigationFailure(_ handler: @escaping @MainActor (NavigationFailure) -> Void) {
-        tree.addFailureHandler(handler)
-    }
-
     /// Registers a route type for decoding and as having a destination.
     ///
-    /// Renderers and coordinators call this as they register destinations. Once any type is
-    /// registered in the tree, pushing or presenting a route type that isn't fails with
-    /// `unregisteredRoute`, and never crashes.
+    /// Renderers and coordinators call this as they register destinations. Unless the root's
+    /// registry is ``RouteRegistry/permissive``, pushing or presenting a route type that isn't
+    /// registered fails with `unregisteredRoute`, even before anything is registered, and never
+    /// crashes.
     public func register<R: Route>(_ type: R.Type) {
         tree.register(type)
     }

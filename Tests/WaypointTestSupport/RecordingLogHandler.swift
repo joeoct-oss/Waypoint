@@ -102,4 +102,14 @@ package final class RecordingLogHandler: LogHandler, @unchecked Sendable {
             recordedIntervals.append(.ended(interval))
         }
     }
+
+    /// Forgets everything recorded so far, so a test can set up a tree first and then check only
+    /// what its own calls logged.
+    package func removeAll() {
+        lock.withLock {
+            recordedMessages.removeAll()
+            recordedIntervals.removeAll()
+            recordedChecks = 0
+        }
+    }
 }
