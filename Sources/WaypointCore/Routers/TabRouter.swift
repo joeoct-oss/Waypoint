@@ -172,7 +172,7 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     ///   - flow: The container's name in logs, events and saved state. Default: `tabs`.
     ///   - popsToRootOnReselect: Whether tapping the selected tab pops its stack to the root.
     ///     Default: `true`.
-    /// - configuration: The settings of the whole tree. Default:
+    ///   - configuration: The settings of the whole tree. Default:
     ///     ``NavigationConfiguration/default``.
     public init(
         tabs: [Tab],
