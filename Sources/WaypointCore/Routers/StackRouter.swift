@@ -395,9 +395,10 @@ public final class StackRouter: NavigationRouter {
 
     /// Registers a route type for decoding and as having a destination.
     ///
-    /// Renderers and coordinators call this as they register destinations. Once any type is
-    /// registered in the tree, pushing or presenting a route type that isn't fails with
-    /// `unregisteredRoute`, and never crashes.
+    /// Renderers and coordinators call this as they register destinations. Unless the root's
+    /// registry is ``RouteRegistry/permissive``, pushing or presenting a route type that isn't
+    /// registered fails with `unregisteredRoute`, even before anything is registered, and never
+    /// crashes.
     public func register<R: Route>(_ type: R.Type) {
         tree.register(type)
     }

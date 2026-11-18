@@ -122,7 +122,7 @@ struct GuardedChangeTests {
 
     @Test
     func pushFallbackOnlySetsForRouteNotInPath() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let reported = Recorder<NavigationIssue.Kind>()
         router.tree.onReported { issue in
             reported.record(issue.kind)

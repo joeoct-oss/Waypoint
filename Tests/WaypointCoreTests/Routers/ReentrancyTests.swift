@@ -17,7 +17,7 @@ import WaypointTestSupport
 struct ReentrancyTests {
     @Test
     func callDuringChangeIsQueuedAndRunsAfter() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let inner = Recorder<NavigationOutcome>()
         let once = Once()
         router.tree.onApplied { changes in
@@ -40,7 +40,7 @@ struct ReentrancyTests {
 
     @Test
     func queuedCallsRunInOrderAcrossRouters() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
         let once = Once()
@@ -63,7 +63,7 @@ struct ReentrancyTests {
 
     @Test
     func queuedFailureIsReportedWhenItRuns() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let reported = Recorder<NavigationIssue.Kind>()
         let once = Once()
         router.tree.onReported { issue in
@@ -84,7 +84,7 @@ struct ReentrancyTests {
 
     @Test
     func loopStopsAfterMaxQueuedChanges() {
-        let router = StackRouter(configuration: NavigationConfiguration(maxQueuedChanges: 4))
+        let router = StackRouter(configuration: NavigationConfiguration(maxQueuedChanges: 4, registry: .permissive))
         let outcomes = Recorder<NavigationOutcome>()
         router.tree.onApplied { _ in
             outcomes.record(router.push(HomeRoute()))
@@ -99,7 +99,7 @@ struct ReentrancyTests {
 
     @Test
     func maxQueuedChangesDefaultsTo32AndIsSharedByTheTree() throws {
-        let router = StackRouter(configuration: NavigationConfiguration(maxQueuedChanges: 8))
+        let router = StackRouter(configuration: NavigationConfiguration(maxQueuedChanges: 8, registry: .permissive))
         router.present(SettingsRoute())
         let child = try #require(router.presented)
 

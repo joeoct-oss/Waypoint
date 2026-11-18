@@ -206,9 +206,13 @@ public struct AnyRoute: NavigationValue, NavigationDescribable {
 
 ### Decoding routes
 
-> Note: The registry will be strict in every build: a route type that isn't registered is always reported. A permissive mode for tests and previews is opt-in. Tracked in #144.
-
 Decoding an `AnyRoute` needs to know which concrete type a key stands for. Registering a destination for a route type also registers it for decoding, so most apps never touch the registry.
+
+The registry is also what lets a route be shown. It is strict in every build: pushing or presenting a route type with no registered destination fails with `unregisteredRoute`, runs its fallback and is logged, even before anything is registered. The mode is chosen once, in the root's `NavigationConfiguration`, and registering never changes it. Tests and previews that push routes with no destinations ask for a permissive registry by name:
+
+```swift
+let router = StackRouter(configuration: NavigationConfiguration(registry: .permissive))
+```
 
 An erased route is saved as its key and its value, such as `{"route": "Shop.ProductRoute", "value": {"id": 42}}`. Encoding needs nothing else. Decoding reads the registry from the decoder's `userInfo`:
 
@@ -231,7 +235,24 @@ public struct RouteRegistry: Sendable {
     public var registeredTypes: [any Route.Type] { get }
 
     /// Creates an empty registry.
-    public init()
+    /// Whether a route type must be registered before it can be shown.
+    public enum Mode: Sendable {
+        /// Only registered route types can be pushed or presented. The default.
+        case strict
+        /// Any route can be pushed or presented, for tests and previews.
+        case permissive
+    }
+
+    /// An empty strict registry. The default.
+    public static var strict: RouteRegistry { get }
+    /// An empty registry that lets any route be shown, for tests and previews.
+    public static var permissive: RouteRegistry { get }
+
+    /// Chosen when the registry is made; registering never changes it.
+    public let mode: Mode
+
+    /// Creates an empty registry.
+    public init(mode: Mode = .strict)
 
     /// The same registry with a route type added under its `routeKey` and
     /// its `formerRouteKeys`.
@@ -243,6 +264,10 @@ public struct RouteRegistry: Sendable {
 
     /// Whether this route type is registered under its current key.
     public func isRegistered<R: Route>(_ type: R.Type) -> Bool
+
+    /// Whether a route may be shown: any route when permissive, only a
+    /// registered type when strict.
+    public func allows(_ route: AnyRoute) -> Bool
 
     /// The route type for a current or former key.
     public func type(for key: RouteKey) -> (any Route.Type)?

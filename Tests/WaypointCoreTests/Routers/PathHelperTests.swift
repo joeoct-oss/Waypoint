@@ -17,7 +17,7 @@ import WaypointTestSupport
 struct PathHelperTests {
     @Test
     func pathBuilderSupportsIfAndForIn() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let showSettings = true
         let showHome = false
 
@@ -51,7 +51,7 @@ struct PathHelperTests {
 
     @Test
     func pushManyIsOneChange() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let changes = Recorder<AppliedChange>()
         router.tree.onApplied { applied in
             changes.record(contentsOf: applied)
@@ -69,7 +69,7 @@ struct PathHelperTests {
 
     @Test
     func setPathReplacesAndReportsReplaced() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
 
         #expect(router.setPath { ProductRoute(id: 1) } == .applied)
@@ -80,7 +80,7 @@ struct PathHelperTests {
 
     @Test
     func typedPopToFindsLastOfType() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.setPath {
             ProductRoute(id: 1)
             ProductRoute(id: 2)
@@ -95,7 +95,7 @@ struct PathHelperTests {
 
     @Test
     func typedPopToUsesPredicate() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.setPath {
             ProductRoute(id: 1)
             ProductRoute(id: 2)
@@ -112,7 +112,7 @@ struct PathHelperTests {
 
     @Test
     func typedPopToMissingTypeFails() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
 
         let outcome = router.popTo(SettingsRoute.self)
@@ -123,7 +123,7 @@ struct PathHelperTests {
 
     @Test
     func typedPopToRootScreenPopsToRoot() {
-        let router = StackRouter(root: HomeRoute())
+        let router = StackRouter(root: HomeRoute(), configuration: .permissive)
         router.push(ProductRoute(id: 1))
 
         #expect(router.popTo(HomeRoute.self) == .applied)
@@ -132,7 +132,7 @@ struct PathHelperTests {
 
     @Test
     func containsAndLast() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.setPath {
             ProductRoute(id: 1)
             HomeRoute()

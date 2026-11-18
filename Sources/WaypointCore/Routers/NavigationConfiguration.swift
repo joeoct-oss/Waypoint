@@ -49,8 +49,10 @@ public struct NavigationConfiguration: Sendable {
     public let maxQueuedChanges: Int
 
     /// The route types known before any destination is registered, such as the ones restored
-    /// navigation state needs. Renderers and coordinators add the rest as they register
-    /// destinations. Default: an empty registry.
+    /// navigation state needs, and whether unregistered routes may be shown. Renderers and
+    /// coordinators add the rest as they register destinations. Default: ``RouteRegistry/strict``,
+    /// so a route type with no destination is always reported. Tests and previews may pass
+    /// ``RouteRegistry/permissive``.
     public let registry: RouteRegistry
 
     /// Called on the main actor for each call anywhere in the tree that failed and could not be
@@ -62,12 +64,13 @@ public struct NavigationConfiguration: Sendable {
     /// - Parameters:
     ///   - logging: How the whole tree logs. Default: ``LogConfiguration/default``.
     ///   - maxQueuedChanges: The most calls queued in one main-actor turn. Default: 32.
-    ///   - registry: The route types known from the start. Default: an empty registry.
+    ///   - registry: The route types known from the start, and the registry's mode.
+    ///     Default: ``RouteRegistry/strict``.
     ///   - onNavigationFailure: Called for each failure that was not recovered. Default: `nil`.
     public init(
         logging: LogConfiguration = .default,
         maxQueuedChanges: Int = 32,
-        registry: RouteRegistry = RouteRegistry(),
+        registry: RouteRegistry = .strict,
         onNavigationFailure: (@MainActor (NavigationFailure) -> Void)? = nil
     ) {
         self.logging = logging

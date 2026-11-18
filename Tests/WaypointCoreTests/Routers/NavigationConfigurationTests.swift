@@ -23,6 +23,7 @@ struct NavigationConfigurationTests {
         let configuration = NavigationConfiguration(
             logging: LogConfiguration(handler: handler, minimumLevel: .info),
             maxQueuedChanges: 8,
+            registry: .permissive,
             onNavigationFailure: { failure in
                 failures.record(failure)
             }
@@ -50,7 +51,7 @@ struct NavigationConfigurationTests {
         // so a leaf can't change them: that part is checked by the compiler. The one tree-wide
         // value a child may add to is the registry, through `register`, which changes nothing
         // else.
-        let configuration = NavigationConfiguration(maxQueuedChanges: 4)
+        let configuration = NavigationConfiguration(maxQueuedChanges: 4, registry: .permissive)
         let router = StackRouter(configuration: configuration)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
@@ -65,7 +66,7 @@ struct NavigationConfigurationTests {
 
     @Test
     func flowWideSettingsStillScopeToFlow() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
         let largeOnly: [SheetDetent] = [.large]

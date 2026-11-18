@@ -259,7 +259,8 @@ Views that read navigation from the environment need a router above them. In pre
 #Preview { ProductView(id: 1).waypointPreview() }
 
 extension View {
-    /// Wraps the view in a stack with a fresh router, so environment navigation works.
+    /// Wraps the view in a stack with a fresh router whose registry is permissive, so
+    /// environment navigation works and pushes need no registered destination.
     public func waypointPreview() -> some View
 }
 ```
