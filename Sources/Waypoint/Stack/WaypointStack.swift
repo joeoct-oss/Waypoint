@@ -159,6 +159,9 @@
             .onChange(of: mirror.router.state.path) {
                 mirror.routerDidChange()
             }
+            .onAppear {
+                mirror.stackDidAppear()
+            }
         }
 
         /// The mirror's routes as a `NavigationPath`. The setter only hears a different count:

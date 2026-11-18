@@ -27,7 +27,7 @@ import WaypointCore
 ///   router.
 /// - When the mirror shows a push, it tells the router the push started, and when the push ends,
 ///   so a second tap on the same row while the screen slides in pushes nothing (#142).
-/// - When a push ends, and once the stack is first drawn, the mirror checks that every route it
+/// - When a push ends, and when the stack appears, the mirror checks that every route it
 ///   shows has a destination inside this stack. A route type with none is reported once as
 ///   `missingDestination`, and the stack shows its missing-destination screen for it (#166).
 ///
@@ -107,9 +107,6 @@ final class StackMirror {
         self.holdsTransitions = holdsTransitions
         self.clock = clock
         self.shown = router.state.path
-        if !shown.isEmpty {
-            scheduleDestinationCheck(after: Self.transitionDuration)
-        }
     }
 
     /// How many routes two paths share from the bottom.
@@ -129,6 +126,19 @@ final class StackMirror {
             return
         }
         hold(for: wait)
+    }
+
+    /// Checks a restored path for missing destinations once the stack is on screen and its
+    /// screens have drawn.
+    ///
+    /// Called when the stack appears, never from `init`: SwiftUI makes a mirror each time it makes
+    /// the stack's view value and keeps only the first, so a check started in `init` would run in a
+    /// mirror that no screen registers with.
+    func stackDidAppear() {
+        guard !shown.isEmpty else {
+            return
+        }
+        scheduleDestinationCheck(after: Self.transitionDuration)
     }
 
     /// Notes that a screen inside this stack registered a destination for `type`. Safe while

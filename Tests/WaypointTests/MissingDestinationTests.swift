@@ -119,12 +119,28 @@ struct MissingDestinationTests {
         let mirror = Self.makeMirror(router, clock)
         mirror.registerDestination(HomeRoute.self)
 
+        mirror.stackDidAppear()
         clock.advance(by: StackMirror.transitionDuration)
 
         let missing = Array(mirror.missingDestinations.keys)
         let expected = [ProductRoute.routeKey]
         #expect(missing == expected)
         #expect(!mirror.isMissingDestination(AnyRoute(HomeRoute())))
+    }
+
+    @Test
+    func aMirrorThatNeverAppearsReportsNothing() {
+        let router = StackRouter(configuration: .permissive)
+        router.push(ProductRoute(id: 1))
+        let reported = Self.recordIssues(of: router)
+        let clock = ManualTransitionClock()
+        let mirror = Self.makeMirror(router, clock)
+
+        clock.advance(by: StackMirror.transitionDuration)
+
+        #expect(mirror.missingDestinations.isEmpty)
+        #expect(reported.count == 0)
+        #expect(clock.scheduledCount == 0)
     }
 
     @Test
