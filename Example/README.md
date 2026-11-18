@@ -7,7 +7,7 @@ Orbit Shop, a small shop that behaves like a production app, so every navigation
 3. **Main tabs** (system tab bar): **Shop** (products, a pushed product, filters and the wish list as sheets), **Search** (the system search field), **Cart** (a badge with the cart's count; checkout presented full screen, then Order placed, whose Continue shopping opens Shop) and **Account** (profile or Sign in, orders, settings, sign out, which keeps the reader in the app as a guest).
 4. **Developer**, under Account > Settings: Clear all data, which asks to confirm, then empties the store and starts the app over as a fresh install; and the **Navigation Lab**: two branches, SwiftUI and UIKit, each launching five demo flows (login, tabs, detail push, sheet and deep link) as a SwiftUI flow or a UIKit flow. These twenty entry points are also UI test scenarios.
 
-The `App` asks for each window's view with `AppCoordinator.makeWindow(services:launch:)`, which makes a new app coordinator for every window. The services (the local store, the session and the mock auth service) are made once and shared by every window; the store keeps the session, cart and wish list between launches. Screens report what the reader did through callbacks; only coordinators navigate. Bars, tab bars, sheets and buttons are system controls, so they take Liquid Glass on iOS 26 and the classic look on earlier systems.
+The `App` asks for each window's view with `AppCoordinator.makeWindow(services:launch:)`, which makes a new app coordinator for every window. The services (the local store, the session and the mock auth service) are made once and shared by every window; the store keeps the session, cart and wish list between launches. The Shop and Search stacks run on Waypoint's SwiftUI renderer: each products coordinator owns a `StackRouter`, and `WaypointStack` draws it. The other flows keep plain SwiftUI state until their part of Waypoint is built. Screens report what the reader did through callbacks; only coordinators navigate. Bars, tab bars, sheets and buttons are system controls, so they take Liquid Glass on iOS 26 and the classic look on earlier systems.
 
 ## Generate and run
 
@@ -22,7 +22,7 @@ open Example/WaypointExample.xcworkspace
 
 ## Launch arguments
 
-UI tests start where they need to: `-clearData YES` starts from a fresh install (the UI tests always pass it), `-signedIn YES` starts signed in, `-lab YES` opens the Navigation Lab, `-branch uikit -flow sheet -kind swiftui` opens one Lab entry, and `-splashSeconds 5` holds the splash long enough for a test to see it. `ExampleApp.launch(signedIn:guest:lab:branch:flow:kind:splashSeconds:)` in the UI tests sets them. `JourneyTests` has one test for each journey on the design canvas, and `LabTests` covers every Lab entry.
+UI tests start where they need to: `-clearData YES` starts from a fresh install (the UI tests always pass it), `-signedIn YES` starts signed in, `-lab YES` opens the Navigation Lab, `-branch uikit -flow sheet -kind swiftui` opens one Lab entry, `-splashSeconds 5` holds the splash long enough for a test to see it, `-shopPath 1,2,3` pushes those products onto the shop in one change, and `-shopFollowUp pop` (or `popToRoot`, `link`) makes one more change 150 ms into that push. `ExampleApp.launch(signedIn:lab:branch:flow:kind:splashSeconds:shopPath:shopFollowUp:)` in the UI tests sets them. `JourneyTests` has one test for each journey on the design canvas, `StackTests` checks the shop's Waypoint stack, and `LabTests` covers every Lab entry.
 
 ## Folders
 

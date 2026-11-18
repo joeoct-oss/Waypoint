@@ -61,10 +61,10 @@ struct Product: Hashable, Identifiable {
     ]
 
     static func products(withIDs ids: [Int]) -> [Product] {
-        ids.compactMap(product(withID:))
+        ids.compactMap(find(id:))
     }
 
-    static func product(withID id: Int) -> Product? {
+    static func find(id: Int) -> Product? {
         all.first { $0.id == id }
     }
 

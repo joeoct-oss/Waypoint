@@ -34,6 +34,7 @@ let appSources: SourceFilesList = [
 ]
 
 let appDependencies: [TargetDependency] = [
+    .package(product: "WaypointCore"),
     .package(product: "Waypoint"),
     .package(product: "WaypointUIKit"),
 ]

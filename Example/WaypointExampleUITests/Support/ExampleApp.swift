@@ -21,7 +21,9 @@ enum ExampleApp {
         branch: Branch? = nil,
         flow: ExampleFlow? = nil,
         kind: FlowKind? = nil,
-        splashSeconds: Int? = nil
+        splashSeconds: Int? = nil,
+        shopPath: [Int] = [],
+        shopFollowUp: ShopFollowUp? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = arguments(
@@ -30,7 +32,9 @@ enum ExampleApp {
             branch: branch,
             flow: flow,
             kind: kind,
-            splashSeconds: splashSeconds
+            splashSeconds: splashSeconds,
+            shopPath: shopPath,
+            shopFollowUp: shopFollowUp
         )
         app.launch()
         return app
@@ -42,8 +46,11 @@ enum ExampleApp {
         branch: Branch?,
         flow: ExampleFlow?,
         kind: FlowKind?,
-        splashSeconds: Int?
+        splashSeconds: Int?,
+        shopPath: [Int],
+        shopFollowUp: ShopFollowUp?
     ) -> [String] {
+        let path = shopPath.isEmpty ? nil : shopPath.map(String.init).joined(separator: ",")
         let values: [(LaunchArgument, String?)] = [
             (LaunchArgument.clearData, yes),
             (LaunchArgument.signedIn, signedIn ? yes : nil),
@@ -52,6 +59,8 @@ enum ExampleApp {
             (LaunchArgument.flow, flow?.rawValue),
             (LaunchArgument.kind, kind?.rawValue),
             (LaunchArgument.splashSeconds, splashSeconds.map(String.init)),
+            (LaunchArgument.shopPath, path),
+            (LaunchArgument.shopFollowUp, shopFollowUp?.rawValue),
         ]
         return values.flatMap { argumentPair($0.0, $0.1) }
     }

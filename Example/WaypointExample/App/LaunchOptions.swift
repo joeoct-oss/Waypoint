@@ -9,9 +9,10 @@
 import Foundation
 
 // What the launch arguments ask for: start from a fresh install, start signed in, open the
-// Navigation Lab, open one of its entries, or keep the splash up longer. UI tests use them to start
-// a journey or open any Lab entry directly. `startingOver()` gives the options for starting a
-// window over after Clear all data: the same splash, and no screen opened directly.
+// Navigation Lab, open one of its entries, keep the splash up longer, or push products onto the
+// shop with a change mid-push. UI tests use them to start a journey or open any Lab entry directly.
+// `startingOver()` gives the options for starting a window over after Clear all data: the same
+// splash, and no screen opened directly.
 struct LaunchOptions {
     private static let defaultSplashDuration = Duration.seconds(1)
 
@@ -21,6 +22,7 @@ struct LaunchOptions {
     let branch: Branch?
     let entry: FlowEntry?
     let splashDuration: Duration
+    let shopSteps: ShopLaunchSteps
 
     init(defaults: UserDefaults) {
         let branch = Self.value(Branch.self, for: .branch, in: defaults)
@@ -37,6 +39,10 @@ struct LaunchOptions {
             kind: kind
         )
         splashDuration = Self.makeSplashDuration(in: defaults)
+        shopSteps = ShopLaunchSteps(
+            productIDs: Self.makeProductIDs(in: defaults),
+            followUp: Self.value(ShopFollowUp.self, for: .shopFollowUp, in: defaults)
+        )
     }
 
     private init(splashDuration: Duration) {
@@ -46,6 +52,7 @@ struct LaunchOptions {
         branch = nil
         entry = nil
         self.splashDuration = splashDuration
+        shopSteps = .none
     }
 
     // Conformances:
@@ -65,6 +72,11 @@ struct LaunchOptions {
             return defaultSplashDuration
         }
         return .seconds(seconds)
+    }
+
+    private static func makeProductIDs(in defaults: UserDefaults) -> [Int] {
+        let text = defaults.string(forKey: LaunchArgument.shopPath.rawValue) ?? ""
+        return text.split(separator: ",").compactMap { Int($0) }
     }
 
     private static func makeEntry(

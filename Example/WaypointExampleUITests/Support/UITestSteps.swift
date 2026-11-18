@@ -52,6 +52,21 @@ extension XCUIApplication {
         navigationBars.buttons.element(boundBy: 0).tap()
     }
 
+    // Drags from the screen's left edge, the way a person swipes back. The drag starts on the edge
+    // itself and moves slowly, because iOS 17 ignores a drag that starts a few points in, and a
+    // fast drag can cancel.
+    @MainActor
+    func swipeBack() {
+        let edge = coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
+        let middle = coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
+        edge.press(
+            forDuration: 0.05,
+            thenDragTo: middle,
+            withVelocity: .slow,
+            thenHoldForDuration: 0
+        )
+    }
+
     // Lists build rows lazily, so a row below the fold exists only after scrolling to it.
     @MainActor
     func reveal(_ element: XCUIElement) -> Bool {

@@ -48,12 +48,14 @@ final class MainCoordinator {
             start: .browse,
             store: services.store,
             gate: gate,
+            launchSteps: launch.shopSteps,
             onAddToCart: addToCart
         )
         search = ProductsCoordinator(
             start: .search,
             store: services.store,
             gate: gate,
+            launchSteps: .none,
             onAddToCart: addToCart
         )
         account = AccountCoordinator(
