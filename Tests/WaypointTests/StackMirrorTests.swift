@@ -25,7 +25,7 @@ struct StackMirrorTests {
 
     @Test
     func showsRouterPathFromTheStart() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
 
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
@@ -36,7 +36,7 @@ struct StackMirrorTests {
 
     @Test
     func pushShowsAtOnceWhenNoTransitionRuns() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
 
         router.push(ProductRoute(id: 1))
@@ -48,7 +48,7 @@ struct StackMirrorTests {
 
     @Test
     func changeMidTransitionIsHeldThenNewestShown() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
         let mirror = Self.holdingMirror(router, clock)
         router.push {
@@ -77,7 +77,7 @@ struct StackMirrorTests {
 
     @Test
     func changeAfterTransitionEndsShowsAtOnce() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
         let mirror = Self.holdingMirror(router, clock)
         router.push(ProductRoute(id: 1))
@@ -93,7 +93,7 @@ struct StackMirrorTests {
 
     @Test
     func noHoldOnLaterSystems() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
         let mirror = StackMirror(router: router, holdsTransitions: false, clock: clock)
         router.push(ProductRoute(id: 1))
@@ -108,7 +108,7 @@ struct StackMirrorTests {
 
     @Test
     func holdThatEndsOnSamePathShowsNothingNew() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
         let mirror = Self.holdingMirror(router, clock)
         router.push(ProductRoute(id: 1))
@@ -125,7 +125,7 @@ struct StackMirrorTests {
 
     @Test
     func swipeBackReportsUserPop() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
         router.push(ProductRoute(id: 1))
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
@@ -144,7 +144,7 @@ struct StackMirrorTests {
 
     @Test
     func backMenuReportsOneMultiLevelPop() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push {
             HomeRoute()
             ProductRoute(id: 1)
@@ -164,7 +164,7 @@ struct StackMirrorTests {
 
     @Test
     func sameCountFromScreenChangesNothing() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
         let batches = Recorder<[AppliedChange]>()
@@ -180,7 +180,7 @@ struct StackMirrorTests {
 
     @Test
     func pushFromScreenIsRefusedAndRedrawn() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
         let reported = Recorder<NavigationIssue.Kind>()
@@ -199,7 +199,7 @@ struct StackMirrorTests {
 
     @Test
     func userPopWhileHoldingKeepsOnlyWhatScreenShows() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
         let mirror = Self.holdingMirror(router, clock)
         router.push {
@@ -225,7 +225,7 @@ struct StackMirrorTests {
 
     @Test
     func userPopStartsATransition() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
         router.push(HomeRoute())
         router.push(ProductRoute(id: 1))

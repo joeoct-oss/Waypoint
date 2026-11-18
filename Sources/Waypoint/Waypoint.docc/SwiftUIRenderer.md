@@ -62,7 +62,7 @@ WaypointStack(router) {
 
 **Changes during a transition.** A multi-step push or pop runs as one animation. On iOS 17, SwiftUI drops a path change that lands while a push or pop still animates, so there the stack holds the change and shows the router's newest path when the transition ends (about 0.6 s). Later systems apply it at once.
 
-A route with no destination never crashes. Once any destination is registered, the router refuses a route type that has none, with `unregisteredRoute` and the fallback you choose. A type registered in another stack of the tree but not in this one shows an empty screen; a debug screen that names the route and the fix is planned in #166.
+A route with no destination never crashes. The registry is strict, so the router refuses a route type that no `destination(_:_:)` registered, with `unregisteredRoute` and the fallback you choose. Destinations register as the stack is first drawn, before any screen can push. A type registered in another stack of the tree but not in this one shows an empty screen; a debug screen that names the route and the fix is planned in #166.
 
 > Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views. Tracked in #151.
 
