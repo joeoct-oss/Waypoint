@@ -84,8 +84,7 @@ struct ReentrancyTests {
 
     @Test
     func loopStopsAfterMaxQueuedChanges() {
-        let router = StackRouter()
-        router.setMaxQueuedChanges(4)
+        let router = StackRouter(configuration: NavigationConfiguration(maxQueuedChanges: 4))
         let outcomes = Recorder<NavigationOutcome>()
         router.tree.onApplied { _ in
             outcomes.record(router.push(HomeRoute()))
@@ -100,12 +99,11 @@ struct ReentrancyTests {
 
     @Test
     func maxQueuedChangesDefaultsTo32AndIsSharedByTheTree() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: NavigationConfiguration(maxQueuedChanges: 8))
         router.present(SettingsRoute())
         let child = try #require(router.presented)
 
-        #expect(router.maxQueuedChanges == 32)
-        child.setMaxQueuedChanges(8)
-        #expect(router.maxQueuedChanges == 8)
+        #expect(NavigationConfiguration.default.maxQueuedChanges == 32)
+        #expect(child.configuration.maxQueuedChanges == 8)
     }
 }

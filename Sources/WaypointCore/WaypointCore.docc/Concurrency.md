@@ -52,7 +52,7 @@ func showOnboardingIfNeeded() {
 
 - The call returns `.queued`. If it fails when it runs, it reports an issue and runs its fallback like any other call.
 - Each queued call logs `reentrantChange` at the debug level, with its file and line. It isn't an issue: navigating from an observer or `onAppear` is allowed.
-- An observer that navigates on every change would loop. After `maxQueuedChanges` queued calls in one turn (32 by default, set with `setMaxQueuedChanges(_:)` on any router in the tree), the rest are dropped and `reentrantLoop` is reported.
+- An observer that navigates on every change would loop. After `maxQueuedChanges` queued calls in one turn (32 by default, set once in the root's `NavigationConfiguration`), the rest are dropped and `reentrantLoop` is reported.
 - Guards are the exception. A guard decides on a change, so a navigation call inside `evaluate` is rejected. Return `.redirect` instead.
 
 ### Navigators that outlive their flow

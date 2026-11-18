@@ -7,31 +7,6 @@
 //
 
 extension NavigationTreeContext {
-    /// How the tree logs, and how many calls may be queued in one turn.
-    struct Settings {
-        /// How the tree logs.
-        let logging: LogConfiguration
-
-        /// The most calls that may be queued in one main-actor turn.
-        let maxQueuedChanges: Int
-
-        /// The defaults: ``LogConfiguration/default`` and 32 queued calls.
-        init(logging: LogConfiguration = .default, maxQueuedChanges: Int = 32) {
-            self.logging = logging
-            self.maxQueuedChanges = maxQueuedChanges
-        }
-
-        /// The same settings, logging another way.
-        func withLogging(_ logging: LogConfiguration) -> Settings {
-            Settings(logging: logging, maxQueuedChanges: maxQueuedChanges)
-        }
-
-        /// The same settings with another queue limit.
-        func withMaxQueuedChanges(_ limit: Int) -> Settings {
-            Settings(logging: logging, maxQueuedChanges: limit)
-        }
-    }
-
     /// The seams for observers, logging, strict mode and the app's failure handlers.
     struct Observers {
         /// Called with the changes of each committed transaction.
