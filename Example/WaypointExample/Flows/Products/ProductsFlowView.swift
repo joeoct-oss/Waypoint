@@ -7,15 +7,17 @@
 //
 
 import SwiftUI
+import Waypoint
 
 // Draws a products stack and its sheets from their coordinator.
 struct ProductsFlowView: View {
     let products: ProductsCoordinator
 
     var body: some View {
-        NavigationStack(path: Binding(reading: products.path, writing: products.syncPath)) {
+        WaypointStack(products.router) {
             products.makeRootFlow()
-                .navigationDestination(for: ProductScreen.self) { products.makeDestination(for: $0) }
+                .destination(ProductRoute.self) { products.makeProductFlow(for: $0) }
+                .task { await products.playLaunchSteps() }
         }
         .sheet(item: Binding(reading: products.presentedSheet, writing: products.syncSheet)) {
             products.makeSheetFlow(for: $0)
