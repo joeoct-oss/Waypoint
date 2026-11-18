@@ -54,6 +54,7 @@ These lines are the structured log format and the text of events, issues and tes
 |---|---|
 | A route | `ProductRoute(id: <private>)`, `CartRoute`, `CheckoutStep.payment`, `PaymentRoute.card(id: <private>)` |
 | A route with `publicLogFields = ["id"]` | `ProductRoute(id: 42)` |
+| A route with a `@RouteHint` field (see <doc:Routes#Loaded-models-and-hints>) | `ProductRoute(id: <private>)`, the hint left out |
 | `StackState` | `[ProductListRoute(category: <private>), ProductRoute(id: <private>)]` |
 | `TabState` | `[home, *shop, profile]`, where `*` marks the selected tab |
 | `PresentationStyle` | `sheet`, `sheet(detents: [medium, large])`, `fullScreenCover` |

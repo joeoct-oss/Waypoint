@@ -110,6 +110,32 @@ enum RouteFixtures {
         /// The invoice identifier.
         let id: Int
     }
+
+    /// A product a list already loaded. Not `Hashable` or `Codable`, to show a hint needs
+    /// neither.
+    ///
+    /// Conformances:
+    /// - `Sendable`, so a route can carry it as a hint.
+    struct LoadedProduct: Sendable {
+        /// The product's name.
+        let name: String
+    }
+
+    /// A product route that carries the loaded product as a hint, with its `id` public in logs.
+    ///
+    /// Conformances:
+    /// - `Route`, so its saving, equality and description can be checked.
+    struct HintedProductRoute: Route {
+        /// Fields that hold no user data.
+        static let publicLogFields: Set<String> = ["id", "preview"]
+
+        /// The product identifier.
+        let id: Int
+
+        /// The product the list already loaded, for the first frame only.
+        @RouteHint
+        var preview: LoadedProduct?
+    }
 }
 
 /// A route type whose key changes between builds.

@@ -11,6 +11,7 @@
 ///
 /// - A struct prints `ProductRoute(id: <private>)`, or `CartRoute` with no fields.
 /// - An enum case prints `CheckoutStep.payment`, or `CheckoutStep.card(<private>)` with a payload.
+/// - A ``RouteHint`` field is left out, even when private values are revealed.
 /// - Field values are `<private>` unless the field is in ``Route/publicLogFields`` or private
 ///   values are revealed.
 enum RouteDescriber {
@@ -45,12 +46,19 @@ enum RouteDescriber {
         if mirror.displayStyle == .enum {
             return describeCase(of: route, mirror: mirror, typeName: typeName, visibility: visible)
         }
-        return describeFields(mirror.children, typeName: typeName, visibility: visible)
+        return describeFields(describedFields(of: mirror), typeName: typeName, visibility: visible)
+    }
+
+    /// A struct route's fields, without its hints, which are never described.
+    static func describedFields(of mirror: Mirror) -> [Mirror.Child] {
+        mirror.children.filter { child in
+            !(child.value is any RouteHintField)
+        }
     }
 
     /// `TypeName(field: value, ...)`, or `TypeName` with no fields.
     private static func describeFields(
-        _ children: Mirror.Children,
+        _ children: [Mirror.Child],
         typeName: String,
         visibility: Visibility
     ) -> String {
