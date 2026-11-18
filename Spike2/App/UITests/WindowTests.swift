@@ -18,6 +18,27 @@ final class WindowTests: XCTestCase {
         finding("D eager @State after push: \(states(app))")
     }
 
+    /// Restore after the app goes to the background first, as the system does before it ends an app.
+    func testTwoWindowsRestoreAfterBackground() {
+        let app = launch(["-scenario", "d"])
+        XCTAssertTrue(app.buttons["newWindow"].waitForExistence(timeout: 5))
+        app.buttons["newWindow"].firstMatch.tap()
+        sleep(3)
+        for button in app.buttons.matching(identifier: "push").allElementsBoundByIndex {
+            button.tap()
+            sleep(1)
+        }
+        finding("D restore before: \(states(app))")
+        XCUIDevice.shared.press(.home)
+        sleep(5)
+        app.terminate()
+        sleep(2)
+        app.launch()
+        sleep(5)
+        finding("D restore after background then terminate: windows=\(app.windows.count) states=\(states(app))")
+        shot("D-6-restore-after-background")
+    }
+
     func testTwoWindows() {
         let app = launch(["-scenario", "d"])
         XCTAssertTrue(app.buttons["newWindow"].waitForExistence(timeout: 5))
