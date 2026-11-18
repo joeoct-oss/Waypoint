@@ -148,7 +148,7 @@ public final class StackRouter: NavigationRouter {
     ///
     /// - Parameters:
     ///   - flow: The flow's name in logs, events and saved state. Default: `main`.
-    /// - configuration: The settings of the whole tree. Default:
+    ///   - configuration: The settings of the whole tree. Default:
     ///     ``NavigationConfiguration/default``.
     public convenience init(
         flow: FlowID = FlowID("main"),
@@ -164,7 +164,7 @@ public final class StackRouter: NavigationRouter {
     /// - Parameters:
     ///   - root: The route of the root screen.
     ///   - flow: The flow's name in logs, events and saved state. Default: `main`.
-    /// - configuration: The settings of the whole tree. Default:
+    ///   - configuration: The settings of the whole tree. Default:
     ///     ``NavigationConfiguration/default``.
     public convenience init<R: Route>(
         root: R,
