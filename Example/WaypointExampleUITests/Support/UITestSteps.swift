@@ -11,6 +11,7 @@ import XCTest
 // The steps every UI test repeats: wait for an element, then use it.
 enum UITestSteps {
     static let timeout: TimeInterval = 5
+    static let pollInterval: TimeInterval = 0.1
 }
 
 extension XCUIElement {
@@ -83,6 +84,28 @@ extension XCUIApplication {
     @MainActor
     private func isTappable(_ element: XCUIElement) -> Bool {
         element.exists && !element.frame.isEmpty && element.isHittable
+    }
+
+    // Whether the main tab bar is on screen. A hidden tab bar can stay in the tree off screen, so
+    // this checks that it can be tapped.
+    @MainActor
+    var isTabBarShown: Bool {
+        let tabBar = tabBars.firstMatch
+        return tabBar.exists && !tabBar.frame.isEmpty && tabBar.isHittable
+    }
+
+    // Waits for the tab bar to show or hide, since it slides with the push or pop, and says whether
+    // it did in time.
+    @MainActor
+    func waitForTabBar(shown: Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(UITestSteps.timeout)
+        while Date() < deadline {
+            if isTabBarShown == shown {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(UITestSteps.pollInterval))
+        }
+        return isTabBarShown == shown
     }
 
     // Opens a main tab by its title.

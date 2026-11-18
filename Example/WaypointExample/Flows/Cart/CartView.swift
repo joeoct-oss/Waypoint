@@ -18,7 +18,11 @@ struct CartView: View {
         List {
             Section {
                 ForEach(products) { product in
-                    ProductRow(product: product) { onShopMore() }
+                    ProductRow(
+                        product: product,
+                        detail: "Qty 1",
+                        onSelect: onShopMore
+                    )
                 }
             }
             Section {

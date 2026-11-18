@@ -26,15 +26,24 @@ struct WishlistView: View {
 
     private var list: some View {
         List(products) { product in
-            LabeledContent(product.name) {
-                Text(product.price, format: .currency(code: "USD"))
-            }
+            makeRow(for: product)
         }
     }
 
     private var doneItem: some ToolbarContent {
         ToolbarItem(placement: .confirmationAction) {
             Button("Done", action: onDone)
+        }
+    }
+
+    private func makeRow(for product: Product) -> some View {
+        HStack(spacing: Spacing.medium) {
+            ProductIllustration(artwork: product.artwork, drawsBackdrop: true)
+                .frame(width: Size.rowIcon, height: Size.rowIcon)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.field))
+            LabeledContent(product.name) {
+                Text(product.price, format: .currency(code: "USD").precision(.fractionLength(0)))
+            }
         }
     }
 }

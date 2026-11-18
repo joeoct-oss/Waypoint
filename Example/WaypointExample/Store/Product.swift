@@ -19,44 +19,50 @@ struct Product: Hashable, Identifiable {
         Product(
             id: 1,
             name: "Orbit Lamp",
-            price: 89,
-            symbolName: "lamp.desk",
-            summary: "A warm desk lamp with a ring that glows."
+            category: "Lighting",
+            price: 48,
+            artwork: .orbitLamp,
+            summary: "A warm desk lamp with a ring that glows along an orbit."
         ),
         Product(
             id: 2,
             name: "Comet Mug",
+            category: "Kitchen",
             price: 18,
-            symbolName: "mug",
+            artwork: .cometMug,
             summary: "A stoneware mug that keeps coffee hot."
         ),
         Product(
             id: 3,
             name: "Nebula Throw",
+            category: "Home",
             price: 64,
-            symbolName: "square.stack",
-            summary: "A soft blanket in deep blues."
+            artwork: .nebulaThrow,
+            summary: "A soft blanket in deep blues and pinks."
         ),
         Product(
             id: 4,
-            name: "Lunar Clock",
-            price: 42,
-            symbolName: "clock",
-            summary: "A silent wall clock with a moon face."
+            name: "Star Chart Print",
+            category: "Wall art",
+            price: 32,
+            artwork: .starChartPrint,
+            summary: "A framed print of the night sky in spring."
         ),
         Product(
             id: 5,
-            name: "Star Chart Print",
-            price: 35,
-            symbolName: "sparkles",
-            summary: "A print of the night sky in spring."
+            name: "Pole Star Candle",
+            category: "Home",
+            price: 22,
+            artwork: .poleStarCandle,
+            summary: "A slow candle in a jar with a gold star."
         ),
         Product(
             id: 6,
-            name: "Rocket Bookends",
-            price: 29,
-            symbolName: "books.vertical",
-            summary: "Two brass bookends for a full shelf."
+            name: "Pole Star Lamp",
+            category: "Lighting",
+            price: 56,
+            artwork: .poleStarLamp,
+            summary: "A green reading lamp that points its light down."
         ),
     ]
 
@@ -74,8 +80,9 @@ struct Product: Hashable, Identifiable {
 
     let id: Int
     let name: String
+    let category: String
     let price: Decimal
-    let symbolName: String
+    let artwork: ProductArtwork
     let summary: String
 
     // The next product in the shop, after the last one the first, shown on a product's page as

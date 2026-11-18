@@ -11,16 +11,20 @@ import XCTest
 // The shop's stack runs on Waypoint's SwiftUI renderer (#11). These check that pushes and pops draw
 // for real, that what the user does by hand comes back to the router, that a change landing
 // while a push still animates is not lost, which needs the transition hold on iOS 17, that a
-// double tap pushes once, and that a Waypoint link pushes through the router.
+// double tap pushes once, that a Waypoint link pushes through the router, that Shop's banner
+// pushes its collection, and that pushed screens hide the tab bar.
 @MainActor
 final class StackTests: XCTestCase {
     private static let shopTitle = "Shop"
     private static let lampTitle = "Orbit Lamp"
     private static let mugTitle = "Comet Mug"
     private static let throwTitle = "Nebula Throw"
-    private static let clockTitle = "Lunar Clock"
+    private static let printTitle = "Star Chart Print"
+    private static let collectionTitle = "Nebula nights"
+    private static let collectionID = "nebula-nights"
     private static let lampID = 1
     private static let mugID = 2
+    private static let throwID = 3
     private static let launchPath = [
         1,
         2,
@@ -35,6 +39,24 @@ final class StackTests: XCTestCase {
 
         app.buttons[Identifiers.product(id: Self.lampID)].tapWhenReady()
         XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.waitForTabBar(shown: false), "a pushed screen showed the tab bar")
+        app.goBack()
+
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.waitForTabBar(shown: true), "the shop hid the tab bar")
+    }
+
+    // The "Nebula nights" banner pushes its collection on the Shop stack, and a product in it
+    // pushes above the collection, so Back walks the collection and then the shop.
+    func testBannerOpensCollection() {
+        let app = ExampleApp.launch(signedIn: true)
+
+        app.buttons[Identifiers.collection(id: Self.collectionID)].tapWhenReady()
+        XCTAssertTrue(app.navigationBars[Self.collectionTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.buttons[Identifiers.product(id: Self.throwID)].tapWhenReady()
+        XCTAssertTrue(app.navigationBars[Self.throwTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.collectionTitle].waitForExistence(timeout: UITestSteps.timeout))
         app.goBack()
 
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
@@ -137,7 +159,7 @@ final class StackTests: XCTestCase {
             shopFollowUp: .link
         )
 
-        XCTAssertTrue(app.navigationBars[Self.clockTitle].waitForExistence(timeout: Self.settleTimeout))
+        XCTAssertTrue(app.navigationBars[Self.printTitle].waitForExistence(timeout: Self.settleTimeout))
         app.goBack()
 
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))

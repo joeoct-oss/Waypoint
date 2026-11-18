@@ -18,6 +18,7 @@ struct ProductsFlowView: View {
         WaypointStack(products.router) {
             products.makeRootFlow()
                 .destination(ProductRoute.self) { products.makeProductFlow(for: $0) }
+                .destination(CollectionRoute.self) { products.makeCollectionFlow(for: $0) }
                 .task { await products.playLaunchSteps() }
         }
         .overlay(alignment: .bottom) { IssueBanner(issues: products.issues) }

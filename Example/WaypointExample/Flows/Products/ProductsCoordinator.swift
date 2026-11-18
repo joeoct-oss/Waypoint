@@ -10,8 +10,8 @@ import SwiftUI
 import Waypoint
 import WaypointCore
 
-// A stack of products: the shop or search at the root and a product pushed above it, with the
-// filters and the wish list as sheets. Add to cart reports to the main tabs, which add the product
+// A stack of products: the shop or search at the root, a collection from Shop's banner and a product
+// pushed above it, with the filters and the wish list as sheets. Add to cart reports to the main tabs, which add the product
 // to the cart and open Cart. Save needs an account, so the account gate asks a guest to sign in
 // first; then the product joins the wish list, which the local store keeps.
 //
@@ -87,6 +87,14 @@ final class ProductsCoordinator {
         }
     }
 
+    // Shows the collection the banner handed over, or looks it up by id after a restore.
+    @ViewBuilder
+    func makeCollectionFlow(for route: CollectionRoute) -> some View {
+        if let collection = route.preview ?? ProductCollection.find(id: route.id) {
+            makeCollectionFlow(collection)
+        }
+    }
+
     @ViewBuilder
     func makeSheetFlow(for sheet: ProductSheet) -> some View {
         switch sheet {
@@ -101,6 +109,14 @@ final class ProductsCoordinator {
         let route = ProductRoute(
             id: product.id,
             preview: product
+        )
+        router.push(route)
+    }
+
+    func showCollection(_ collection: ProductCollection) {
+        let route = CollectionRoute(
+            id: collection.id,
+            preview: collection
         )
         router.push(route)
     }
@@ -176,6 +192,7 @@ final class ProductsCoordinator {
     private func makeShopFlow() -> some View {
         ProductListView(
             onSelect: { self.showProduct($0) },
+            onSelectCollection: { self.showCollection($0) },
             onFilter: { self.showFilters() }
         )
         .screenChrome(
@@ -192,6 +209,18 @@ final class ProductsCoordinator {
                 kind: nil,
                 trail: ProductsTrail.search
             )
+    }
+
+    private func makeCollectionFlow(_ collection: ProductCollection) -> some View {
+        CollectionView(
+            collection: collection,
+            onSelect: { self.showProduct($0) }
+        )
+        .screenChrome(
+            title: collection.name,
+            kind: nil,
+            trail: ProductsTrail.collection(collection)
+        )
     }
 
     private func makeFiltersFlow() -> some View {
@@ -260,6 +289,10 @@ enum ProductsTrail {
     static let search = [
         "search",
     ]
+
+    static func collection(_ collection: ProductCollection) -> [String] {
+        shop + [collection.name.lowercased()]
+    }
 
     static func product(
         _ product: Product,
