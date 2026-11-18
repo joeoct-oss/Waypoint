@@ -2,6 +2,10 @@
 
 Draw Waypoint navigation with SwiftUI.
 
+@Metadata {
+    @PageImage(purpose: card, source: "waypoint-card", alt: "Three SwiftUI screens pushed one after another along a route.")
+}
+
 ## Overview
 
 Waypoint is the SwiftUI renderer for `WaypointCore`. It turns routers into `NavigationStack`s, sheets, full-screen covers and tab views, and reports what the user changes by hand (swipe back, sheet drags, tab taps) back to the routers.
