@@ -8,18 +8,20 @@
 
 import SwiftUI
 
-// The example app. It holds no navigation: each window makes its own app coordinator, so two windows
-// never share a path. App-wide services, when the app has some, stay here and are passed to each one.
+// The example app. It holds only what every window shares (the launch options, and app-wide services
+// when the app has some), and asks the app coordinator for each window's view. Each window gets its own
+// coordinator, so two windows never share a path.
 @main
 struct WaypointExampleApp: App {
-    var body: some Scene {
-        WindowGroup {
-            AppRootView { makeAppCoordinator() }
-        }
+    private let launch: LaunchOptions
+
+    init() {
+        launch = LaunchOptions(defaults: .standard)
     }
 
-    private func makeAppCoordinator() -> AppCoordinator {
-        let launch = LaunchOptions(defaults: .standard)
-        return AppCoordinator(launch: launch)
+    var body: some Scene {
+        WindowGroup {
+            AppCoordinator.makeWindow(launch: launch)
+        }
     }
 }

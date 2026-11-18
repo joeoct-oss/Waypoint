@@ -7,7 +7,7 @@ Orbit Shop, a small shop that behaves like a production app, so every navigation
 3. **Main tabs** (system tab bar): **Shop** (products, a pushed product, filters and the wish list as sheets), **Search** (the system search field), **Cart** (a badge with the cart's count; checkout presented full screen, then Order placed, whose Continue shopping opens Shop) and **Account** (orders, settings, sign out, which switches the root back). Guests see only Shop and Search, with Sign in in the shop's bar.
 4. **Navigation Lab**, under Account > Settings > Developer: two branches, SwiftUI and UIKit, each launching five demo flows (login, tabs, detail push, sheet and deep link) as a SwiftUI flow or a UIKit flow. These twenty entry points are also UI test scenarios.
 
-Each window makes its own app coordinator. Screens report what the reader did through callbacks; only coordinators navigate. Bars, tab bars, sheets and buttons are system controls, so they take Liquid Glass on iOS 26 and the classic look on earlier systems.
+The `App` asks for each window's view with `AppCoordinator.makeWindow(launch:)`, which makes a new app coordinator for every window. Screens report what the reader did through callbacks; only coordinators navigate. Bars, tab bars, sheets and buttons are system controls, so they take Liquid Glass on iOS 26 and the classic look on earlier systems.
 
 ## Generate and run
 
