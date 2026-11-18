@@ -152,9 +152,9 @@ public final class StackRouter {
 
     // Place in the tree
     /// Registers a route type for decoding and as having a destination.
-    /// Renderers and coordinators call it. Once any type is registered in the
-    /// tree, a push or present of an unregistered type fails with
-    /// `unregisteredRoute`.
+    /// Renderers and coordinators call it. Unless the root's registry is
+    /// permissive, a push or present of an unregistered type fails with
+    /// `unregisteredRoute`, even before anything is registered.
     public func register<R: Route>(_ type: R.Type)
     /// A handle that only accepts routes of `Flow`.
     ///
@@ -197,7 +197,8 @@ public struct NavigationConfiguration: Sendable {
     /// root router reports `invalidSetting` and uses 32. See <doc:Concurrency>.
     public let maxQueuedChanges: Int
     /// The route types known before any destination is registered, such as the
-    /// ones restored state needs. Default: an empty registry. See <doc:Routes>.
+    /// ones restored state needs, and whether unregistered routes may be shown.
+    /// Default: `.strict`. Tests and previews may pass `.permissive`. See <doc:Routes>.
     public let registry: RouteRegistry
     /// Called for each call anywhere in the tree that failed and could not be
     /// recovered. Default: `nil`.
@@ -207,7 +208,7 @@ public struct NavigationConfiguration: Sendable {
     public init(
         logging: LogConfiguration = .default,
         maxQueuedChanges: Int = 32,
-        registry: RouteRegistry = RouteRegistry(),
+        registry: RouteRegistry = .strict,
         onNavigationFailure: (@MainActor (NavigationFailure) -> Void)? = nil
     )
 }

@@ -8,10 +8,13 @@ Test coordinators and view models without a UI, on any platform Swift runs on.
 
 Routers are plain objects, so most navigation tests need no simulator. Create a real router, call your code, and check the state.
 
+The registry is strict, so a route type with no destination is rejected in tests as it is in the app. A test with no renderer either registers the routes it pushes, as below, or asks for `NavigationConfiguration(registry: .permissive)` by name. See <doc:Routes>.
+
 ```swift
 @Test @MainActor
 func buyPushesCart() {
     let router = StackRouter()
+    router.register(CartRoute.self)
     let model = ProductModel(navigation: router.navigator(for: ShopFlow.self))
 
     model.buy()
@@ -31,6 +34,7 @@ final class ProductModelTests: XCTestCase {
     @MainActor
     func testBuyPushesCart() {
         let router = StackRouter()
+        router.register(CartRoute.self)
         let model = ProductModel(navigation: router.navigator(for: ShopFlow.self))
 
         model.buy()

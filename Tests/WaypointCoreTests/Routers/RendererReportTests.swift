@@ -17,7 +17,7 @@ import WaypointTestSupport
 struct RendererReportTests {
     @Test
     func swipeBackPopsOne() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
         router.push(ProductRoute(id: 1))
         let batches = Recorder<[AppliedChange]>()
@@ -38,7 +38,7 @@ struct RendererReportTests {
 
     @Test
     func backMenuPopsMany() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push {
             HomeRoute()
             ProductRoute(id: 1)
@@ -60,7 +60,7 @@ struct RendererReportTests {
 
     @Test
     func backToFirstScreenEmptiesPath() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
 
         router.rendererDidPop(toCount: 0)
@@ -70,7 +70,7 @@ struct RendererReportTests {
 
     @Test
     func reportMatchingStateIsNoOp() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
         let batches = Recorder<[AppliedChange]>()
         router.tree.onApplied { changes in
@@ -88,7 +88,7 @@ struct RendererReportTests {
 
     @Test
     func staleCountKeepsPathWithIssue() {
-        let router = StackRouter(flow: FlowID("shop"))
+        let router = StackRouter(flow: FlowID("shop"), configuration: .permissive)
         router.push(ProductRoute(id: 1))
         let reported = Recorder<NavigationIssue>()
         router.tree.onReported { issue in
@@ -107,7 +107,7 @@ struct RendererReportTests {
 
     @Test
     func negativeCountReadsAsZero() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
 
         router.rendererDidPop(toCount: -1)
@@ -117,7 +117,7 @@ struct RendererReportTests {
 
     @Test
     func sheetDragDismisses() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
         let batches = Recorder<[AppliedChange]>()
@@ -134,14 +134,14 @@ struct RendererReportTests {
 
     @Test
     func dismissWithNothingPresentedIsNoOp() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
 
         #expect(router.rendererDidDismiss() == .alreadyThere)
     }
 
     @Test
     func tabTapSelectsTab() {
-        let tabs = TabRouter(selection: MainTab.home)
+        let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
         let batches = Recorder<[AppliedChange]>()
         tabs.tree.onApplied { changes in
             batches.record(changes)
@@ -156,7 +156,7 @@ struct RendererReportTests {
 
     @Test
     func tabTapOnSelectedTabIsNoOp() {
-        let tabs = TabRouter(selection: MainTab.home)
+        let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
         let shopRouter = tabs.router(for: .home)
         shopRouter.push(ProductRoute(id: 1))
 
@@ -166,7 +166,7 @@ struct RendererReportTests {
 
     @Test
     func tabTapOnUnknownTabFails() {
-        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home)
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
 
         let outcome = tabs.rendererDidSelect(.profile)
 
@@ -176,7 +176,7 @@ struct RendererReportTests {
 
     @Test
     func tabContainerSheetDragDismisses() {
-        let tabs = TabRouter(selection: MainTab.home)
+        let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
         tabs.present(SettingsRoute())
 
         #expect(tabs.rendererDidDismiss() == .applied)
@@ -185,7 +185,7 @@ struct RendererReportTests {
 
     @Test
     func detachedRouterIgnoresReports() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
         child.push(ProductRoute(id: 1))
@@ -198,7 +198,7 @@ struct RendererReportTests {
     func userChangesReadAsByUser() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withSymbols(false)
-        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging, registry: .permissive))
         router.push(ProductRoute(id: 1))
 
         router.rendererDidPop(toCount: 0)
@@ -210,7 +210,7 @@ struct RendererReportTests {
     func userChangesLogWithUserOrigin() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withFormat(.structured)
-        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging, registry: .permissive))
         router.push(ProductRoute(id: 1))
 
         router.rendererDidPop(toCount: 0)

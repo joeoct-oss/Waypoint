@@ -21,7 +21,7 @@ struct ReadableLogTests {
         _ configuration: LogConfiguration = LogConfiguration()
     ) -> StackRouter {
         let logging = configuration.withHandler(handler).withMinimumLevel(.debug)
-        let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging, registry: .permissive))
         return router
     }
 
@@ -101,7 +101,7 @@ struct ReadableLogTests {
     func tabChangesNameBothTabs() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .info)
-        let configuration = NavigationConfiguration(logging: logging)
+        let configuration = NavigationConfiguration(logging: logging, registry: .permissive)
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: configuration)
 
         tabs.select(.shop)
@@ -154,7 +154,7 @@ struct ReadableLogTests {
 
     @Test
     func structuredIssueRevealsWhenAsked() throws {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 7))
 
         let issue = try #require(router.popTo(HomeRoute()).failure?.issue)
@@ -197,7 +197,7 @@ struct ReadableLogTests {
     func changedStacksFollowEachChange() throws {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .info, treeLogging: .changedStacks)
-        let configuration = NavigationConfiguration(logging: logging)
+        let configuration = NavigationConfiguration(logging: logging, registry: .permissive)
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: configuration)
 
         tabs.router(for: .shop).push(ProductRoute(id: 7))
@@ -229,7 +229,7 @@ struct ReadableLogTests {
 
     @Test
     func debugTreeDrawsEveryFlow() throws {
-        let tabs = TabRouter(selection: MainTab.shop)
+        let tabs = TabRouter(selection: MainTab.shop, configuration: .permissive)
         tabs.router(for: .shop).push(ProductRoute(id: 7))
         tabs.router(for: .shop).present(SettingsRoute())
         try #require(tabs.router(for: .shop).presented).push(HomeRoute())
@@ -247,7 +247,7 @@ struct ReadableLogTests {
 
     @Test
     func debugTreeRevealsWhenAsked() {
-        let router = StackRouter()
+        let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 7))
 
         #expect(router.debugTree() == "main       Product (…)")
