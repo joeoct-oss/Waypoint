@@ -17,22 +17,44 @@ struct RouterSettings: Sendable {
     /// This router's own fallbacks by issue kind.
     let fallbackPolicy: FallbackPolicy
 
-    /// Settings with nothing set: defaults and fallbacks are inherited.
-    init(presentationDefaults: PresentationDefaults? = nil, fallbackPolicy: FallbackPolicy = FallbackPolicy()) {
+    /// The duplicate push rule set on this router, or `nil` to inherit it.
+    let duplicatePushRule: DuplicatePushRule?
+
+    /// Settings with nothing set: defaults, fallbacks and the duplicate push rule are inherited.
+    init(
+        presentationDefaults: PresentationDefaults? = nil,
+        fallbackPolicy: FallbackPolicy = FallbackPolicy(),
+        duplicatePushRule: DuplicatePushRule? = nil
+    ) {
         self.presentationDefaults = presentationDefaults
         self.fallbackPolicy = fallbackPolicy
+        self.duplicatePushRule = duplicatePushRule
     }
 
     /// The same settings with presentation defaults set.
     func withPresentationDefaults(_ defaults: PresentationDefaults) -> RouterSettings {
-        RouterSettings(presentationDefaults: defaults, fallbackPolicy: fallbackPolicy)
+        RouterSettings(
+            presentationDefaults: defaults,
+            fallbackPolicy: fallbackPolicy,
+            duplicatePushRule: duplicatePushRule
+        )
     }
 
     /// The same settings with one fallback set, or cleared with `nil`.
     func withFallback(_ fallback: NavigationFallback?, for kind: NavigationIssue.Kind) -> RouterSettings {
         RouterSettings(
             presentationDefaults: presentationDefaults,
-            fallbackPolicy: fallbackPolicy.withFallback(fallback, for: kind)
+            fallbackPolicy: fallbackPolicy.withFallback(fallback, for: kind),
+            duplicatePushRule: duplicatePushRule
+        )
+    }
+
+    /// The same settings with the duplicate push rule set.
+    func withDuplicatePushRule(_ rule: DuplicatePushRule) -> RouterSettings {
+        RouterSettings(
+            presentationDefaults: presentationDefaults,
+            fallbackPolicy: fallbackPolicy,
+            duplicatePushRule: rule
         )
     }
 }

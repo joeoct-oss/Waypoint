@@ -25,6 +25,8 @@ import WaypointCore
 /// - When the screen shows more routes, a `NavigationLink(value:)` pushed something the router
 ///   can't read back. The router reports `rendererMismatch`, and the screen is redrawn from the
 ///   router.
+/// - When the mirror shows a push, it tells the router the push started, and when the push ends,
+///   so a second tap on the same row while the screen slides in pushes nothing (#142).
 ///
 /// Conformances:
 /// - `Observable`, so the stack redraws when `shown` changes.
@@ -65,6 +67,11 @@ final class StackMirror {
     ///
     /// `var` because a hold starts and ends. Only `hold(for:)` and `endHold()` change it.
     @ObservationIgnored private var isHolding = false
+
+    /// Goes up by one with each push shown, so only the newest push reports its end.
+    ///
+    /// `var` because each push shown adds one. Only `reportPush(of:)` changes it.
+    @ObservationIgnored private var pushCount = 0
 
     /// Whether a change is waiting for the running transition to end.
     var isHoldingChange: Bool {
@@ -130,10 +137,28 @@ final class StackMirror {
         hold(for: Self.transitionDuration)
     }
 
-    /// Shows `routes` and starts a transition.
+    /// Shows `routes` and starts a transition. When `routes` adds screens, it reports the push.
     private func show(_ routes: [AnyRoute]) {
+        let pushes = routes.count > shown.count
         shown = routes
         lastTransition = clock.now
+        if pushes, let top = routes.last {
+            reportPush(of: top)
+        }
+    }
+
+    /// Tells the router a push of `route` started, and that it ended once the transition ends,
+    /// unless a newer push started meanwhile.
+    private func reportPush(of route: AnyRoute) {
+        pushCount += 1
+        let push = pushCount
+        router.rendererDidStartPush(of: route)
+        clock.run(after: Self.transitionDuration) { [weak self] in
+            guard let self, self.pushCount == push else {
+                return
+            }
+            self.router.rendererDidEndPush(of: route)
+        }
     }
 
     /// Waits for the running transition to end, then shows the newest path. One hold at a time.

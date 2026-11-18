@@ -90,7 +90,8 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// Presentation defaults and fallbacks set on this router.
     ///
     /// `var` because an app may set them after creating the router. Only
-    /// ``setPresentationDefaults(_:)`` and ``setFallback(_:for:file:line:)`` change it.
+    /// ``setPresentationDefaults(_:)``, ``setFallback(_:for:file:line:)`` and
+    /// ``setDuplicatePushRule(_:)`` change it.
     @ObservationIgnored private var settings = RouterSettings()
 
     /// The current state. Change it through the navigation methods below.
@@ -143,6 +144,13 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// Default presentation options for this container, its tabs and their children.
     public var presentationDefaults: PresentationDefaults {
         settings.presentationDefaults ?? parentNode?.presentationDefaults ?? .default
+    }
+
+    /// What a push of the route still being pushed does, such as the second tap of a double tap.
+    /// Unless set here, it comes from the nearest router above, then
+    /// ``DuplicatePushRule/skipWhileInFlight``.
+    public var duplicatePushRule: DuplicatePushRule {
+        settings.duplicatePushRule ?? parentNode?.duplicatePushRule ?? .skipWhileInFlight
     }
 
     /// What to do when a call fails and passes no fallback, by issue kind. See
@@ -315,6 +323,15 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// ```
     public func setPresentationDefaults(_ defaults: PresentationDefaults) {
         settings = settings.withPresentationDefaults(defaults)
+    }
+
+    /// Sets what a push of the route still being pushed does, for this router and its children.
+    ///
+    /// ```swift
+    /// tabs.setDuplicatePushRule(.allow)
+    /// ```
+    public func setDuplicatePushRule(_ rule: DuplicatePushRule) {
+        settings = settings.withDuplicatePushRule(rule)
     }
 
     /// Sets what to do when a call of this kind fails and passes no fallback, for this flow and

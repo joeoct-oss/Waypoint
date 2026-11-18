@@ -71,6 +71,9 @@ public final class TabRouter<Tab: NavigationTab> {
     public var flowID: FlowID { get }
     /// What to do when a call fails. Inherited by every tab's router.
     public var fallbackPolicy: FallbackPolicy { get }
+    /// What a push of the route still being pushed does. Inherited by every
+    /// tab's router.
+    public var duplicatePushRule: DuplicatePushRule { get }
 
     /// Creates a tab container. `selection` should be one of `tabs`; if it
     /// isn't, the first tab is selected. `flow` names the container.
@@ -88,6 +91,9 @@ public final class TabRouter<Tab: NavigationTab> {
         flow: FlowID = FlowID("tabs"),
         popsToRootOnReselect: Bool = true
     ) where Tab: CaseIterable
+
+    /// Sets the duplicate push rule for this container and everything inside it.
+    public func setDuplicatePushRule(_ rule: DuplicatePushRule)
 
     /// Sets one kind's fallback for this container and everything inside it.
     public func setFallback(

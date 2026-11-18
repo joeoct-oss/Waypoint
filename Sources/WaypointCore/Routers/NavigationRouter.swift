@@ -51,6 +51,9 @@ protocol TreeNode: NavigationRouter, TransactionParticipant {
     /// Presentation defaults, own or inherited.
     var presentationDefaults: PresentationDefaults { get }
 
+    /// The duplicate push rule, own or inherited.
+    var duplicatePushRule: DuplicatePushRule { get }
+
     /// The committed path of this router's stack, or empty for a container.
     var currentPath: [AnyRoute] { get }
 

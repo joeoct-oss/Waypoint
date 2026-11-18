@@ -113,16 +113,39 @@ extension NavigationTreeContext {
         }
     }
 
-    /// Logs a call that changed nothing, at `.debug`.
-    func logUnchanged(_ outcome: NavigationOutcome, flow: FlowID, file: StaticString, line: UInt) {
+    /// Logs a call that changed nothing, at `.debug`, naming the push it skipped, if any.
+    func logUnchanged(
+        _ outcome: NavigationOutcome,
+        flow: FlowID,
+        skippedPush: AnyRoute?,
+        file: StaticString,
+        line: UInt
+    ) {
         guard outcome == .alreadyThere else {
             return
         }
         let site = Self.callSite(file, line)
         log(.debug, .navigation, file: file, line: line) { naming in
-            naming.format == .readable
-                ? ReadableLog.unchanged(flow, site: site, symbols: naming.usesSymbols)
-                : "alreadyThere flow=\(flow) at=\(site)"
+            Self.unchangedLine(flow, skippedPush: skippedPush, site: site, naming: naming)
+        }
+    }
+
+    /// A call that changed nothing, in the configured format.
+    private static func unchangedLine(
+        _ flow: FlowID,
+        skippedPush: AnyRoute?,
+        site: String,
+        naming: RouteNaming
+    ) -> String {
+        switch (naming.format == .readable, skippedPush) {
+        case (true, .some(let route)):
+            return ReadableLog.skippedPush(flow, route: route, site: site, naming: naming)
+        case (true, .none):
+            return ReadableLog.unchanged(flow, site: site, symbols: naming.usesSymbols)
+        case (false, .some(let route)):
+            return "alreadyThere flow=\(flow) skippedPush=\(naming.name(route)) at=\(site)"
+        case (false, .none):
+            return "alreadyThere flow=\(flow) at=\(site)"
         }
     }
 

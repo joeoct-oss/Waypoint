@@ -129,6 +129,12 @@ enum ReadableLog {
         line(flow, .same, "already there (\(site))", symbols: symbols)
     }
 
+    /// A push skipped because the same route is still being pushed, such as a double tap.
+    static func skippedPush(_ flow: FlowID, route: AnyRoute, site: String, naming: RouteNaming) -> String {
+        let sentence = "skipped: \(naming.name(route)) is still being pushed (\(site))"
+        return line(flow, .same, sentence, symbols: naming.usesSymbols)
+    }
+
     /// A call queued behind the change being applied.
     static func queued(_ flow: FlowID, site: String, symbols: Bool) -> String {
         line(flow, .queued, "queued until the current change ends (\(site))", symbols: symbols)

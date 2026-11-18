@@ -154,6 +154,10 @@ final class TransactionStore {
     /// marked as its own, through ``asFallback(_:)``.
     private(set) var origin = ChangeOrigin.app
 
+    /// The route of a push skipped because the same route was still being pushed, if any.
+    /// `var` because a push step can skip, through ``noteSkippedPush(_:)``.
+    private(set) var skippedPush: AnyRoute?
+
     /// What the whole transaction did, from its steps.
     var transactionResult: CallResult {
         if let failure {
@@ -177,6 +181,11 @@ final class TransactionStore {
     /// Records changes made in one flow, with the current origin.
     func record(_ changes: [NavigationChange], in flow: FlowID) {
         self.changes.append(contentsOf: changes.map { AppliedChange(flow: flow, change: $0, origin: origin) })
+    }
+
+    /// Records a push skipped by the duplicate push rule, so the log can say why nothing changed.
+    func noteSkippedPush(_ route: AnyRoute) {
+        skippedPush = route
     }
 
     /// Keeps an issue to report when the transaction ends.

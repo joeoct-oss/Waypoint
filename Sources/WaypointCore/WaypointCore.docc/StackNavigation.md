@@ -59,6 +59,9 @@ public final class StackRouter {
     public var navigator: StackNavigator { get }
     /// What to do when a call fails and passes no fallback. Children inherit it.
     public var fallbackPolicy: FallbackPolicy { get }
+    /// What a push of the route still being pushed does. Children inherit it.
+    /// Default: `.skipWhileInFlight`.
+    public var duplicatePushRule: DuplicatePushRule { get }
 
     /// Creates a root router with an empty path. `flow` names it in logs,
     /// events and saved state, and `configuration` holds the settings of the
@@ -88,6 +91,10 @@ public final class StackRouter {
         file: StaticString = #fileID,
         line: UInt = #line
     )
+
+    /// Sets what a push of the route still being pushed does, for this flow
+    /// and its children.
+    public func setDuplicatePushRule(_ rule: DuplicatePushRule)
 
     /// Pushes one route.
     @discardableResult public func push<R: Route>(
@@ -173,7 +180,26 @@ public final class StackRouter {
 }
 ```
 
-> Note: One push per tap is coming. A second push of the same route while the first one is still being shown will be skipped and return `.alreadyThere`, so a quick double tap pushes one screen. It will be on by default, and a router can turn it off. Tracked in #142.
+### One push per tap
+
+A fast double tap on a row calls `push` twice with the same route. While the renderer still animates a push, a second push of an equal route changes nothing and returns `.alreadyThere`, so the user lands one screen deep and goes back once. The log names the skipped push at `.debug`. A push of any other route, or of several routes at once, goes ahead as usual, and so does the same push once the first one has finished.
+
+```swift
+public enum DuplicatePushRule: Sendable, Equatable {
+    /// An equal push while one is still animating changes nothing. The default.
+    case skipWhileInFlight
+    /// Every push goes ahead.
+    case allow
+}
+```
+
+The rule is on by default. Set it on a router, or on a tab container, for that flow and its children:
+
+```swift
+router.setDuplicatePushRule(.allow)
+```
+
+The core only skips while the renderer reports a push in flight, so without a renderer, as in unit tests of a coordinator, every push goes ahead.
 
 ### Settings for the whole tree
 

@@ -9,8 +9,9 @@
 import XCTest
 
 // The shop's stack runs on Waypoint's SwiftUI renderer (#11). These check that pushes and pops draw
-// for real, that what the user does by hand comes back to the router, and that a change landing
-// while a push still animates is not lost, which needs the transition hold on iOS 17.
+// for real, that what the user does by hand comes back to the router, that a change landing
+// while a push still animates is not lost, which needs the transition hold on iOS 17, and that a
+// double tap pushes once.
 @MainActor
 final class StackTests: XCTestCase {
     private static let shopTitle = "Shop"
@@ -34,6 +35,21 @@ final class StackTests: XCTestCase {
 
         app.buttons[Identifiers.product(id: Self.lampID)].tapWhenReady()
         XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    // A fast double tap on a row pushes the product once (#142): one Back returns to the shop.
+    // Without the duplicate push rule, the second tap pushes the lamp again and Back shows the
+    // lamp.
+    func testDoubleTapPushesOnce() {
+        let app = ExampleApp.launch(signedIn: true)
+        let lampRow = app.buttons[Identifiers.product(id: Self.lampID)]
+        XCTAssertTrue(lampRow.waitForExistence(timeout: UITestSteps.timeout))
+
+        lampRow.doubleTap()
+        XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: Self.settleTimeout))
         app.goBack()
 
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
