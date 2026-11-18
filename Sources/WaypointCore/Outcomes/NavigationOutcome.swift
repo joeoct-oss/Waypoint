@@ -18,7 +18,8 @@
 /// ```
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum NavigationOutcome: NavigationRecord {
     /// The call did what it says.
     case applied

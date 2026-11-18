@@ -12,7 +12,8 @@
 ///
 /// Conformances:
 /// - `Error`, so it can be thrown.
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum RouteDecodingError: Error, NavigationRecord {
     /// No registered route type has this key, current or former.
     case unknownRouteKey(RouteKey)

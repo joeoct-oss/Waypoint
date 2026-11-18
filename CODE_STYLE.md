@@ -133,6 +133,24 @@ public struct LogConfiguration: Sendable {
 
 Enforced by SwiftLint's `type_contents_order` in #70, with the order above. It can't tell stored from computed properties or judge which members are related, so review checks those.
 
+## Comments wrap at 100 columns
+
+Every comment line, `//` and `///`, ends by column 100, indentation and the slashes included. Code lines keep the 120-column limit. The same holds for comments inside the code blocks of DocC articles and the Markdown files, so the documentation site shows them without sideways scrolling (its reading column fits 100 columns of code). For example:
+
+```swift
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
+```
+
+- Break between words; never split a word, a symbol name or an inline code span.
+- A list item's continuation lines line up under its text, two spaces after the `/// `.
+- A code example inside a doc comment follows the wrapping rules below, so it fits too.
+- Lines that cannot break are allowed to run long: a URL, and sample program output in a ```` ```text ```` block.
+
+Why: 100 columns reads comfortably in an editor beside a second file, in a side-by-side diff and on the documentation site.
+
+Enforced by `scripts/check-comment-width.sh`, which `scripts/test-linux.sh` runs, and by the custom SwiftLint rule `comment_line_length` in #70. swift-format's `lineLength` covers code only, because it does not rewrap comments.
+
 ## A wrapped parameter list puts each parameter on its own line
 
 When a function, initializer or subscript doesn't fit on one line (120 characters), `(` ends the first line, each parameter goes on its own line, and `)` starts the last line, followed by the rest of the signature. Never some parameters on one line and the rest on the next. Enforced by swift-format's `lineBreakBeforeEachArgument` and SwiftLint's `multiline_parameters` in #70.

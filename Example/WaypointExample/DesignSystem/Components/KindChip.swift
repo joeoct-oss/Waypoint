@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// Names a flow's kind in its color in the navigation bar. From iOS 26 the bar draws the item in glass, so
-// the chip adds no shape of its own; earlier systems get a tinted capsule.
+// Names a flow's kind in its color in the navigation bar. From iOS 26 the bar draws the item in
+// glass, so the chip adds no shape of its own; earlier systems get a tinted capsule.
 struct KindChip: View {
     let kind: FlowKind
 

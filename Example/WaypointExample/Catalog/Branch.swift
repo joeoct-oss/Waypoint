@@ -6,11 +6,12 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// The two branches on Home. Each branch is hosted by one UI framework and can launch either kind of flow.
+// The two branches on Home. Each branch is hosted by one UI framework and can launch either kind of
+// flow.
 //
 // Conformances:
-// - `String` raw values, so a launch argument such as `-branch uikit` names a branch, and accessibility
-//   identifiers use the same word.
+// - `String` raw values, so a launch argument such as `-branch uikit` names a branch, and
+//   accessibility identifiers use the same word.
 // - `CaseIterable`, so Home and the UI tests list every branch from this one declaration.
 enum Branch: String, CaseIterable {
     case swiftUI = "swiftui"

@@ -9,7 +9,8 @@
 /// The state of one navigation stack.
 ///
 /// Conformances:
-/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and
+///   described in logs.
 public struct StackState: NavigationStateValue {
     /// The routes pushed above the stack's root screen, bottom first.
     ///

@@ -11,7 +11,11 @@
 /// so parallel tests don't share one.
 ///
 /// ```swift
-/// let logging = LogConfiguration(handler: myHandler, minimumLevel: .debug, treeLogging: .changedStacks)
+/// let logging = LogConfiguration(
+///     handler: myHandler,
+///     minimumLevel: .debug,
+///     treeLogging: .changedStacks
+/// )
 /// let router = StackRouter(configuration: NavigationConfiguration(logging: logging))
 /// ```
 ///

@@ -174,7 +174,10 @@ extension StackRouter {
     /// Pushes a child flow's first screen onto this stack. The child shares
     /// this stack but has its own router for its own routes.
     @discardableResult
-    public func push<C: StackCoordinator>(_ child: C, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    public func push<C: StackCoordinator>(
+        _ child: C,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 }
 ```
 

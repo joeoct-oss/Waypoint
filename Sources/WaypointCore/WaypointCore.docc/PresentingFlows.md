@@ -47,13 +47,19 @@ extension StackRouter {
     /// Dismisses the flow this router presents.
     ///
     /// Returns `.alreadyThere` when nothing is presented.
-    @discardableResult public func dismiss(else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func dismiss(
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 
     /// Dismisses every flow presented above this router.
-    @discardableResult public func dismissAll(else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func dismissAll(
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 
     /// Asks whoever presented this router's flow to dismiss it.
-    @discardableResult public func dismissFlow(else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func dismissFlow(
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
     /// The sheet options a presentation uses: its own, or this router's defaults.
     public func sheetOptions(for presentation: Presentation) -> SheetOptions
 }
@@ -69,8 +75,10 @@ extension StackRouter {
 /// How a flow is presented.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events
+///   and test failures.
 public struct PresentationStyle: NavigationValue, NavigationDescribable {
     /// A sheet that uses the router's default sheet options. Large unless changed.
     public static var sheet: PresentationStyle { get }
@@ -88,7 +96,10 @@ public struct PresentationStyle: NavigationValue, NavigationDescribable {
     public static func sheet(_ options: SheetOptions) -> PresentationStyle
 
     /// A sheet with the given sizes. The first size is selected.
-    public static func sheet(detents: [SheetDetent], selected: SheetDetent? = nil) -> PresentationStyle
+    public static func sheet(
+        detents: [SheetDetent],
+        selected: SheetDetent? = nil
+    ) -> PresentationStyle
 }
 ```
 
@@ -100,7 +111,8 @@ Sheet sizes are plain values in the navigation state. That means a restored or d
 /// One size a sheet can rest at.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
 /// - `CustomStringConvertible`, so presentation styles print their sizes as `[medium, large]`.
 public enum SheetDetent: NavigationValue, CustomStringConvertible {
     /// About half the available height.
@@ -120,7 +132,8 @@ public enum SheetDetent: NavigationValue, CustomStringConvertible {
 /// Options for a sheet.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
 public struct SheetOptions: NavigationValue {
     /// A large sheet that the user can swipe away.
     public static var `default`: SheetOptions { get }

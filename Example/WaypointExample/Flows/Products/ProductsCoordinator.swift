@@ -8,13 +8,14 @@
 
 import SwiftUI
 
-// A stack of products: the shop or search at the root and a product pushed above it, with the filters
-// and the wish list as sheets. Add to cart reports to the main tabs, which add the product to the cart and
-// open Cart; a guest's Sign in
-// reports to the app coordinator, which switches to the accounts flow.
+// A stack of products: the shop or search at the root and a product pushed above it, with the
+// filters and the wish list as sheets. Add to cart reports to the main tabs, which add the product
+// to the cart and open Cart; a guest's Sign in reports to the app coordinator, which switches to
+// the accounts flow.
 //
 // Conformances:
-// - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the path or the sheet changes.
+// - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the path or the sheet
+//   changes.
 @MainActor
 @Observable
 final class ProductsCoordinator {
@@ -22,11 +23,11 @@ final class ProductsCoordinator {
     private let membership: Membership
     private let onAddToCart: (Product) -> Void
     private let onShowAccounts: () -> Void
-    // `var` because `showProduct(_:)` pushes onto it, and `syncPath(_:)` takes the pops the stack makes
-    // itself.
+    // `var` because `showProduct(_:)` pushes onto it, and `syncPath(_:)` takes the pops the stack
+    // makes itself.
     private(set) var path: [ProductScreen]
-    // `var` because `showFilters()`, `showWishlist()` and `dismissSheet()` change it, and `syncSheet(_:)`
-    // takes a swipe down.
+    // `var` because `showFilters()`, `showWishlist()` and `dismissSheet()` change it, and
+    // `syncSheet(_:)` takes a swipe down.
     private(set) var presentedSheet: ProductSheet?
 
     init(

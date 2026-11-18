@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// The thin strip under the navigation bar that shows the current path: a dot for each screen below, and
-// the Nova arrow for the screen you are on.
+// The thin strip under the navigation bar that shows the current path: a dot for each screen below,
+// and the Nova arrow for the screen you are on.
 struct RouteTrail: View {
     let steps: [String]
 

@@ -8,7 +8,8 @@
 
 // Waypoint is the SwiftUI renderer for WaypointCore.
 //
-// The whole file is guarded so the module compiles empty on platforms without SwiftUI, such as Linux.
+// The whole file is guarded so the module compiles empty on platforms without SwiftUI, such as
+// Linux.
 
 #if canImport(SwiftUI)
     import SwiftUI

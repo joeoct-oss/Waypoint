@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// One flow in the SwiftUI branch: its icon, name and summary, and a button for each kind. The row reports
-// the entry the reader picks.
+// One flow in the SwiftUI branch: its icon, name and summary, and a button for each kind. The row
+// reports the entry the reader picks.
 struct FlowRow: View {
     let branch: Branch
     let flow: ExampleFlow

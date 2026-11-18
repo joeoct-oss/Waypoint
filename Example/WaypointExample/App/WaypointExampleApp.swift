@@ -8,8 +8,9 @@
 
 import SwiftUI
 
-// The example app. It holds no navigation: each window makes its own app coordinator, so two windows
-// never share a path. App-wide services, when the app has some, stay here and are passed to each one.
+// The example app. It holds no navigation: each window makes its own app coordinator, so two
+// windows never share a path. App-wide services, when the app has some, stay here and are passed to
+// each one.
 @main
 struct WaypointExampleApp: App {
     var body: some Scene {

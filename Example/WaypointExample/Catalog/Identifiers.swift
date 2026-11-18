@@ -6,9 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// Accessibility identifiers shared by the app and its UI tests. Journey screens use `<flow>.<screen>`,
-// and the Navigation Lab uses `root.<branch>`, `<branch>.<flow>.<kind>` for an entry, and
-// `placeholder.<flow>.<kind>` for the screen it opens.
+// Accessibility identifiers shared by the app and its UI tests. Journey screens use
+// `<flow>.<screen>`, and the Navigation Lab uses `root.<branch>`, `<branch>.<flow>.<kind>` for an
+// entry, and `placeholder.<flow>.<kind>` for the screen it opens.
 enum Identifiers {
     static let splash = "splash"
     static let welcomeSignIn = "auth.welcome.signIn"

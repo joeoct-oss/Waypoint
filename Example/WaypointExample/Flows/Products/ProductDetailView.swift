@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// A product: its picture, name, price and description, with Save to the wish list in the bar and Add to
-// cart for signed-in readers.
+// A product: its picture, name, price and description, with Save to the wish list in the bar and
+// Add to cart for signed-in readers.
 struct ProductDetailView: View {
     let product: Product
     let canBuy: Bool

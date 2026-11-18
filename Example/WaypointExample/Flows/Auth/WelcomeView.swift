@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// Welcome: the shop's name and three ways in. The screen reports the choice, and the accounts coordinator
-// decides where it goes.
+// Welcome: the shop's name and three ways in. The screen reports the choice, and the accounts
+// coordinator decides where it goes.
 struct WelcomeView: View {
     let onCreateAccount: () -> Void
     let onSignIn: () -> Void

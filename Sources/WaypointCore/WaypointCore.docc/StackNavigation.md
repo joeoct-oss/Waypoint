@@ -105,7 +105,10 @@ public final class StackRouter {
 
     /// Pops `count` routes. Popping more than the path holds pops to the root
     /// and returns `.recovered`.
-    @discardableResult public func pop(count: Int = 1, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func pop(
+        count: Int = 1,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 
     /// Pops to the last occurrence of `route`.
     ///
@@ -124,7 +127,9 @@ public final class StackRouter {
     ) -> NavigationOutcome
 
     /// Empties the path, showing the root screen.
-    @discardableResult public func popToRoot(else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func popToRoot(
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 
     // Replacing
 
@@ -148,7 +153,9 @@ public final class StackRouter {
     ///
     /// If any step ends `.failed`, the whole transaction is rolled back, and
     /// the outcome is that step's failure with the step's file and line.
-    @discardableResult public func transaction(_ body: @escaping (NavigationTransaction) -> Void) -> NavigationOutcome
+    @discardableResult public func transaction(
+        _ body: @escaping (NavigationTransaction) -> Void
+    ) -> NavigationOutcome
 
     // Place in the tree
     /// Registers a route type for decoding and as having a destination.
@@ -282,7 +289,8 @@ The tab methods are generic, so name the tab type once: `$0.select(MainTab.shop)
 /// What a navigation call did.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum NavigationOutcome: NavigationRecord {
     /// The call did what it says.
     case applied
@@ -330,7 +338,8 @@ The built-in defaults change nothing unless the intent is clear. Popping more ro
 /// A navigation call that could not be done as asked.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public struct NavigationIssue: NavigationRecord {
     /// Conformances:
     /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
@@ -372,7 +381,8 @@ public struct NavigationIssue: NavigationRecord {
 /// also appears in logs and outcomes.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum NavigationFallback: NavigationRecord {
     /// Do nothing. The state stays as it was.
     case none
@@ -386,7 +396,10 @@ public enum NavigationFallback: NavigationRecord {
     /// Dismisses everything and pops the root stack to its root screen.
     case resetToRoot
     /// Run your own change. The name appears in logs and outcomes.
-    case custom(_ name: String, @MainActor @Sendable (NavigationTransaction, NavigationIssue) -> Void)
+    case custom(
+        _ name: String,
+        @MainActor @Sendable (NavigationTransaction, NavigationIssue) -> Void
+    )
 }
 
 /// Fallbacks by issue kind, inherited by child routers.
@@ -402,7 +415,8 @@ public struct FallbackPolicy: Sendable {
 /// A call whose fallback also failed.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public struct NavigationFailure: NavigationRecord {
     /// Why the call failed.
     public let issue: NavigationIssue
@@ -445,14 +459,19 @@ public struct StackNavigator {
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
     /// Pops `count` screens.
-    @discardableResult public func pop(count: Int = 1, else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func pop(
+        count: Int = 1,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
     /// Pops back to the last screen showing this route.
     @discardableResult public func popTo<R: Route>(
         _ route: R,
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
     /// Pops back to the stack's root screen.
-    @discardableResult public func popToRoot(else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func popToRoot(
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
     /// Presents a route over this flow.
     @discardableResult public func present<R: Route>(
         _ route: R,
@@ -460,7 +479,9 @@ public struct StackNavigator {
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
     /// Dismisses the flow this navigator belongs to.
-    @discardableResult public func dismissFlow(else fallback: NavigationFallback? = nil) -> NavigationOutcome
+    @discardableResult public func dismissFlow(
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 }
 
 /// Navigates a stack with the routes of one flow only.

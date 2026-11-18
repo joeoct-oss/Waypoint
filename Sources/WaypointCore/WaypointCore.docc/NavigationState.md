@@ -22,7 +22,8 @@ router.state.presentation // nil
 /// The state of one navigation stack.
 ///
 /// Conformances:
-/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and
+///   described in logs.
 public struct StackState: NavigationStateValue {
     /// The routes pushed above the stack's root screen, bottom first.
     ///
@@ -43,7 +44,8 @@ A flow presents at most one child flow at a time. The presented flow can present
 /// A child flow shown modally above its parent.
 ///
 /// Conformances:
-/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and
+///   described in logs.
 public struct Presentation: NavigationStateValue {
     /// How the flow is shown.
     public let style: PresentationStyle
@@ -65,7 +67,8 @@ public struct Presentation: NavigationStateValue {
 /// `Tab` is usually an app enum, such as a `MainTab` with `home`, `shop` and `profile` cases.
 ///
 /// Conformances:
-/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and
+///   described in logs.
 /// - `Tab: NavigationTab`, the app's tab type.
 public struct TabState<Tab: NavigationTab>: NavigationStateValue {
     /// The tabs, in display order.
@@ -89,8 +92,10 @@ Each router has a stable `FlowID`. The erased form of the whole app's state is a
 /// Stays the same across restoration, so events and snapshots can refer to it.
 ///
 /// Conformances:
-/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main actor.
-/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events and test failures.
+/// - `NavigationValue`, so it can be compared and hashed, saved and restored, and sent off the main
+///   actor.
+/// - `NavigationDescribable`, for a short, stable, private-by-default description in logs, events
+///   and test failures.
 public struct FlowID: NavigationValue, NavigationDescribable {
     /// The flow's name. Saved as a plain string.
     public let name: String
@@ -102,7 +107,8 @@ public struct FlowID: NavigationValue, NavigationDescribable {
 /// The erased navigation state of every flow, from the root down.
 ///
 /// Conformances:
-/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and described in logs.
+/// - `NavigationStateValue`, so it can be saved and restored, compared, sent off the main actor and
+///   described in logs.
 public struct NavigationTree: NavigationStateValue {
     /// Conformances:
     /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
@@ -128,7 +134,8 @@ Every applied change is described by a value. Routers emit them as events, and t
 /// One change to the navigation state.
 ///
 /// Conformances:
-/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in logs.
+/// - `NavigationRecord`, so it can be sent off the main actor, compared in tests and described in
+///   logs.
 public enum NavigationChange: NavigationRecord {
     case pushed([AnyRoute])
     case popped([AnyRoute])

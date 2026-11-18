@@ -67,7 +67,10 @@ public protocol UIKitStackCoordinator: StackCoordinator {
 /// - `R: Route`: the route type this works with.
 public struct UIKitDestination<R: Route> {
     public init(_ type: R.Type, _ make: @escaping @MainActor (R) -> UIViewController)
-    public init(_ type: R.Type, _ make: @escaping @MainActor (R, StackNavigator) -> UIViewController)
+    public init(
+        _ type: R.Type,
+        _ make: @escaping @MainActor (R, StackNavigator) -> UIViewController
+    )
 }
 
 extension WaypointNavigationController {

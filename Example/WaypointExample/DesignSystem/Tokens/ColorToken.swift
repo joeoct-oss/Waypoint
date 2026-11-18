@@ -9,8 +9,9 @@
 import SwiftUI
 import UIKit
 
-// One color of the design system, with its light and dark values as 0xRRGGBB. Both renderers read the
-// same token: SwiftUI through `color`, UIKit through `uiColor`, and both follow the system appearance.
+// One color of the design system, with its light and dark values as 0xRRGGBB. Both renderers read
+// the same token: SwiftUI through `color`, UIKit through `uiColor`, and both follow the system
+// appearance.
 struct ColorToken {
     let light: UInt32
     let dark: UInt32
