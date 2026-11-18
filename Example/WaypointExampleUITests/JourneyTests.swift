@@ -8,9 +8,9 @@
 
 import XCTest
 
-// The shop's user journeys, one test for each story on the design canvas: launch by session, sign
-// in, sign up, reset password, the guest's tabs, search and save, checkout from Cart, an order's
-// detail and the Lab under Settings.
+// The shop's user journeys, one test for each story on the design canvas. Every launch starts from
+// a fresh install. Guests use the same tabs as signed-in readers, and an action that needs an
+// account (Check out, Save, Orders) asks for one in a sheet, then carries on.
 @MainActor
 final class JourneyTests: XCTestCase {
     // XCTest takes a few seconds to launch the app and wait for it to settle, longer than the usual
@@ -20,39 +20,79 @@ final class JourneyTests: XCTestCase {
     private static let searchTitle = "Search"
     private static let cartTitle = "Cart"
     private static let accountTitle = "Account"
+    private static let otherTabTitles = [
+        searchTitle,
+        cartTitle,
+        accountTitle,
+    ]
+    private static let email = "nova@example.com"
+    private static let password = "orbit-2026"
+    private static let wrongPassword = "wrong"
     private static let signUpName = "Nova Reader"
-    private static let signUpEmail = "nova@example.com"
-    private static let signUpPassword = "orbit-2026"
+    private static let cartProductID = 1
     private static let savedProductID = 2
     private static let orderID = 1042
 
-    func testLaunchRoutesBySession() {
+    func testLaunchOpensShopForEveryone() {
         let firstLaunch = ExampleApp.launch(splashSeconds: Self.splashSeconds)
         let splash = firstLaunch.descendants(matching: .any)[Identifiers.splash]
-        let welcome = firstLaunch.buttons[Identifiers.welcomeSignIn]
+        let shop = firstLaunch.navigationBars[Self.shopTitle]
         XCTAssertTrue(splash.waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(welcome.waitForExistence(timeout: UITestSteps.timeout + TimeInterval(Self.splashSeconds)))
+        XCTAssertTrue(shop.waitForExistence(timeout: UITestSteps.timeout + TimeInterval(Self.splashSeconds)))
         firstLaunch.terminate()
 
         let signedIn = ExampleApp.launch(signedIn: true)
+        signedIn.openTab(Self.accountTitle)
 
-        XCTAssertTrue(signedIn.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertFalse(signedIn.buttons[Identifiers.welcomeSignIn].exists)
+        XCTAssertTrue(signedIn.staticTexts[Identifiers.accountName].waitForExistence(timeout: UITestSteps.timeout))
     }
 
-    func testSignInLandsOnShop() {
+    func testGuestSeesAllTabs() {
         let app = ExampleApp.launch()
-
-        app.buttons[Identifiers.welcomeSignIn].tapWhenReady()
-        app.buttons[Identifiers.signInButton].tapWhenReady()
 
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(app.tabBars.buttons[Self.accountTitle].exists)
+        for title in Self.otherTabTitles {
+            XCTAssertTrue(app.tabBars.buttons[title].exists, "missing \(title) tab")
+        }
+        app.openTab(Self.accountTitle)
+        XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
     }
 
-    func testSignUpSwitchesToShop() {
+    func testCheckoutAsksGuestToSignIn() {
         let app = ExampleApp.launch()
-        app.buttons[Identifiers.welcomeCreateAccount].tapWhenReady()
+        addProductToCart(in: app)
+
+        app.buttons[Identifiers.checkout].tapWhenReady()
+        signIn(
+            password: Self.password,
+            in: app
+        )
+
+        XCTAssertTrue(app.buttons[Identifiers.placeOrder].waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    func testWrongPasswordShowsError() {
+        let app = ExampleApp.launch()
+        app.openTab(Self.accountTitle)
+        app.buttons[Identifiers.accountSignIn].tapWhenReady()
+
+        signIn(
+            password: Self.wrongPassword,
+            in: app
+        )
+        let error = app.descendants(matching: .any)[Identifiers.authError]
+        XCTAssertTrue(error.waitForExistence(timeout: UITestSteps.timeout))
+        app.buttons[Identifiers.authCancel].tapWhenReady()
+
+        XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    func testSaveAsksGuestToCreateAccount() {
+        let app = ExampleApp.launch()
+        app.openTab(Self.searchTitle)
+        app.buttons[Identifiers.product(id: Self.savedProductID)].tapWhenReady()
+        app.buttons[Identifiers.productSave].tapWhenReady()
+        app.buttons[Identifiers.signInCreateAccount].tapWhenReady()
 
         fillDetails(in: app)
         app.buttons[Identifiers.signUpContinue].tapWhenReady()
@@ -65,13 +105,14 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.signUpContinue].tapWhenReady()
         app.buttons[Identifiers.signUpContinue].tapWhenReady()
 
-        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(app.tabBars.buttons[Self.accountTitle].exists)
+        let wishlist = app.descendants(matching: .any)[Identifiers.wishlist]
+        XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout))
     }
 
     func testResetPasswordSheet() {
         let app = ExampleApp.launch()
-        app.buttons[Identifiers.welcomeSignIn].tapWhenReady()
+        app.openTab(Self.accountTitle)
+        app.buttons[Identifiers.accountSignIn].tapWhenReady()
 
         app.buttons[Identifiers.forgotPassword].tapWhenReady()
         app.buttons[Identifiers.resetSend].tapWhenReady()
@@ -81,18 +122,6 @@ final class JourneyTests: XCTestCase {
 
         XCTAssertTrue(app.buttons[Identifiers.signInButton].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertFalse(sent.exists)
-    }
-
-    func testGuestSeesTwoTabs() {
-        let app = ExampleApp.launch()
-
-        app.buttons[Identifiers.welcomeGuest].tapWhenReady()
-
-        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(app.tabBars.buttons[Self.searchTitle].exists)
-        XCTAssertFalse(app.tabBars.buttons[Self.cartTitle].exists)
-        XCTAssertFalse(app.tabBars.buttons[Self.accountTitle].exists)
-        XCTAssertTrue(app.buttons[Identifiers.guestSignIn].exists)
     }
 
     func testSearchOpenAndSave() {
@@ -108,8 +137,8 @@ final class JourneyTests: XCTestCase {
 
     func testCheckoutFromCartTab() {
         let app = ExampleApp.launch(signedIn: true)
+        addProductToCart(in: app)
 
-        app.openTab(Self.cartTitle)
         app.buttons[Identifiers.checkout].tapWhenReady()
         app.buttons[Identifiers.placeOrder].tapWhenReady()
         let placed = app.descendants(matching: .any)[Identifiers.orderPlaced]
@@ -130,8 +159,18 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Order \(Self.orderID)"].waitForExistence(timeout: UITestSteps.timeout))
     }
 
-    func testSettingsOpensLab() {
+    func testSignOutKeepsTheApp() {
         let app = ExampleApp.launch(signedIn: true)
+        app.openTab(Self.accountTitle)
+
+        app.buttons[Identifiers.signOut].tapWhenReady()
+
+        XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.tabBars.buttons[Self.shopTitle].exists)
+    }
+
+    func testSettingsOpensLab() {
+        let app = ExampleApp.launch()
 
         app.openTab(Self.accountTitle)
         app.buttons[Identifiers.settingsButton].tapWhenReady()
@@ -140,13 +179,45 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(app.buttons[Identifiers.branch(.swiftUI)].waitForExistence(timeout: UITestSteps.timeout))
     }
 
+    func testClearAllDataStartsOver() {
+        let app = ExampleApp.launch(signedIn: true)
+        addProductToCart(in: app)
+
+        app.openTab(Self.accountTitle)
+        app.buttons[Identifiers.settingsButton].tapWhenReady()
+        app.buttons[Identifiers.clearData].tapWhenReady()
+        app.buttons[Identifiers.confirmClearData].tapWhenReady()
+
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.openTab(Self.cartTitle)
+        XCTAssertFalse(app.buttons[Identifiers.product(id: Self.cartProductID)].exists, "the cart kept a product")
+        app.openTab(Self.accountTitle)
+        XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    private func addProductToCart(in app: XCUIApplication) {
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.buttons[Identifiers.product(id: Self.cartProductID)].tapWhenReady()
+        app.buttons[Identifiers.addToCart].tapWhenReady()
+        XCTAssertTrue(app.buttons[Identifiers.checkout].waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    private func signIn(
+        password: String,
+        in app: XCUIApplication
+    ) {
+        app.textFields[Identifiers.signInEmail].type(Self.email)
+        app.secureTextFields[Identifiers.signInPassword].type(password)
+        app.buttons[Identifiers.signInButton].tapWhenReady()
+    }
+
     private func fillDetails(in app: XCUIApplication) {
         app.textFields[Identifiers.signUpName].type(Self.signUpName)
-        app.textFields[Identifiers.signUpEmail].type(Self.signUpEmail)
+        app.textFields[Identifiers.signUpEmail].type(Self.email)
     }
 
     private func choosePassword(in app: XCUIApplication) {
-        app.secureTextFields[Identifiers.signUpPassword].type(Self.signUpPassword)
+        app.secureTextFields[Identifiers.signUpPassword].type(Self.password)
         app.buttons[Identifiers.signUpTerms].tapWhenReady()
         let terms = app.descendants(matching: .any)[Identifiers.terms]
         XCTAssertTrue(terms.waitForExistence(timeout: UITestSteps.timeout))

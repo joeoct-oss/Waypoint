@@ -10,8 +10,8 @@ import SwiftUI
 
 // A stack of products: the shop or search at the root and a product pushed above it, with the
 // filters and the wish list as sheets. Add to cart reports to the main tabs, which add the product
-// to the cart and open Cart; a guest's Sign in reports to the app coordinator, which switches to
-// the accounts flow.
+// to the cart and open Cart. Save needs an account, so the account gate asks a guest to sign in
+// first; then the product joins the wish list, which the local store keeps.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the path or the sheet
@@ -20,9 +20,9 @@ import SwiftUI
 @Observable
 final class ProductsCoordinator {
     private let start: ProductsStart
-    private let membership: Membership
+    private let store: LocalStore
+    private let gate: AccountGate
     private let onAddToCart: (Product) -> Void
-    private let onShowAccounts: () -> Void
     // `var` because `showProduct(_:)` pushes onto it, and `syncPath(_:)` takes the pops the stack
     // makes itself.
     private(set) var path: [ProductScreen]
@@ -32,14 +32,14 @@ final class ProductsCoordinator {
 
     init(
         start: ProductsStart,
-        membership: Membership,
-        onAddToCart: @escaping (Product) -> Void,
-        onShowAccounts: @escaping () -> Void
+        store: LocalStore,
+        gate: AccountGate,
+        onAddToCart: @escaping (Product) -> Void
     ) {
         self.start = start
-        self.membership = membership
+        self.store = store
+        self.gate = gate
         self.onAddToCart = onAddToCart
-        self.onShowAccounts = onShowAccounts
         path = []
         presentedSheet = nil
     }
@@ -88,8 +88,8 @@ final class ProductsCoordinator {
         onAddToCart(product)
     }
 
-    func showAccounts() {
-        onShowAccounts()
+    func save(_ product: Product) {
+        gate.requireAccount { self.addToWishlist(product) }
     }
 
     func dismissSheet() {
@@ -104,12 +104,17 @@ final class ProductsCoordinator {
         presentedSheet = sheet
     }
 
+    private func addToWishlist(_ product: Product) {
+        if !store.wishlistProductIDs.contains(product.id) {
+            store.wishlistProductIDs.append(product.id)
+        }
+        showWishlist()
+    }
+
     private func makeShopFlow() -> some View {
         ProductListView(
-            showsSignIn: membership == .guest,
             onSelect: { self.showProduct($0) },
-            onFilter: { self.showFilters() },
-            onSignIn: { self.showAccounts() }
+            onFilter: { self.showFilters() }
         )
         .screenChrome(
             title: MainTab.shop.title,
@@ -133,7 +138,7 @@ final class ProductsCoordinator {
 
     private func makeWishlistFlow() -> some View {
         WishlistView(
-            products: Product.sampleWishlist,
+            products: Product.products(withIDs: store.wishlistProductIDs),
             onDone: { self.dismissSheet() }
         )
     }
@@ -141,9 +146,8 @@ final class ProductsCoordinator {
     private func makeProductFlow(_ product: Product) -> some View {
         ProductDetailView(
             product: product,
-            canBuy: membership == .member,
             onAddToCart: { self.addToCart(product) },
-            onSave: { self.showWishlist() }
+            onSave: { self.save(product) }
         )
         .screenChrome(
             title: product.name,

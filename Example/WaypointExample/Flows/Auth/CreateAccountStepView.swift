@@ -16,6 +16,8 @@ import SwiftUI
 struct CreateAccountStepView: View {
     let step: CreateAccountStep
     @Bindable var draft: SignUpDraft
+    let isWorking: Bool
+    let errorMessage: String?
     let onContinue: () -> Void
     let onShowTerms: () -> Void
 
@@ -36,6 +38,7 @@ struct CreateAccountStepView: View {
     var body: some View {
         Form {
             fields
+            FormErrorSection(message: errorMessage)
         }
         .exampleForm()
         .bottomActionBar { continueButton }
@@ -111,7 +114,7 @@ struct CreateAccountStepView: View {
             identifier: Identifiers.signUpContinue,
             action: continueToNextStep
         )
-        .disabled(!canContinue)
+        .disabled(!canContinue || isWorking)
         .padding(Spacing.large)
     }
 

@@ -8,18 +8,25 @@
 
 import SwiftUI
 
-// Draws the main tabs the reader can see with the system tab bar, which is Liquid Glass from iOS
-// 26. Each tab hosts its own stack.
+// Draws the main tabs with the system tab bar, which is Liquid Glass from iOS 26, and the accounts
+// sheet the account gate presents over them. Each tab hosts its own stack. The gate runs the action
+// it held once the sheet has closed.
 struct MainTabView: View {
     let main: MainCoordinator
 
     var body: some View {
         TabView(selection: Binding(reading: main.tabs.selected, writing: main.tabs.select)) {
-            ForEach(main.visibleTabs, id: \.self) { tab in
+            ForEach(MainTab.allCases, id: \.self) { tab in
                 tabContent(for: tab)
             }
         }
         .accessibilityIdentifier(Identifiers.mainTabs)
+        .sheet(
+            item: Binding(reading: main.gate.presentedAuth, writing: main.gate.syncAuth),
+            onDismiss: main.gate.runHeldAction
+        ) {
+            main.makeAuthFlow($0)
+        }
     }
 
     private func tabContent(for tab: MainTab) -> some View {

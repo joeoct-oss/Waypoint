@@ -8,25 +8,33 @@
 
 import SwiftUI
 
-// The account tab: the profile at the root, orders and settings pushed above it, and the Navigation
-// Lab under settings with the twenty demo entries. Sign out reports to the app coordinator, which
-// switches the root back to sign in.
+// The account tab: the profile at the root (or Sign in for a guest), orders and settings pushed
+// above it, and the Navigation Lab under settings with the twenty demo entries. Orders need an
+// account, so the account gate asks a guest to sign in first. Sign out ends the session and leaves
+// the reader where they are, as a guest. Clear all data reports to the app coordinator, which
+// clears the store and starts the window over.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `AccountFlowView` redraws when the path changes.
 @MainActor
 @Observable
 final class AccountCoordinator {
-    private let onSignOut: () -> Void
+    private let session: Session
+    private let gate: AccountGate
+    private let onClearAllData: () -> Void
     // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the
     // stack makes itself.
     private(set) var path: [AccountScreen]
 
     init(
         launch: LaunchOptions,
-        onSignOut: @escaping () -> Void
+        session: Session,
+        gate: AccountGate,
+        onClearAllData: @escaping () -> Void
     ) {
-        self.onSignOut = onSignOut
+        self.session = session
+        self.gate = gate
+        self.onClearAllData = onClearAllData
         path = Self.makePath(for: launch)
     }
 
@@ -47,7 +55,9 @@ final class AccountCoordinator {
 
     func makeAccountFlow() -> some View {
         AccountView(
-            onShowOrders: { self.showOrders() },
+            account: session.account,
+            onSignIn: { self.showSignIn() },
+            onShowOrders: { self.openOrders() },
             onShowSettings: { self.showSettings() },
             onSignOut: { self.signOut() }
         )
@@ -65,6 +75,14 @@ final class AccountCoordinator {
                 kind: screen.kind,
                 trail: screen.trail
             )
+    }
+
+    func showSignIn() {
+        gate.showSignIn()
+    }
+
+    func openOrders() {
+        gate.requireAccount { self.showOrders() }
     }
 
     func showOrders() {
@@ -92,7 +110,11 @@ final class AccountCoordinator {
     }
 
     func signOut() {
-        onSignOut()
+        session.signOut()
+    }
+
+    func clearAllData() {
+        onClearAllData()
     }
 
     func syncPath(_ newPath: [AccountScreen]) {
@@ -126,7 +148,10 @@ final class AccountCoordinator {
     }
 
     private func makeSettingsFlow() -> some View {
-        SettingsView(onShowLab: { self.showLab() })
+        SettingsView(
+            onShowLab: { self.showLab() },
+            onClearAllData: { self.clearAllData() }
+        )
     }
 
     private func makeLabFlow() -> some View {

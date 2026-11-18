@@ -8,51 +8,86 @@
 
 import SwiftUI
 
-// Sign in: email and password, with a way to reset the password. The screen reports each choice,
-// and the accounts coordinator decides where it goes. Any email and password sign in.
+// Sign in, the root of the accounts sheet: email and password, Sign in, and ways to create an
+// account or reset the password. The screen reports each choice, and the accounts coordinator
+// decides where it goes. Cancel closes the sheet and drops the action that asked for an account.
 struct SignInView: View {
-    let onSignIn: () -> Void
+    let isWorking: Bool
+    let errorMessage: String?
+    let onSignIn: (String, String) -> Void
+    let onCreateAccount: () -> Void
     let onForgotPassword: () -> Void
+    let onCancel: () -> Void
 
     @State private var email = ""
     @State private var password = ""
 
+    private var canSignIn: Bool {
+        !email.isEmpty && !password.isEmpty && !isWorking
+    }
+
     var body: some View {
         Form {
-            Section {
-                TextField("Email", text: $email)
-                    .textContentType(.username)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                SecureField("Password", text: $password)
-                    .textContentType(.password)
-            } header: {
-                header
-            }
-            Section {
-                Button("Forgot password?", action: onForgotPassword)
-                    .accessibilityIdentifier(Identifiers.forgotPassword)
-            }
+            credentialFields
+            FormErrorSection(message: errorMessage)
+            otherWays
         }
         .exampleForm()
         .accessibilityIdentifier(Identifiers.signIn)
+        .toolbar { cancelItem }
         .bottomActionBar { signInButton }
     }
 
+    private var credentialFields: some View {
+        Section {
+            TextField("Email", text: $email)
+                .textContentType(.username)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .accessibilityIdentifier(Identifiers.signInEmail)
+            SecureField("Password", text: $password)
+                .textContentType(.password)
+                .accessibilityIdentifier(Identifiers.signInPassword)
+        } header: {
+            header
+        }
+    }
+
+    private var otherWays: some View {
+        Section {
+            Button("Forgot password?", action: onForgotPassword)
+                .accessibilityIdentifier(Identifiers.forgotPassword)
+            Button("Create an account", action: onCreateAccount)
+                .accessibilityIdentifier(Identifiers.signInCreateAccount)
+        }
+    }
+
     private var header: some View {
-        Text("Welcome back")
+        Text("Sign in to continue")
             .font(Typography.display)
             .foregroundStyle(Palette.text.color)
             .textCase(nil)
             .padding(.bottom, Spacing.small)
     }
 
+    private var cancelItem: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel", systemImage: "xmark", action: onCancel)
+                .accessibilityIdentifier(Identifiers.authCancel)
+        }
+    }
+
     private var signInButton: some View {
         PrimaryActionButton(
             title: "Sign in",
             identifier: Identifiers.signInButton,
-            action: onSignIn
+            action: signIn
         )
+        .disabled(!canSignIn)
         .padding(Spacing.large)
+    }
+
+    private func signIn() {
+        onSignIn(email, password)
     }
 }

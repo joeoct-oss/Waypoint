@@ -60,6 +60,14 @@ struct Product: Hashable, Identifiable {
         ),
     ]
 
+    static func products(withIDs ids: [Int]) -> [Product] {
+        ids.compactMap(product(withID:))
+    }
+
+    static func product(withID id: Int) -> Product? {
+        all.first { $0.id == id }
+    }
+
     static func total(of products: [Product]) -> Decimal {
         products.reduce(0) { $0 + $1.price }
     }

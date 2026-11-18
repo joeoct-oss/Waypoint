@@ -8,18 +8,14 @@
 
 import SwiftUI
 
-// The main tabs: Shop, Search, Cart and Account, each with its own coordinator and stack. Guests
-// see only Shop and Search, with Sign in in the shop's bar. The main coordinator makes the tabs
-// once and keeps them, so each tab keeps its place while the reader switches tabs. Cart's tab shows
-// how many products the cart holds.
+// The main tabs: Shop, Search, Cart and Account, each with its own coordinator and stack, the same
+// for guests and signed-in readers. The main coordinator makes the tabs once and keeps them, so
+// each tab keeps its place while the reader switches tabs. Cart's tab shows how many products the
+// cart holds. Its account gate presents the accounts sheet over the tabs when an action needs an
+// account.
 @MainActor
 final class MainCoordinator {
-    private static let guestTabs: [MainTab] = [
-        .shop,
-        .search,
-    ]
-
-    let visibleTabs: [MainTab]
+    let gate: AccountGate
     let tabs: TabSelection
     let shop: ProductsCoordinator
     let search: ProductsCoordinator
@@ -27,34 +23,44 @@ final class MainCoordinator {
     let account: AccountCoordinator
 
     init(
-        membership: Membership,
+        services: AppServices,
         launch: LaunchOptions,
-        onShowAccounts: @escaping () -> Void
+        onClearAllData: @escaping () -> Void
     ) {
+        let gate = AccountGate(
+            session: services.session,
+            service: services.auth
+        )
         let tabs = TabSelection(selected: launch.opensLab ? .account : .shop)
-        let cart = CartCoordinator(onShopMore: { tabs.select(.shop) })
+        let cart = CartCoordinator(
+            store: services.store,
+            gate: gate,
+            onShopMore: { tabs.select(.shop) }
+        )
         let addToCart = { (product: Product) in
             cart.add(product)
             tabs.select(.cart)
         }
-        visibleTabs = membership == .guest ? Self.guestTabs : MainTab.allCases
+        self.gate = gate
         self.tabs = tabs
         self.cart = cart
         shop = ProductsCoordinator(
             start: .browse,
-            membership: membership,
-            onAddToCart: addToCart,
-            onShowAccounts: onShowAccounts
+            store: services.store,
+            gate: gate,
+            onAddToCart: addToCart
         )
         search = ProductsCoordinator(
             start: .search,
-            membership: membership,
-            onAddToCart: addToCart,
-            onShowAccounts: onShowAccounts
+            store: services.store,
+            gate: gate,
+            onAddToCart: addToCart
         )
         account = AccountCoordinator(
             launch: launch,
-            onSignOut: onShowAccounts
+            session: services.session,
+            gate: gate,
+            onClearAllData: onClearAllData
         )
     }
 
@@ -74,6 +80,10 @@ final class MainCoordinator {
         case .account:
             makeAccountFlow()
         }
+    }
+
+    func makeAuthFlow(_ auth: AuthCoordinator) -> some View {
+        AuthFlowView(auth: auth)
     }
 
     private func makeShopFlow() -> some View {

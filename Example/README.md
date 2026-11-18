@@ -2,12 +2,12 @@
 
 Orbit Shop, a small shop that behaves like a production app, so every navigation pattern shows up in a real journey:
 
-1. **Splash**, then the app coordinator picks the root: Welcome, or the main tabs when already signed in.
-2. **Accounts**: Welcome offers Create account (three pushed steps: your details, a password with the terms as a sheet, and check your email; going back keeps what was typed), Sign in (with Reset password as a sheet that turns into Link sent) and Continue as guest. Every way out is one root switch into the tabs.
-3. **Main tabs** (system tab bar): **Shop** (products, a pushed product, filters and the wish list as sheets), **Search** (the system search field), **Cart** (a badge with the cart's count; checkout presented full screen, then Order placed, whose Continue shopping opens Shop) and **Account** (orders, settings, sign out, which switches the root back). Guests see only Shop and Search, with Sign in in the shop's bar.
-4. **Navigation Lab**, under Account > Settings > Developer: two branches, SwiftUI and UIKit, each launching five demo flows (login, tabs, detail push, sheet and deep link) as a SwiftUI flow or a UIKit flow. These twenty entry points are also UI test scenarios.
+1. **Splash**, then the main tabs, the same for guests and signed-in readers.
+2. **Accounts**, asked for only when an action needs an account (Check out, Save, Orders, or Sign in on Account): a sheet over the tabs with Sign in (a wrong password shows an error; Reset password is a sheet that turns into Link sent) and Create an account (three pushed steps: your details, a password with the terms as a sheet, and check your email; going back keeps what was typed). Once the reader signs in, the sheet closes and the action carries on; Cancel drops it. A mock auth service stands in for a server: any email and password sign in, except the password `wrong`.
+3. **Main tabs** (system tab bar): **Shop** (products, a pushed product, filters and the wish list as sheets), **Search** (the system search field), **Cart** (a badge with the cart's count; checkout presented full screen, then Order placed, whose Continue shopping opens Shop) and **Account** (profile or Sign in, orders, settings, sign out, which keeps the reader in the app as a guest).
+4. **Developer**, under Account > Settings: Clear all data, which asks to confirm, then empties the store and starts the app over as a fresh install; and the **Navigation Lab**: two branches, SwiftUI and UIKit, each launching five demo flows (login, tabs, detail push, sheet and deep link) as a SwiftUI flow or a UIKit flow. These twenty entry points are also UI test scenarios.
 
-The `App` asks for each window's view with `AppCoordinator.makeWindow(launch:)`, which makes a new app coordinator for every window. Screens report what the reader did through callbacks; only coordinators navigate. Bars, tab bars, sheets and buttons are system controls, so they take Liquid Glass on iOS 26 and the classic look on earlier systems.
+The `App` asks for each window's view with `AppCoordinator.makeWindow(services:launch:)`, which makes a new app coordinator for every window. The services (the local store, the session and the mock auth service) are made once and shared by every window; the store keeps the session, cart and wish list between launches. Screens report what the reader did through callbacks; only coordinators navigate. Bars, tab bars, sheets and buttons are system controls, so they take Liquid Glass on iOS 26 and the classic look on earlier systems.
 
 ## Generate and run
 
@@ -22,16 +22,17 @@ open Example/WaypointExample.xcworkspace
 
 ## Launch arguments
 
-UI tests start where they need to: `-signedIn YES` skips sign in, `-guest YES` starts as a guest, `-lab YES` opens the Navigation Lab, `-branch uikit -flow sheet -kind swiftui` opens one Lab entry, and `-splashSeconds 5` holds the splash long enough for a test to see it. `ExampleApp.launch(signedIn:guest:lab:branch:flow:kind:splashSeconds:)` in the UI tests sets them. `JourneyTests` has one test for each journey on the design canvas, and `LabTests` covers every Lab entry.
+UI tests start where they need to: `-clearData YES` starts from a fresh install (the UI tests always pass it), `-signedIn YES` starts signed in, `-lab YES` opens the Navigation Lab, `-branch uikit -flow sheet -kind swiftui` opens one Lab entry, and `-splashSeconds 5` holds the splash long enough for a test to see it. `ExampleApp.launch(signedIn:guest:lab:branch:flow:kind:splashSeconds:)` in the UI tests sets them. `JourneyTests` has one test for each journey on the design canvas, and `LabTests` covers every Lab entry.
 
 ## Folders
 
 | Folder | What it holds |
 |---|---|
 | `App/` | The `App`, the app coordinator and its roots, and launch arguments |
-| `Store/` | The fixed sample products and orders |
+| `Services/` | The local store, the session, the auth service protocol and its mock |
+| `Store/` | The fixed sample products and orders, and the account type |
 | `Flows/Splash/` | The splash screen |
-| `Flows/Auth/` | Welcome, sign in, the create account steps and the reset password sheet, with their coordinator |
+| `Flows/Auth/` | The account gate, and the accounts sheet: sign in, the create account steps and the reset password sheet, with their coordinator |
 | `Flows/Main/` | The main tabs and their coordinator |
 | `Flows/Products/` | Shop and Search: product lists, a product, the filter and wish list sheets |
 | `Flows/Cart/` | The cart and the full-screen checkout |
@@ -42,7 +43,7 @@ UI tests start where they need to: `-signedIn YES` skips sign in, `-guest YES` s
 
 ## Rules the app follows
 
-- Each window has its own app coordinator; the `App` holds no navigation state.
+- Each window has its own app coordinator; the `App` holds no navigation state, only the shared services.
 - Screens report through callbacks; only coordinators navigate, with `make…Flow()` to build and `show…()` to navigate.
 - Accessibility identifiers follow one pattern: `<flow>.<screen>` for journeys, and `root.<branch>`, `<branch>.<flow>.<kind>` and `placeholder.<flow>.<kind>` in the Lab.
 - The code follows the package's code style in [`CODE_STYLE.md`](../CODE_STYLE.md).
