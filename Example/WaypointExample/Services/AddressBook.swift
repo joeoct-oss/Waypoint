@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import Observation
+
 // The reader's saved delivery addresses, shared by checkout and Account, Addresses. The local store
 // keeps them between launches, and a fresh install starts with the two samples.
 //
