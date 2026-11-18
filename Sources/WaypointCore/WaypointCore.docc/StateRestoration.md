@@ -14,7 +14,7 @@ let data = try root.snapshotData()
 root.restore(from: data)
 ```
 
-> Note: State restoration is not available yet. Routes are `Codable` from the start, so it can be added without changing them.
+> Note: Draft until #16. State restoration is not built yet. Routes are `Codable` from the start, so it can be added without changing them.
 
 ### Snapshot API
 

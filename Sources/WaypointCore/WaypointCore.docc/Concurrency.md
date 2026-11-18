@@ -4,6 +4,8 @@ Which types live on the main actor, and which values can go anywhere.
 
 ## Overview
 
+> Note: Draft until #24. The API in this article is planned, not built, and can still change when #24 lands.
+
 Waypoint is written in the Swift 6 language mode with strict concurrency checking. The rules are short:
 
 | Kind | Isolation | Examples |

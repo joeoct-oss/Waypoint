@@ -4,6 +4,8 @@ Show stacks, sheets, tabs and roots in SwiftUI.
 
 ## Overview
 
+> Note: Draft until #11. The API in this article is planned, not built, and can still change when #11 lands.
+
 Each entry view takes a router, or makes one for you, and draws its state. Screens are registered by route type. SwiftUI applies one `navigationDestination(for:)` per registered type, so screens are never wrapped in `AnyView`.
 
 The renderer keeps no navigation state of its own. It mirrors the router's path into a `NavigationPath` and reports user pops, sheet dismissals, sheet size changes and tab taps back to the router.
@@ -44,7 +46,7 @@ extension View {
 
 A route with no destination never crashes. Debug builds show a "No destination for …" screen that names the route and the fix, and release builds refuse the push.
 
-> Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views.
+> Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views. Tracked in #151.
 
 ### The Waypoint link
 
@@ -65,7 +67,7 @@ extension WaypointLink where Label == Text {
 }
 ```
 
-> Important: Don't use `NavigationLink(value:)` inside a Waypoint stack. SwiftUI hands the stack a new path entry that can't be read back as a route. Debug builds report it as an issue. `NavigationLink(destination:)` for a screen outside Waypoint's routes still works.
+> Important: Don't use `NavigationLink(value:)` inside a Waypoint stack. SwiftUI hands the stack a new path entry that can't be read back as a route. Debug builds report it as an issue, and release builds will log it too (#147). `NavigationLink(destination:)` for a screen outside Waypoint's routes still works.
 
 ### Coordinators
 
@@ -205,7 +207,7 @@ extension WaypointRoot {
 }
 ```
 
-App-wide things, such as the signed-in session and the app's services, stay in the `App` and are passed to the coordinator when it is created. Only the navigation is per window.
+App-wide things, such as the signed-in session and the app's services, stay in the `App` and are passed to the coordinator when it is created. Only the navigation is per window. The per-window initializer is built in #148.
 
 ```swift
 @main
