@@ -9,7 +9,8 @@
 import SwiftUI
 import Waypoint
 
-// Draws a products stack and its sheets from their coordinator.
+// Draws a products stack and its sheets from their coordinator, with the newest navigation issue
+// over the stack when there is one.
 struct ProductsFlowView: View {
     let products: ProductsCoordinator
 
@@ -19,6 +20,7 @@ struct ProductsFlowView: View {
                 .destination(ProductRoute.self) { products.makeProductFlow(for: $0) }
                 .task { await products.playLaunchSteps() }
         }
+        .overlay(alignment: .bottom) { IssueBanner(issues: products.issues) }
         .sheet(item: Binding(reading: products.presentedSheet, writing: products.syncSheet)) {
             products.makeSheetFlow(for: $0)
         }

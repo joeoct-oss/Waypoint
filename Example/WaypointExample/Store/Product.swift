@@ -77,4 +77,11 @@ struct Product: Hashable, Identifiable {
     let price: Decimal
     let symbolName: String
     let summary: String
+
+    // The next product in the shop, after the last one the first, shown on a product's page as
+    // something the reader might also like.
+    var related: Product {
+        let index = Self.all.firstIndex(of: self) ?? 0
+        return Self.all[(index + 1) % Self.all.count]
+    }
 }

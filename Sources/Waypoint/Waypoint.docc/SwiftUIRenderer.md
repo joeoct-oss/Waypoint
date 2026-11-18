@@ -4,7 +4,7 @@ Show stacks, sheets, tabs and roots in SwiftUI.
 
 ## Overview
 
-> Note: Stacks are built (#11): `WaypointStack`, `destination(_:_:)`, and swipe-back sync. The rest of this article is planned, not built, and can still change: the flow initializer and the navigator destination (#25), the Waypoint link (#147), coordinators (#36), sheets and full-screen covers (#12), tabs (#13), roots (#37, #148), incoming links (#15) and previews (#25).
+> Note: Stacks are built (#11): `WaypointStack`, `destination(_:_:)`, swipe-back sync and the Waypoint link (#147). So are the flow initializer, the navigator destination and previews (#25). The rest of this article is planned, not built, and can still change: coordinators (#36), sheets and full-screen covers (#12), tabs (#13), roots (#37, #148) and incoming links (#15).
 
 Each entry view takes a router, or makes one for you, and draws its state. Screens are registered by route type. SwiftUI applies one `navigationDestination(for:)` per registered type, so screens are never wrapped in `AnyView`.
 
@@ -25,9 +25,9 @@ public struct WaypointStack<Root: View>: View {
     public init(_ router: StackRouter, @ViewBuilder root: () -> Root)
 
     /// Creates a stack that belongs to a flow, so `@FlowNavigation(Flow.self)`
-    /// finds it. Planned in #25.
-    public init<F: NavigationFlow>(
-        flow: F.Type,
+    /// finds it. The flow is declared on the router with `declareFlow(_:)`.
+    public init<Flow: NavigationFlow>(
+        flow: Flow.Type,
         router: StackRouter? = nil,
         @ViewBuilder root: () -> Root
     )
@@ -40,8 +40,8 @@ extension View {
         @ViewBuilder _ content: @escaping (R) -> Content
     ) -> some View
 
-    /// The same, and also hands the screen a navigator for its view model.
-    /// Planned in #25.
+    /// The same, and also hands the screen the stack's navigator for its
+    /// view model.
     public func destination<R: Route, Content: View>(
         _ type: R.Type,
         @ViewBuilder _ content: @escaping (R, StackNavigator) -> Content
@@ -62,6 +62,8 @@ WaypointStack(router) {
 
 `destination(_:_:)` also registers the route type with the stack's router. Put it on the stack's first screen, or on any screen inside the stack.
 
+**Navigation inside the stack.** Every screen in the stack can read its navigator with `@StackNavigation`, dismiss its flow with `@DismissFlow`, or read the router with `@Environment(StackRouter.self)`. A stack made with `WaypointStack(flow: ShopFlow.self)` is also found by `@FlowNavigation(ShopFlow.self)`. See <doc:NavigatingFromViewsAndViewModels>.
+
 **What the user does comes back.** A swipe back, the Back button and its long-press menu reach the router as one pop each, logged with `origin=user`. The router's path is always what the screen shows.
 
 **Changes during a transition.** A multi-step push or pop runs as one animation. On iOS 17, SwiftUI drops a path change that lands while a push or pop still animates, so there the stack holds the change and shows the router's newest path when the transition ends (about 0.6 s). A change that replaces screens, such as a link from one product to another, is shown there as a pop back to the screens both paths share, then a push. Later systems apply every change at once.
@@ -74,24 +76,64 @@ A route with no destination never crashes. The registry is strict, so the router
 
 ### The Waypoint link
 
-Use `WaypointLink` for a tappable row that pushes a route. It calls `router.push`, so the push is recorded like any other.
+Use `WaypointLink` where you would write `NavigationLink(value:)`. A tap calls `push` on the router of the nearest stack, so the push is checked, logged and saved like any other: a route type with no destination is refused, a second tap while the screen still slides in pushes nothing, and a failed push runs its fallback.
 
 ```swift
-/// A button that pushes a route onto the nearest Waypoint stack.
+/// A view that pushes a route onto the nearest Waypoint stack when tapped.
 ///
 /// Conformances:
-/// - `Label: View`: what SwiftUI shows.
-/// - `R: Route`: the route type this works with.
+/// - `Label: View`: what the link shows.
+/// - `R: Route`: the route type the link pushes.
 public struct WaypointLink<Label: View, R: Route>: View {
-    public init(_ route: R, @ViewBuilder label: () -> Label)
+    public init(
+        value: R?,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line,
+        @ViewBuilder label: () -> Label
+    )
 }
 
 extension WaypointLink where Label == Text {
-    public init(_ title: LocalizedStringKey, route: R)
+    public init(
+        _ titleKey: LocalizedStringKey,
+        value: R?,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    )
+
+    public init<S: StringProtocol>(
+        _ title: S,
+        value: R?,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    )
 }
 ```
 
-> Important: Don't use `NavigationLink(value:)` inside a Waypoint stack. SwiftUI hands the stack a new path entry that can't be read back as a route. Debug builds report it as an issue, and release builds will log it too (#147). `NavigationLink(destination:)` for a screen outside Waypoint's routes still works.
+**Moving a view is a rename.** The initializers take the same arguments as the system link's, so existing SwiftUI code moves onto Waypoint by renaming `NavigationLink` to `WaypointLink`:
+
+```swift
+// Before
+NavigationLink(value: ProductRoute(id: product.id)) {
+    ProductRow(product: product)
+}
+NavigationLink("Orders", value: OrdersRoute())
+
+// After
+WaypointLink(value: ProductRoute(id: product.id)) {
+    ProductRow(product: product)
+}
+WaypointLink("Orders", value: OrdersRoute())
+```
+
+Pass `else:` to choose the fallback of one link, such as `WaypointLink(value: route, else: .popToRoot) { … }`. The log and any issue name the line that made the link.
+
+The link is disabled when its value is `nil`, like a system link, and outside a Waypoint stack, where there is no router to push onto. It draws as a `Button`, so `.buttonStyle(_:)` styles it. Unlike a system link, it shows no disclosure chevron in a `List`; add one to the label if the row needs it.
+
+> Important: Don't use `NavigationLink(value:)` inside a Waypoint stack. SwiftUI hands the stack a new path entry that can't be read back as a route, so the stack refuses the push, draws the router's path again and reports `rendererMismatch` at `.error` in the `issues` category. Nothing in the report depends on `DEBUG`, so release builds log it too, to the log handler in the root's `NavigationConfiguration`. The message names `WaypointLink` as the fix. `NavigationLink(destination:)` for a screen outside Waypoint's routes still works.
 
 ### Coordinators
 
@@ -276,11 +318,18 @@ extension View {
 Views that read navigation from the environment need a router above them. In previews, add one:
 
 ```swift
-#Preview { ProductView(id: 1).waypointPreview() }
+#Preview {
+    ProductView(id: 1)
+        .waypointPreview(flow: ShopFlow.self)
+}
 
 extension View {
     /// Wraps the view in a stack with a fresh router whose registry is permissive, so
     /// environment navigation works and pushes need no registered destination.
     public func waypointPreview() -> some View
+
+    /// The same, with the stack declared for `flow`, so `@FlowNavigation(flow)`
+    /// finds it.
+    public func waypointPreview<Flow: NavigationFlow>(flow: Flow.Type) -> some View
 }
 ```

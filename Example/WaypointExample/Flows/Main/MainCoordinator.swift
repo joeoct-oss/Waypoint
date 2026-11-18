@@ -41,6 +41,11 @@ final class MainCoordinator {
             cart.add(product)
             tabs.select(.cart)
         }
+        let navigation = ProductsNavigation(
+            configuration: services.navigation,
+            issues: services.issues,
+            usesSystemLinks: launch.usesSystemLinks
+        )
         self.gate = gate
         self.tabs = tabs
         self.cart = cart
@@ -49,6 +54,7 @@ final class MainCoordinator {
             store: services.store,
             gate: gate,
             launchSteps: launch.shopSteps,
+            navigation: navigation,
             onAddToCart: addToCart
         )
         search = ProductsCoordinator(
@@ -56,6 +62,7 @@ final class MainCoordinator {
             store: services.store,
             gate: gate,
             launchSteps: .none,
+            navigation: navigation,
             onAddToCart: addToCart
         )
         account = AccountCoordinator(

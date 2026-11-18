@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import Waypoint
 import WaypointCore
 
 // A stack of products: the shop or search at the root and a product pushed above it, with the
@@ -15,8 +16,9 @@ import WaypointCore
 // first; then the product joins the wish list, which the local store keeps.
 //
 // The stack runs on Waypoint: `router` owns the path, `ProductsFlowView` draws it with
-// `WaypointStack`, and a swipe back comes back to the router by itself. The sheets are still plain
-// SwiftUI state until Waypoint's sheets are built.
+// `WaypointStack`, and a swipe back comes back to the router by itself. A product page links to a
+// related product with `WaypointLink`, which pushes through the same router. The sheets are still
+// plain SwiftUI state until Waypoint's sheets are built.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the sheet changes.
@@ -31,6 +33,7 @@ final class ProductsCoordinator {
     private let store: LocalStore
     private let gate: AccountGate
     private let launchSteps: ShopLaunchSteps
+    private let navigation: ProductsNavigation
     private let onAddToCart: (Product) -> Void
     // `var` because `showFilters()`, `showWishlist()` and `dismissSheet()` change it, and
     // `syncSheet(_:)` takes a swipe down.
@@ -39,19 +42,28 @@ final class ProductsCoordinator {
     // switch.
     private var hasPlayedLaunchSteps: Bool
 
+    var issues: IssueLog {
+        navigation.issues
+    }
+
     init(
         start: ProductsStart,
         store: LocalStore,
         gate: AccountGate,
         launchSteps: ShopLaunchSteps,
+        navigation: ProductsNavigation,
         onAddToCart: @escaping (Product) -> Void
     ) {
         self.start = start
         self.store = store
         self.gate = gate
         self.launchSteps = launchSteps
+        self.navigation = navigation
         self.onAddToCart = onAddToCart
-        router = StackRouter(flow: start.flowID)
+        router = StackRouter(
+            flow: start.flowID,
+            configuration: navigation.configuration
+        )
         presentedSheet = nil
         hasPlayedLaunchSteps = false
     }
@@ -197,13 +209,34 @@ final class ProductsCoordinator {
         ProductDetailView(
             product: product,
             onAddToCart: { self.addToCart(product) },
-            onSave: { self.save(product) }
+            onSave: { self.save(product) },
+            related: { self.makeRelatedLink(to: product.related) }
         )
         .screenChrome(
             title: product.name,
             kind: nil,
             trail: ProductsTrail.product(product, from: start)
         )
+    }
+
+    // Links to `product` with `WaypointLink`, which pushes through `router`. When a UI test passes
+    // the `systemLinks` launch argument, it gets a system `NavigationLink` instead, which Waypoint
+    // refuses and reports.
+    @ViewBuilder
+    private func makeRelatedLink(to product: Product) -> some View {
+        let route = ProductRoute(
+            id: product.id,
+            preview: product
+        )
+        if navigation.usesSystemLinks {
+            NavigationLink(value: route) {
+                RelatedProductRow(product: product)
+            }
+        } else {
+            WaypointLink(value: route) {
+                RelatedProductRow(product: product)
+            }
+        }
     }
 }
 

@@ -247,6 +247,14 @@ final class NavigationTreeContext {
         return .failed(failure)
     }
 
+    /// Ignores a call made through a navigator whose router was released: logs `staleNavigator`
+    /// and tells the observers, as for a router that left the tree.
+    func ignoreReleased(_ flow: FlowID, file: StaticString, line: UInt) -> NavigationOutcome {
+        logIgnored(flow, file: file, line: line)
+        observers.finished?(.ignored)
+        return .ignored
+    }
+
     /// Reports an issue to the observers and logs it in the `issues` category.
     func report(_ issue: NavigationIssue, level: LogLevel) {
         observers.reported?(issue)

@@ -6,7 +6,8 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Runs the WaypointCore checks that must pass on Linux: the import check, a build and the unit tests.
+# Runs the WaypointCore checks that must pass on Linux: the import check, a build, the
+# compile-failure check and the unit tests.
 # The renderer targets compile empty on Linux, so this covers the core only.
 #
 # Usage: scripts/test-linux.sh [extra swift test arguments]
@@ -23,6 +24,9 @@ scripts/check-comment-width.sh
 
 echo "==> swift build"
 swift build
+
+echo "==> Checking compile failures"
+scripts/check-compile-failures.sh
 
 echo "==> swift test"
 swift test "$@"

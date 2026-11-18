@@ -4,7 +4,7 @@ Pick the style that suits your team: outputs, injected navigators or property wr
 
 ## Overview
 
-> Note: Draft until #25. The API in this article is planned, not built, and can still change when #25 lands.
+> Note: Built in #25: the navigators, flow scoping, `WaypointStack(flow:)`, the navigator destination, `@StackNavigation`, `@FlowNavigation`, `@DismissFlow` and the preview helper. `@FinishFlow` lands with coordinators (#36) and `@TabSelection` with tabs (#13).
 
 There is one router and three ways to reach it. All three call the same router methods, so guards, events, outcomes and restoration behave the same whichever you use, and you can mix them in one app.
 
@@ -35,7 +35,7 @@ struct ProductView: View {
 
 ### Injected navigators
 
-The destination closure hands over a navigator, and the view model keeps it:
+The destination closure hands over the stack's `StackNavigator`, and the view model keeps it:
 
 ```swift
 .destination(ProductRoute.self) { route, navigation in
@@ -43,11 +43,20 @@ The destination closure hands over a navigator, and the view model keeps it:
 }
 ```
 
-A view model that only accepts its own flow's routes takes a `FlowNavigator<Flow>`. The compiler then refuses a push of another flow's route.
+A view model that only accepts its own flow's routes takes a `FlowNavigator<Flow>`. The compiler then refuses a push of another flow's route. Make one with `navigation.scoped(to: ShopFlow.self)`, or with `router.navigator(for: ShopFlow.self)` in a coordinator:
+
+```swift
+.destination(ProductRoute.self) { route, navigation in
+    let shop = navigation.scoped(to: ShopFlow.self)
+    ProductView(model: ProductModel(id: route.id, navigation: shop))
+}
+```
+
+The view model imports only `WaypointCore` and is tested with a real router, on Linux too (see the core's Testing your navigation article). A navigator holds its router weakly: once its flow is gone, every call returns `.ignored`, so a late network reply can't move another screen.
 
 ### Property wrappers
 
-They are thin, read the router from the environment, and hold no state of their own. All are optional.
+They are thin, read the router from the environment, and hold no state of their own. All are optional. `@FinishFlow` is planned with coordinators (#36), and `@TabSelection` with tabs (#13).
 
 ```swift
 /// The nearest stack's navigator.
@@ -57,7 +66,7 @@ They are thin, read the router from the environment, and hold no state of their 
 @propertyWrapper public struct StackNavigation: DynamicProperty {
     public var wrappedValue: StackNavigator { get }
 
-    public init()
+    public init(file: StaticString = #fileID, line: UInt = #line)
 }
 
 /// The nearest stack of `Flow`, even from a sheet inside it.
@@ -68,7 +77,7 @@ They are thin, read the router from the environment, and hold no state of their 
 @propertyWrapper public struct FlowNavigation<Flow: NavigationFlow>: DynamicProperty {
     public var wrappedValue: FlowNavigator<Flow> { get }
 
-    public init(_ flow: Flow.Type)
+    public init(_ flow: Flow.Type, file: StaticString = #fileID, line: UInt = #line)
 }
 
 /// Dismisses the flow this view is in.
@@ -78,7 +87,7 @@ They are thin, read the router from the environment, and hold no state of their 
 @propertyWrapper public struct DismissFlow: DynamicProperty {
     public var wrappedValue: DismissFlowAction { get }
 
-    public init()
+    public init(file: StaticString = #fileID, line: UInt = #line)
 }
 
 /// Ends the flow this view is in with a result.
@@ -105,7 +114,12 @@ They are thin, read the router from the environment, and hold no state of their 
 }
 
 @MainActor public struct DismissFlowAction {
-    @discardableResult public func callAsFunction() -> NavigationOutcome
+    /// Whether the flow is still in the tree.
+    public var isActive: Bool { get }
+
+    @discardableResult public func callAsFunction(
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
 }
 
 /// Conformances:
@@ -130,4 +144,30 @@ struct ProductView: View {
 
 There is no wrapper for switching the app's root. That decision belongs to the app coordinator: a login screen reports that the user logged in, and the coordinator switches. See <doc:ExampleFlows>.
 
-The types are checked by the compiler. Whether a matching router is above the view can only be checked at run time. If none is, the wrapper reports an issue that names the view and the fix, shows the debug placeholder, and does nothing in release builds. `@Environment(StackRouter.self)` also works if you prefer the router itself.
+A stack belongs to a flow when it is made with `WaypointStack(flow: ShopFlow.self)`, or when its router was declared with `router.declareFlow(ShopFlow.self)`. `@FlowNavigation(ShopFlow.self)` finds the nearest one.
+
+The types are checked by the compiler. Whether a matching router is above the view can only be checked at run time. If none is, the wrapper's calls do nothing and return `.failed` with a `noRouterInScope` issue that names the wrapper, the file and line where it is declared, and the fix. The issue is also logged as a fault, so it shows in Xcode's console. Nothing crashes. A property wrapper can't swap its view for a placeholder, so the view itself draws as usual.
+
+```text
+@FlowNavigation(ShopFlow.self) in ProductView.swift:12 found no ShopFlow stack above its view.
+Declare one with WaypointStack(flow: ShopFlow.self), or add .waypointPreview(flow: ShopFlow.self)
+in its preview.
+```
+
+`@Environment(StackRouter.self)` also works if you prefer the router itself.
+
+### Previews
+
+A view that uses a wrapper needs a stack above it. In a preview, add one with a fresh router whose registry is permissive:
+
+```swift
+#Preview {
+    HelpView()
+        .waypointPreview()
+}
+
+#Preview {
+    ProductView(id: 1)
+        .waypointPreview(flow: ShopFlow.self)
+}
+```

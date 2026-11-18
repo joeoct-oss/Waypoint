@@ -57,6 +57,8 @@ public final class StackRouter {
 
     /// A handle that can navigate this stack with any route.
     public var navigator: StackNavigator { get }
+    /// The flow this stack was declared for, or `nil`.
+    public var declaredFlow: (any NavigationFlow.Type)? { get }
     /// What to do when a call fails and passes no fallback. Children inherit it.
     public var fallbackPolicy: FallbackPolicy { get }
     /// What a push of the route still being pushed does. Children inherit it.
@@ -173,8 +175,11 @@ public final class StackRouter {
     /// A handle that only accepts routes of `Flow`.
     ///
     /// If this stack was declared for another flow, the handle still works
-    /// and a `flowMismatch` issue is reported in development.
+    /// and a `flowMismatch` issue is reported at this call.
     public func navigator<Flow: NavigationFlow>(for flow: Flow.Type) -> FlowNavigator<Flow>
+    /// Declares the flow whose screens this stack shows. `WaypointStack(flow:)`
+    /// declares it for you; declaring another flow replaces the first.
+    public func declareFlow<Flow: NavigationFlow>(_ flow: Flow.Type)
 
     // Defaults the app can change
 }
@@ -518,6 +523,10 @@ public struct StackNavigator {
     @discardableResult public func dismissFlow(
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
+
+    /// The same stack, taking only the routes of `flow`. Reports
+    /// `flowMismatch` when the stack was declared for another flow.
+    public func scoped<Flow: NavigationFlow>(to flow: Flow.Type) -> FlowNavigator<Flow>
 }
 
 /// Navigates a stack with the routes of one flow only.
@@ -541,7 +550,8 @@ public struct FlowNavigator<Flow: NavigationFlow> {
         _ route: R,
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome where R.Flow == Flow
-    // pop, popToRoot, present and dismissFlow as on StackNavigator
+    // pop, popToRoot, present and dismissFlow as on StackNavigator. present
+    // takes any route, because a presented route starts a flow of its own.
 }
 ```
 

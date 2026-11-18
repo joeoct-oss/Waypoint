@@ -38,7 +38,8 @@ The script runs, in order:
 1. `scripts/check-core-imports.sh`, which fails if any file in `Sources/WaypointCore` imports a module other than Foundation, Observation, Synchronization or WaypointCore itself.
 2. `scripts/check-comment-width.sh`, which fails if a comment line runs past 100 columns ([Comments wrap at 100 columns](CODE_STYLE.md#comments-wrap-at-100-columns)).
 3. `swift build`.
-4. `swift test`. Extra arguments go to `swift test`, for example `scripts/test-linux.sh --filter LinuxBehaviourTests`.
+4. `scripts/check-compile-failures.sh`, which fails if a file in `Tests/CompileFailures` compiles. Each file holds code Waypoint promises to refuse at compile time, such as pushing another flow's route through a `FlowNavigator`, and names the error it expects in an `// expected-error:` line.
+5. `swift test`. Extra arguments go to `swift test`, for example `scripts/test-linux.sh --filter LinuxBehaviourTests`.
 
 The same `swift test` run works on a Mac. The tests in `Tests/WaypointCoreTests/LinuxBehaviourTests.swift` pin the Observation, main actor and `Sendable` behaviour the core relies on, so a platform difference shows up there first.
 

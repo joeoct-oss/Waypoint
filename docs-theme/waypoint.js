@@ -5,9 +5,12 @@
  *  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
  *  Copyright © 2026 Yousef Mohamed. MIT License.
  *
- *  A sun and moon toggle in the navigation bar for the DocC site. It drives DocC's own
- *  color scheme setting (the Light/Dark/Auto picker in the footer, which waypoint.css hides),
- *  so DocC keeps remembering the choice. scripts/build-docs.sh links this file from every page.
+ *  Additions to the DocC site, linked from every page by scripts/build-docs.sh:
+ *  - a sun and moon toggle in the navigation bar. It drives DocC's own color scheme setting
+ *    (the Light/Dark/Auto picker in the footer, which waypoint.css hides), so DocC keeps
+ *    remembering the choice;
+ *  - a link from the mark and name in the navigation bar to the site's main page;
+ *  - a sidebar the reader can resize by dragging its edge, remembered between visits.
  */
 (function () {
     "use strict";
@@ -80,11 +83,133 @@
         }
     }
 
+    function installHomeLink() {
+        var title = document.querySelector(".nav-content .nav-title");
+
+        if (!title || title.querySelector(".wp-home-link")) {
+            return;
+        }
+
+        var link = document.createElement("a");
+
+        link.className = "wp-home-link";
+        link.href = "/";
+        link.setAttribute("aria-label", "Waypoint home");
+        title.appendChild(link);
+    }
+
+    // Sidebar width. DocC keeps the sidebar between 30% and 40% of the window, so waypoint.css
+    // sets the width from --wp-sidebar-width and this drag replaces DocC's own.
+    var WIDTH_KEY = "waypoint.sidebarWidth";
+    var DEFAULT_WIDTH = 280;
+    var MIN_WIDTH = 220;
+
+    function maxWidth() {
+        return Math.max(MIN_WIDTH, Math.min(560, Math.round(window.innerWidth * 0.45)));
+    }
+
+    function clampWidth(width) {
+        return Math.min(Math.max(Math.round(width), MIN_WIDTH), maxWidth());
+    }
+
+    function applyWidth(width) {
+        document.documentElement.style.setProperty("--wp-sidebar-width", width + "px");
+    }
+
+    function savedWidth() {
+        try {
+            var value = parseInt(window.localStorage.getItem(WIDTH_KEY), 10);
+
+            return isNaN(value) ? DEFAULT_WIDTH : clampWidth(value);
+        } catch (error) {
+            return DEFAULT_WIDTH;
+        }
+    }
+
+    function saveWidth(width) {
+        try {
+            window.localStorage.setItem(WIDTH_KEY, String(width));
+        } catch (error) {
+            // Storage can be off, such as in a private window; the width then lasts for this page.
+        }
+    }
+
+    function pointerX(event) {
+        return event.touches ? event.touches[0].clientX : event.clientX;
+    }
+
+    function startResize(event) {
+        var aside = document.querySelector(".sidebar .aside");
+
+        if (!aside) {
+            return;
+        }
+
+        // Keep DocC's own drag from running; it would clamp the width to its own range.
+        event.stopImmediatePropagation();
+        event.preventDefault();
+
+        var left = aside.getBoundingClientRect().left;
+        var width = savedWidth();
+
+        function move(moveEvent) {
+            width = clampWidth(pointerX(moveEvent) - left);
+            applyWidth(width);
+        }
+
+        function end() {
+            document.body.classList.remove("wp-resizing");
+            document.removeEventListener("mousemove", move);
+            document.removeEventListener("touchmove", move);
+            document.removeEventListener("mouseup", end);
+            document.removeEventListener("touchend", end);
+            saveWidth(width);
+        }
+
+        document.body.classList.add("wp-resizing");
+        document.addEventListener("mousemove", move);
+        document.addEventListener("touchmove", move, {
+            passive: true
+        });
+        document.addEventListener("mouseup", end);
+        document.addEventListener("touchend", end);
+    }
+
+    function handleFor(event) {
+        return event.target.closest && event.target.closest(".sidebar .resize-handle");
+    }
+
+    function onPress(event) {
+        if (handleFor(event)) {
+            startResize(event);
+        }
+    }
+
+    function onDoubleClick(event) {
+        if (handleFor(event)) {
+            applyWidth(DEFAULT_WIDTH);
+            saveWidth(DEFAULT_WIDTH);
+        }
+    }
+
+    function installAll() {
+        install();
+        installHomeLink();
+    }
+
+    applyWidth(savedWidth());
+    document.addEventListener("mousedown", onPress, true);
+    document.addEventListener("touchstart", onPress, {
+        capture: true,
+        passive: false
+    });
+    document.addEventListener("dblclick", onDoubleClick, true);
+
     // DocC renders the page after load and redraws the bar on navigation, so watch for it.
-    new MutationObserver(install).observe(document.documentElement, {
+    new MutationObserver(installAll).observe(document.documentElement, {
         childList: true,
         subtree: true
     });
     darkQuery.addEventListener("change", refresh);
-    document.addEventListener("DOMContentLoaded", install);
+    document.addEventListener("DOMContentLoaded", installAll);
 })();
