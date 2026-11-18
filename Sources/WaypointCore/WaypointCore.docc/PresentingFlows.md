@@ -59,7 +59,9 @@ extension StackRouter {
 }
 ```
 
-> Note: Two kinds of presentation are coming. Alerts and confirmation dialogs become presentations in the navigation state, shown by both renderers, with the tapped button returned as a typed result. And when something Waypoint didn't present is on screen, such as a share sheet or a payment sheet from another SDK, Waypoint will wait until it closes before presenting, or dismiss it first if the app chooses, and report it in the log.
+> Note: Two kinds of presentation are coming. Alerts and confirmation dialogs become presentations in the navigation state, shown by both renderers, with the tapped button returned as a typed result. And when something Waypoint didn't present is on screen, such as a share sheet or a payment sheet from another SDK, Waypoint will wait until it closes before presenting, or dismiss it first if the app chooses, and report it in the log. Tracked in #154 and #153.
+
+> Note: Three more changes are coming. A popover style anchored to a view, which becomes a sheet in compact width (#156). A `replacePresentation` fallback that dismisses what is showing and presents the new flow in one call, and `outcome.didChange` and `outcome.failure` helpers so a call site needs no long `switch` (#145). And a leave confirmation set at run time with `router.setLeaveConfirmation(_:)`, which asks before swipe back, a sheet drag or Back, next to the fixed `allowsInteractiveDismiss` below (#155).
 
 ### Styles
 

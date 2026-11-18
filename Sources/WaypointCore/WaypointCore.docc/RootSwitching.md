@@ -4,6 +4,8 @@ Swap whole flows, such as login and the main tabs.
 
 ## Overview
 
+> Note: Draft until #37. The API in this article is planned, not built, and can still change when #37 lands.
+
 Apps replace their whole screen at a few moments: from launch to login, from login to the main tabs, and back to login on logout. `RootRouter` holds which root is showing and replaces the whole subtree when it switches. The old flow and every router inside it are released.
 
 ```swift

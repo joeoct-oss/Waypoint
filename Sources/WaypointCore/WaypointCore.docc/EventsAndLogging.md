@@ -4,6 +4,8 @@ See what changed, where it came from, and why a call did not do what you asked.
 
 ## Overview
 
+> Note: The logging part of this article is built. The events part is a draft until #23 and can still change when it lands.
+
 Every change to the navigation state produces a `NavigationEvent`. Events come from router state, never from view lifecycle callbacks like `onAppear`, so they match what is really on screen in both renderers.
 
 ```swift
@@ -110,6 +112,8 @@ root.onEvents { _ in
 ```
 
 Use `snapshot()` instead of `debugTree()` when you want a value to compare or save. The tree before a transaction is the one the previous call saw.
+
+> Note: Logging will be set once for the whole tree, in a `NavigationConfiguration` value on the root, instead of on any router. Tracked in #143.
 
 ### Diagnostic logging
 

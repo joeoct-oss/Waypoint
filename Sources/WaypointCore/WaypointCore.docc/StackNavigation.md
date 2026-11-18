@@ -158,7 +158,9 @@ public final class StackRouter {
 }
 ```
 
-> Note: One push per tap is coming. A second push of the same route while the first one is still being shown will be skipped and return `.alreadyThere`, so a quick double tap pushes one screen. It will be on by default, and a router can turn it off.
+> Note: One push per tap is coming. A second push of the same route while the first one is still being shown will be skipped and return `.alreadyThere`, so a quick double tap pushes one screen. It will be on by default, and a router can turn it off. Tracked in #142.
+
+> Note: Settings for the whole tree, such as logging, the queued change limit and the failure handler, will move into one `NavigationConfiguration` value set once on the root. Settings for one flow, such as fallbacks and presentation defaults, stay on every router. Tracked in #143.
 
 ### Building paths
 

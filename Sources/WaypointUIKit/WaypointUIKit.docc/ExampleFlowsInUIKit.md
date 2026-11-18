@@ -4,6 +4,8 @@ Login, tabs, a detail push, a sheet and a deep link, with view controllers.
 
 ## Overview
 
+> Note: Draft until #14. The API in this article is planned, not built, and can still change when #14 lands.
+
 These are the same five flows as the SwiftUI examples. The routes, routers and coordinators' logic don't change, only the screens do. The app coordinator has the same rules in both. That is what lets an app move a flow from one renderer to the other, one screen at a time.
 
 ### 1. Login, then the main tabs

@@ -4,6 +4,8 @@ Turn URLs, push taps and shortcuts into navigation, applied in one step.
 
 ## Overview
 
+> Note: Draft until #15. The API in this article is planned, not built, and can still change when #15 lands.
+
 Most links name one screen. The route declares its own URL patterns, and registering its destination registers them, so no handler is needed:
 
 ```swift
@@ -246,4 +248,4 @@ A link can arrive before the app is ready, or before the user has done something
 
 A link that matches nothing runs the policy's `unhandled` fallback.
 
-> Note: Holding a link until a requirement is complete is accepted but not designed yet, so this article doesn't show its API. Guards are not used for links: they stay for changes inside a flow, such as leaving unsaved changes.
+> Note: Holding a link until a requirement is complete is tracked in #150 and not designed yet, so this article doesn't show its API. Guards are not used for links: they stay for changes inside a flow, such as leaving unsaved changes.

@@ -4,6 +4,8 @@ Pick the style that suits your team: outputs, injected navigators or property wr
 
 ## Overview
 
+> Note: Draft until #25. The API in this article is planned, not built, and can still change when #25 lands.
+
 There is one router and three ways to reach it. All three call the same router methods, so guards, events, outcomes and restoration behave the same whichever you use, and you can mix them in one app.
 
 | Style | The screen knows about | Best for |

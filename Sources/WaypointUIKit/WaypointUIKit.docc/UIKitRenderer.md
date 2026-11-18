@@ -4,6 +4,8 @@ Show stacks, sheets, tabs and roots with UIKit view controllers.
 
 ## Overview
 
+> Note: Draft until #14. The API in this article is planned, not built, and can still change when #14 lands.
+
 The UIKit renderer watches routers and turns each change into the matching UIKit call. A stack change of any size is one `setViewControllers(_:animated:)` call with one animation, and view controllers for the unchanged start of the path are reused. Changes that arrive during a transition wait until it ends, then are applied together against the latest state.
 
 Within one update, the renderer dismisses first, then changes stacks, then presents. Swipe back, the back button, its long-press menu, sheet drags and tab taps are reported back to the routers.
@@ -41,7 +43,7 @@ public final class WaypointNavigationController: UINavigationController {
 
 A route with no destination never crashes. Debug builds push a "No destination for …" screen that names the route and the fix, and release builds refuse the push.
 
-> Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. Existing UIKit code that is not a coordinator will be able to show a flow and get its result back. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views.
+> Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. Existing UIKit code that is not a coordinator will be able to show a flow and get its result back. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views. Tracked in #151.
 
 ### Coordinators
 

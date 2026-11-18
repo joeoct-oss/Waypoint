@@ -24,6 +24,8 @@ Every route is `Hashable`, `Codable` and `Sendable` through the `Route` protocol
 
 Routes hold identifiers and small inputs, never models or view models. That keeps them cheap to compare, store, log and deep link into.
 
+> Note: A route will be able to carry an optional hint, such as the product a list already loaded, marked `@RouteHint`. The screen uses it for its first frame only, and it is never saved, compared, logged or linked, so the screen must work without it. Tracked in #146.
+
 A small enum is still fine for a closed group of screens, such as the steps of a wizard. It is registered as one type:
 
 ```swift
@@ -199,6 +201,8 @@ public struct AnyRoute: NavigationValue, NavigationDescribable {
 ```
 
 ### Decoding routes
+
+> Note: The registry will be strict in every build: a route type that isn't registered is always reported. A permissive mode for tests and previews is opt-in. Tracked in #144.
 
 Decoding an `AnyRoute` needs to know which concrete type a key stands for. Registering a destination for a route type also registers it for decoding, so most apps never touch the registry.
 
