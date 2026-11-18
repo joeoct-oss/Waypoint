@@ -19,6 +19,10 @@ extension TabRouter where Tab: CaseIterable {
     ///     Default: `true`.
     ///   - configuration: The settings of the whole tree. Default:
     ///     ``NavigationConfiguration/default``.
+    ///   - file: The file that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
+    ///   - line: The line that makes the router, where a configuration problem is reported.
+    ///     Leave the default.
     public convenience init(
         selection: Tab,
         flow: FlowID = FlowID("tabs"),
