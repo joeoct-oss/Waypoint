@@ -52,3 +52,4 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - The documentation site has a 280 px sidebar, a 15 px type scale and one centered reading column, with tighter spacing between sections. (#132)
 - Each module card on the documentation landing page has its own artwork in the Waypoint identity, in light and dark, instead of the generic placeholder. (#134)
 - The module cards on the documentation landing page are three full-width rows, WaypointCore first, with each picture beside its text. (#136)
+- The documentation site has a sun and moon toggle in the top bar for light and dark, in place of the Light/Dark/Auto picker at the bottom of each page. The choice is remembered; first visits follow the system. (#138)

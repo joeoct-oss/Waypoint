@@ -270,3 +270,96 @@ main .contenttable .title {
         flex-basis: auto !important;
     }
 }
+
+/* Color scheme: a sun and moon toggle in the navigation bar (waypoint.js) replaces the footer picker (#138). */
+footer.footer:has(.color-scheme-toggle) {
+    display: none !important;
+}
+
+.wp-theme-toggle {
+    position: relative;
+    flex: 0 0 auto;
+    align-self: center;
+    order: 2;
+    width: 34px;
+    height: 34px;
+    margin-left: 12px;
+    padding: 0;
+    border: 1px solid var(--color-grid);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.wp-theme-toggle:hover {
+    border-color: var(--color-figure-blue);
+    background: var(--color-navigator-item-hover);
+}
+
+.wp-theme-toggle:focus-visible {
+    outline: 2px solid var(--color-focus-color);
+    outline-offset: 2px;
+}
+
+.wp-theme-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.35s ease, opacity 0.25s ease;
+}
+
+.wp-theme-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.wp-theme-sun svg circle {
+    fill: currentColor;
+}
+
+.wp-theme-moon svg path {
+    fill: currentColor;
+}
+
+.wp-theme-toggle[data-scheme="light"] .wp-theme-moon,
+.wp-theme-toggle[data-scheme="dark"] .wp-theme-sun {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+}
+
+.wp-theme-toggle[data-scheme="dark"] .wp-theme-moon {
+    color: #FFD27A;
+}
+
+.wp-theme-toggle[data-scheme="light"] .wp-theme-sun {
+    color: #E08A00;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wp-theme-icon {
+        transition: none;
+    }
+}
+
+/* Narrow windows: DocC lays the bar out as a grid; give the toggle its own cell beside the menu chevron. */
+@media only screen and (max-width: 1023px) {
+    .nav .nav-content {
+        grid-template-columns: auto 1fr auto auto !important;
+        grid-template-areas: "pre-title title toggle actions" "menu menu menu menu" !important;
+    }
+
+    .wp-theme-toggle {
+        grid-area: toggle;
+        margin: 0 10px 0 0;
+    }
+}

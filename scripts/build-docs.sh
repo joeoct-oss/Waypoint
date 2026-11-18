@@ -36,8 +36,10 @@ apply_theme() {
     cp "$THEME_DIR"/images/*.svg "$THEME_DIR"/images/*.png "$SITE_DIR/images/waypoint/"
     cp "$THEME_DIR/images/favicon.svg" "$THEME_DIR/images/favicon.ico" "$SITE_DIR/"
     cp "$THEME_DIR/waypoint.css" "$SITE_DIR/css/waypoint.css"
+    mkdir -p "$SITE_DIR/js"
+    cp "$THEME_DIR/waypoint.js" "$SITE_DIR/js/waypoint.js"
 
-    local head_links="<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link rel=\"stylesheet\" href=\"$FONTS_URL\"><link rel=\"stylesheet\" href=\"/css/waypoint.css\">"
+    local head_links="<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link rel=\"stylesheet\" href=\"$FONTS_URL\"><link rel=\"stylesheet\" href=\"/css/waypoint.css\"><script defer src=\"/js/waypoint.js\"></script>"
     find "$SITE_DIR" -name index.html -print0 |
         HEAD_LINKS="$head_links" xargs -0 perl -pi -e 's|</head>|$ENV{HEAD_LINKS}</head>|'
 
