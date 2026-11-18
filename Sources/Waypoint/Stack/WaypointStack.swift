@@ -9,8 +9,12 @@
 #if canImport(SwiftUI)
     import SwiftUI
     import WaypointCore
+    import WaypointOSLog
 
     /// A navigation stack driven by a `StackRouter`.
+    ///
+    /// When the root's `NavigationConfiguration` gives no log handler, the stack makes the whole
+    /// tree write to the unified log (`OSLogHandler`), at `.notice` by default.
     ///
     /// The stack draws the router's path with one `NavigationStack`, and reports what the user
     /// does by hand (swipe back, the Back button and its long-press menu) back to the router. It
@@ -161,8 +165,10 @@
             )
         }
 
-        /// A host for `router`.
+        /// A host for `router`. When the app gave the tree no log handler, the tree writes to the
+        /// unified log from here on.
         init(router: StackRouter, root: Root) {
+            DefaultLogging.install(on: router)
             self.root = root
             let mirror = StackMirror(
                 router: router,

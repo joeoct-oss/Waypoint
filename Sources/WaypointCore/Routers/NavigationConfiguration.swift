@@ -89,6 +89,16 @@ public struct NavigationConfiguration: Sendable {
         )
     }
 
+    /// The same configuration with other logging.
+    func withLogging(_ logging: LogConfiguration) -> NavigationConfiguration {
+        NavigationConfiguration(
+            logging: logging,
+            maxQueuedChanges: maxQueuedChanges,
+            registry: registry,
+            onNavigationFailure: onNavigationFailure
+        )
+    }
+
     /// The same configuration with another queue limit.
     func withMaxQueuedChanges(_ limit: Int) -> NavigationConfiguration {
         NavigationConfiguration(
