@@ -11,11 +11,13 @@ import WaypointCore
 // The product screen a products stack pushes. It carries the product's id, and the coordinator
 // looks the product up, so the route stays small enough to compare, log and save. A list that
 // already has the product hands it over as `preview` for the first frame; a link or a restore
-// leaves it `nil`.
+// leaves it `nil`. The journey lines name it `Product 3 "Orbit Lamp"`: its id, then the product's
+// name.
 //
 // Conformances:
-// - `Route`, so a Waypoint stack router can push it and find its destination.
-struct ProductRoute: Route {
+// - `TrackableScreen`, so a Waypoint stack router can push it and find its destination, and the
+//   journey shows the product's name.
+struct ProductRoute: TrackableScreen {
     static let publicLogFields: Set<String> = [
         "id",
     ]
@@ -24,14 +26,19 @@ struct ProductRoute: Route {
 
     @RouteHint
     var preview: Product?
+
+    var screenDisplayName: String? {
+        preview?.name ?? Product.find(id: id)?.name
+    }
 }
 
 // The collection screen a products stack pushes from Shop's banner. Like `ProductRoute`, it carries
 // the collection's id, and the banner hands the collection over as `preview`.
 //
 // Conformances:
-// - `Route`, so a Waypoint stack router can push it and find its destination.
-struct CollectionRoute: Route {
+// - `TrackableScreen`, so a Waypoint stack router can push it and find its destination, and the
+//   journey shows the collection's name.
+struct CollectionRoute: TrackableScreen {
     static let publicLogFields: Set<String> = [
         "id",
     ]
@@ -40,6 +47,10 @@ struct CollectionRoute: Route {
 
     @RouteHint
     var preview: ProductCollection?
+
+    var screenDisplayName: String? {
+        preview?.name ?? ProductCollection.find(id: id)?.name
+    }
 }
 
 // A product's reviews. No screen in the products stacks draws it yet: only the `missingDestination`

@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import WaypointCore
 
 // Draws the main tabs with the system tab bar, which is Liquid Glass from iOS 26, and the accounts
 // sheet the account gate presents over them. Each tab hosts its own stack. The gate runs the action
@@ -15,7 +16,7 @@ struct MainTabView: View {
     let main: MainCoordinator
 
     var body: some View {
-        TabView(selection: Binding(reading: main.tabs.selected, writing: main.tabs.select)) {
+        TabView(selection: Binding(reading: main.tabs.selection, writing: main.selectTab)) {
             ForEach(MainTab.allCases, id: \.self) { tab in
                 tabContent(for: tab)
             }
