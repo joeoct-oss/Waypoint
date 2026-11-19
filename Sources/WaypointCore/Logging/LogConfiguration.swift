@@ -72,6 +72,17 @@ public struct LogConfiguration: Sendable {
     /// - Parameter handler: Where messages go, or `nil` for the platform's default: the unified
     ///   log once a SwiftUI or UIKit renderer draws the tree, and nowhere with `WaypointCore`
     ///   alone. Default: `nil`.
+    /// - Parameter minimumLevel: The least important level that is written. Default: `.notice`.
+    /// - Parameter categories: The categories that are written, or `nil` for all. Default: `nil`.
+    /// - Parameter revealsPrivateValues: Whether route field values are written as they are.
+    ///   Turn it on in debug builds only. Default: `false`.
+    /// - Parameter format: Readable sentences, or structured `key=value` lines for tools.
+    ///   Default: `.readable`.
+    /// - Parameter usesSymbols: Whether readable lines use `›`, `│` and `→`. Default: `true`.
+    /// - Parameter treeLogging: Which part of the tree is logged after each change, at `.debug`.
+    ///   Default: `.off`.
+    /// - Parameter duplicateScreenWindow: How soon the same screen may come forward again before
+    ///   the journey warns that it was viewed twice. Default: 300 ms.
     public init(
         handler: (any LogHandler)? = nil,
         minimumLevel: LogLevel = .notice,
