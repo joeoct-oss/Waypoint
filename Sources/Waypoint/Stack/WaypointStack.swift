@@ -187,6 +187,7 @@
         var body: some View {
             NavigationStack(path: path) {
                 root
+                    .stackTabBar()
                     .navigationDestination(for: MissingDestinationEntry.self) { entry in
                         MissingDestinationHost(entry: entry, mirror: mirror)
                             .pushedTabBar()

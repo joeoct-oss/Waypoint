@@ -48,9 +48,11 @@
         /// With `.hidden`, the tab bar is never hidden on its own: each pushed screen slides in
         /// on top of it and the bar leaves with the screen underneath, as in UIKit
         /// (``PushedTabBarMotion/slidesWithScreen``). Pass ``PushedTabBarMotion/system`` for
-        /// SwiftUI's own `.toolbar(_:for: .tabBar)` instead. When the stack can't reach the
-        /// controller UIKit pushes, it falls back to SwiftUI's own way, so the bar is still
-        /// hidden. `.visible` always uses SwiftUI's way, and every pushed screen of the stack gets
+        /// SwiftUI's own motion instead. Both hide the bar with SwiftUI's own
+        /// `.toolbar(.hidden, for: .tabBar)`, so the bar is always hidden on pushed screens; the
+        /// slide only adds a picture of the bar to the stack's first screen while a push from it
+        /// or a pop to it runs, and does nothing when it can't find the bar. `.visible` always
+        /// uses SwiftUI's way, and every pushed screen of the stack gets
         /// the same visibility, whatever a screen sets inside itself. The tab bar only exists on
         /// iOS, so other systems ignore it.
         ///
@@ -77,7 +79,7 @@
         /// How the bar leaves and comes back when it is hidden.
         let motion: PushedTabBarMotion
 
-        /// Whether the stack slides the bar away with the screen, through UIKit.
+        /// Whether the stack slides the bar away with its first screen.
         var slidesWithScreen: Bool {
             visibility == .hidden && motion == .slidesWithScreen
         }
@@ -92,24 +94,44 @@
         /// What the app chose with ``SwiftUICore/View/tabBarOnPushedScreens(_:motion:)``.
         @Environment(\.waypointPushedTabBar) private var choice
 
-        /// Whether the bridge couldn't reach the pushed controller, so SwiftUI hides the bar.
-        @State private var bridgeFailed = false
-
         /// The screen, with the chosen tab bar visibility.
         @ViewBuilder
         func body(content: Content) -> some View {
             #if os(iOS)
                 if choice.visibility == .automatic {
                     content
-                } else if choice.slidesWithScreen, !bridgeFailed {
+                } else {
+                    content.toolbar(choice.visibility, for: .tabBar)
+                }
+            #else
+                content
+            #endif
+        }
+    }
+
+    /// Makes the tab bar slide away with a stack's first screen when a screen is pushed above
+    /// it, and back with it on a pop. It sends nothing unless the app chose
+    /// ``PushedTabBarMotion/slidesWithScreen`` for hidden bars.
+    ///
+    /// Conformances:
+    /// - `ViewModifier`, so the stack gives it to its first screen.
+    struct StackTabBarModifier: ViewModifier {
+        /// What the app chose with ``SwiftUICore/View/tabBarOnPushedScreens(_:motion:)``.
+        @Environment(\.waypointPushedTabBar) private var choice
+
+        /// The first screen, with the bridge when the bar slides.
+        @ViewBuilder
+        func body(content: Content) -> some View {
+            #if os(iOS)
+                if choice.slidesWithScreen {
                     content.background {
-                        PushedTabBarBridge(onFailure: { bridgeFailed = true })
+                        StackTabBarBridge()
                             .frame(width: 0, height: 0)
                             .allowsHitTesting(false)
                             .accessibilityHidden(true)
                     }
                 } else {
-                    content.toolbar(choice.visibility, for: .tabBar)
+                    content
                 }
             #else
                 content
@@ -121,6 +143,11 @@
         /// This pushed screen, with the tab bar visibility the app chose for pushed screens.
         func pushedTabBar() -> some View {
             modifier(PushedTabBarModifier())
+        }
+
+        /// This stack's first screen, with the tab bar sliding away and back with it.
+        func stackTabBar() -> some View {
+            modifier(StackTabBarModifier())
         }
     }
 

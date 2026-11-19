@@ -115,8 +115,12 @@ WaypointStack(router) {
 extension View {
     /// Chooses whether the tab bar shows on the screens pushed onto the
     /// stacks inside this view. A stack's first screen is never changed.
-    /// Default: `.automatic`, the system's.
-    public func tabBarOnPushedScreens(_ visibility: Visibility) -> some View
+    /// Default: `.automatic`, the system's. `motion` says how a hidden bar
+    /// leaves and comes back. Default: `.slidesWithScreen`.
+    public func tabBarOnPushedScreens(
+        _ visibility: Visibility,
+        motion: PushedTabBarMotion = .slidesWithScreen
+    ) -> some View
 }
 ```
 
@@ -130,7 +134,7 @@ WaypointStack(router) {
 .tabBarOnPushedScreens(.hidden)
 ```
 
-The stack applies it around each pushed screen, the missing-destination screen included, and sends nothing for `.automatic`. Screens don't decide it themselves, so a new screen gets it right without doing anything, and a screen in a sheet or a full-screen cover never touches the tab bar. SwiftUI lets the stack's value win over one a screen sets inside itself, so every pushed screen of the stack gets the same visibility. The bar leaves and comes back as SwiftUI draws it: it disappears at the start of a push and appears once a pop ends, without UIKit's slide. The tab bar only exists on iOS, so other systems ignore it.
+The stack applies it around each pushed screen, the missing-destination screen included, and sends nothing for `.automatic`. Screens don't decide it themselves, so a new screen gets it right without doing anything, and a screen in a sheet or a full-screen cover never touches the tab bar. SwiftUI lets the stack's value win over one a screen sets inside itself, so every pushed screen of the stack gets the same visibility. With `.hidden`, the bar leaves with the stack's first screen as UIKit's `hidesBottomBarWhenPushed` does: the pushed screen slides in on top of it, and a pop, a swipe back (also one that is cancelled) and a pop to the first screen bring it back the same way. SwiftUI's own hide still decides whether the bar shows; the stack only puts a picture of the bar in its first screen while a push from it or a pop to it runs, and does nothing when it can't find the bar. The picture of the bar that comes back on a pop is the one taken at the push, so a change to the bar meanwhile, such as a new badge, shows once the pop ends. Pass `motion: .system` for SwiftUI's own motion, where the bar disappears at the start of a push and appears once a pop ends. The tab bar only exists on iOS, so other systems ignore it.
 
 > Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views. Tracked in #151.
 
