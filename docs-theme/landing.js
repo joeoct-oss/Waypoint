@@ -416,8 +416,8 @@
             gsap.to(parts.planet, Object.assign({ attr: { r: 4.3 }, duration: 2.6 }, loop))
         ];
 
-        // The dashes stay put: 13 dashes fit the ring exactly, whole at both ends, and a moving
-        // offset would cut the end ones short. The way back breathes instead.
+        // The dashes stay put, each one a mirror of the trail's width at the same distance from
+        // the root, so the way back glows softly instead of moving.
         gsap.fromTo(parts.ring, { attr: { "stroke-opacity": 0.45 } }, {
             attr: { "stroke-opacity": 0.7 },
             duration: 2.4,
