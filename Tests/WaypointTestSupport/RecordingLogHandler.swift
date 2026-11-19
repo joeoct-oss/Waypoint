@@ -40,6 +40,25 @@ package final class RecordingLogHandler: LogHandler, @unchecked Sendable {
     /// one.
     private var recordedChecks = 0
 
+    /// How the journey's lines start, in the readable format with and without symbols and in the
+    /// structured format.
+    private static let journeyStarts = [
+        "🧭 ",
+        "⚠️ ",
+        "┌─ 🧭",
+        "+- Waypoint",
+        "Waypoint screen_viewed",
+        "Waypoint tab_selected",
+        "Waypoint flow_",
+        "Waypoint duplicate",
+        "screen_viewed ",
+        "tab_selected ",
+        "flow_started ",
+        "flow_finished ",
+        "flow_cancelled ",
+        "duplicate_screen ",
+    ]
+
     /// Whether the handler accepts messages.
     private let accepts: Bool
 
@@ -53,6 +72,31 @@ package final class RecordingLogHandler: LogHandler, @unchecked Sendable {
     /// The text of each message so far.
     package var texts: [String] {
         messages.map(\.text)
+    }
+
+    /// The messages so far that the routers write about their own mechanics and issues, without
+    /// the journey's lines and boxes.
+    package var routerMessages: [LogMessage] {
+        messages.filter { message in
+            !Self.isJourney(message.text)
+        }
+    }
+
+    /// The text of each router message so far, without the journey's.
+    package var routerTexts: [String] {
+        routerMessages.map(\.text)
+    }
+
+    /// The text of each journey line so far, without the debug boxes.
+    package var journeyTexts: [String] {
+        texts.filter { text in
+            Self.isJourney(text) && !Self.isJourneyBox(text)
+        }
+    }
+
+    /// The journey's debug boxes so far.
+    package var journeyBoxes: [String] {
+        texts.filter(Self.isJourneyBox)
     }
 
     /// The interval events so far.
@@ -72,6 +116,18 @@ package final class RecordingLogHandler: LogHandler, @unchecked Sendable {
     /// Creates a handler that accepts every message, or none.
     package init(accepts: Bool = true) {
         self.accepts = accepts
+    }
+
+    /// Whether a message is one of the journey's lines or boxes.
+    private static func isJourney(_ text: String) -> Bool {
+        journeyStarts.contains { start in
+            text.hasPrefix(start)
+        }
+    }
+
+    /// Whether a message is a journey debug box.
+    private static func isJourneyBox(_ text: String) -> Bool {
+        text.hasPrefix("┌─ 🧭") || text.hasPrefix("+- Waypoint")
     }
 
     /// Counts the check, then answers whether the handler accepts messages.

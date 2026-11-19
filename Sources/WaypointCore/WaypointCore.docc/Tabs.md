@@ -109,6 +109,7 @@ public final class TabRouter<Tab: NavigationTab> {
     /// `unknownTab` if it is not one of `tabs` and no fallback applies.
     @discardableResult public func select(
         _ tab: Tab,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
 

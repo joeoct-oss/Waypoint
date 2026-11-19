@@ -16,10 +16,11 @@ import WaypointCore
 // gate asks a guest to sign in first; then the product joins the wish list, which the local store
 // keeps.
 //
-// The stack runs on Waypoint: `router` owns the path, `ProductsFlowView` draws it with
-// `WaypointStack`, and a swipe back comes back to the router by itself. A product page links to a
-// related product with `WaypointLink`, which pushes through the same router. The sheets are still
-// plain SwiftUI state until Waypoint's sheets are built.
+// The stack runs on Waypoint: `router`, the tab's stack router from the main tab router, owns the
+// path, `ProductsFlowView` draws it with `WaypointStack`, and a swipe back comes back to the router
+// by itself. The journey names the stack's first screen `Product list` or `Search`. A product page
+// links to a related product with `WaypointLink`, which pushes through the same router. The sheets
+// are still plain SwiftUI state until Waypoint's sheets are built.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the sheet changes.
@@ -49,6 +50,7 @@ final class ProductsCoordinator {
 
     init(
         start: ProductsStart,
+        router: StackRouter,
         store: LocalStore,
         gate: AccountGate,
         launchSteps: ShopLaunchSteps,
@@ -61,10 +63,8 @@ final class ProductsCoordinator {
         self.launchSteps = launchSteps
         self.navigation = navigation
         self.onAddToCart = onAddToCart
-        router = StackRouter(
-            flow: start.flowID,
-            configuration: navigation.configuration
-        )
+        self.router = router
+        router.setRootName(start.rootName)
         presentedSheet = nil
         hasPlayedLaunchSteps = false
     }
@@ -275,19 +275,19 @@ final class ProductsCoordinator {
     }
 }
 
-// The route trail for each products screen.
 extension ProductsStart {
-    // Names the stack in Waypoint's logs and debug tree.
-    var flowID: FlowID {
+    // Names the stack's first screen in the journey lines.
+    var rootName: String {
         switch self {
         case .browse:
-            return FlowID("shop")
+            return "Product list"
         case .search:
-            return FlowID("search")
+            return "Search"
         }
     }
 }
 
+// The route trail for each products screen.
 enum ProductsTrail {
     static let shop = [
         "shop",

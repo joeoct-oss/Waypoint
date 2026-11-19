@@ -136,13 +136,15 @@ final class StackMirror {
         hold(for: wait)
     }
 
-    /// Checks a restored path for missing destinations once the stack is on screen and its
-    /// screens have drawn.
+    /// Tells the router the stack is on screen, so the journey writes the first screen when no
+    /// change has, then checks a restored path for missing destinations once the stack's screens
+    /// have drawn.
     ///
     /// Called when the stack appears, never from `init`: SwiftUI makes a mirror each time it makes
     /// the stack's view value and keeps only the first, so a check started in `init` would run in a
     /// mirror that no screen registers with.
     func stackDidAppear() {
+        router.rendererDidAppear()
         guard !shown.isEmpty else {
             return
         }

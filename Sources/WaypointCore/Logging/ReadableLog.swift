@@ -22,8 +22,12 @@ enum ReadableLog {
         /// The routes, root route first when there is one.
         let routes: [AnyRoute]
         /// Whether `routes` starts with the stack's root route. Otherwise the root is a screen
-        /// with no route, written `root`.
+        /// with no route, written as `rootName`.
         let startsWithRootRoute: Bool
+
+        /// The name of a root screen with no route, such as `Product list`, or `root` when the
+        /// stack has none, such as an empty tab container.
+        let rootName: String
     }
 
     /// Every line starts with this, so Waypoint's lines stand out in a busy console.
@@ -119,11 +123,11 @@ enum ReadableLog {
         line(flow, "stack", stackText(stack, naming: naming, shortens: false))
     }
 
-    /// A breadcrumb that starts at the root: `root › Product list › Product (id: 42)`. When
+    /// A breadcrumb that starts at the root screen: `Shop › Product list › Product (id: 42)`. When
     /// `shortens` is on, a stack deeper than ``longStack`` keeps the root, the first route and the
-    /// last two, and ends with its depth: `root › Product (id: 2) › … › Product (id: 6) (5)`.
+    /// last two, and ends with its depth: `Shop › Product (id: 2) › … › Product (id: 6) (5)`.
     static func stackText(_ stack: Stack, naming: RouteNaming, shortens: Bool) -> String {
-        let root = stack.startsWithRootRoute ? stack.routes.first.map(naming.name) : "root"
+        let root = stack.startsWithRootRoute ? stack.routes.first.map(naming.name) : stack.rootName
         let pushed = stack.startsWithRootRoute ? Array(stack.routes.dropFirst()) : stack.routes
         let separator = naming.usesSymbols ? " › " : " > "
         guard shortens, pushed.count > longStack else {

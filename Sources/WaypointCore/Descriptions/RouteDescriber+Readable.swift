@@ -33,6 +33,32 @@ extension RouteDescriber {
         return readableFields(describedFields(of: mirror), name: name, visibility: visible)
     }
 
+    /// What follows a route's name in the journey: the values of its public fields after a
+    /// space, such as `3` for `ProductRoute(id: 3)`, or an enum route's case after a colon, such
+    /// as `payment` for `CheckoutStep.payment`. `nil` for a struct route with no public field.
+    static func screenDetail(_ route: any Route) -> (text: String, separator: String)? {
+        screenDetail(of: route)
+    }
+
+    /// The journey detail of a route of a known type.
+    private static func screenDetail<R: Route>(of route: R) -> (text: String, separator: String)? {
+        let mirror = Mirror(reflecting: route)
+        if mirror.displayStyle == .enum {
+            let caseName = mirror.children.first?.label ?? readableCaseName(route)
+            return (caseName, ": ")
+        }
+        let publicFields = describedFields(of: mirror).filter { child in
+            child.label.map(R.publicLogFields.contains) ?? false
+        }
+        let values = publicFields.map { child in
+            readableValue(child.value)
+        }
+        guard !values.isEmpty else {
+            return nil
+        }
+        return (values.joined(separator: " "), " ")
+    }
+
     /// `Name`, `Name (id: 42)`, `Name (id: 42, …)` or `Name (…)`.
     private static func readableFields(
         _ children: [Mirror.Child],

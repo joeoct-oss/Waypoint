@@ -51,7 +51,7 @@
 
         /// The view inside a stack.
         func body(content: Content) -> some View {
-            WaypointStack(router: router, flow: flow) {
+            WaypointStack(router: router, flow: flow, rootName: nil) {
                 content
             }
         }

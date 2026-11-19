@@ -7,16 +7,22 @@
 //
 
 import SwiftUI
+import WaypointCore
 
 // The main tabs: Shop, Search, Cart and Account, each with its own coordinator and stack, the same
 // for guests and signed-in readers. The main coordinator makes the tabs once and keeps them, so
 // each tab keeps its place while the reader switches tabs. Cart's tab shows how many products the
 // cart holds. Its account gate presents the accounts sheet over the tabs when an action needs an
 // account.
+//
+// The tabs run on one Waypoint `TabRouter`, and each tab's coordinator draws its tab's stack
+// router, so the whole tab bar is one tree. The journey lines then follow the reader across tabs:
+// `tab_selected Cart ◀ Shop`, then the screen the cart shows. The tab bar itself is still SwiftUI's
+// `TabView`, bound to the router's selection, until Waypoint draws tabs itself.
 @MainActor
 final class MainCoordinator {
     let gate: AccountGate
-    let tabs: TabSelection
+    let tabs: TabRouter<MainTab>
     let shop: ProductsCoordinator
     let search: ProductsCoordinator
     let cart: CartCoordinator
@@ -31,17 +37,22 @@ final class MainCoordinator {
             session: services.session,
             service: services.auth
         )
-        let tabs = TabSelection(selected: launch.opensLab ? .account : .shop)
+        // The tab bar pops nothing on a second tap: the account tab's stack is still plain SwiftUI.
+        let tabs = TabRouter(
+            selection: launch.opensLab ? MainTab.account : .shop,
+            popsToRootOnReselect: false,
+            configuration: services.navigation
+        )
         let cart = CartCoordinator(
+            router: tabs.router(for: .cart),
             store: services.store,
             addressBook: services.addresses,
             gate: gate,
-            navigation: services.navigation,
-            onShopMore: { tabs.select(.shop) }
+            onShopMore: { tabs.select(.shop, trigger: "keep_shopping") }
         )
         let addToCart = { (product: Product) in
             cart.add(product)
-            tabs.select(.cart)
+            tabs.select(.cart, trigger: "added_to_cart")
         }
         let navigation = ProductsNavigation(
             configuration: services.navigation,
@@ -54,6 +65,7 @@ final class MainCoordinator {
         self.cart = cart
         shop = ProductsCoordinator(
             start: .browse,
+            router: tabs.router(for: .shop),
             store: services.store,
             gate: gate,
             launchSteps: launch.shopSteps,
@@ -62,6 +74,7 @@ final class MainCoordinator {
         )
         search = ProductsCoordinator(
             start: .search,
+            router: tabs.router(for: .search),
             store: services.store,
             gate: gate,
             launchSteps: .none,
@@ -76,6 +89,11 @@ final class MainCoordinator {
             navigation: services.navigation,
             onClearAllData: onClearAllData
         )
+    }
+
+    // The tab the reader picked in the tab bar.
+    func selectTab(_ tab: MainTab) {
+        tabs.select(tab)
     }
 
     func badge(for tab: MainTab) -> Int {

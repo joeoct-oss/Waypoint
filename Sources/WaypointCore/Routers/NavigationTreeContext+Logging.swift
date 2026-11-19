@@ -64,7 +64,7 @@ extension NavigationTreeContext {
     }
 
     /// The file name and line, such as `ShopCoordinator.swift:42`.
-    private static func callSite(_ file: StaticString, _ line: UInt) -> String {
+    static func callSite(_ file: StaticString, _ line: UInt) -> String {
         let path = "\(file)"
         let name = path.split(separator: "/").last.map(String.init) ?? path
         return "\(name):\(line)"
@@ -86,16 +86,42 @@ extension NavigationTreeContext {
         configuration.handler.log(LogMessage(level: level, category: category, text: message, file: file, line: line))
     }
 
-    /// Logs each applied change at `.info`, in the category of its kind, then the tree when
-    /// asked.
+    /// Logs each applied change at `.debug`, in the category of its kind, then the tree when
+    /// asked. The journey lines say what the user sees at `.info`; these say how the routers got
+    /// there.
     func logChanges(_ changes: [AppliedChange], in router: some TreeNode, file: StaticString, line: UInt) {
         let root = router.rootNode
         for applied in changes {
-            log(.info, Self.category(of: applied.change), file: file, line: line) { naming in
+            log(.debug, Self.category(of: applied.change), file: file, line: line) { naming in
                 changeLine(applied, root: root, naming: naming)
             }
         }
         logTree(after: changes, root: root, file: file, line: line)
+    }
+
+    /// Logs the journey's entries in the `navigation` category: journey lines at `.info`, a
+    /// duplicate at `.notice`, and in the readable format each visit's box at `.debug`. The
+    /// structured line already holds every field.
+    func logJourney(_ entries: [JourneyEntry], file: StaticString, line: UInt) {
+        for entry in entries {
+            log(Self.level(of: entry), .navigation, file: file, line: line) { naming in
+                JourneyLog.line(entry, naming: naming)
+            }
+            guard case .screenViewed(let visit, _) = entry, logging.format == .readable else {
+                continue
+            }
+            log(.debug, .navigation, file: file, line: line) { naming in
+                JourneyLog.box(visit, naming: naming)
+            }
+        }
+    }
+
+    /// The level of a journey entry: `.notice` for a duplicate, else `.info`.
+    private static func level(of entry: JourneyEntry) -> LogLevel {
+        guard case .duplicate = entry else {
+            return .info
+        }
+        return .notice
     }
 
     /// Logs issues in the `issues` category: a recovered one at `.error`, a failed one at
@@ -246,7 +272,7 @@ extension NavigationTreeContext {
             guard let stack = root.node(for: flow)?.shownStack else {
                 continue
             }
-            log(.info, .navigation, file: file, line: line) { naming in
+            log(.debug, .navigation, file: file, line: line) { naming in
                 Self.stackLine(stack, naming: naming)
             }
         }
@@ -254,7 +280,7 @@ extension NavigationTreeContext {
 
     /// The whole tree, one flow per line.
     private func logWholeTree(_ root: any TreeNode, file: StaticString, line: UInt) {
-        log(.info, .navigation, file: file, line: line) { naming in
+        log(.debug, .navigation, file: file, line: line) { naming in
             "tree after the change:\n" + root.readableTree(naming).rendered
         }
     }
@@ -269,6 +295,7 @@ extension NavigationTreeContext {
 
     /// The routes a flow shows, and whether they start with its root route.
     private static func readableStack(_ node: any TreeNode) -> ReadableLog.Stack {
-        ReadableLog.Stack(routes: node.shownRoutes, startsWithRootRoute: node.showsRootRoute)
+        let rootName = (node.shownStack as? StackRouter).map(VisibleScreen.rootName(of:)) ?? "root"
+        return ReadableLog.Stack(routes: node.shownRoutes, startsWithRootRoute: node.showsRootRoute, rootName: rootName)
     }
 }

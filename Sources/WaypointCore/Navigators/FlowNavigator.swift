@@ -46,15 +46,16 @@ public struct FlowNavigator<Flow: NavigationFlow> {
         self.unscoped = StackNavigator(missing: message, report: report)
     }
 
-    /// Pushes a route of this flow. See ``StackRouter/push(_:else:file:line:)``.
+    /// Pushes a route of this flow. See ``StackRouter/push(_:trigger:else:file:line:)``.
     @discardableResult
     public func push<R: Route>(
         _ route: R,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome where R.Flow == Flow {
-        unscoped.push(route, else: fallback, file: file, line: line)
+        unscoped.push(route, trigger: trigger, else: fallback, file: file, line: line)
     }
 
     /// Pops back to the last screen showing `route`, a route of this flow. See
@@ -91,16 +92,18 @@ public struct FlowNavigator<Flow: NavigationFlow> {
     }
 
     /// Presents `route` over this flow, as the root screen of a new child flow. Any route, since
-    /// the presented flow is another flow. See ``StackRouter/present(_:style:else:file:line:)``.
+    /// the presented flow is another flow. See
+    /// ``StackRouter/present(_:style:trigger:else:file:line:)``.
     @discardableResult
     public func present<R: Route>(
         _ route: R,
         style: PresentationStyle = .sheet,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
-        unscoped.present(route, style: style, else: fallback, file: file, line: line)
+        unscoped.present(route, style: style, trigger: trigger, else: fallback, file: file, line: line)
     }
 
     /// Dismisses the flow this navigator belongs to, when it was presented. See

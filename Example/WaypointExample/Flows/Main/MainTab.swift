@@ -6,12 +6,16 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// The main tabs, in the order the tab bar shows them.
+import WaypointCore
+
+// The main tabs, in the order the tab bar shows them. Each tab's stack is named after its raw value
+// in the journey lines and the debug tree: `shop`, `search`, `cart` and `account`.
 //
 // Conformances:
-// - `CaseIterable`, so the tab bar lists every tab from this one declaration.
-// - `Hashable`, so `TabView` can tag each tab and keep the selection.
-enum MainTab: CaseIterable, Hashable {
+// - `String` raw value: gives each tab its name in logs, so its stack's flow is `shop`.
+// - `NavigationTab`, so the main tab router selects it, and `TabView` can tag each tab with it.
+// - `CaseIterable`, so the tab bar and the tab router list every tab from this one declaration.
+enum MainTab: String, NavigationTab, CaseIterable {
     case shop
     case search
     case cart

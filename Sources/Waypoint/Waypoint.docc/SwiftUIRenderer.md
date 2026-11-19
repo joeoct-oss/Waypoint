@@ -18,17 +18,19 @@ The renderer keeps no navigation state of its own. It mirrors the router's path 
 /// Conformances:
 /// - `Root: View`: the stack's first screen.
 public struct WaypointStack<Root: View>: View {
-    /// Creates a stack with its own router.
-    public init(@ViewBuilder root: () -> Root)
+    /// Creates a stack with its own router. `rootName` names the first screen
+    /// in the journey lines, such as "Product list".
+    public init(rootName: String? = nil, @ViewBuilder root: () -> Root)
 
     /// Creates a stack for a router you own.
-    public init(_ router: StackRouter, @ViewBuilder root: () -> Root)
+    public init(_ router: StackRouter, rootName: String? = nil, @ViewBuilder root: () -> Root)
 
     /// Creates a stack that belongs to a flow, so `@FlowNavigation(Flow.self)`
     /// finds it. The flow is declared on the router with `declareFlow(_:)`.
     public init<Flow: NavigationFlow>(
         flow: Flow.Type,
         router: StackRouter? = nil,
+        rootName: String? = nil,
         @ViewBuilder root: () -> Root
     )
 }

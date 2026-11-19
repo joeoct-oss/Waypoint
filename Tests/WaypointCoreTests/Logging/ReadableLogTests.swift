@@ -70,14 +70,14 @@ struct ReadableLogTests {
         router.dismiss()
 
         let expectedTexts = [
-            "Waypoint  main       push     Home                     │ root › Home",
-            "Waypoint  main       push     Product (…)              │ root › Home › Product (…)",
-            "Waypoint  main       back     Product (…)              │ root › Home",
-            "Waypoint  main       set                               │ root › Settings",
+            "Waypoint  main       push     Home                     │ Main › Home",
+            "Waypoint  main       push     Product (…)              │ Main › Home › Product (…)",
+            "Waypoint  main       back     Product (…)              │ Main › Home",
+            "Waypoint  main       set                               │ Main › Settings",
             "Waypoint  main       present  sheet settings           │ Settings",
-            "Waypoint  main       dismiss  settings                 │ root › Settings",
+            "Waypoint  main       dismiss  settings                 │ Main › Settings",
         ]
-        #expect(handler.texts == expectedTexts)
+        #expect(handler.routerTexts == expectedTexts)
     }
 
     @Test
@@ -92,26 +92,26 @@ struct ReadableLogTests {
 
         let expectedLastTexts = [
             "Waypoint  main       push     Product (id: 5)          │ "
-                + "root › Product (id: 2) › Product (id: 3) › Product (id: 4) › Product (id: 5)",
+                + "Main › Product (id: 2) › Product (id: 3) › Product (id: 4) › Product (id: 5)",
             "Waypoint  main       push     Product (id: 6)          │ "
-                + "root › Product (id: 2) › … › Product (id: 5) › Product (id: 6) (5)",
+                + "Main › Product (id: 2) › … › Product (id: 5) › Product (id: 6) (5)",
             "Waypoint  main       back     Product (id: 6)          │ "
-                + "root › Product (id: 2) › Product (id: 3) › Product (id: 4) › Product (id: 5)",
+                + "Main › Product (id: 2) › Product (id: 3) › Product (id: 4) › Product (id: 5)",
         ]
-        #expect(handler.texts.suffix(3) == expectedLastTexts)
+        #expect(handler.routerTexts.suffix(3) == expectedLastTexts)
         #expect(!router.debugTree(revealingPrivateValues: true).contains("…"))
     }
 
     @Test
     func aStackWithARootRouteNamesIt() {
         let handler = RecordingLogHandler()
-        let logging = LogConfiguration(handler: handler, minimumLevel: .info)
+        let logging = LogConfiguration(handler: handler, minimumLevel: .debug)
         let configuration = NavigationConfiguration(logging: logging, registry: .permissive)
         let router = StackRouter(root: HomeRoute(), configuration: configuration)
 
         router.push(SettingsRoute())
 
-        #expect(handler.texts == ["Waypoint  main       push     Settings                 │ Home › Settings"])
+        #expect(handler.routerTexts == ["Waypoint  main       push     Settings                 │ Home › Settings"])
     }
 
     @Test
@@ -122,7 +122,7 @@ struct ReadableLogTests {
 
         router.rendererDidPop(toCount: 0)
 
-        #expect(handler.texts.last == "Waypoint  main       back     Home, by user            │ root")
+        #expect(handler.routerTexts.last == "Waypoint  main       back     Home, by user            │ Main")
     }
 
     @Test
@@ -137,23 +137,23 @@ struct ReadableLogTests {
         router.popToRoot()
 
         let expectedTexts = [
-            "Waypoint  main       push     Home > Product (…)       | root > Home > Product (…)",
-            "Waypoint  main       back     Home > Product (…)       | root",
+            "Waypoint  main       push     Home > Product (…)       | Main > Home > Product (…)",
+            "Waypoint  main       back     Home > Product (…)       | Main",
         ]
-        #expect(handler.texts == expectedTexts)
+        #expect(handler.routerTexts == expectedTexts)
     }
 
     @Test
     func tabChangesNameBothTabs() {
         let handler = RecordingLogHandler()
-        let logging = LogConfiguration(handler: handler, minimumLevel: .info)
+        let logging = LogConfiguration(handler: handler, minimumLevel: .debug)
         let configuration = NavigationConfiguration(logging: logging, registry: .permissive)
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: configuration)
 
         tabs.select(.shop)
 
-        let expectedTexts = ["Waypoint  tabs       tab      home → shop              │ root"]
-        #expect(handler.texts == expectedTexts)
+        let expectedTexts = ["Waypoint  tabs       tab      home → shop              │ Shop"]
+        #expect(handler.routerTexts == expectedTexts)
     }
 
     @Test
@@ -170,9 +170,9 @@ struct ReadableLogTests {
                 + "                              Settings is not in the path [Home]. "
                 + "Check contains(_:) first, or handle the .failed outcome.\n"
                 + "                              at ReadableLogTests.swift:\(line)",
-            "Waypoint  main       back     Home, by fallback        │ root",
+            "Waypoint  main       back     Home, by fallback        │ Main",
         ]
-        #expect(handler.texts.suffix(2) == expectedLastTexts)
+        #expect(handler.routerTexts.suffix(2) == expectedLastTexts)
     }
 
     @Test
@@ -182,9 +182,9 @@ struct ReadableLogTests {
 
         router.pop()
 
-        let text = try #require(handler.texts.first)
+        let text = try #require(handler.routerTexts.first)
         #expect(text.hasPrefix("Waypoint  main       fail     can't go back: the first screen is already showing\n"))
-        #expect(handler.messages.first?.level == .fault)
+        #expect(handler.routerMessages.first?.level == .fault)
     }
 
     @Test
@@ -195,7 +195,7 @@ struct ReadableLogTests {
 
         router.popTo(HomeRoute())
 
-        #expect(handler.texts.last?.contains("[Product (id: 7)]") == true)
+        #expect(handler.routerTexts.last?.contains("[Product (id: 7)]") == true)
         #expect(router.popTo(HomeRoute()).failure?.issue.message.contains("ProductRoute(id: <private>)") == true)
     }
 
@@ -229,7 +229,7 @@ struct ReadableLogTests {
         child.push(HomeRoute())
         router.push(HomeRoute())
 
-        let texts = handler.texts.suffix(5).map { String($0.prefix(56)) }
+        let texts = handler.routerTexts.suffix(5).map { String($0.prefix(56)) }
         let expectedTexts = [
             "Waypoint  main       same     already there (ReadableLog",
             "Waypoint  settings   ignore   this flow is closed (Reada",
@@ -243,7 +243,7 @@ struct ReadableLogTests {
     @Test
     func changedStacksFollowEachChange() throws {
         let handler = RecordingLogHandler()
-        let logging = LogConfiguration(handler: handler, minimumLevel: .info, treeLogging: .changedStacks)
+        let logging = LogConfiguration(handler: handler, minimumLevel: .debug, treeLogging: .changedStacks)
         let configuration = NavigationConfiguration(logging: logging, registry: .permissive)
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: configuration)
 
@@ -251,10 +251,10 @@ struct ReadableLogTests {
         tabs.select(.shop)
         tabs.present(SettingsRoute())
 
-        let stackLines = handler.texts.filter { $0.contains(" stack ") }
+        let stackLines = handler.routerTexts.filter { $0.contains(" stack ") }
         let expectedStackLines = [
-            "Waypoint  shop       stack    root › Product (…)",
-            "Waypoint  shop       stack    root › Product (…)",
+            "Waypoint  shop       stack    Shop › Product (…)",
+            "Waypoint  shop       stack    Shop › Product (…)",
             "Waypoint  settings   stack    Settings",
         ]
         #expect(stackLines == expectedStackLines)
@@ -268,10 +268,10 @@ struct ReadableLogTests {
         router.push(HomeRoute())
 
         let expectedTexts = [
-            "Waypoint  main       push     Home                     │ root › Home",
-            "tree after the change:\nmain       root › Home",
+            "Waypoint  main       push     Home                     │ Main › Home",
+            "tree after the change:\nmain       Main › Home",
         ]
-        #expect(handler.texts == expectedTexts)
+        #expect(handler.routerTexts == expectedTexts)
     }
 
     @Test
@@ -283,10 +283,10 @@ struct ReadableLogTests {
 
         let expected = [
             "\(tabs.flowID.name.padding(toLength: 18, withPad: " ", startingAt: 0)) home · [shop] · profile",
-            "├ home             root",
-            "├ shop             root › Product (…)",
+            "├ home             Home",
+            "├ shop             Shop › Product (…)",
             "│ └ sheet settings Settings › Home",
-            "└ profile          root",
+            "└ profile          Profile",
         ]
         #expect(tabs.debugTree() == expected.joined(separator: "\n"))
         #expect(tabs.router(for: .home).debugTree() == tabs.debugTree())
@@ -297,8 +297,8 @@ struct ReadableLogTests {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 7))
 
-        #expect(router.debugTree() == "main       root › Product (…)")
-        #expect(router.debugTree(revealingPrivateValues: true) == "main       root › Product (id: 7)")
+        #expect(router.debugTree() == "main       Main › Product (…)")
+        #expect(router.debugTree(revealingPrivateValues: true) == "main       Main › Product (id: 7)")
     }
 
     @Test
@@ -313,7 +313,7 @@ struct ReadableLogTests {
             "presented sheet SettingsRoute flow=settings presenter=main",
             "dismissed flow=settings presenter=main",
         ]
-        #expect(handler.texts == expectedTexts)
+        #expect(handler.routerTexts == expectedTexts)
     }
 
     @Test
@@ -323,6 +323,6 @@ struct ReadableLogTests {
 
         router.push(HomeRoute())
 
-        #expect(handler.texts.last == "stack flow=main path=[HomeRoute]")
+        #expect(handler.routerTexts.last == "stack flow=main path=[HomeRoute]")
     }
 }
