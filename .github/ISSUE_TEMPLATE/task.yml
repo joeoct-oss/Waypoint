@@ -1,23 +1,23 @@
 name: Task
-description: A planned piece of work for a checkpoint.
+description: A planned piece of work, with its plan and checklists.
 body:
   - type: markdown
     attributes:
       value: |
-        After creating the issue, add one `type:`, at least one `area:`, one `priority:` and at least one `test:` label (plus `runs:linux` and/or `runs:mac` when it has tests), then set the milestone and the board's Checkpoint field. See the workflow doc in Waypoint-planning (`docs/workflow.md`).
+        Prefer creating issues with the planning repo script, `tools/issues/new-issue.py` in Waypoint-planning, which fills this structure and sets labels and the milestone. If you use this form, add one `type:`, at least one `area:`, one `priority:`, at least one `test:` and a `runs:` label, then set the milestone. See the Issues section of `docs/workflow.md` in Waypoint-planning.
   - type: textarea
     id: goal
     attributes:
       label: Goal
-      description: What this task delivers and why it matters.
+      description: What this issue delivers and why it matters.
     validations:
       required: true
   - type: input
     id: plan
     attributes:
       label: Plan
-      description: Link to plans/<issue-number>-<slug>.md in JoeOCT91/Waypoint-planning, or "not written yet", or "not needed" with a reason.
-      placeholder: https://github.com/JoeOCT91/Waypoint-planning/blob/HEAD/plans/12-example.md
+      description: Link to the plan file, plans/<issue-number>-<slug>.md in Waypoint-planning. Every issue has one; write a stub plan first if needed.
+      placeholder: "[Plan: Example](https://github.com/JoeOCT91/Waypoint-planning/blob/HEAD/plans/12-example.md)"
     validations:
       required: true
   - type: dropdown
@@ -25,27 +25,64 @@ body:
     attributes:
       label: Checkpoint
       options:
-        - C0 Project setup
-        - C1 API designed
-        - C2 Core navigation
-        - C3 Presentation and tabs
-        - C4 Deep links and UIKit
-        - C5 Example app and quality
-        - C6 1.0 release
-        - Not decided yet
+        - C2 Core and SwiftUI stack
+        - C3 Presentation, tabs and child flows
+        - C4 UIKit, mixed flows and links
+        - C5 Events, testing and real app
+        - C6 0.x in a real app
+        - Later (1.0 and 1.1)
+        - Not set yet (Yousef schedules it)
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What this issue changes, as a bullet list.
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What it leaves to other issues, each as a readable link. Write None if nothing.
     validations:
       required: true
   - type: textarea
     id: tests
     attributes:
       label: Tests
-      description: Unit tests to write first, and UI test scenarios (branch and flow), and where each runs: Linux (cloud) or Mac. Write "None, because ..." if not needed.
+      description: A table of behaviour, test name and where it runs (Linux (cloud) or Mac). Tests check what the app sees, never internals. Write "None, because ..." if no behaviour changes.
+      value: |
+        | Behaviour | Test | Runs on |
+        |---|---|---|
+        |  |  |  |
     validations:
       required: true
   - type: textarea
-    id: done
+    id: required
     attributes:
-      label: Done when
-      description: Acceptance criteria a reviewer can check.
+      label: Required before done
+      description: Every box must be ticked before the issue closes. Keep the five standard items and add this issue's own below them.
+      value: |
+        - [ ] Tests written first, seen failing, now passing
+        - [ ] Plan status set to Done, status log updated
+        - [ ] Docs in sync (articles, README, CODE_STYLE where touched)
+        - [ ] PR merged (squash), PR body free of attribution
+        - [ ] Board item moved to Done
+    validations:
+      required: true
+  - type: textarea
+    id: optional
+    attributes:
+      label: Optional
+      description: Steps that don't block closing. When the issue closes, each is ticked or moved to a follow-up issue with "→ link". Write None if nothing.
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: A bullet list, one per line, each a readable link such as "[Flow results between coordinators (#60)](url)". Never a bare #n or a raw URL. Write None if nothing.
     validations:
       required: true
