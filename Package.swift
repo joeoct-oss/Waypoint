@@ -17,12 +17,16 @@ let package = Package(
         // UI-agnostic state engine. Foundation and Observation only, so it builds and tests on
         // Linux.
         .target(name: "WaypointCore"),
+        // The unified log and signpost handler (decision 0008). Internal: both renderers depend on
+        // it and re-export it. Its files are wrapped in `#if canImport(os)`, so it compiles empty
+        // on Linux.
+        .target(name: "WaypointOSLog", dependencies: ["WaypointCore"]),
         // SwiftUI renderer. Its files are wrapped in `#if canImport(SwiftUI)`, so it compiles empty
         // on Linux.
-        .target(name: "Waypoint", dependencies: ["WaypointCore"]),
+        .target(name: "Waypoint", dependencies: ["WaypointCore", "WaypointOSLog"]),
         // UIKit renderer. Its files are wrapped in `#if canImport(UIKit)`, so it compiles empty on
         // Linux.
-        .target(name: "WaypointUIKit", dependencies: ["WaypointCore"]),
+        .target(name: "WaypointUIKit", dependencies: ["WaypointCore", "WaypointOSLog"]),
         // Shared fixtures for the test targets. Internal test code, not a product.
         .target(name: "WaypointTestSupport", dependencies: ["WaypointCore"], path: "Tests/WaypointTestSupport"),
         .testTarget(name: "WaypointCoreTests", dependencies: ["WaypointCore", "WaypointTestSupport"]),
@@ -30,6 +34,8 @@ let package = Package(
         // themselves.
         .testTarget(name: "WaypointTests", dependencies: ["Waypoint", "WaypointTestSupport"]),
         .testTarget(name: "WaypointUIKitTests", dependencies: ["WaypointUIKit", "WaypointTestSupport"]),
+        // Unified log tests compile empty where `os` is missing, like the target itself.
+        .testTarget(name: "WaypointOSLogTests", dependencies: ["WaypointOSLog", "WaypointTestSupport"]),
     ],
     swiftLanguageModes: [.v6]
 )

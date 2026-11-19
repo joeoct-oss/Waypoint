@@ -29,7 +29,7 @@ THEME_DIR=docs-theme
 FONTS_URL="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@500;600;700&display=swap"
 
 # Adds the Waypoint look from docs-theme: DocC colors and fonts, the mark and favicon, the
-# stylesheet on every DocC page, and the landing page at the site root.
+# stylesheet on every DocC page, and the landing page at the site root with its motion script.
 apply_theme() {
     cp "$THEME_DIR/theme-settings.json" "$SITE_DIR/theme-settings.json"
     mkdir -p "$SITE_DIR/images/waypoint"
@@ -44,6 +44,9 @@ apply_theme() {
         HEAD_LINKS="$head_links" xargs -0 perl -pi -e 's|</head>|$ENV{HEAD_LINKS}</head>|'
 
     cp "$THEME_DIR/index.html" "$SITE_DIR/index.html"
+    cp "$THEME_DIR/landing.js" "$SITE_DIR/js/landing.js"
+    mkdir -p "$SITE_DIR/js/vendor/gsap"
+    cp "$THEME_DIR"/vendor/gsap/*.min.js "$SITE_DIR/js/vendor/gsap/"
 }
 
 rm -rf "$WORK_DIR" "$SITE_DIR"

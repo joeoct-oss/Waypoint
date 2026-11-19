@@ -50,9 +50,11 @@ extension StackRouter {
     /// Reports that the screen started animating the push of `route`.
     ///
     /// Until ``rendererDidEndPush(of:)``, a push of an equal route is skipped under
-    /// ``DuplicatePushRule/skipWhileInFlight``. Changes no state.
+    /// ``DuplicatePushRule/skipWhileInFlight``. Changes no state. The push is measured as a
+    /// `push` interval in `renderer`, a signpost in Instruments.
     package func rendererDidStartPush(of route: AnyRoute) {
         pushInFlight = route
+        beginPushInterval()
     }
 
     /// Reports that the push of `route` finished animating. A report for another route, from a
@@ -62,6 +64,7 @@ extension StackRouter {
             return
         }
         pushInFlight = nil
+        endPushInterval()
     }
 
     /// Reports that the stack shows `route`, but no screen inside the stack registered a

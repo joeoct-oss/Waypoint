@@ -140,6 +140,11 @@ enum ReadableLog {
         line(flow, .queued, "queued until the current change ends (\(site))", symbols: symbols)
     }
 
+    /// A change the screen holds until the running transition ends.
+    static func held(_ flow: FlowID, milliseconds: Int64, symbols: Bool) -> String {
+        line(flow, .queued, "held until the running transition ends (\(milliseconds) ms)", symbols: symbols)
+    }
+
     /// A call on a router that left the tree.
     static func ignored(_ flow: FlowID, site: String, symbols: Bool) -> String {
         line(flow, .ignored, "ignored: this flow is closed (\(site))", symbols: symbols)
