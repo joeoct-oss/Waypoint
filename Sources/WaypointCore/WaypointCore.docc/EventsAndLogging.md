@@ -209,6 +209,7 @@ public struct LogConfiguration: Sendable {
     public let format: LogFormat             // default .readable
     public let usesSymbols: Bool             // default true
     public let treeLogging: TreeLogging      // default .off
+    public let duplicateScreenWindow: Duration // default 300 ms
 
     public init(
         handler: (any LogHandler)? = nil,  // nil: the platform's default, see below
@@ -217,7 +218,8 @@ public struct LogConfiguration: Sendable {
         revealsPrivateValues: Bool = false,
         format: LogFormat = .readable,
         usesSymbols: Bool = true,
-        treeLogging: TreeLogging = .off
+        treeLogging: TreeLogging = .off,
+        duplicateScreenWindow: Duration = .milliseconds(300)
     )
 
     // Each returns a new configuration with one value changed.
@@ -228,6 +230,7 @@ public struct LogConfiguration: Sendable {
     public func withFormat(_ format: LogFormat) -> LogConfiguration
     public func withSymbols(_ usesSymbols: Bool) -> LogConfiguration
     public func withTreeLogging(_ treeLogging: TreeLogging) -> LogConfiguration
+    public func withDuplicateScreenWindow(_ window: Duration) -> LogConfiguration
 
     public func isEnabled(level: LogLevel, category: LogCategory) -> Bool
     public func measuresIntervals(in category: LogCategory) -> Bool
@@ -245,7 +248,7 @@ public enum LogFormat: Sendable, Equatable {
     case structured
 }
 
-/// Which part of the navigation tree is logged after each change, at `.info`.
+/// Which part of the navigation tree is logged after each change, at `.debug`.
 ///
 /// Conformances:
 /// - `Sendable`, so a configuration that holds it can be shared with the whole tree.
@@ -267,6 +270,31 @@ extension StackRouter {   // also on TabRouter
 extension Route {
     /// Fields of this route that may appear in logs unredacted. Empty by default.
     public static var publicLogFields: Set<String> { get }
+}
+
+/// A route that says how the journey names its screen. Every member has a default.
+///
+/// Conformances:
+/// - `Route`, because the journey names the screens that routes show.
+public protocol TrackableScreen: Route {
+    static var screenName: String { get }    // default: the type name without "Route", in words
+    static var isTracked: Bool { get }       // default: true
+    static var startsJourney: Bool { get }   // default: false
+    static var stepsInFlow: Int? { get }     // default: nil
+    static var isFlowStep: Bool { get }      // default: true
+    var screenDisplayName: String? { get }   // default: nil
+}
+
+extension StackRouter {   // also on TabRouter
+    /// The latest visit in the whole tree, or nil before the first.
+    public var screenVisit: ScreenVisit? { get }
+
+    /// The name of the root screen when the stack has no root route.
+    public var rootName: String? { get }
+    public func setRootName(_ name: String)
+
+    // push, present and TabRouter.select take an optional `trigger:`.
+    public func push<R: Route>(_ route: R, trigger: String? = nil, ...) -> NavigationOutcome
 }
 ```
 
@@ -339,25 +367,65 @@ Issues a SwiftUI property wrapper finds with no router above it, such as `noRout
 
 Every message is built only after the level, the category and the handler's `isEnabled(level:category:)` all agree, in that order, so a disabled line costs one comparison.
 
-#### The readable format
+#### The journey
 
-By default each change is one line, in columns: `Waypoint`, the flow, a verb, what changed, then `│` and the stack the flow shows after the call. You read what happened and where you are on the same line. Routes read as words, so `ProductListRoute` prints as "Product list". Fields listed in `publicLogFields` show their values, and private fields fold into `…`. With `revealsPrivateValues` on, every value shows, in the change lines and in issue messages.
+At `.info`, Waypoint writes one line for each screen the user sees, not for each router change. After every change it works out the screen on display across tabs, stacks and presentations: the topmost presented flow, else the selected tab's stack, then the top of that stack. When that screen changed, it writes `screen_viewed` with the previous screen, how long it was on display, how the change happened and who made it. A push of five routes at once writes one line, for the screen on top. A change the user can't see, such as a push in another tab, writes none. The lines use the words analytics uses:
 
 ```text
-Waypoint  tabs       tab      home → shop              │ root
-Waypoint  shop       push     Product list (…)         │ root › Product list (…)
-Waypoint  shop       push     Product (id: 42, …)      │ root › Product list (…) › Product (id: 42, …)
+🧭 screen_viewed  Product list               source Shop
+🧭 screen_viewed  Product 3 "Orbit Lamp"     ◀ Product list after 2.1 s · push by app (ProductListView.swift:88)
+🧭 screen_viewed  Product list               ◀ Product 3 after 5.7 s · back by user
+🧭 screen_viewed  Product 3 "Orbit Lamp"     ◀ Product list after 1.2 s · push by app (ProductRow.swift:41) · trigger related_products
+🧭 tab_selected   Cart                       ◀ Shop · trigger added_to_cart
+🧭 screen_viewed  Cart                       ◀ Product 3 after 3.0 s · tab by app (MainCoordinator.swift:52) · trigger added_to_cart
+🧭 flow_started   Checkout                   from Cart · full screen · by app (CartCoordinator.swift:150) · trigger checkout_button
+🧭 screen_viewed  Checkout                   ◀ Cart after 0 ms · full screen by app (CartCoordinator.swift:150) · step 1 of 3
+🧭 screen_viewed  Checkout step: payment     ◀ Checkout after 9.4 s · push by app (CartCoordinator.swift:170) · step 2 of 3
+🧭 flow_finished  Checkout                   after 42.0 s · by app (CartCoordinator.swift:230)
+⚠️ duplicate      Product 3 viewed twice, 180 ms apart (ProductRow.swift:41)
+```
+
+- **Names.** A screen is named by its route type in words, then the values of its `publicLogFields`: `ProductRoute(id: 3)` reads `Product 3`, and an enum route `Checkout step: payment`. A ``TrackableScreen`` can rename it, add a display name in quotes, such as the product's title, or leave the screen out with `isTracked`. A stack's first screen with no root route takes the name given with `setRootName(_:)` or `WaypointStack(rootName:)`, else its tab's name, else its flow's: the first screen of the `cart` tab reads `Cart`. Nothing reads `root`.
+- **Source.** The tab, the presented flow's first screen or the stack's root, which stays the same while the user drills down. A screen whose type says `startsJourney`, such as search, becomes the source of what it opens. The line shows the source when it changes.
+- **How.** `push`, `back`, `set`, `tab`, `sheet`, `full screen` or `dismiss`, then `by app` with the call site, `by user` for a change the user made on the screen, or `by fallback`. A `trigger:` given to `push`, `present` or `select` is written last, and kept on the visit for analytics later.
+- **Flows.** A presented flow writes `flow_started` with the screen it was presented from, and `flow_finished` or, when the user dismissed it, `flow_cancelled`, with how long it was on display. When the flow's first screen gives `stepsInFlow`, each screen of the flow writes `step 2 of 3`; a screen beside the steps, such as an address form, says `isFlowStep: false`.
+- **Duplicates.** The same screen brought forward again within `duplicateScreenWindow`, 300 ms by default, writes a `duplicate` line at `.notice`, with the time between and the call site, such as after a double tap. Going back to a screen is never a duplicate.
+
+At `.debug`, each visit also writes a box with every field:
+
+```text
+┌─ 🧭 screen_viewed · Product 3 ─────────────
+│  screen    : Product 3 "Orbit Lamp"
+│  route     : Product (id: 3)
+│  previous  : Product list, after 2.1 s
+│  source    : Shop
+│  how       : push, by app at ProductListView.swift:88
+│  journey   : Shop › Product list › Product 3 (depth 2)
+│  flow      : shop
+└────────────────────────────────────────────
+```
+
+Each visit is also a value: ``StackRouter/screenVisit`` and ``TabRouter/screenVisit`` hold the latest ``ScreenVisit``, with its screen, previous screen, source, journey, transition, origin, call site, trigger, step and time on the previous screen. A presented flow is a ``FlowJourney``. Analytics handlers that receive them come later; until then, tests and apps can read the latest visit. The stack's renderer tells the tree when it first appears, so the first screen at launch is written too, without code in the screen. `usesSymbols: false` writes `Waypoint`, `<-` and `|` instead of `🧭`, `◀` and `·`.
+
+#### The readable format
+
+At `.debug`, each change is also one line, in columns: `Waypoint`, the flow, a verb, what changed, then `│` and the stack the flow shows after the call. These lines show how the routers got to the screen the journey line names. You read what happened and where you are on the same line. Routes read as words, so `ProductListRoute` prints as "Product list". Fields listed in `publicLogFields` show their values, and private fields fold into `…`. With `revealsPrivateValues` on, every value shows, in the change lines and in issue messages.
+
+```text
+Waypoint  tabs       tab      home → shop              │ Shop
+Waypoint  shop       push     Product list (…)         │ Shop › Product list (…)
+Waypoint  shop       push     Product (id: 42, …)      │ Shop › Product list (…) › Product (id: 42, …)
 Waypoint  shop       recover  can't go back to a screen that isn't in the stack
                               Cart is not in the path [Product list (…) › Product (id: 42, …)]. Check contains(_:) first, or handle the .failed outcome.
                               at ShopCoordinator.swift:28
-Waypoint  shop       back     Product list (…) › Product (id: 42, …), by fallback │ root
+Waypoint  shop       back     Product list (…) › Product (id: 42, …), by fallback │ Shop
 Waypoint  shop       same     already there (ShopCoordinator.swift:30)
 Waypoint  shop       skip     Product (id: 42, …) is still being pushed (ProductListView.swift:24)
 Waypoint  tabs       present  sheet checkout           │ Checkout (…)
 Waypoint  shop       queue    waits for the current change to end (CartObserver.swift:36)
 Waypoint  checkout   ignore   this flow is closed (AddressView.swift:45)
-Waypoint  tabs       dismiss  checkout                 │ root › Product list (…) › Product (id: 42, …)
-Waypoint  shop       back     Product (id: 42, …), by user │ root › Product list (…)
+Waypoint  tabs       dismiss  checkout                 │ Shop › Product list (…) › Product (id: 42, …)
+Waypoint  shop       back     Product (id: 42, …), by user │ Shop › Product list (…)
 ```
 
 | Verb | Meaning | Verb | Meaning |
@@ -370,7 +438,7 @@ Waypoint  shop       back     Product (id: 42, …), by user │ root › Produc
 | `tab` | a tab was selected | `hold` | a change held until a transition ends |
 | `stack` | the full stack, with `.changedStacks` | `ignore` | a call on a closed flow |
 
-The stack starts at `root`, the stack's first screen, or at its root route's name when the router was made with one. A stack more than four routes deep keeps the root, the first route and the last two, with `…` between them and its depth at the end, such as `root › Product (id: 2) › … › Product (id: 5) › Product (id: 6) (5)`; `debugTree()` always prints it in full. `, by user` marks a change the user made on the screen, such as a swipe back, and `, by fallback` a change a fallback made. A call that changes the stack more than once, such as a recovered call, shows the stack after the whole call on each line. An issue is written before the change its fallback made, so the cause reads first. `usesSymbols: false` writes `>`, `|` and `->` instead of `›`, `│` and `→`, for consoles that can't show them.
+The stack starts at the stack's first screen, named as in the journey: its root route's name when the router was made with one, else the name given with `setRootName(_:)`, its tab's or its flow's. A stack more than four routes deep keeps the root, the first route and the last two, with `…` between them and its depth at the end, such as `Shop › Product (id: 2) › … › Product (id: 5) › Product (id: 6) (5)`; `debugTree()` always prints it in full. `, by user` marks a change the user made on the screen, such as a swipe back, and `, by fallback` a change a fallback made. A call that changes the stack more than once, such as a recovered call, shows the stack after the whole call on each line. An issue is written before the change its fallback made, so the cause reads first. `usesSymbols: false` writes `>`, `|` and `->` instead of `›`, `│` and `→`, for consoles that can't show them.
 
 To see only Waypoint's lines in Xcode's console, filter on `subsystem:` followed by your bundle identifier and `.waypoint`. The other lines in the console come from the system frameworks.
 
@@ -380,24 +448,28 @@ To see only Waypoint's lines in Xcode's console, filter on `subsystem:` followed
 
 ```text
 tabs               home · [shop] · profile
-├ home             root
-├ shop             root › Product (…)
+├ home             Home
+├ shop             Shop › Product (…)
 │ └ sheet settings Settings › Home
-└ profile          root
+└ profile          Profile
 ```
 
-`treeLogging` adds it to the log after each change: `.changedStacks` writes one more line per changed stack, in full, such as `Waypoint  shop       stack    root › Product list (…) › Product (id: 42, …)`, and `.wholeTree` writes the tree above. Change lines already end with the stack, so most apps leave it off.
+`treeLogging` adds it to the log at `.debug` after each change: `.changedStacks` writes one more line per changed stack, in full, such as `Waypoint  shop       stack    Shop › Product list (…) › Product (id: 42, …)`, and `.wholeTree` writes the tree above. Change lines already end with the stack, so most apps leave it off.
 
 #### The structured format
 
-`format: .structured` writes the stable `NavigationDescribable` lines instead, for tools that parse logs. See <doc:Descriptions>.
+`format: .structured` writes the stable `NavigationDescribable` lines instead, for tools that parse logs, and the journey as `key=value` lines with no box. See <doc:Descriptions>.
 
 | What | Level | Category | Structured example |
 | --- | --- | --- | --- |
-| A change was applied | `.info` | `navigation`, `presentation` or `tabs` | `pushed [ProductRoute(id: <private>)] flow=main` |
-| A change made by a fallback | `.info` | as above | `popped [HomeRoute] flow=main origin=fallback` |
-| A change the user made directly, such as a swipe back | `.info` | as above | `popped [ProductRoute(id: <private>)] flow=main origin=user` |
-| A presentation | `.info` | `presentation` | `presented sheet SettingsRoute flow=settings presenter=main` |
+| A screen came on display | `.info` | `navigation` | `screen_viewed screen="Product 3" display="Orbit Lamp" previous="Product list" source="Shop" how=push origin=app flow=shop depth=2 after_ms=2100 at=ProductListView.swift:88` |
+| A tab was selected | `.info` | `navigation` | `tab_selected tab=Cart from=Shop trigger=added_to_cart` |
+| A flow was presented or ended | `.info` | `navigation` | `flow_started flow=checkout screen="Checkout" from="Cart" style=fullScreenCover origin=app at=CartCoordinator.swift:150` |
+| A screen came forward again too soon | `.notice` | `navigation` | `duplicate_screen screen="Product 3" interval_ms=180 at=ProductRow.swift:41` |
+| A change was applied | `.debug` | `navigation`, `presentation` or `tabs` | `pushed [ProductRoute(id: <private>)] flow=main` |
+| A change made by a fallback | `.debug` | as above | `popped [HomeRoute] flow=main origin=fallback` |
+| A change the user made directly, such as a swipe back | `.debug` | as above | `popped [ProductRoute(id: <private>)] flow=main origin=user` |
+| A presentation | `.debug` | `presentation` | `presented sheet SettingsRoute flow=settings presenter=main` |
 | A call changed nothing | `.debug` | `navigation` | `alreadyThere flow=main at=ShopCoordinator.swift:42` |
 | A push skipped because the same route is still being pushed | `.debug` | `navigation` | `alreadyThere flow=main skippedPush=ProductRoute(id: <private>) at=ProductListView.swift:24` |
 | A call was queued behind a change | `.debug` | `navigation` | `reentrantChange flow=main at=ShopCoordinator.swift:42` |
@@ -405,7 +477,7 @@ tabs               home · [shop] · profile
 | A call recovered by a fallback | `.error` | `issues` | `notEnoughRoutes flow=main at=ShopCoordinator.swift:42`, then the message |
 | A call failed | `.fault` | `issues` | `routeNotInPath flow=main at=ShopCoordinator.swift:42`, then the message |
 | A route type problem at registration | `.error` | `issues` | `invalidRouteKey key=""` |
-| A changed stack, with `.changedStacks` | `.info` | `navigation` | `stack flow=main path=[HomeRoute]` |
+| A changed stack, with `.changedStacks` | `.debug` | `navigation` | `stack flow=main path=[HomeRoute]` |
 | A change the screen holds until a transition ends, on iOS 17 | `.debug` | `renderer` | `heldChange flow=main wait=450ms` |
 
 Each transaction is also one `LogInterval` named `transaction` in the `navigation` category, begun and ended even when the transaction fails, and each push the screen animates is one named `push` in the `renderer` category, so a handler can draw them as signposts. Intervals are measured only when their category is enabled at the minimum level.
@@ -414,4 +486,4 @@ Privacy needs no separate log type: in both formats, route fields stay hidden un
 
 ### Screen tracking for analytics
 
-The router tree already knows the user's journey: which screen is showing, where the user came from and which flow they are in. A journey layer turns that into analytics-ready events that you forward to your own analytics service. Waypoint links no analytics SDK and sends nothing off the device. It is not available yet, and its API will be documented in its own article.
+The router tree already knows the user's journey: which screen is showing, where the user came from and which flow they are in. The journey lines above are its first reader, and ``ScreenVisit`` and ``FlowJourney`` are the values it works out. A handler that forwards them to your own analytics service is not available yet, and its API will be documented in its own article. Waypoint links no analytics SDK and sends nothing off the device.

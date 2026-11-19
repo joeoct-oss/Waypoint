@@ -98,9 +98,11 @@ public final class StackRouter {
     /// and its children.
     public func setDuplicatePushRule(_ rule: DuplicatePushRule)
 
-    /// Pushes one route.
+    /// Pushes one route. `trigger` names what started it, such as
+    /// "related_products", in the journey lines.
     @discardableResult public func push<R: Route>(
         _ route: R,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
 
@@ -498,6 +500,7 @@ public struct StackNavigator {
     /// Pushes a route onto the stack.
     @discardableResult public func push<R: Route>(
         _ route: R,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
     /// Pops `count` screens.
@@ -518,6 +521,7 @@ public struct StackNavigator {
     @discardableResult public func present<R: Route>(
         _ route: R,
         style: PresentationStyle = .sheet,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
     /// Dismisses the flow this navigator belongs to.
@@ -544,6 +548,7 @@ public struct FlowNavigator<Flow: NavigationFlow> {
     /// Pushes a route of this flow.
     @discardableResult public func push<R: Route>(
         _ route: R,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome where R.Flow == Flow
     /// Pops back to the last screen showing this route of this flow.

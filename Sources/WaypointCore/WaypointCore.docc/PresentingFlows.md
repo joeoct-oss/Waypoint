@@ -43,6 +43,7 @@ extension StackRouter {
     public func present<R: Route>(
         _ route: R,
         style: PresentationStyle = .sheet,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
     /// Dismisses the flow this router presents.
