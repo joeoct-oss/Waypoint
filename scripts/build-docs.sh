@@ -47,6 +47,8 @@ apply_theme() {
     cp "$THEME_DIR/landing.js" "$SITE_DIR/js/landing.js"
     mkdir -p "$SITE_DIR/js/vendor/gsap"
     cp "$THEME_DIR"/vendor/gsap/*.min.js "$SITE_DIR/js/vendor/gsap/"
+    mkdir -p "$SITE_DIR/js/vendor/lenis"
+    cp "$THEME_DIR"/vendor/lenis/*.min.js "$SITE_DIR/js/vendor/lenis/"
 }
 
 rm -rf "$WORK_DIR" "$SITE_DIR"
