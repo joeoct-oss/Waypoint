@@ -2,11 +2,22 @@ name: Bug
 description: Something does not work as designed.
 labels: ["type:fix"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Prefer creating issues with the planning repo script, `tools/issues/new-issue.py` in Waypoint-planning, which fills this structure and sets labels and the milestone. If you use this form, add one `type:`, at least one `area:`, one `priority:`, at least one `test:` and a `runs:` label, then set the milestone. See the Issues section of `docs/workflow.md` in Waypoint-planning.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What the fix delivers, in one or two sentences.
+    validations:
+      required: true
   - type: textarea
     id: what
     attributes:
       label: What happens
-      description: What you saw, and what you expected instead.
+      description: What you saw, and what you expected instead. Include the device, iOS and Xcode versions.
     validations:
       required: true
   - type: textarea
@@ -17,12 +28,76 @@ body:
     validations:
       required: true
   - type: input
-    id: environment
+    id: plan
     attributes:
-      label: Environment
-      placeholder: iOS 17.5 simulator, Xcode 26.1, Waypoint 0.x
+      label: Plan
+      description: Link to the plan file, plans/<issue-number>-<slug>.md in Waypoint-planning. Every issue has one; write a stub plan first if needed.
+      placeholder: "[Plan: Example](https://github.com/JoeOCT91/Waypoint-planning/blob/HEAD/plans/12-example.md)"
+    validations:
+      required: true
+  - type: dropdown
+    id: checkpoint
+    attributes:
+      label: Checkpoint
+      options:
+        - C2 Core and SwiftUI stack
+        - C3 Presentation, tabs and child flows
+        - C4 UIKit, mixed flows and links
+        - C5 Events, testing and real app
+        - C6 0.x in a real app
+        - Later (1.0 and 1.1)
+        - Not set yet (Yousef schedules it)
+    validations:
+      required: true
   - type: textarea
-    id: test
+    id: scope
     attributes:
-      label: Failing test
-      description: The unit or UI test that will reproduce this before the fix.
+      label: Scope
+      description: What this issue changes, as a bullet list.
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What it leaves to other issues, each as a readable link. Write None if nothing.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Tests
+      description: A table of behaviour, test name and where it runs (Linux (cloud) or Mac). Tests check what the app sees, never internals. Write "None, because ..." if no behaviour changes.
+      value: |
+        | Behaviour | Test | Runs on |
+        |---|---|---|
+        |  |  |  |
+    validations:
+      required: true
+  - type: textarea
+    id: required
+    attributes:
+      label: Required before done
+      description: Every box must be ticked before the issue closes. Keep the five standard items and add this issue's own below them.
+      value: |
+        - [ ] Tests written first, seen failing, now passing
+        - [ ] Plan status set to Done, status log updated
+        - [ ] Docs in sync (articles, README, CODE_STYLE where touched)
+        - [ ] PR merged (squash), PR body free of attribution
+        - [ ] Board item moved to Done
+    validations:
+      required: true
+  - type: textarea
+    id: optional
+    attributes:
+      label: Optional
+      description: Steps that don't block closing. When the issue closes, each is ticked or moved to a follow-up issue with "→ link". Write None if nothing.
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: A bullet list, one per line, each a readable link such as "[Flow results between coordinators (#60)](url)". Never a bare #n or a raw URL. Write None if nothing.
+    validations:
+      required: true
