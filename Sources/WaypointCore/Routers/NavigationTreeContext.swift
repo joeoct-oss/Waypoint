@@ -53,6 +53,13 @@ final class NavigationTreeContext {
     /// The screen on display and the journey that led to it.
     let journey = JourneyTracker()
 
+    /// The name of the view that draws each route type, as renderers registered them, for the
+    /// journey box.
+    ///
+    /// `var` because renderers register destinations as they draw. Only
+    /// `StackRouter.registerViewName(_:for:)` changes it.
+    var viewNames: [RouteKey: String] = [:]
+
     /// Route types registered for decoding and as having a destination.
     var registry: RouteRegistry {
         configuration.registry
@@ -300,8 +307,9 @@ final class NavigationTreeContext {
             time: journeyClock(),
             duplicateWindow: logging.duplicateScreenWindow
         )
-        let entries = journey.track(change, in: router.rootNode)
-        logJourney(entries, file: file, line: line)
+        let root = router.rootNode
+        let entries = journey.track(change, in: root)
+        logJourney(entries, root: root, file: file, line: line)
     }
 
     /// Reports an issue to the observers and logs it in the `issues` category.

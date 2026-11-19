@@ -67,6 +67,7 @@ final class ProductsCoordinator {
         router.setRootName(start.rootName)
         presentedSheet = nil
         hasPlayedLaunchSteps = false
+        router.setCoordinator(self)
     }
 
     @ViewBuilder

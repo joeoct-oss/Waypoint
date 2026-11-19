@@ -293,6 +293,11 @@ extension StackRouter {   // also on TabRouter
     public var rootName: String? { get }
     public func setRootName(_ name: String)
 
+    /// The coordinator that owns the router, named in the journey box.
+    public var coordinatorName: String? { get }
+    public func setCoordinator(_ coordinator: AnyObject)   // keeps the type's name only
+    public func setCoordinatorName(_ name: String)
+
     // push, present and TabRouter.select take an optional `trigger:`.
     public func push<R: Route>(_ route: R, trigger: String? = nil, ...) -> NavigationOutcome
 }
@@ -369,47 +374,65 @@ Every message is built only after the level, the category and the handler's `isE
 
 #### The journey
 
-At `.info`, Waypoint writes one line for each screen the user sees, not for each router change. After every change it works out the screen on display across tabs, stacks and presentations: the topmost presented flow, else the selected tab's stack, then the top of that stack. When that screen changed, it writes `screen_viewed` with the previous screen, how long it was on display, how the change happened and who made it. A push of five routes at once writes one line, for the screen on top. A change the user can't see, such as a push in another tab, writes none. The lines use the words analytics uses:
+At `.info`, each change the user can see writes one box. After every change Waypoint works out the screen on display across tabs, stacks and presentations: the topmost presented flow, else the selected tab's stack, then the top of that stack. When that screen changed, the box says how it got there, then draws the whole app as a tree with that screen marked. A push of five routes at once writes one box, for the screen on top. A change the user can't see, such as a push in another tab, writes none.
 
 ```text
-🧭 screen_viewed  Product list               source Shop
-🧭 screen_viewed  Product 3 "Orbit Lamp"     ◀ Product list after 2.1 s · push by app (ProductListView.swift:88)
-🧭 screen_viewed  Product list               ◀ Product 3 after 5.7 s · back by user
-🧭 screen_viewed  Product 3 "Orbit Lamp"     ◀ Product list after 1.2 s · push by app (ProductRow.swift:41) · trigger related_products
-🧭 tab_selected   Cart                       ◀ Shop · trigger added_to_cart
-🧭 screen_viewed  Cart                       ◀ Product 3 after 3.0 s · tab by app (MainCoordinator.swift:52) · trigger added_to_cart
-🧭 flow_started   Checkout                   from Cart · full screen · by app (CartCoordinator.swift:150) · trigger checkout_button
-🧭 screen_viewed  Checkout                   ◀ Cart after 0 ms · full screen by app (CartCoordinator.swift:150) · step 1 of 3
-🧭 screen_viewed  Checkout step: payment     ◀ Checkout after 9.4 s · push by app (CartCoordinator.swift:170) · step 2 of 3
-🧭 flow_finished  Checkout                   after 42.0 s · by app (CartCoordinator.swift:230)
-⚠️ duplicate      Product 3 viewed twice, 180 ms apart (ProductRow.swift:41)
+┌─ 🧭 PUSH ▸ ProductDetailView ──────────────────────────────────┐
+│ coordinator  ProductsCoordinator · same coordinator (sub view) │
+│ tab          Shop                                              │
+│ previous     ProductDetailView (id: 3) · 1.5 s there           │
+│ by           app · ProductsCoordinator.swift:271               │
+│ trigger      related_products                                  │
+│ route        Product (id: 4)                                   │
+├─ app ──────────────────────────────────────────────────────────┤
+│ MainCoordinator · tabs                                         │
+│ ├─▶ Shop · ProductsCoordinator                                 │
+│ │     ├ ProductListView                                        │
+│ │     ├ ProductDetailView (id: 3)                              │
+│ │     └ ProductDetailView (id: 4)   ◀ NEW                      │
+│ ├── Search · ProductsCoordinator  └ ProductListView            │
+│ ├── Cart · CartCoordinator        └ CartView                   │
+│ └── Account · AccountCoordinator  └ Account                    │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-- **Names.** A screen is named by its route type in words, then the values of its `publicLogFields`: `ProductRoute(id: 3)` reads `Product 3`, and an enum route `Checkout step: payment`. A ``TrackableScreen`` can rename it, add a display name in quotes, such as the product's title, or leave the screen out with `isTracked`. A stack's first screen with no root route takes the name given with `setRootName(_:)` or `WaypointStack(rootName:)`, else its tab's name, else its flow's: the first screen of the `cart` tab reads `Cart`. Nothing reads `root`.
-- **Source.** The tab, the presented flow's first screen or the stack's root, which stays the same while the user drills down. A screen whose type says `startsJourney`, such as search, becomes the source of what it opens. The line shows the source when it changes.
-- **How.** `push`, `back`, `set`, `tab`, `sheet`, `full screen` or `dismiss`, then `by app` with the call site, `by user` for a change the user made on the screen, or `by fallback`. A `trigger:` given to `push`, `present` or `select` is written last, and kept on the visit for analytics later.
-- **Flows.** A presented flow writes `flow_started` with the screen it was presented from, and `flow_finished` or, when the user dismissed it, `flow_cancelled`, with how long it was on display. When the flow's first screen gives `stepsInFlow`, each screen of the flow writes `step 2 of 3`; a screen beside the steps, such as an address form, says `isFlowStep: false`.
-- **Duplicates.** The same screen brought forward again within `duplicateScreenWindow`, 300 ms by default, writes a `duplicate` line at `.notice`, with the time between and the call site, such as after a double tap. Going back to a screen is never a duplicate.
-
-At `.debug`, each visit also writes a box with every field:
+Presenting checkout grows a branch under the screen that presented it:
 
 ```text
-┌─ 🧭 screen_viewed · Product 3 ─────────────
-│  screen    : Product 3 "Orbit Lamp"
-│  route     : Product (id: 3)
-│  previous  : Product list, after 2.1 s
-│  source    : Shop
-│  how       : push, by app at ProductListView.swift:88
-│  journey   : Shop › Product list › Product 3 (depth 2)
-│  flow      : shop
-└────────────────────────────────────────────
+┌─ 🧭 FULL SCREEN ▸ CheckoutView · NEW FLOW ──────────────┐
+│ coordinator  CartCoordinator · new flow checkout        │
+│ tab          Cart                                       │
+│ previous     CartView · 6.0 s there                     │
+│ by           app · CartCoordinator.swift:152            │
+│ trigger      checkout_button                            │
+│ step         1 of 3                                     │
+│ route        Checkout                                   │
+├─ app ───────────────────────────────────────────────────┤
+│ MainCoordinator · tabs                                  │
+│ ├── Shop · ProductsCoordinator    └ ProductListView     │
+│ ├── Search · ProductsCoordinator  └ ProductListView     │
+│ ├─▶ Cart · CartCoordinator                              │
+│ │     ├ CartView                                        │
+│ │     └ ⧉ full screen · CartCoordinator                 │
+│ │         └ CheckoutView   ◀ NEW                        │
+│ └── Account · AccountCoordinator  └ Account             │
+└─────────────────────────────────────────────────────────┘
 ```
 
-Each visit is also a value: ``StackRouter/screenVisit`` and ``TabRouter/screenVisit`` hold the latest ``ScreenVisit``, with its screen, previous screen, source, journey, transition, origin, call site, trigger, step and time on the previous screen. A presented flow is a ``FlowJourney``. Analytics handlers that receive them come later; until then, tests and apps can read the latest visit. The stack's renderer tells the tree when it first appears, so the first screen at launch is written too, without code in the screen. `usesSymbols: false` writes `Waypoint`, `<-` and `|` instead of `🧭`, `◀` and `·`.
+- **Title.** How the screen came: `PUSH`, `BACK`, `SET`, `TAB`, `SHEET`, `FULL SCREEN`, `DISMISS`, or `SHOWN` for the first screen. A presented flow adds `NEW COORDINATOR`, or `NEW FLOW` when the coordinator that presented it runs it; a dismissed one adds `COORDINATOR ENDED`.
+- **Views.** A screen is named by the SwiftUI view that draws it, read from `.destination(_:_:)` and from the `WaypointStack`'s root, also through modifiers: `ProductDetailView`, not the product's name. The route's public fields follow, such as `(id: 4)`. A screen with no view name, such as in UIKit until its renderer names them, reads as its route in words: `Product 4`. A stack's first screen with no root route takes the name given with `setRootName(_:)` or `WaypointStack(rootName:)`, else its tab's name, else its flow's.
+- **Coordinators.** A router is named by the coordinator that owns it: `router.setCoordinator(self)` keeps the coordinator's type name, never the coordinator, and `setCoordinatorName(_:)` gives any name. A presented flow that isn't named takes its presenter's coordinator. Unnamed, the box says the flow, such as `Shop (no coordinator named)`. `same coordinator (sub view)` means the screen was pushed in the same coordinator's stack.
+- **Rows.** `tab` is the tab the screen is in or under, with `(from Shop)` after a switch. `source` shows only when a screen in the stack that `startsJourney`, such as search, started this part of the journey. `previous` is the screen before and how long it was on display. `by` is `app` with the call site, `user` for a change made on the screen, such as a swipe back, or `fallback`. `trigger` is the `trigger:` given to `push`, `present` or `select`. `step 2 of 3` shows when the flow's first screen gives `stepsInFlow`; a screen beside the steps says `isFlowStep: false`. `ended` names the flow that closed, `finished` or `cancelled by the user`, and how long it ran.
+- **App.** Every tab with its coordinator, the selected one marked `▶` and drawn one screen per line, the others on one line, and every presented flow as a `⧉` branch with its style. The screen on display is marked `◀ NEW` when it came forward, else `◀ HERE`.
+- **Duplicates.** The same screen brought forward again within `duplicateScreenWindow`, 300 ms by default, adds a `warning` row and writes the box at `.notice`, such as after a double tap. Going back to a screen is never a duplicate.
+
+In the structured format, the journey writes `key=value` lines instead of the box, one per entry (see the table below). `usesSymbols: false` draws the box with `+`, `-`, `|` and `` `- ``.
+
+Each visit is also a value: ``StackRouter/screenVisit`` and ``TabRouter/screenVisit`` hold the latest ``ScreenVisit``, with its screen, previous screen, source, journey, transition, origin, call site, trigger, step and time on the previous screen. A presented flow is a ``FlowJourney``. Analytics handlers that receive them come later; until then, tests and apps can read the latest visit. The stack's renderer tells the tree when it first appears, so the first screen at launch is written too, without code in the screen. 
 
 #### The readable format
 
-At `.debug`, each change is also one line, in columns: `Waypoint`, the flow, a verb, what changed, then `│` and the stack the flow shows after the call. These lines show how the routers got to the screen the journey line names. You read what happened and where you are on the same line. Routes read as words, so `ProductListRoute` prints as "Product list". Fields listed in `publicLogFields` show their values, and private fields fold into `…`. With `revealsPrivateValues` on, every value shows, in the change lines and in issue messages.
+At `.debug`, each change is also one line, in columns: `Waypoint`, the flow, a verb, what changed, then `│` and the stack the flow shows after the call. These lines show how the routers got to the screen the journey box names. You read what happened and where you are on the same line. Routes read as words, so `ProductListRoute` prints as "Product list". Fields listed in `publicLogFields` show their values, and private fields fold into `…`. With `revealsPrivateValues` on, every value shows, in the change lines and in issue messages.
 
 ```text
 Waypoint  tabs       tab      home → shop              │ Shop
@@ -486,4 +509,4 @@ Privacy needs no separate log type: in both formats, route fields stay hidden un
 
 ### Screen tracking for analytics
 
-The router tree already knows the user's journey: which screen is showing, where the user came from and which flow they are in. The journey lines above are its first reader, and ``ScreenVisit`` and ``FlowJourney`` are the values it works out. A handler that forwards them to your own analytics service is not available yet, and its API will be documented in its own article. Waypoint links no analytics SDK and sends nothing off the device.
+The router tree already knows the user's journey: which screen is showing, where the user came from and which flow they are in. The journey box above is its first reader, and ``ScreenVisit`` and ``FlowJourney`` are the values it works out. A handler that forwards them to your own analytics service is not available yet, and its API will be documented in its own article. Waypoint links no analytics SDK and sends nothing off the device.

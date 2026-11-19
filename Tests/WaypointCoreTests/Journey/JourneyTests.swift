@@ -12,8 +12,9 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The journey (#216): the screen on display after each change across tabs, stacks and
-/// presentations, its visit with the previous screen and the source, and the journey lines.
+/// The journey (#216, #239): the screen on display after each change across tabs, stacks and
+/// presentations, its visit with the previous screen and the source, and the box each change
+/// writes.
 @Suite("Journey")
 @MainActor
 struct JourneyTests {
@@ -59,8 +60,8 @@ struct JourneyTests {
         #expect(visit.screen.title == "Product list")
         #expect(visit.transition == .appear)
         #expect(visit.callSite == nil)
-        let expectedTexts = ["🧭 screen_viewed  Product list"]
-        #expect(handler.journeyTexts == expectedTexts)
+        #expect(handler.journeyTexts.count == 1)
+        #expect(Self.title(of: handler.journeyTexts.first) == "SHOWN ▸ Product list")
     }
 
     @Test
@@ -135,8 +136,12 @@ struct JourneyTests {
         ]
         #expect(journey == expectedJourney)
         let texts = handler.journeyTexts
-        #expect(texts.count == 2)
-        #expect(texts.first == "🧭 tab_selected   Shop                       ◀ Home · trigger banner")
+        #expect(texts.count == 1)
+        let rows = Self.rows(of: texts.first)
+        #expect(Self.title(of: texts.first) == "TAB ▸ Product list")
+        #expect(rows.contains("coordinator  Shop (no coordinator named) · tab switch"))
+        #expect(rows.contains("tab          Shop (from Home)"))
+        #expect(rows.contains("trigger      banner"))
     }
 
     @Test
@@ -214,13 +219,21 @@ struct JourneyTests {
         router.dismiss()
 
         let texts = handler.journeyTexts
-        #expect(texts.count == 6)
-        #expect(texts[1].hasPrefix("🧭 flow_started   Checkout                   from Cart · full screen · by app ("))
-        #expect(texts[1].hasSuffix(") · trigger checkout_button"))
-        let checkoutLine = "🧭 screen_viewed  Checkout                   ◀ Cart after 0 ms · full screen by app"
-        #expect(texts[2].hasPrefix(checkoutLine))
-        #expect(texts[4].hasPrefix("🧭 flow_finished  Checkout                   after 12.0 s · by app ("))
-        #expect(texts[5].hasPrefix("🧭 screen_viewed  Cart                       ◀ Checkout step: payment after 9.0 s"))
+        let titles = texts.map(Self.title)
+        let expectedTitles = [
+            "SHOWN ▸ Cart",
+            "FULL SCREEN ▸ Checkout · NEW COORDINATOR",
+            "PUSH ▸ Checkout step: payment",
+            "DISMISS ▸ Cart · COORDINATOR ENDED",
+        ]
+        #expect(titles == expectedTitles)
+        let started = Self.rows(of: texts[1])
+        #expect(started.contains("coordinator  Checkout (no coordinator named) · presented by Main"))
+        #expect(started.contains("trigger      checkout_button"))
+        #expect(started.contains("step         1 of 3"))
+        let ended = Self.rows(of: texts[3])
+        #expect(ended.contains("previous     Checkout step: payment · 9.0 s there"))
+        #expect(ended.contains("ended        Checkout · finished after 12.0 s"))
         #expect(router.screenVisit?.transition == .dismiss)
     }
 
@@ -232,8 +245,9 @@ struct JourneyTests {
 
         router.rendererDidDismiss()
 
-        let ended = handler.journeyTexts.filter { $0.contains("flow_") }
-        #expect(ended.last == "🧭 flow_cancelled Checkout                   after 0 ms · by user")
+        let rows = Self.rows(of: handler.journeyTexts.last)
+        #expect(rows.contains("ended        Checkout · cancelled by the user after 0 ms"))
+        #expect(rows.contains("by           user"))
     }
 
     @Test
@@ -250,7 +264,7 @@ struct JourneyTests {
         checkout.push(JourneyFixtures.CheckoutStep.payment)
 
         #expect(router.screenVisit?.step == ScreenVisit.Step(number: 2, count: 3))
-        #expect(handler.journeyTexts.last?.contains("step 2 of 3") == true)
+        #expect(Self.rows(of: handler.journeyTexts.last).contains("step         2 of 3"))
     }
 
     @Test
@@ -265,12 +279,12 @@ struct JourneyTests {
         router.push(ItemRoute(id: 3, title: nil))
 
         let duplicates = handler.messages.filter { message in
-            message.text.hasPrefix("⚠️")
+            message.text.contains("warning      shown again")
         }
         #expect(duplicates.count == 1)
         #expect(duplicates.first?.level == .notice)
-        let expectedStart = "⚠️ duplicate      Product 3 viewed twice, 180 ms apart (JourneyTests.swift:"
-        #expect(duplicates.first?.text.hasPrefix(expectedStart) == true)
+        let rows = Self.rows(of: duplicates.first?.text)
+        #expect(rows.contains("warning      shown again 180 ms after the last time"))
     }
 
     @Test
@@ -285,7 +299,7 @@ struct JourneyTests {
         clock.advance(by: .milliseconds(400))
         router.push(ItemRoute(id: 3, title: nil))
 
-        #expect(!handler.texts.contains { $0.hasPrefix("⚠️") })
+        #expect(!handler.texts.contains { $0.contains("shown again") })
     }
 
     @Test
@@ -300,23 +314,22 @@ struct JourneyTests {
 
         router.push(ItemRoute(id: 3, title: nil))
 
-        #expect(handler.texts.contains { $0.hasPrefix("⚠️ duplicate      Product 3 viewed twice, 800 ms apart") })
+        #expect(handler.texts.contains { $0.contains("shown again 800 ms after the last time") })
         #expect(LogConfiguration().duplicateScreenWindow == .milliseconds(300))
         #expect(LogConfiguration(duplicateScreenWindow: .seconds(-1)).duplicateScreenWindow == .zero)
     }
 
     @Test
-    func journeyLinesAreInfoAndMechanicsAreDebug() {
+    func theJourneyBoxIsInfoAndMechanicsAreDebug() {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
 
         router.push(ProductListRoute())
 
         let levels = handler.messages.map(\.level)
-        let expectedLevels: [LogLevel] = [.debug, .info, .debug]
+        let expectedLevels: [LogLevel] = [.debug, .info]
         #expect(levels == expectedLevels)
         #expect(handler.messages.allSatisfy { $0.category == .navigation })
-        #expect(handler.journeyTexts.count == 1)
         #expect(handler.journeyBoxes.count == 1)
     }
 
@@ -334,32 +347,48 @@ struct JourneyTests {
     }
 
     @Test
-    func theDebugBoxHasEveryField() throws {
+    func theBoxNamesViewsAndCoordinatorsAndDrawsTheApp() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock())
+        tabs.setCoordinatorName("MainCoordinator")
         let shop = tabs.router(for: .shop)
-        shop.setRootName("Product list")
+        shop.setCoordinator(JourneyFixtures.ShopCoordinator())
+        shop.setRootViewName("ProductListView")
+        shop.registerViewName("ProductDetailView", for: ItemRoute.self)
+        tabs.router(for: .home).setRootViewName("HomeView")
         tabs.select(.shop)
         handler.removeAll()
 
         shop.push(ItemRoute(id: 3, title: "Orbit Lamp"), trigger: "related_products")
 
         let box = try #require(handler.journeyBoxes.first)
-        let rows = box.split(separator: "\n").map(String.init)
-        #expect(rows.first?.hasPrefix("┌─ 🧭 screen_viewed · Product 3 ──") == true)
-        #expect(rows.contains("│  screen    : Product 3 \"Orbit Lamp\""))
-        #expect(rows.contains("│  route     : Item (id: 3, …)"))
-        #expect(rows.contains("│  previous  : Product list, after 0 ms"))
-        #expect(rows.contains("│  source    : Shop"))
-        #expect(rows.contains("│  journey   : Shop › Product list › Product 3 (depth 2)"))
-        #expect(rows.contains("│  trigger   : related_products"))
-        #expect(rows.contains("│  flow      : shop"))
-        #expect(rows.contains { $0.hasPrefix("│  how       : push, by app at JourneyTests.swift:") })
-        #expect(rows.last?.hasPrefix("└──") == true)
+        let expectedBox = [
+            "┌─ 🧭 PUSH ▸ ProductDetailView ──────────────────────────────┐",
+            "│ coordinator  ShopCoordinator · same coordinator (sub view) │",
+            "│ tab          Shop                                          │",
+            "│ previous     ProductListView · 0 ms there                  │",
+            "│ by           app · JourneyTests.swift:NNN                  │",
+            "│ trigger      related_products                              │",
+            "│ route        Item (id: 3, …)                               │",
+            "├─ app ──────────────────────────────────────────────────────┤",
+            "│ MainCoordinator · tabs                                     │",
+            "│ ├── Home                    └ HomeView                     │",
+            "│ ├─▶ Shop · ShopCoordinator                                 │",
+            "│ │     ├ ProductListView                                    │",
+            "│ │     └ ProductDetailView (id: 3, …)   ◀ NEW               │",
+            "│ └── Profile                 └ Profile                      │",
+            "└────────────────────────────────────────────────────────────┘",
+        ]
+        let lines = box.replacingOccurrences(
+            of: #"JourneyTests\.swift:\d{3}"#,
+            with: "JourneyTests.swift:NNN",
+            options: .regularExpression
+        ).split(separator: "\n").map(String.init)
+        #expect(lines == expectedBox)
     }
 
     @Test
-    func theSampleSessionReadsAsJourneyLines() {
+    func theSampleSessionReadsAsOneBoxPerChange() {
         let handler = RecordingLogHandler()
         let clock = JourneyFixtures.ManualClock()
         let tabs = JourneyFixtures.tabs(handler, clock: clock)
@@ -374,16 +403,15 @@ struct JourneyTests {
         shop.push(ItemRoute(id: 3, title: "Orbit Lamp"), trigger: "related_products")
         tabs.select(.home)
 
-        let texts = handler.journeyTexts.map(Self.withoutCallSite)
-        let expectedTexts = [
-            "🧭 screen_viewed  Product 3 \"Orbit Lamp\"     ◀ Product list after 0 ms · push by app",
-            "🧭 screen_viewed  Product list               ◀ Product 3 after 5.7 s · back by user",
-            "🧭 screen_viewed  Product 3 \"Orbit Lamp\"     ◀ Product list after 0 ms · push by app"
-                + " · trigger related_products",
-            "🧭 tab_selected   Home                       ◀ Shop",
-            "🧭 screen_viewed  Home                       ◀ Product 3 after 0 ms · tab by app",
+        let titles = handler.journeyTexts.map(Self.title)
+        let expectedTitles = [
+            "PUSH ▸ Product 3",
+            "BACK ▸ Product list",
+            "PUSH ▸ Product 3",
+            "TAB ▸ Home",
         ]
-        #expect(texts == expectedTexts)
+        #expect(titles == expectedTitles)
+        #expect(Self.rows(of: handler.journeyTexts[1]).contains("previous     Product 3 · 5.7 s there"))
     }
 
     @Test
@@ -395,9 +423,11 @@ struct JourneyTests {
 
         router.push(ItemRoute(id: 3, title: nil))
 
-        let last = handler.journeyTexts.last.map(Self.withoutCallSite)
-        #expect(last == "Waypoint screen_viewed  Product 3                  <- Product list after 0 ms | push by app")
-        #expect(handler.journeyBoxes.last?.hasPrefix("+- Waypoint screen_viewed | Product 3 --") == true)
+        let box = handler.journeyBoxes.last ?? ""
+        #expect(box.hasPrefix("+- Waypoint PUSH > Product 3 --"))
+        let drawn = ["│", "─", "┌", "└", "▶", "◀", "🧭"]
+        #expect(!drawn.contains { box.contains($0) })
+        #expect(box.contains("`- Product 3   <- NEW"))
     }
 
     @Test
@@ -414,6 +444,42 @@ struct JourneyTests {
             + "source=\"Main\" how=push origin=app flow=main depth=2 trigger=related after_ms=0 at=JourneyTests.swift:"
         #expect(last.hasPrefix(expectedStart))
         #expect(handler.journeyBoxes.isEmpty)
+    }
+
+    @Test
+    func viewNamesDropModifiersModulesAndGenerics() {
+        #expect(ViewTypeName.simplified("Shop.ProductDetailView") == "ProductDetailView")
+        #expect(ViewTypeName.simplified("ModifiedContent<ProductListView, _PaddingLayout>") == "ProductListView")
+        let nested = "ModifiedContent<ModifiedContent<Shop.CartView, DestinationModifier<A, B>>, _FrameLayout>"
+        #expect(ViewTypeName.simplified(nested) == "CartView")
+        #expect(ViewTypeName.simplified("Optional<HomeView>") == "HomeView")
+        #expect(ViewTypeName.simplified("ListView<Item>") == "ListView")
+        #expect(ViewTypeName.of(JourneyFixtures.ShopCoordinator.self) == "ShopCoordinator")
+    }
+
+    @Test
+    func aPresentedFlowGrowsABranchUnderItsPresenter() throws {
+        let handler = RecordingLogHandler()
+        let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
+        router.setCoordinatorName("CartCoordinator")
+        router.setRootViewName("CartView")
+
+        router.present(JourneyFixtures.CheckoutRoute(), style: .fullScreenCover)
+        let checkout = try #require(router.presented)
+        checkout.setCoordinatorName("CheckoutCoordinator")
+        checkout.push(JourneyFixtures.CheckoutStep.payment)
+
+        let rows = Self.rows(of: handler.journeyBoxes.last)
+        let tree = Array(rows.drop { $0 != "CartCoordinator · stack" })
+        let expectedTree = [
+            "CartCoordinator · stack",
+            "├ CartView",
+            "└ ⧉ full screen · CheckoutCoordinator",
+            "    ├ Checkout",
+            "    └ Checkout step: payment   ◀ NEW",
+        ]
+        #expect(Array(tree.dropLast()) == expectedTree)
+        #expect(rows.contains("coordinator  CheckoutCoordinator · same coordinator (sub view)"))
     }
 
     @Test
@@ -437,8 +503,24 @@ struct JourneyTests {
         #expect(product.title == "Product")
     }
 
-    /// A journey line without its call site, which moves when this file changes.
-    private static func withoutCallSite(_ text: String) -> String {
-        text.replacingOccurrences(of: #" \(JourneyTests\.swift:\d+\)"#, with: "", options: .regularExpression)
+    /// A box's title, such as `PUSH ▸ Product 3`, without the frame.
+    static func title(of box: String?) -> String {
+        guard let first = box?.split(separator: "\n").first else {
+            return ""
+        }
+        let text = first.dropFirst(3).replacingOccurrences(of: "🧭 ", with: "")
+        let end = text.range(of: " ─") ?? text.range(of: " -")
+        return end.map { String(text[..<$0.lowerBound]) } ?? text
+    }
+
+    /// A box's lines without the frame and the trailing spaces.
+    static func rows(of box: String?) -> [String] {
+        (box ?? "").split(separator: "\n").map { line in
+            var text = String(line.dropFirst(2).dropLast(2))
+            while text.hasSuffix(" ") {
+                text.removeLast()
+            }
+            return text
+        }
     }
 }

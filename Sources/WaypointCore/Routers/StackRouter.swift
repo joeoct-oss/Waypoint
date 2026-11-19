@@ -103,6 +103,19 @@ public final class StackRouter: NavigationRouter {
     /// ``setRootName(_:)`` changes it.
     @ObservationIgnored private(set) var rootScreenName: String?
 
+    /// The name of the view that draws the stack's root screen, such as `ProductListView`, or
+    /// `nil` when no renderer said.
+    ///
+    /// `var` because the renderer names it after the router exists. Only `setRootViewName(_:)`
+    /// changes it.
+    @ObservationIgnored private(set) var rootViewName: String?
+
+    /// The name of the coordinator that owns this stack, or `nil`.
+    ///
+    /// `var` because the coordinator names itself after the router exists. Only
+    /// ``setCoordinator(_:)`` and ``setCoordinatorName(_:)`` change it.
+    @ObservationIgnored private(set) var ownerName: String?
+
     /// The flow this stack was declared for, or `nil` when it was declared for none.
     ///
     /// `var` because a renderer or coordinator declares it after the router exists. Only
@@ -150,6 +163,17 @@ public final class StackRouter: NavigationRouter {
     /// `WaypointStack(rootName:)`.
     public var rootName: String? {
         rootScreenName
+    }
+
+    /// The name of the coordinator that owns this stack, such as `ProductsCoordinator`, shown in
+    /// the journey box. Named with ``setCoordinator(_:)`` or ``setCoordinatorName(_:)``; a
+    /// presented flow that isn't named takes the name of the coordinator that presented it,
+    /// which runs it until it gets its own. `nil` when none is named.
+    public var coordinatorName: String? {
+        guard ownerName == nil, let parentNode, parentNode.presentedNode === self else {
+            return ownerName
+        }
+        return parentNode.coordinatorName
     }
 
     /// The latest visit in this router's whole tree: the screen on display, with where the user
@@ -281,8 +305,8 @@ public final class StackRouter: NavigationRouter {
     ///
     /// - Parameters:
     ///   - route: The route to push.
-    ///   - trigger: What in the screen started the push, such as `related_products`, written on
-    ///     the journey line and kept on the ``ScreenVisit``. Default: `nil`.
+    ///   - trigger: What in the screen started the push, such as `related_products`, written in
+    ///     the journey box and kept on the ``ScreenVisit``. Default: `nil`.
     ///   - fallback: What to do if the push fails. Default: the flow's policy.
     ///   - file: The calling file, where an issue points. Leave the default.
     ///   - line: The calling line, where an issue points. Leave the default.
@@ -353,8 +377,8 @@ public final class StackRouter: NavigationRouter {
     /// - Parameters:
     ///   - route: The route of the presented flow's root screen.
     ///   - style: How the flow is presented. Default: `.sheet`.
-    ///   - trigger: What in the screen started it, such as `checkout_button`, written on the
-    ///     journey lines. Default: `nil`.
+    ///   - trigger: What in the screen started it, such as `checkout_button`, written in the
+    ///     journey box. Default: `nil`.
     ///   - fallback: What to do if the presentation fails. Default: the flow's policy.
     ///   - file: The calling file, where an issue points. Leave the default.
     ///   - line: The calling line, where an issue points. Leave the default.
@@ -497,6 +521,36 @@ public final class StackRouter: NavigationRouter {
     /// `WaypointStack(rootName:)` names it for you. A root route's own name wins over this one.
     public func setRootName(_ name: String) {
         rootScreenName = name
+    }
+
+    /// Names the coordinator that owns this stack in the journey box, by its type.
+    ///
+    /// ```swift
+    /// init(router: StackRouter) {
+    ///     self.router = router
+    ///     router.setCoordinator(self)
+    /// }
+    /// ```
+    ///
+    /// The router keeps only the type's name, never the coordinator.
+    public func setCoordinator(_ coordinator: AnyObject) {
+        ownerName = ViewTypeName.of(type(of: coordinator))
+    }
+
+    /// Names the coordinator that owns this stack in the journey box, such as `Checkout`.
+    public func setCoordinatorName(_ name: String) {
+        ownerName = name
+    }
+
+    /// Names the view that draws the stack's root screen. Renderers call this.
+    package func setRootViewName(_ name: String) {
+        rootViewName = name
+    }
+
+    /// Names the view that draws the screens of route type `R` in the journey box. Renderers
+    /// call this as they register destinations.
+    package func registerViewName<R: Route>(_ name: String, for type: R.Type) {
+        tree.viewNames[R.routeKey] = name
     }
 
     /// Declares the flow whose screens this stack shows, so ``navigator(for:file:line:)`` can

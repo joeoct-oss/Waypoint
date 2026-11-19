@@ -100,6 +100,7 @@ final class CartCoordinator {
         selectedAddressID = nil
         oneOffAddress = nil
         savedNotice = nil
+        router.setCoordinator(self)
     }
 
     func makeCartFlow() -> some View {

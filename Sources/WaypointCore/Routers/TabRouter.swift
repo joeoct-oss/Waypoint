@@ -94,6 +94,12 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// ``setDuplicatePushRule(_:)`` change it.
     @ObservationIgnored private var settings = RouterSettings()
 
+    /// The name of the coordinator that owns this container, or `nil`.
+    ///
+    /// `var` because the coordinator names itself after the router exists. Only
+    /// ``setCoordinator(_:)`` and ``setCoordinatorName(_:)`` change it.
+    @ObservationIgnored private var ownerName: String?
+
     /// The current state. Change it through the navigation methods below.
     public var state: TabState<Tab> {
         committed.state
@@ -127,6 +133,13 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// Whether this router is still in the tree. When it isn't, every call returns `.ignored`.
     public var isActive: Bool {
         isAttached
+    }
+
+    /// The name of the coordinator that owns this container, such as `MainCoordinator`, shown in
+    /// the journey box. `nil` until ``setCoordinator(_:)`` or ``setCoordinatorName(_:)`` names
+    /// it.
+    public var coordinatorName: String? {
+        ownerName
     }
 
     /// The latest visit in this router's whole tree: the screen on display, with where the user
@@ -273,7 +286,7 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// - Parameters:
     ///   - route: The route of the presented flow's root screen.
     ///   - style: How the flow is presented. Default: `.sheet`.
-    ///   - trigger: What started it, written on the journey lines. Default: `nil`.
+    ///   - trigger: What started it, written in the journey box. Default: `nil`.
     ///   - fallback: What to do if the presentation fails. Default: the flow's policy.
     ///   - file: The calling file, where an issue points. Leave the default.
     ///   - line: The calling line, where an issue points. Leave the default.
@@ -389,6 +402,17 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// The sheet options a presentation uses: its own, or this router's defaults.
     public func sheetOptions(for presentation: Presentation) -> SheetOptions {
         presentation.style.sheetOptions ?? presentationDefaults.sheet
+    }
+
+    /// Names the coordinator that owns this container in the journey box, by its type. The
+    /// router keeps only the type's name, never the coordinator.
+    public func setCoordinator(_ coordinator: AnyObject) {
+        ownerName = ViewTypeName.of(type(of: coordinator))
+    }
+
+    /// Names the coordinator that owns this container in the journey box, such as `Main`.
+    public func setCoordinatorName(_ name: String) {
+        ownerName = name
     }
 
     /// Registers a route type for decoding and as having a destination. See

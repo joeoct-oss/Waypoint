@@ -32,6 +32,19 @@ public struct ScreenReference: NavigationRecord {
     /// The route the screen shows, or `nil` for a stack's root screen that has no route.
     public let route: AnyRoute?
 
+    /// The name of the view that draws the screen, such as `ProductDetailView`, or `nil` when no
+    /// renderer said.
+    public let viewName: String?
+
+    /// The name of the coordinator that owns the screen's stack, such as `ProductsCoordinator`,
+    /// or `nil` when none was named.
+    public let coordinator: String?
+
+    /// The view name, else the title: what the journey box calls the screen.
+    public var screenLabel: String {
+        viewName ?? title
+    }
+
     /// The title, then the display name in quotes: `Product 3 "Orbit Lamp"`.
     public var description: String {
         guard let displayName else {
@@ -41,7 +54,7 @@ public struct ScreenReference: NavigationRecord {
     }
 
     /// A screen that shows `route` in `flow`.
-    init(route: AnyRoute, flow: FlowID) {
+    init(route: AnyRoute, flow: FlowID, viewName: String? = nil, coordinator: String? = nil) {
         let traits = route.screenTraits
         let detail = RouteDescriber.screenDetail(route.base)
         self.name = traits.name
@@ -50,16 +63,20 @@ public struct ScreenReference: NavigationRecord {
         self.displayName = traits.displayName
         self.flow = flow
         self.route = route
+        self.viewName = viewName
+        self.coordinator = coordinator
     }
 
     /// A stack's root screen that has no route, named `name`.
-    init(rootNamed name: String, flow: FlowID) {
+    init(rootNamed name: String, flow: FlowID, viewName: String? = nil, coordinator: String? = nil) {
         self.name = name
         self.detail = nil
         self.title = name
         self.displayName = nil
         self.flow = flow
         self.route = nil
+        self.viewName = viewName
+        self.coordinator = coordinator
     }
 
     /// The same description: a screen's name holds only public values and its display name.

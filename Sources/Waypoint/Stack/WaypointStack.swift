@@ -90,7 +90,7 @@
         /// Creates a stack with its own router.
         ///
         /// - Parameters:
-        ///   - rootName: The name of the first screen in the journey lines, such as
+        ///   - rootName: The name of the first screen in the journey box, such as
         ///     `Product list`. Default: `nil`, for the tab's or the flow's name.
         ///   - root: The stack's first screen.
         public init(rootName: String? = nil, @ViewBuilder root: () -> Root) {
@@ -101,7 +101,7 @@
         ///
         /// - Parameters:
         ///   - router: The router the stack draws.
-        ///   - rootName: The name of the first screen in the journey lines, such as
+        ///   - rootName: The name of the first screen in the journey box, such as
         ///     `Product list`. Default: `nil`, for the router's own name, else its tab's or its
         ///     flow's.
         ///   - root: The stack's first screen.
@@ -126,7 +126,7 @@
         /// - Parameters:
         ///   - flow: The flow whose screens this stack shows.
         ///   - router: A router you own, or `nil` for the stack's own. Default: `nil`.
-        ///   - rootName: The name of the first screen in the journey lines, such as
+        ///   - rootName: The name of the first screen in the journey box, such as
         ///     `Product list`. Default: `nil`, for the router's own name, else its tab's or its
         ///     flow's.
         ///   - root: The stack's first screen.
@@ -153,11 +153,12 @@
             self.root = root()
         }
 
-        /// The router this stack draws, declared for the stack's flow and with its root screen
-        /// named when given. Both are idempotent and observed by nothing, so they are safe while
-        /// drawing.
+        /// The router this stack draws, declared for the stack's flow, with its root view named
+        /// and its root screen named when given. All are idempotent and observed by nothing, so
+        /// they are safe while drawing.
         private func declaredRouter() -> StackRouter {
             let router = givenRouter ?? ownRouter
+            router.setRootViewName(ViewTypeName.of(Root.self))
             if let flow {
                 router.declareFlow(flow)
             }

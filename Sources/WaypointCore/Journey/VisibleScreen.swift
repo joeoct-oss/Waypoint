@@ -132,14 +132,23 @@ struct VisibleScreen {
     }
 
     /// One stack, with its role and its screens.
-    private static func level(of stack: StackRouter) -> Level {
+    static func level(of stack: StackRouter) -> Level {
         let role = role(of: stack)
         let rootRoute = stack.showsRootRoute ? stack.shownRoutes.first : nil
         let pushed = stack.showsRootRoute ? Array(stack.shownRoutes.dropFirst()) : stack.shownRoutes
-        let root = rootRoute.map { ScreenReference(route: $0, flow: stack.flowID) }
-            ?? ScreenReference(rootNamed: rootName(of: stack, role: role), flow: stack.flowID)
+        let owner = stack.coordinatorName
+        let views = stack.tree.viewNames
+        let rootView = stack.rootViewName ?? rootRoute.flatMap { views[$0.routeKey] }
+        let root = rootRoute.map { route in
+            ScreenReference(route: route, flow: stack.flowID, viewName: rootView, coordinator: owner)
+        } ?? ScreenReference(
+            rootNamed: rootName(of: stack, role: role),
+            flow: stack.flowID,
+            viewName: rootView,
+            coordinator: owner
+        )
         let pushedScreens = pushed.map { route in
-            ScreenReference(route: route, flow: stack.flowID)
+            ScreenReference(route: route, flow: stack.flowID, viewName: views[route.routeKey], coordinator: owner)
         }
         let screens = [root] + pushedScreens
         return Level(stack: stack, role: role, screens: screens)

@@ -19,7 +19,7 @@ The renderer keeps no navigation state of its own. It mirrors the router's path 
 /// - `Root: View`: the stack's first screen.
 public struct WaypointStack<Root: View>: View {
     /// Creates a stack with its own router. `rootName` names the first screen
-    /// in the journey lines, such as "Product list".
+    /// in the journey box, such as "Product list".
     public init(rootName: String? = nil, @ViewBuilder root: () -> Root)
 
     /// Creates a stack for a router you own.

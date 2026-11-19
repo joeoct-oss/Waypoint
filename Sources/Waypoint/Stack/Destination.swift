@@ -76,6 +76,7 @@
             // Registering is idempotent and observed by nothing, so it is safe while drawing,
             // and it happens before the first push the screen can make.
             router?.register(R.self)
+            router?.registerViewName(ViewTypeName.of(Destination.self), for: R.self)
             mirror?.registerDestination(R.self)
             let navigator = NavigatorLookup.destination(router, route: R.self, report: NavigationIssueLog.report)
             return view.navigationDestination(for: R.self) { route in

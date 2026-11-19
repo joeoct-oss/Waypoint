@@ -87,7 +87,7 @@ extension NavigationTreeContext {
     }
 
     /// Logs each applied change at `.debug`, in the category of its kind, then the tree when
-    /// asked. The journey lines say what the user sees at `.info`; these say how the routers got
+    /// asked. The journey box says what the user sees at `.info`; these say how the routers got
     /// there.
     func logChanges(_ changes: [AppliedChange], in router: some TreeNode, file: StaticString, line: UInt) {
         let root = router.rootNode
@@ -99,20 +99,25 @@ extension NavigationTreeContext {
         logTree(after: changes, root: root, file: file, line: line)
     }
 
-    /// Logs the journey's entries in the `navigation` category: journey lines at `.info`, a
-    /// duplicate at `.notice`, and in the readable format each visit's box at `.debug`. The
-    /// structured line already holds every field.
-    func logJourney(_ entries: [JourneyEntry], file: StaticString, line: UInt) {
-        for entry in entries {
-            log(Self.level(of: entry), .navigation, file: file, line: line) { naming in
-                JourneyLog.line(entry, naming: naming)
+    /// Logs what the journey wrote for a change in the `navigation` category: in the readable
+    /// format one box at `.info`, or at `.notice` when it holds a duplicate warning; in the
+    /// structured format one line per entry.
+    func logJourney(_ entries: [JourneyEntry], root: any TreeNode, file: StaticString, line: UInt) {
+        guard !entries.isEmpty else {
+            return
+        }
+        guard logging.format == .readable else {
+            for entry in entries {
+                log(Self.level(of: entry), .navigation, file: file, line: line) { _ in
+                    JourneyLog.line(entry)
+                }
             }
-            guard case .screenViewed(let visit, _) = entry, logging.format == .readable else {
-                continue
-            }
-            log(.debug, .navigation, file: file, line: line) { naming in
-                JourneyLog.box(visit, naming: naming)
-            }
+            return
+        }
+        let level = entries.map(Self.level).max() ?? .info
+        log(level, .navigation, file: file, line: line) { naming in
+            let box = JourneyBox(entries: entries, visible: VisibleScreen(in: root), root: root, naming: naming)
+            return box.rendered ?? ""
         }
     }
 
