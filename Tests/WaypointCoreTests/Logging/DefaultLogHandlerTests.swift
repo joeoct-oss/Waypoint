@@ -47,7 +47,7 @@ struct DefaultLogHandlerTests {
 
         #expect(router.configuration.logging.handler is RecordingLogHandler)
         #expect(router.configuration.logging.minimumLevel == .debug)
-        #expect(installed.texts == ["pushed [HomeRoute] flow=main"])
+        #expect(installed.routerTexts == ["pushed [HomeRoute] flow=main"])
         #expect(later.messages.isEmpty)
     }
 
@@ -60,7 +60,7 @@ struct DefaultLogHandlerTests {
         #expect(!router.installDefaultLogHandler { installed })
         router.push(HomeRoute())
 
-        #expect(apps.texts == ["pushed [HomeRoute] flow=main"])
+        #expect(apps.routerTexts == ["pushed [HomeRoute] flow=main"])
         #expect(installed.messages.isEmpty)
     }
 
@@ -87,7 +87,7 @@ struct DefaultLogHandlerTests {
         installed.removeAll()
         root.push(HomeRoute())
 
-        #expect(installed.texts == ["pushed [HomeRoute] flow=main"])
+        #expect(installed.routerTexts == ["pushed [HomeRoute] flow=main"])
     }
 
     @Test
@@ -163,10 +163,10 @@ struct DefaultLogHandlerTests {
         structured.rendererDidHoldChange(for: .milliseconds(450))
         readable.rendererDidHoldChange(for: .milliseconds(450))
 
-        #expect(handler.messages.map(\.level) == [.debug, .debug])
-        #expect(handler.messages.map(\.category) == [.renderer, .renderer])
-        #expect(handler.texts[0] == "heldChange flow=main wait=450ms")
-        #expect(handler.texts[1] == "Waypoint  main       hold     waits 450 ms for the running transition")
+        #expect(handler.routerMessages.map(\.level) == [.debug, .debug])
+        #expect(handler.routerMessages.map(\.category) == [.renderer, .renderer])
+        #expect(handler.routerTexts[0] == "heldChange flow=main wait=450ms")
+        #expect(handler.routerTexts[1] == "Waypoint  main       hold     waits 450 ms for the running transition")
     }
 
     @Test
@@ -176,6 +176,6 @@ struct DefaultLogHandlerTests {
 
         router.rendererDidHoldChange(for: .milliseconds(450))
 
-        #expect(handler.messages.isEmpty)
+        #expect(handler.routerMessages.isEmpty)
     }
 }

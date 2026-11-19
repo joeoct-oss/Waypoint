@@ -42,8 +42,16 @@ final class NavigationTreeContext {
     /// changes it.
     private var intervalCount: UInt64 = 0
 
+    /// The time on the tree's clock, for the journey's durations and duplicate window.
+    ///
+    /// `var` because tests set a clock they move by hand. Only tests change it.
+    var journeyClock: () -> Duration
+
     /// Why a setting given to the tree was replaced by its default, or `nil`.
     let configurationProblem: String?
+
+    /// The screen on display and the journey that led to it.
+    let journey = JourneyTracker()
 
     /// Route types registered for decoding and as having a destination.
     var registry: RouteRegistry {
@@ -67,6 +75,10 @@ final class NavigationTreeContext {
         self.configuration = checked.configuration
         self.configurationProblem = checked.problem
         self.observers = Observers()
+        let start = ContinuousClock.now
+        self.journeyClock = {
+            ContinuousClock.now - start
+        }
         if let handler = configuration.onNavigationFailure {
             addFailureHandler { failure in
                 handler(failure)
@@ -157,9 +169,10 @@ final class NavigationTreeContext {
         on router: some TreeNode,
         file: StaticString,
         line: UInt,
+        trigger: String? = nil,
         _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
-        let outcome = start(on: router, file: file, line: line, body)
+        let outcome = start(on: router, file: file, line: line, trigger: trigger, body)
         observers.finished?(outcome)
         return outcome
     }
@@ -169,6 +182,7 @@ final class NavigationTreeContext {
         on router: some TreeNode,
         file: StaticString,
         line: UInt,
+        trigger: String?,
         _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
         guard router.isAttached else {
@@ -176,9 +190,9 @@ final class NavigationTreeContext {
             return .ignored
         }
         guard !turn.isApplying else {
-            return enqueue(on: router, file: file, line: line, body)
+            return enqueue(on: router, file: file, line: line, trigger: trigger, body)
         }
-        let outcome = apply(on: router, file: file, line: line, body)
+        let outcome = apply(on: router, file: file, line: line, trigger: trigger, body)
         drainQueue()
         return outcome
     }
@@ -190,6 +204,7 @@ final class NavigationTreeContext {
         on router: some TreeNode,
         file: StaticString,
         line: UInt,
+        trigger: String?,
         _ body: (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
         turn = turn.applying(true)
@@ -198,7 +213,7 @@ final class NavigationTreeContext {
             endTransactionInterval(interval)
             turn = turn.applying(false)
         }
-        let store = TransactionStore()
+        let store = TransactionStore(trigger: trigger)
         let result = body(store)
         logIssues(store.issues)
         let outcome = finish(store, result, on: router, file: file, line: line)
@@ -229,7 +244,7 @@ final class NavigationTreeContext {
         }
     }
 
-    /// Commits the working copies, logs the changes and tells the observers.
+    /// Commits the working copies, logs the changes and the journey, and tells the observers.
     private func commit(
         _ store: TransactionStore,
         outcome: NavigationOutcome,
@@ -239,6 +254,7 @@ final class NavigationTreeContext {
     ) -> NavigationOutcome {
         store.commit()
         logChanges(store.changes, in: router, file: file, line: line)
+        trackJourney(store.changes, in: router, trigger: store.trigger, file: file, line: line)
         if !store.changes.isEmpty {
             observers.applied?(store.changes)
         }
@@ -268,6 +284,26 @@ final class NavigationTreeContext {
         return .ignored
     }
 
+    /// Works out the screen on display after a change, or when a stack first appears, and logs
+    /// what the journey writes for it.
+    func trackJourney(
+        _ changes: [AppliedChange],
+        in router: some TreeNode,
+        trigger: String?,
+        file: StaticString,
+        line: UInt
+    ) {
+        let change = JourneyChange(
+            changes: changes,
+            trigger: trigger,
+            callSite: Self.callSite(file, line),
+            time: journeyClock(),
+            duplicateWindow: logging.duplicateScreenWindow
+        )
+        let entries = journey.track(change, in: router.rootNode)
+        logJourney(entries, file: file, line: line)
+    }
+
     /// Reports an issue to the observers and logs it in the `issues` category.
     func report(_ issue: NavigationIssue, level: LogLevel) {
         observers.reported?(issue)
@@ -279,6 +315,7 @@ final class NavigationTreeContext {
         on router: some TreeNode,
         file: StaticString,
         line: UInt,
+        trigger: String?,
         _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
         guard turn.queuedCount < maxQueuedChanges else {
@@ -286,7 +323,7 @@ final class NavigationTreeContext {
         }
         logQueued(router.flowID, file: file, line: line)
         turn = turn.enqueuing { [unowned self] in
-            _ = self.perform(on: router, file: file, line: line, body)
+            _ = self.perform(on: router, file: file, line: line, trigger: trigger, body)
         }
         return .queued
     }

@@ -21,7 +21,7 @@ struct NavigationConfigurationTests {
         let handler = RecordingLogHandler()
         let failures = Recorder<NavigationFailure>()
         let configuration = NavigationConfiguration(
-            logging: LogConfiguration(handler: handler, minimumLevel: .info),
+            logging: LogConfiguration(handler: handler, minimumLevel: .debug),
             maxQueuedChanges: 8,
             registry: .permissive,
             onNavigationFailure: { failure in
@@ -40,7 +40,7 @@ struct NavigationConfigurationTests {
         let expectedLimits = [8, 8, 8]
         #expect(limits == expectedLimits)
         #expect(settings.configuration.logging.handler is RecordingLogHandler)
-        #expect(handler.texts.contains { $0.contains("sheet settings") })
+        #expect(handler.routerTexts.contains { $0.contains("sheet settings") })
         #expect(failures.count == 1)
         #expect(failures.last?.issue.flow == settings.flowID)
     }
@@ -115,7 +115,7 @@ struct NavigationConfigurationTests {
         _ = StackRouter(configuration: NavigationConfiguration(logging: logging, registry: registry))
 
         let expectedLevels: [LogLevel] = [.error]
-        #expect(handler.messages.map(\.level) == expectedLevels)
+        #expect(handler.routerMessages.map(\.level) == expectedLevels)
     }
 
     @Test
@@ -129,7 +129,7 @@ struct NavigationConfigurationTests {
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: configuration)
 
         #expect(tabs.configuration.maxQueuedChanges == 32)
-        #expect(handler.texts.first?.hasPrefix("invalidSetting flow=tabs") == true)
+        #expect(handler.routerTexts.first?.hasPrefix("invalidSetting flow=tabs") == true)
     }
 
     /// The queue limit a router reads, for the routers this suite knows.

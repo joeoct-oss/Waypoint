@@ -47,6 +47,17 @@ extension StackRouter {
         }
     }
 
+    /// Reports that the stack appeared on screen, so the journey writes the screen on display
+    /// when no change has written it yet, such as the first screen at launch. Changes no state,
+    /// and writes nothing when the screen on display is the latest visit's.
+    package func rendererDidAppear(file: StaticString = #fileID, line: UInt = #line) {
+        guard isAttached else {
+            return
+        }
+        let noChanges: [AppliedChange] = []
+        tree.trackJourney(noChanges, in: self, trigger: nil, file: file, line: line)
+    }
+
     /// Reports that the screen started animating the push of `route`.
     ///
     /// Until ``rendererDidEndPush(of:)``, a push of an equal route is skipped under

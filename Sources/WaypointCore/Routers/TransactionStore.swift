@@ -158,6 +158,9 @@ final class TransactionStore {
     /// `var` because a push step can skip, through ``noteSkippedPush(_:)``.
     private(set) var skippedPush: AnyRoute?
 
+    /// The `trigger:` the call gave, such as `related_products`, kept on the visit it makes.
+    let trigger: String?
+
     /// What the whole transaction did, from its steps.
     var transactionResult: CallResult {
         if let failure {
@@ -167,6 +170,11 @@ final class TransactionStore {
             return .recovered(recovery.issue, recovery.fallback)
         }
         return hasChanged ? .changed : .unchanged
+    }
+
+    /// A store for one call, with the call's `trigger:`, if any.
+    init(trigger: String? = nil) {
+        self.trigger = trigger
     }
 
     /// Makes a working copy of the router, once per transaction.

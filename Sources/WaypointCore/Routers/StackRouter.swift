@@ -97,6 +97,12 @@ public final class StackRouter: NavigationRouter {
     /// change it.
     @ObservationIgnored var pushInterval: LogInterval?
 
+    /// The name of the stack's root screen when it has no root route, or `nil`.
+    ///
+    /// `var` because a renderer or coordinator names it after the router exists. Only
+    /// ``setRootName(_:)`` changes it.
+    @ObservationIgnored private(set) var rootScreenName: String?
+
     /// The flow this stack was declared for, or `nil` when it was declared for none.
     ///
     /// `var` because a renderer or coordinator declares it after the router exists. Only
@@ -136,6 +142,20 @@ public final class StackRouter: NavigationRouter {
     /// The flow this stack was declared for with ``declareFlow(_:)``, or `nil`.
     public var declaredFlow: (any NavigationFlow.Type)? {
         declaredFlowType
+    }
+
+    /// The name the journey gives the stack's root screen when it has no root route, such as
+    /// `Product list`. A root route's own name wins. Unnamed, the root screen takes its tab's
+    /// name, else its flow's: `Cart` for the `cart` tab. Set it with ``setRootName(_:)`` or
+    /// `WaypointStack(rootName:)`.
+    public var rootName: String? {
+        rootScreenName
+    }
+
+    /// The latest visit in this router's whole tree: the screen on display, with where the user
+    /// came from. `nil` before the first change and before any stack of the tree appeared.
+    public var screenVisit: ScreenVisit? {
+        tree.journey.visit
     }
 
     /// The route types registered in this tree, for decoding and as destinations.
@@ -258,15 +278,24 @@ public final class StackRouter: NavigationRouter {
     }
 
     /// Pushes one route.
+    ///
+    /// - Parameters:
+    ///   - route: The route to push.
+    ///   - trigger: What in the screen started the push, such as `related_products`, written on
+    ///     the journey line and kept on the ``ScreenVisit``. Default: `nil`.
+    ///   - fallback: What to do if the push fails. Default: the flow's policy.
+    ///   - file: The calling file, where an issue points. Leave the default.
+    ///   - line: The calling line, where an issue points. Leave the default.
     @discardableResult
     public func push<R: Route>(
         _ route: R,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
         let routes = [AnyRoute(route)]
-        return perform(file: file, line: line, fallback: fallback) { router, store in
+        return perform(file: file, line: line, fallback: fallback, trigger: trigger) { router, store in
             router.pushStep(routes, in: store)
         }
     }
@@ -320,17 +349,33 @@ public final class StackRouter: NavigationRouter {
     ///
     /// A flow presents one flow at a time: if one is already presented, this fails with
     /// `alreadyPresenting`. Present again from ``presented`` for a chain of modals.
+    ///
+    /// - Parameters:
+    ///   - route: The route of the presented flow's root screen.
+    ///   - style: How the flow is presented. Default: `.sheet`.
+    ///   - trigger: What in the screen started it, such as `checkout_button`, written on the
+    ///     journey lines. Default: `nil`.
+    ///   - fallback: What to do if the presentation fails. Default: the flow's policy.
+    ///   - file: The calling file, where an issue points. Leave the default.
+    ///   - line: The calling line, where an issue points. Leave the default.
     @discardableResult
     public func present<R: Route>(
         _ route: R,
         style: PresentationStyle = .sheet,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
         let erased = AnyRoute(route)
         let request = PresentationRequest(route: erased, style: style)
-        return perform(file: file, line: line, fallback: fallback, presentation: request) { router, store in
+        return perform(
+            file: file,
+            line: line,
+            fallback: fallback,
+            presentation: request,
+            trigger: trigger
+        ) { router, store in
             router.presentStep(erased, style: style, in: store)
         }
     }
@@ -443,6 +488,17 @@ public final class StackRouter: NavigationRouter {
         presentation.style.sheetOptions ?? presentationDefaults.sheet
     }
 
+    /// Names the stack's root screen in the journey, when the stack has no root route.
+    ///
+    /// ```swift
+    /// router.setRootName("Product list")
+    /// ```
+    ///
+    /// `WaypointStack(rootName:)` names it for you. A root route's own name wins over this one.
+    public func setRootName(_ name: String) {
+        rootScreenName = name
+    }
+
     /// Declares the flow whose screens this stack shows, so ``navigator(for:file:line:)`` can
     /// tell when a view model asks for another flow's navigator.
     ///
@@ -472,6 +528,7 @@ public final class StackRouter: NavigationRouter {
         fallback: NavigationFallback?,
         route: AnyRoute? = nil,
         presentation: PresentationRequest? = nil,
+        trigger: String? = nil,
         _ step: @escaping (StackRouter, TransactionStore) -> StepResult
     ) -> NavigationOutcome {
         let context = FallbackContext(
@@ -481,7 +538,7 @@ public final class StackRouter: NavigationRouter {
             file: file,
             line: line
         )
-        return tree.perform(on: self, file: file, line: line) { [unowned self] store in
+        return tree.perform(on: self, file: file, line: line, trigger: trigger) { [unowned self] store in
             store.resolve(step(self, store), on: self, context)
         }
     }

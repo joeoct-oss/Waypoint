@@ -129,6 +129,12 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         isAttached
     }
 
+    /// The latest visit in this router's whole tree: the screen on display, with where the user
+    /// came from. `nil` before the first change and before any stack of the tree appeared.
+    public var screenVisit: ScreenVisit? {
+        tree.journey.visit
+    }
+
     /// The route types registered in this tree, for decoding and as destinations.
     public var registry: RouteRegistry {
         tree.registry
@@ -225,14 +231,23 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     ///
     /// Returns `.alreadyThere` if it is selected, unless ``popsToRootOnReselect`` pops its
     /// stack. Fails with `unknownTab` if it is not one of the tabs.
+    ///
+    /// - Parameters:
+    ///   - tab: The tab to select.
+    ///   - trigger: What started the switch, such as `added_to_cart`, written on the journey
+    ///     lines. Default: `nil`.
+    ///   - fallback: What to do if the selection fails. Default: the flow's policy.
+    ///   - file: The calling file, where an issue points. Leave the default.
+    ///   - line: The calling line, where an issue points. Leave the default.
     @discardableResult
     public func select(
         _ tab: Tab,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
-        perform(file: file, line: line, fallback: fallback) { router, store in
+        perform(file: file, line: line, fallback: fallback, trigger: trigger) { router, store in
             router.selectStep(tab, in: store)
         }
     }
@@ -254,17 +269,32 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     }
 
     /// Presents `route` above the whole tab container, as the root screen of a new child flow.
+    ///
+    /// - Parameters:
+    ///   - route: The route of the presented flow's root screen.
+    ///   - style: How the flow is presented. Default: `.sheet`.
+    ///   - trigger: What started it, written on the journey lines. Default: `nil`.
+    ///   - fallback: What to do if the presentation fails. Default: the flow's policy.
+    ///   - file: The calling file, where an issue points. Leave the default.
+    ///   - line: The calling line, where an issue points. Leave the default.
     @discardableResult
     public func present<R: Route>(
         _ route: R,
         style: PresentationStyle = .sheet,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
         let erased = AnyRoute(route)
         let request = PresentationRequest(route: erased, style: style)
-        return perform(file: file, line: line, fallback: fallback, presentation: request) { router, store in
+        return perform(
+            file: file,
+            line: line,
+            fallback: fallback,
+            presentation: request,
+            trigger: trigger
+        ) { router, store in
             router.presentStep(erased, style: style, in: store)
         }
     }
@@ -381,6 +411,7 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         fallback: NavigationFallback?,
         route: AnyRoute? = nil,
         presentation: PresentationRequest? = nil,
+        trigger: String? = nil,
         _ step: @escaping (TabRouter, TransactionStore) -> StepResult
     ) -> NavigationOutcome {
         let context = FallbackContext(
@@ -390,7 +421,7 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
             file: file,
             line: line
         )
-        return tree.perform(on: self, file: file, line: line) { [unowned self] store in
+        return tree.perform(on: self, file: file, line: line, trigger: trigger) { [unowned self] store in
             store.resolve(step(self, store), on: self, context)
         }
     }

@@ -60,8 +60,12 @@ public struct LogConfiguration: Sendable {
     /// for consoles that can't show them, to get `>`, `|` and `->`. Default: `true`.
     public let usesSymbols: Bool
 
-    /// Which part of the tree is logged after each change, at `.info`. Default: `.off`.
+    /// Which part of the tree is logged after each change, at `.debug`. Default: `.off`.
     public let treeLogging: TreeLogging
+
+    /// How soon the same screen may come forward again before the journey warns that it was
+    /// viewed twice, such as after a double tap. Never below zero. Default: 300 ms.
+    public let duplicateScreenWindow: Duration
 
     /// Creates a configuration. Every argument has a default.
     ///
@@ -75,7 +79,8 @@ public struct LogConfiguration: Sendable {
         revealsPrivateValues: Bool = false,
         format: LogFormat = .readable,
         usesSymbols: Bool = true,
-        treeLogging: TreeLogging = .off
+        treeLogging: TreeLogging = .off,
+        duplicateScreenWindow: Duration = .milliseconds(300)
     ) {
         self.init(
             handler: handler ?? DisabledLogHandler(),
@@ -85,7 +90,8 @@ public struct LogConfiguration: Sendable {
             revealsPrivateValues: revealsPrivateValues,
             format: format,
             usesSymbols: usesSymbols,
-            treeLogging: treeLogging
+            treeLogging: treeLogging,
+            duplicateScreenWindow: duplicateScreenWindow
         )
     }
 
@@ -99,7 +105,8 @@ public struct LogConfiguration: Sendable {
         revealsPrivateValues: Bool,
         format: LogFormat,
         usesSymbols: Bool,
-        treeLogging: TreeLogging
+        treeLogging: TreeLogging,
+        duplicateScreenWindow: Duration
     ) {
         self.handler = handler
         self.usesDefaultHandler = usesDefaultHandler
@@ -109,6 +116,7 @@ public struct LogConfiguration: Sendable {
         self.format = format
         self.usesSymbols = usesSymbols
         self.treeLogging = treeLogging
+        self.duplicateScreenWindow = max(duplicateScreenWindow, .zero)
     }
 
     /// The same configuration, writing to another handler.
@@ -121,7 +129,8 @@ public struct LogConfiguration: Sendable {
             revealsPrivateValues: revealsPrivateValues,
             format: format,
             usesSymbols: usesSymbols,
-            treeLogging: treeLogging
+            treeLogging: treeLogging,
+            duplicateScreenWindow: duplicateScreenWindow
         )
     }
 
@@ -135,7 +144,8 @@ public struct LogConfiguration: Sendable {
             revealsPrivateValues: revealsPrivateValues,
             format: format,
             usesSymbols: usesSymbols,
-            treeLogging: treeLogging
+            treeLogging: treeLogging,
+            duplicateScreenWindow: duplicateScreenWindow
         )
     }
 
@@ -149,7 +159,8 @@ public struct LogConfiguration: Sendable {
             revealsPrivateValues: revealsPrivateValues,
             format: format,
             usesSymbols: usesSymbols,
-            treeLogging: treeLogging
+            treeLogging: treeLogging,
+            duplicateScreenWindow: duplicateScreenWindow
         )
     }
 
@@ -163,7 +174,8 @@ public struct LogConfiguration: Sendable {
             revealsPrivateValues: reveals,
             format: format,
             usesSymbols: usesSymbols,
-            treeLogging: treeLogging
+            treeLogging: treeLogging,
+            duplicateScreenWindow: duplicateScreenWindow
         )
     }
 
@@ -177,7 +189,8 @@ public struct LogConfiguration: Sendable {
             revealsPrivateValues: revealsPrivateValues,
             format: format,
             usesSymbols: usesSymbols,
-            treeLogging: treeLogging
+            treeLogging: treeLogging,
+            duplicateScreenWindow: duplicateScreenWindow
         )
     }
 
@@ -191,7 +204,8 @@ public struct LogConfiguration: Sendable {
             revealsPrivateValues: revealsPrivateValues,
             format: format,
             usesSymbols: usesSymbols,
-            treeLogging: treeLogging
+            treeLogging: treeLogging,
+            duplicateScreenWindow: duplicateScreenWindow
         )
     }
 
@@ -205,7 +219,23 @@ public struct LogConfiguration: Sendable {
             revealsPrivateValues: revealsPrivateValues,
             format: format,
             usesSymbols: usesSymbols,
-            treeLogging: treeLogging
+            treeLogging: treeLogging,
+            duplicateScreenWindow: duplicateScreenWindow
+        )
+    }
+
+    /// The same configuration, with another window for the duplicate screen warning.
+    public func withDuplicateScreenWindow(_ window: Duration) -> LogConfiguration {
+        LogConfiguration(
+            handler: handler,
+            usesDefaultHandler: usesDefaultHandler,
+            minimumLevel: minimumLevel,
+            categories: categories,
+            revealsPrivateValues: revealsPrivateValues,
+            format: format,
+            usesSymbols: usesSymbols,
+            treeLogging: treeLogging,
+            duplicateScreenWindow: window
         )
     }
 

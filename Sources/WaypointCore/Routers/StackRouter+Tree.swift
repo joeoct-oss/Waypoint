@@ -41,7 +41,11 @@ extension StackRouter: TreeNode {
 
     /// `shop      Product list (…)`, with the presented flow below.
     func readableTree(_ naming: RouteNaming) -> ReadableTree {
-        let stack = ReadableLog.Stack(routes: shownRoutes, startsWithRootRoute: showsRootRoute)
+        let stack = ReadableLog.Stack(
+            routes: shownRoutes,
+            startsWithRootRoute: showsRootRoute,
+            rootName: VisibleScreen.rootName(of: self)
+        )
         let detail = ReadableLog.stackText(stack, naming: naming, shortens: false)
         let style = current.state.presentation?.style
         let children = presented.map { child in
