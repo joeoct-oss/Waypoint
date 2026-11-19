@@ -14,7 +14,9 @@
 public enum TreeLogging: Sendable, Equatable {
     /// Nothing more than the changes. The default.
     case off
-    /// One line with each changed stack, such as `shop       ≡ Product list › Product (id: 42, …)`.
+    /// One more line with each changed stack in full, such as
+    /// `Waypoint  shop       stack    root › Product list › Product (id: 42, …)`. Change lines
+    /// already end with the stack, so most apps leave this off.
     case changedStacks
     /// The whole tree, one flow per line, after every change.
     case wholeTree

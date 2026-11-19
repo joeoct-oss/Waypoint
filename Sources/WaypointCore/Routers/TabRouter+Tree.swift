@@ -35,6 +35,11 @@ extension TabRouter: TreeNode {
         visibleStack?.shownRoutes ?? []
     }
 
+    /// Whether the selected tab's stack was made with a root route.
+    var showsRootRoute: Bool {
+        visibleStack?.showsRootRoute ?? false
+    }
+
     /// `tabs      home · [shop] · profile`, with each tab's stack and the presented flow below.
     func readableTree(_ naming: RouteNaming) -> ReadableTree {
         let snapshot = current

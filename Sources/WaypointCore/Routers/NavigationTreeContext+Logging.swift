@@ -213,8 +213,8 @@ extension NavigationTreeContext {
         guard naming.format == .readable else {
             return Self.structuredChangeLine(applied, naming: naming)
         }
-        let path = root.node(for: applied.flow)?.shownRoutes
-        return ReadableLog.change(applied, path: path, naming: naming)
+        let stack = root.node(for: Self.shownFlow(after: applied)).map(Self.readableStack)
+        return ReadableLog.change(applied, stack: stack, naming: naming)
     }
 
     /// One issue, in the configured format.
@@ -247,7 +247,7 @@ extension NavigationTreeContext {
                 continue
             }
             log(.info, .navigation, file: file, line: line) { naming in
-                Self.stackLine(stack.flowID, routes: stack.shownRoutes, naming: naming)
+                Self.stackLine(stack, naming: naming)
             }
         }
     }
@@ -259,11 +259,16 @@ extension NavigationTreeContext {
         }
     }
 
-    /// `shop       ≡ Product list (…)`, or `stack flow=shop path=[…]`.
-    private static func stackLine(_ flow: FlowID, routes: [AnyRoute], naming: RouteNaming) -> String {
+    /// `Waypoint  shop       stack    root › Product list (…)`, or `stack flow=shop path=[…]`.
+    private static func stackLine(_ stack: any TreeNode, naming: RouteNaming) -> String {
         guard naming.format == .readable else {
-            return "stack flow=\(flow) path=\(naming.list(routes))"
+            return "stack flow=\(stack.flowID) path=\(naming.list(stack.shownRoutes))"
         }
-        return ReadableLog.stack(flow, routes: routes, naming: naming)
+        return ReadableLog.stack(stack.flowID, readableStack(stack), naming: naming)
+    }
+
+    /// The routes a flow shows, and whether they start with its root route.
+    private static func readableStack(_ node: any TreeNode) -> ReadableLog.Stack {
+        ReadableLog.Stack(routes: node.shownRoutes, startsWithRootRoute: node.showsRootRoute)
     }
 }

@@ -47,17 +47,16 @@ final class AppServices {
         )
     }
 
-    // Debug builds write every level, with route values and a line for each changed stack, so
-    // Console.app and Instruments show the whole journey. Release builds keep the defaults:
-    // `.notice` and above, with route values hidden.
+    // Debug builds write every level, with route values, so Console.app and Instruments show the
+    // whole journey: each change is one line that ends with the stack on screen. Release builds
+    // keep the defaults: `.notice` and above, with route values hidden.
     private static func makeLogging(issues: IssueLog) -> LogConfiguration {
         let handler = AppLogHandler(issues: issues)
         #if DEBUG
             return LogConfiguration(
                 handler: handler,
                 minimumLevel: .debug,
-                revealsPrivateValues: true,
-                treeLogging: .changedStacks
+                revealsPrivateValues: true
             )
         #else
             return LogConfiguration(handler: handler)

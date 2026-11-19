@@ -297,14 +297,14 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     ///
     /// ```text
     /// tabs       home · [shop] · profile
-    /// ├ home     first screen
-    /// ├ shop     Product list (…) › Product (id: 42, …)
+    /// ├ home     root
+    /// ├ shop     root › Product list (…) › Product (id: 42, …)
     /// │ └ sheet checkout  Checkout (…)
-    /// └ profile  first screen
+    /// └ profile  root
     /// ```
     ///
     /// Route fields are hidden unless `revealingPrivateValues` is `true` or a route lists them
-    /// in `publicLogFields`. Symbols follow the tree's ``LogConfiguration/usesSymbols``.
+    /// in `publicLogFields`. Separators follow the tree's ``LogConfiguration/usesSymbols``.
     public func debugTree(revealingPrivateValues: Bool = false) -> String {
         let naming = RouteNaming(
             format: .readable,
