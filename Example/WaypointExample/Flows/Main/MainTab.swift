@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import WaypointCore
+
 // The main tabs, in the order the tab bar shows them. Each tab's stack is named after its raw value
 // in the journey lines and the debug tree: `shop`, `search`, `cart` and `account`.
 //
