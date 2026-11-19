@@ -33,6 +33,10 @@ let appSources: SourceFilesList = [
     "WaypointExample/**",
 ]
 
+let appResources: ResourceFileElements = [
+    "WaypointExample/Resources/**",
+]
+
 let appDependencies: [TargetDependency] = [
     .package(product: "WaypointCore"),
     .package(product: "Waypoint"),
@@ -58,6 +62,7 @@ let app = Target.target(
     deploymentTargets: deploymentTargets,
     infoPlist: .extendingDefault(with: infoPlistValues),
     sources: appSources,
+    resources: appResources,
     dependencies: appDependencies
 )
 
