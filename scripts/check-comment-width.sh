@@ -9,7 +9,8 @@
 # Fails when a comment line is longer than 100 columns, indentation included (CODE_STYLE.md,
 # "Comments wrap at 100 columns"). It checks `//` and `///` lines in Swift files, and the same
 # lines inside the code blocks of DocC articles and the Markdown files at the root.
-# Lines inside a ```text block and lines with a URL are allowed to run long.
+# Lines inside a ```text block, lines with a URL and the `// expected-error:` lines of compile
+# fixtures, which quote the compiler, are allowed to run long.
 #
 # Usage: scripts/check-comment-width.sh [limit]
 
@@ -35,7 +36,7 @@ check() {
             $text_block = !$text_block && /```text/;
             next;
         }
-        next if $text_block || m{https?://};
+        next if $text_block || m{https?://} || m{^// expected-error: };
         if (m{^\s*//} && length($_) > $ENV{LIMIT}) {
             printf "%s:%d: comment line is %d columns (limit %d)\n", $ENV{NAME}, $., length($_), $ENV{LIMIT};
             $found = 1;

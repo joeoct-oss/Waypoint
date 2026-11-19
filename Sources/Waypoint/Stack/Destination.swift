@@ -78,8 +78,9 @@
             router?.register(R.self)
             router?.registerViewName(ViewTypeName.of(Destination.self), for: R.self)
             mirror?.registerDestination(R.self)
-            let navigator = NavigatorLookup.destination(router, route: R.self, report: NavigationIssueLog.report)
+            let stackRouter = router
             return view.navigationDestination(for: R.self) { route in
+                let navigator = NavigatorLookup.destination(stackRouter, route: route, report: NavigationIssueLog.report)
                 content(route, navigator)
                     .pushedTabBar()
             }
