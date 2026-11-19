@@ -49,7 +49,7 @@
             --display: "Unbounded", "Inter", sans-serif;
             --body: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
             --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-            --size-hero: clamp(40px, 5vw, 64px);
+            --size-hero: clamp(34px, 3.6vw, 52px);
             --size-h2: clamp(28px, 3.2vw, 40px);
             --size-h3: 19px;
             --size-lede: clamp(18px, 1.6vw, 21px);
@@ -337,8 +337,7 @@
         }
 
         h1 {
-            max-width: 640px;
-            margin: 0 0 24px;
+            margin: 0 0 22px;
             color: var(--starlight);
             font: 600 var(--size-hero)/1.06 var(--display);
             letter-spacing: -0.03em;
@@ -349,13 +348,23 @@
             color: var(--nova);
         }
 
+        /* Each sentence of the slogan starts its own line, so neither one breaks in the middle. */
+        h1 .line {
+            display: block;
+        }
+
         h1 .word {
             display: inline-block;
         }
 
+        .eyebrow .sep {
+            color: var(--faint);
+        }
+
         .lede {
-            max-width: 32em;
+            max-width: 30em;
             margin: 0 0 36px;
+            text-wrap: pretty;
             color: var(--muted);
             font-size: var(--size-lede);
             line-height: 1.55;
@@ -823,6 +832,14 @@
                 padding-top: 80px;
             }
 
+            .eyebrow {
+                letter-spacing: 0.06em;
+            }
+
+            .hero .eyebrow::before {
+                display: none;
+            }
+
             .grid.features {
                 grid-template-columns: 1fr;
             }
@@ -925,9 +942,9 @@
             </svg>
             <div class="wrap">
                 <div class="hero-body">
-                    <p class="eyebrow">Navigation for SwiftUI and UIKit</p>
-                    <h1>Connect every screen. <em>Know every route.</em></h1>
-                    <p class="lede">Typed, testable navigation for SwiftUI and UIKit. Screens report what happened, coordinators decide where to go, and every route is a plain Swift value.</p>
+                    <p class="eyebrow"><span>Swift 6 <span class="sep">·</span> iOS 17+ <span class="sep">·</span> SwiftUI and UIKit</span></p>
+                    <h1><span class="line">Connect every screen.</span> <em class="line">Know every route.</em></h1>
+                    <p class="lede">Typed, testable navigation for SwiftUI and UIKit. Screens report what happened, and coordinators decide where to go.</p>
                     <div class="actions">
                         <a class="button primary" href="/documentation/waypointcore/routes">Get started <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
                         <a class="button secondary" href="/documentation/">Read the documentation</a>
