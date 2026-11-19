@@ -14,10 +14,9 @@
     /// Writes Waypoint's logs to Apple's unified log, and its intervals as signposts.
     ///
     /// The SwiftUI and UIKit renderers use it by default, so an app sees Waypoint's notices, errors
-    /// and faults in Xcode's console and in Console.app with no setup. Each
-    /// `LogCategory` is its own `Logger` category under one subsystem, built once.
-    /// Each `LogInterval`, such as a `transaction` or a `push`, is an `OSSignposter`
-    /// interval in Instruments.
+    /// and faults in Xcode's console and in Console.app with no setup. Each `LogCategory` is its
+    /// own `Logger` category under one subsystem, built once. Each `LogInterval`, such as a
+    /// `transaction` or a `push`, is an `OSSignposter` interval in Instruments.
     ///
     /// The configuration filters levels and categories before a message is built, so this handler
     /// wants every message it is asked about. Each line is written as one public string: it was
