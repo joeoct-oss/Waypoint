@@ -184,7 +184,7 @@
         var parts = {
             ring: svg.querySelector(".ring"),
             planet: svg.querySelector(".planet"),
-            trails: Array.prototype.slice.call(svg.querySelectorAll(".trail")),
+            trail: svg.querySelector(".trail"),
             stops: Array.prototype.slice.call(svg.querySelectorAll(".stop")),
             ripples: Array.prototype.slice.call(svg.querySelectorAll(".ripple")),
             pulse: svg.querySelector(".pulse"),
@@ -196,11 +196,8 @@
             tilt: svg.querySelector(".orbit-scroll"),
             drift: svg.querySelector(".orbit-drift")
         };
-        var lengths = parts.trails.map(function (trail) {
-            return trail.getTotalLength();
-        });
         var state = {
-            arrow: { angle: 135, scale: 0.55, nudge: 0, opacity: 0 },
+            arrow: { angle: 135, scale: 0.55, nudge: 0, opacity: 0, trail: true },
             star: { scale: 1, rotation: 0 },
             tilt: { y: 0, rotation: 0, scale: 1 },
             drift: { x: 0, y: 0 },
@@ -218,6 +215,34 @@
             return Math.round(value * 1000) / 1000;
         }
 
+        // The trail is one filled ribbon along the orbit, centred on it, that widens evenly from
+        // 1.2 to 3.2 units, like the mark's three strokes but without their steps.
+        function ribbon(from, to) {
+            var steps = Math.max(2, Math.ceil((to - from) / 2) + 1);
+            var outer = [];
+            var inner = [];
+
+            for (var index = 0; index < steps; index += 1) {
+                var angle = from + (to - from) * index / (steps - 1);
+                var half = 0.6 + Math.min(1, Math.max(0, (angle - 135) / 116));
+                var radians = angle * Math.PI / 180;
+                var cos = Math.cos(radians);
+                var sin = Math.sin(radians);
+
+                outer.push(round(center + (radius + half) * cos) + " " + round(center + (radius + half) * sin));
+                inner.unshift(round(center + (radius - half) * cos) + " " + round(center + (radius - half) * sin));
+            }
+
+            return "M" + outer.join(" L") + " L" + inner.join(" L") + "Z";
+        }
+
+        // The trail ends a little behind the arrow's tail, a gap that grows with the arrow.
+        function drawTrail() {
+            var end = state.arrow.angle - 19 * state.arrow.scale;
+
+            parts.trail.setAttribute("d", end > 136 ? ribbon(135, end) : "M0 0Z");
+        }
+
         // The arrow faces along the orbit: the tangent is the angle plus a quarter turn.
         function drawArrow() {
             var arrow = state.arrow;
@@ -228,6 +253,10 @@
                 round(arrow.scale) + ")");
             parts.arrowGroup.setAttribute("opacity", round(arrow.opacity));
             parts.arrow.setAttribute("transform", "translate(" + round(arrow.nudge) + " 0)");
+
+            if (arrow.trail) {
+                drawTrail();
+            }
         }
 
         function drawStar() {
@@ -257,7 +286,6 @@
 
         return {
             parts: parts,
-            lengths: lengths,
             state: state,
             drawArrow: drawArrow,
             drawStar: drawStar,
@@ -273,31 +301,42 @@
         var parts = mark.parts;
         var state = mark.state;
         var stopRadii = [1.5, 2, 2.5];
-        var stopAngles = [135, 180, 225, 270];
-        var arrowScale = [0.55, 0.72, 0.86, 1];
+        var stopAngles = [135, 180, 225];
+        var passed = [];
         var timeline = gsap.timeline({ paused: true });
+
+        function pop(index) {
+            passed[index] = true;
+            gsap.to(parts.stops[index], { attr: { r: stopRadii[index] }, duration: 0.4, ease: "back.out(3)" });
+            ripple(parts.ripples[index], stopRadii[index]).play();
+        }
+
+        // One smooth trip from the first stop to the top; each stop lights up as it is passed.
+        function travel() {
+            mark.drawArrow();
+            stopAngles.forEach(function (angle, index) {
+                if (!passed[index] && state.arrow.angle >= angle - 2) {
+                    pop(index);
+                }
+            });
+        }
 
         timeline
             .call(function () {
-                [parts.ring, parts.planet, parts.arrowGroup, parts.star.parentNode].forEach(show);
-                parts.trails.forEach(show);
+                passed = [];
+                [parts.ring, parts.planet, parts.arrowGroup, parts.star.parentNode, parts.trail].forEach(show);
                 parts.stops.forEach(show);
             }, null, 0)
-            // A zero-length dash still draws its round cap, so each trail hides until it starts.
-            .set(parts.trails, { attr: { opacity: 0 } }, 0)
-            .set(parts.trails, {
-                attr: {
-                    "stroke-dasharray": function (index) {
-                        return mark.lengths[index] + " " + (mark.lengths[index] + 1);
-                    },
-                    "stroke-dashoffset": function (index) {
-                        return mark.lengths[index];
-                    }
-                }
-            }, 0)
             .set(parts.stops, { attr: { r: 0 } }, 0)
             .set(parts.glow, { attr: { r: 0 } }, 0)
-            .set(state.arrow, { angle: stopAngles[0], scale: arrowScale[0], opacity: 0, onComplete: mark.drawArrow }, 0)
+            .set(state.arrow, {
+                angle: 135,
+                scale: 0.55,
+                nudge: 0,
+                opacity: 0,
+                trail: true,
+                onComplete: mark.drawArrow
+            }, 0)
             .set(state.star, { scale: 0, rotation: -120, onComplete: mark.drawStar }, 0)
             .fromTo(parts.ring, { attr: { opacity: 0 } }, {
                 attr: { opacity: 1 },
@@ -307,44 +346,21 @@
             .fromTo(parts.planet, { attr: { r: 0 } }, { attr: { r: 4 }, duration: 0.8, ease: "back.out(2.4)" }, 0.15);
 
         var at = 0.6;
+        var trip = 2.1;
 
-        timeline.to(parts.stops[0], { attr: { r: stopRadii[0] }, duration: 0.4, ease: "back.out(3)" }, at);
-        timeline.add(ripple(parts.ripples[0], stopRadii[0]), at);
-        timeline.to(state.arrow, { opacity: 1, duration: 0.2, onUpdate: mark.drawArrow }, at);
+        timeline.to(state.arrow, { opacity: 1, duration: 0.25, onUpdate: mark.drawArrow }, at);
+        timeline.to(state.arrow, {
+            angle: 270,
+            scale: 1,
+            duration: trip,
+            ease: "sine.inOut",
+            onStart: function () {
+                pop(0);
+            },
+            onUpdate: travel
+        }, at);
 
-        [0, 1, 2].forEach(function (index) {
-            var start = at + 0.25 + index * 0.62;
-            var duration = 0.5;
-
-            timeline.to(state.arrow, {
-                angle: stopAngles[index + 1],
-                scale: arrowScale[index + 1],
-                duration: duration,
-                ease: "power2.inOut",
-                onUpdate: mark.drawArrow
-            }, start);
-
-            // The last trail ends behind the arrow's tail, so it finishes a little sooner.
-            timeline.set(parts.trails[index], { attr: { opacity: 1 } }, start);
-            timeline.to(parts.trails[index], {
-                attr: { "stroke-dashoffset": 0 },
-                duration: index === 2 ? duration * 0.75 : duration,
-                ease: "power2.inOut"
-            }, start);
-
-            if (index < 2) {
-                var arrives = start + duration - 0.05;
-
-                timeline.to(parts.stops[index + 1], {
-                    attr: { r: stopRadii[index + 1] },
-                    duration: 0.4,
-                    ease: "back.out(3)"
-                }, arrives);
-                timeline.add(ripple(parts.ripples[index + 1], stopRadii[index + 1]), arrives);
-            }
-        });
-
-        var arrival = at + 0.25 + 2 * 0.62 + 0.5 - 0.1;
+        var arrival = at + trip - 0.15;
 
         timeline
             .to(state.star, {
@@ -388,7 +404,7 @@
         var state = mark.state;
         var loop = { ease: "sine.inOut", yoyo: true, repeat: -1, paused: true };
         var loops = [
-            gsap.to(state.arrow, Object.assign({ nudge: 1.6, duration: 1.2, onUpdate: mark.drawArrow }, loop)),
+            gsap.to(state.arrow, Object.assign({ nudge: 0.9, duration: 1.5, onUpdate: mark.drawArrow }, loop)),
             gsap.to(state.star, Object.assign({
                 scale: 1.12,
                 rotation: 12,
@@ -407,11 +423,11 @@
             repeat: -1
         });
 
-        // The tail of the arrow sits at about 255 degrees.
+        // The trail ends at about 251 degrees.
         gsap.timeline({ repeat: -1, repeatDelay: 5, delay: 5 })
             .set(state.pulse, { angle: 135, onComplete: mark.drawPulse })
             .fromTo(parts.pulse, { attr: { opacity: 0 } }, { attr: { opacity: 0.9 }, duration: 0.25 })
-            .to(state.pulse, { angle: 255, duration: 1.4, ease: "power1.inOut", onUpdate: mark.drawPulse }, 0)
+            .to(state.pulse, { angle: 249, duration: 1.4, ease: "power1.inOut", onUpdate: mark.drawPulse }, 0)
             .to(parts.pulse, { attr: { opacity: 0 }, duration: 0.3 }, 1.15);
 
         gsap.utils.toArray(".starfield .sparkle").forEach(function (sparkle) {
