@@ -66,7 +66,7 @@ WaypointStack(router) {
 
 **What the user does comes back.** A swipe back, the Back button and its long-press menu reach the router as one pop each, logged with `origin=user`. The router's path is always what the screen shows.
 
-**Changes during a transition.** A multi-step push or pop runs as one animation. On iOS 17, SwiftUI drops a path change that lands while a push or pop still animates, so there the stack holds the change and shows the router's newest path when the transition ends (about 0.6 s). A change that replaces screens, such as a link from one product to another, is shown there as a pop back to the screens both paths share, then a push. Later systems apply every change at once.
+**Changes during a transition.** A multi-step push or pop runs as one animation. On iOS 17, SwiftUI drops a path change that lands while a push or pop still animates, so there the stack holds the change and shows the router's newest path when the transition ends (about 0.6 s). The transition counts from when the new screens finish drawing, not from the path change, because on a busy device drawing can block the main thread for seconds before iOS 17 starts the push. A change that replaces screens, such as a link from one product to another, is shown there as a pop back to the screens both paths share, then a push. Later systems apply every change at once.
 
 **One push per tap.** The stack tells its router when it starts showing a push and when that push ends (about 0.6 s later), on every system. Until then, a second push of the same route, such as the second tap of a fast double tap on a row, is skipped and returns `.alreadyThere`. See "One push per tap" in the core's stack navigation article to turn it off.
 

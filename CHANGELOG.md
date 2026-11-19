@@ -87,3 +87,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - The documentation landing page is redesigned: the night sky with its meteor showers spans the whole page, a type scale sets Unbounded for display headings and Inter for the rest, a glass navigation bar marks the section in view and opens as a menu on phones, scrolling is smooth (Lenis 1.1.20, MIT, in `docs-theme/vendor/lenis`), and new sections for the guides, the modules, the example and a closing call to action rise in as they come into view. Reduced motion keeps native scrolling and shows everything still. (#203)
 - Each API article for API that isn't built yet opens with "Draft until #n", and every note about a coming change names its issue. New notes cover one configuration for the whole tree (#143), a strict registry (#144), replacing a presentation and outcome helpers (#145), route hints (#146), system links in release builds (#147), leave confirmation (#155) and popovers (#156). (#159)
 - The README status lists what has landed since: one configuration on the root, the strict registry, route hints, one push per tap, the replace-presentation fallback, `WaypointLink`, and navigators and property wrappers. The last plain code fence in `CONTRIBUTING.md` names its language. (#189)
+
+### Fixed
+
+- On iOS 17, a change made while a push was still being drawn on a busy device, such as a pop soon after a multi-step push, is no longer lost. The stack's transition hold counts from when the main thread is free after drawing, not from the path change. (#204)
