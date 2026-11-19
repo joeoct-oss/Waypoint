@@ -4,7 +4,7 @@ Show stacks, sheets, tabs and roots in SwiftUI.
 
 ## Overview
 
-> Note: Stacks are built (#11): `WaypointStack`, `destination(_:_:)`, swipe-back sync and the Waypoint link (#147). So are the flow initializer, the navigator destination and previews (#25). The rest of this article is planned, not built, and can still change: coordinators (#36), sheets and full-screen covers (#12), tabs (#13), roots (#37, #148) and incoming links (#15).
+> Note: Stacks are built (#11): `WaypointStack`, `destination(_:_:)`, swipe-back sync and the Waypoint link (#147), the missing-destination screen (#166), hiding the tab bar on pushed screens (#207) and the journey line for each screen the user sees (#216). So are the flow initializer, the navigator destination and previews (#25). The rest of this article is planned, not built, and can still change: coordinators (#36), sheets and full-screen covers (#12), tabs (#13), roots (#37, #148) and incoming links (#15).
 
 Each entry view takes a router, or makes one for you, and draws its state. Screens are registered by route type. SwiftUI applies one `navigationDestination(for:)` per registered type, so screens are never wrapped in `AnyView`.
 

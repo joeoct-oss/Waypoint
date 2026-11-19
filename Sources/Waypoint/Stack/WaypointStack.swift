@@ -19,7 +19,7 @@
     /// The stack draws the router's path with one `NavigationStack`, and reports what the user
     /// does by hand (swipe back, the Back button and its long-press menu) back to the router. It
     /// keeps no navigation state of its own. Register a screen for each route type with
-    /// ``SwiftUICore/View/destination(_:_:)``:
+    /// ``SwiftUICore/View/destination(_:_:)-(_,(R)->Content)``:
     ///
     /// ```swift
     /// WaypointStack(router) {
@@ -36,7 +36,7 @@
     ///
     /// Screens inside the stack can read its navigator with `@StackNavigation`, dismiss its flow
     /// with `@DismissFlow`, or read the router with `@Environment(StackRouter.self)`. A stack made
-    /// with ``init(flow:router:root:)`` belongs to a flow, which `@FlowNavigation` finds.
+    /// with ``init(flow:router:rootName:root:)`` belongs to a flow, which `@FlowNavigation` finds.
     ///
     /// A route whose type the router knows but no screen inside this stack registered, such as
     /// one registered only in another stack, is reported as `missingDestination` and drawn with
