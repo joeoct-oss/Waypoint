@@ -33,6 +33,7 @@ final class JourneyTests: XCTestCase {
     private static let cartProductTitle = "Orbit Lamp"
     private static let savedProductID = 2
     private static let orderID = 1042
+    private static let ordersTitle = "Orders"
     private static let newAddressLabel = "Studio"
     private static let newAddressStreet = "9 Nova Lane"
     private static let newAddressCity = "Springfield"
@@ -191,6 +192,8 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(saved.waitForExistence(timeout: UITestSteps.timeout))
     }
 
+    // Orders and an order push on the Account tab's plain stack, which hides the tab bar on them,
+    // and Back to the tab's root shows it again.
     func testOrdersPushDetail() {
         let app = ExampleApp.launch(signedIn: true)
 
@@ -199,6 +202,13 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.order(id: Self.orderID)].tapWhenReady()
 
         XCTAssertTrue(app.navigationBars["Order \(Self.orderID)"].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.waitForTabBar(shown: false), "a pushed account screen showed the tab bar")
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.ordersTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+
+        XCTAssertTrue(app.navigationBars[Self.accountTitle].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.waitForTabBar(shown: true), "the account tab hid the tab bar")
     }
 
     func testSignOutKeepsTheApp() {
