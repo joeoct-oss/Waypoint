@@ -22,18 +22,25 @@
 /// Conformances:
 /// - `Sendable`, so the configuration can be built anywhere and shared with the whole tree.
 public struct LogConfiguration: Sendable {
-    /// Notices, errors and faults in every category, with private values hidden.
+    /// Notices, errors and faults in every category, with private values hidden, written to the
+    /// platform's default handler (see ``usesDefaultHandler``).
     public static var `default`: LogConfiguration {
         LogConfiguration()
     }
 
-    /// Nothing is logged and no message is built.
+    /// Nothing is logged, not even by a renderer, and no message is built.
     public static var disabled: LogConfiguration {
         LogConfiguration(handler: DisabledLogHandler())
     }
 
     /// Where messages go.
     public let handler: any LogHandler
+
+    /// Whether the app gave no handler, so the tree writes to the platform's default: the
+    /// unified log once a SwiftUI or UIKit renderer draws it, and nowhere with `WaypointCore`
+    /// alone. A handler given in the initializer or ``withHandler(_:)``, including
+    /// `DisabledLogHandler` in ``disabled``, is always kept.
+    public let usesDefaultHandler: Bool
 
     /// The least important level that is written. Default: `.notice`.
     public let minimumLevel: LogLevel
@@ -56,10 +63,13 @@ public struct LogConfiguration: Sendable {
     /// Which part of the tree is logged after each change, at `.info`. Default: `.off`.
     public let treeLogging: TreeLogging
 
-    /// Creates a configuration. Every argument has a default; the default handler writes
-    /// nothing until a renderer or the app sets one.
+    /// Creates a configuration. Every argument has a default.
+    ///
+    /// - Parameter handler: Where messages go, or `nil` for the platform's default: the unified
+    ///   log once a SwiftUI or UIKit renderer draws the tree, and nowhere with `WaypointCore`
+    ///   alone. Default: `nil`.
     public init(
-        handler: any LogHandler = DisabledLogHandler(),
+        handler: (any LogHandler)? = nil,
         minimumLevel: LogLevel = .notice,
         categories: Set<LogCategory>? = nil,
         revealsPrivateValues: Bool = false,
@@ -67,7 +77,32 @@ public struct LogConfiguration: Sendable {
         usesSymbols: Bool = true,
         treeLogging: TreeLogging = .off
     ) {
+        self.init(
+            handler: handler ?? DisabledLogHandler(),
+            usesDefaultHandler: handler == nil,
+            minimumLevel: minimumLevel,
+            categories: categories,
+            revealsPrivateValues: revealsPrivateValues,
+            format: format,
+            usesSymbols: usesSymbols,
+            treeLogging: treeLogging
+        )
+    }
+
+    /// Creates a configuration from every field, so the `with…` functions keep whether the
+    /// handler is the default.
+    private init(
+        handler: any LogHandler,
+        usesDefaultHandler: Bool,
+        minimumLevel: LogLevel,
+        categories: Set<LogCategory>?,
+        revealsPrivateValues: Bool,
+        format: LogFormat,
+        usesSymbols: Bool,
+        treeLogging: TreeLogging
+    ) {
         self.handler = handler
+        self.usesDefaultHandler = usesDefaultHandler
         self.minimumLevel = minimumLevel
         self.categories = categories
         self.revealsPrivateValues = revealsPrivateValues
@@ -80,6 +115,7 @@ public struct LogConfiguration: Sendable {
     public func withHandler(_ handler: any LogHandler) -> LogConfiguration {
         LogConfiguration(
             handler: handler,
+            usesDefaultHandler: false,
             minimumLevel: minimumLevel,
             categories: categories,
             revealsPrivateValues: revealsPrivateValues,
@@ -93,6 +129,7 @@ public struct LogConfiguration: Sendable {
     public func withMinimumLevel(_ level: LogLevel) -> LogConfiguration {
         LogConfiguration(
             handler: handler,
+            usesDefaultHandler: usesDefaultHandler,
             minimumLevel: level,
             categories: categories,
             revealsPrivateValues: revealsPrivateValues,
@@ -106,6 +143,7 @@ public struct LogConfiguration: Sendable {
     public func withCategories(_ categories: Set<LogCategory>?) -> LogConfiguration {
         LogConfiguration(
             handler: handler,
+            usesDefaultHandler: usesDefaultHandler,
             minimumLevel: minimumLevel,
             categories: categories,
             revealsPrivateValues: revealsPrivateValues,
@@ -119,6 +157,7 @@ public struct LogConfiguration: Sendable {
     public func withPrivateValuesRevealed(_ reveals: Bool) -> LogConfiguration {
         LogConfiguration(
             handler: handler,
+            usesDefaultHandler: usesDefaultHandler,
             minimumLevel: minimumLevel,
             categories: categories,
             revealsPrivateValues: reveals,
@@ -132,6 +171,7 @@ public struct LogConfiguration: Sendable {
     public func withFormat(_ format: LogFormat) -> LogConfiguration {
         LogConfiguration(
             handler: handler,
+            usesDefaultHandler: usesDefaultHandler,
             minimumLevel: minimumLevel,
             categories: categories,
             revealsPrivateValues: revealsPrivateValues,
@@ -145,6 +185,7 @@ public struct LogConfiguration: Sendable {
     public func withSymbols(_ usesSymbols: Bool) -> LogConfiguration {
         LogConfiguration(
             handler: handler,
+            usesDefaultHandler: usesDefaultHandler,
             minimumLevel: minimumLevel,
             categories: categories,
             revealsPrivateValues: revealsPrivateValues,
@@ -158,6 +199,7 @@ public struct LogConfiguration: Sendable {
     public func withTreeLogging(_ treeLogging: TreeLogging) -> LogConfiguration {
         LogConfiguration(
             handler: handler,
+            usesDefaultHandler: usesDefaultHandler,
             minimumLevel: minimumLevel,
             categories: categories,
             revealsPrivateValues: revealsPrivateValues,

@@ -4,7 +4,7 @@ Login, tabs, a detail push, a sheet and a deep link, in one small SwiftUI app.
 
 ## Overview
 
-> Note: Draft until #3. The API in this article is planned, not built, and can still change when #3 lands.
+> Note: Draft until #15. The API in this article is planned, not built, and can still change when #15 lands.
 
 These five flows cover what most apps need. They build on each other: the app starts at login, switches to tabs, pushes a product, opens a filter sheet and answers a link.
 

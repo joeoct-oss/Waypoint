@@ -14,7 +14,8 @@ final class NavigationTreeContext {
     /// since.
     ///
     /// `var` because destinations are registered one by one as renderers and coordinators set
-    /// up. Only ``register(_:)`` changes it, and only its registry.
+    /// up, and a renderer may install the platform's log handler. Only ``register(_:)`` changes
+    /// its registry, and only ``installDefaultLogHandler(_:)`` its log handler.
     private(set) var configuration: NavigationConfiguration
 
     /// The seams for observers, logging, strict mode and the failure handlers.
@@ -83,6 +84,18 @@ final class NavigationTreeContext {
         for problem in registry.problems.dropFirst(known) {
             logRegistryProblem(problem)
         }
+    }
+
+    /// Writes the tree's logs to `makeHandler()` when the app gave no handler, so a renderer can
+    /// make the unified log the default. A handler the app chose, `.disabled` included, is kept,
+    /// and a tree that already has one installed keeps it. Returns whether it was installed.
+    @discardableResult
+    func installDefaultLogHandler(_ makeHandler: () -> any LogHandler) -> Bool {
+        guard logging.usesDefaultHandler else {
+            return false
+        }
+        configuration = configuration.withLogging(logging.withHandler(makeHandler()))
+        return true
     }
 
     /// Calls `observer` with the changes of each committed transaction, while it is still being

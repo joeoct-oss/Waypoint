@@ -9,16 +9,17 @@
 #if canImport(SwiftUI)
     import os
     import WaypointCore
+    import WaypointOSLog
 
     /// Where the SwiftUI renderer reports a navigation issue that has no router to report to,
     /// such as a property wrapper with no stack above its view.
     ///
     /// The issue goes to the unified log as a fault, so it shows in Xcode's console in every
-    /// build. Its message names the wrapper, its file and line, and the fix, and holds no user
-    /// data.
+    /// build, under the same subsystem and category as the tree's own issues by default. Its
+    /// message names the wrapper, its file and line, and the fix, and holds no user data.
     enum NavigationIssueLog {
         /// The log the issues go to.
-        static let logger = Logger(subsystem: "Waypoint", category: "issues")
+        static let logger = Logger(subsystem: OSLogHandler.defaultSubsystem, category: LogCategory.issues.name)
 
         /// Logs `issue` as a fault.
         @MainActor

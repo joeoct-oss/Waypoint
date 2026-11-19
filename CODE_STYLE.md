@@ -120,7 +120,7 @@ public struct LogConfiguration: Sendable {
     public let revealsPrivateValues: Bool
 
     public init(
-        handler: any LogHandler = DisabledLogHandler(),
+        handler: (any LogHandler)? = nil,
         minimumLevel: LogLevel = .notice,
         categories: Set<LogCategory>? = nil,
         revealsPrivateValues: Bool = false
