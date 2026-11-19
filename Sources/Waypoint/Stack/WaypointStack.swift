@@ -45,7 +45,7 @@
     ///
     /// The tab bar stays on pushed screens, as the system shows it. To hide it on every screen
     /// pushed above a tab's root, as `hidesBottomBarWhenPushed` does in UIKit, use
-    /// ``SwiftUICore/View/tabBarOnPushedScreens(_:)``.
+    /// ``SwiftUICore/View/tabBarOnPushedScreens(_:motion:)``.
     ///
     /// A stack keeps drawing the router it was first given. Pass another router and the stack
     /// starts again from that router's path.
@@ -187,6 +187,7 @@
         var body: some View {
             NavigationStack(path: path) {
                 root
+                    .stackTabBar()
                     .navigationDestination(for: MissingDestinationEntry.self) { entry in
                         MissingDestinationHost(entry: entry, mirror: mirror)
                             .pushedTabBar()
