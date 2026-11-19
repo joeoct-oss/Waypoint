@@ -70,10 +70,11 @@ public struct StackNavigator {
         self.missing = MissingRouter(message: message, report: report)
     }
 
-    /// Pushes one route. See ``StackRouter/push(_:else:file:line:)``.
+    /// Pushes one route. See ``StackRouter/push(_:trigger:else:file:line:)``.
     @discardableResult
     public func push<R: Route>(
         _ route: R,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
@@ -81,7 +82,7 @@ public struct StackNavigator {
         guard let router else {
             return unavailable(file: file, line: line)
         }
-        return router.push(route, else: fallback, file: file, line: line)
+        return router.push(route, trigger: trigger, else: fallback, file: file, line: line)
     }
 
     /// Pops `count` routes. See ``StackRouter/pop(count:else:file:line:)``.
@@ -126,11 +127,12 @@ public struct StackNavigator {
     }
 
     /// Presents `route` over this flow, as the root screen of a new child flow. See
-    /// ``StackRouter/present(_:style:else:file:line:)``.
+    /// ``StackRouter/present(_:style:trigger:else:file:line:)``.
     @discardableResult
     public func present<R: Route>(
         _ route: R,
         style: PresentationStyle = .sheet,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line
@@ -138,7 +140,7 @@ public struct StackNavigator {
         guard let router else {
             return unavailable(file: file, line: line)
         }
-        return router.present(route, style: style, else: fallback, file: file, line: line)
+        return router.present(route, style: style, trigger: trigger, else: fallback, file: file, line: line)
     }
 
     /// Dismisses the flow this navigator belongs to, when it was presented. See
