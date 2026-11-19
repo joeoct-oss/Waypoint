@@ -89,6 +89,10 @@ final class MainCoordinator {
             navigation: services.navigation,
             onClearAllData: onClearAllData
         )
+        // The journey box names each router by the coordinator that owns it. The account tab
+        // draws its own SwiftUI stack, so its coordinator only names the tab.
+        tabs.setCoordinator(self)
+        tabs.router(for: .account).setCoordinator(account)
     }
 
     // The tab the reader picked in the tab bar.

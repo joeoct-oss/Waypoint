@@ -149,6 +149,22 @@ public struct ScreenVisit: Sendable, Equatable {
     public var depth: Int {
         max(journey.count - 1, 0)
     }
+
+    /// The same visit, its screen replaced by `screen`, such as once its view has a name.
+    func withScreen(_ screen: ScreenReference) -> ScreenVisit {
+        ScreenVisit(
+            screen: screen,
+            previous: previous,
+            source: source,
+            journey: journey,
+            transition: transition,
+            origin: origin,
+            callSite: callSite,
+            trigger: trigger,
+            step: step,
+            timeOnPrevious: timeOnPrevious
+        )
+    }
 }
 
 /// A flow presented over another one, with the screen it starts at: the funnel analytics reads

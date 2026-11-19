@@ -42,6 +42,9 @@ protocol TreeNode: NavigationRouter, TransactionParticipant {
     /// Whether this router is in the tree.
     var isAttached: Bool { get }
 
+    /// The name of the coordinator that owns this router, or `nil`.
+    var coordinatorName: String? { get }
+
     /// The committed presented flow, if any.
     var presentedNode: (any TreeNode)? { get }
 

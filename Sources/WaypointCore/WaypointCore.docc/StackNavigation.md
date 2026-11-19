@@ -99,7 +99,7 @@ public final class StackRouter {
     public func setDuplicatePushRule(_ rule: DuplicatePushRule)
 
     /// Pushes one route. `trigger` names what started it, such as
-    /// "related_products", in the journey lines.
+    /// "related_products", in the journey box.
     @discardableResult public func push<R: Route>(
         _ route: R,
         trigger: String? = nil,

@@ -88,6 +88,9 @@ enum JourneyFixtures {
         static let isFlowStep = false
     }
 
+    /// A coordinator that owns the shop tab's stack, named in the journey box by its type.
+    final class ShopCoordinator { }
+
     /// A clock the test moves by hand.
     @MainActor
     final class ManualClock {

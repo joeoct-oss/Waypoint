@@ -53,6 +53,25 @@ final class NavigationTreeContext {
     /// The screen on display and the journey that led to it.
     let journey = JourneyTracker()
 
+    /// A presentation's box, held until the presented stack is drawn, or `nil`.
+    ///
+    /// `var` because each presentation holds its box. Only `trackJourney` and
+    /// `flushHeldJourney()` change it.
+    private var heldJourney: HeldJourney?
+
+    /// Whether a renderer names views, so a presentation's box waits for its view's name.
+    ///
+    /// `var` because it turns on when a renderer first names a view. Only
+    /// `StackRouter.setRootViewName(_:)` and `registerViewName(_:for:)` change it.
+    var namesViews = false
+
+    /// The name of the view that draws each route type, as renderers registered them, for the
+    /// journey box.
+    ///
+    /// `var` because renderers register destinations as they draw. Only
+    /// `StackRouter.registerViewName(_:for:)` changes it.
+    var viewNames: [RouteKey: String] = [:]
+
     /// Route types registered for decoding and as having a destination.
     var registry: RouteRegistry {
         configuration.registry
@@ -213,6 +232,7 @@ final class NavigationTreeContext {
             endTransactionInterval(interval)
             turn = turn.applying(false)
         }
+        flushHeldJourney()
         let store = TransactionStore(trigger: trigger)
         let result = body(store)
         logIssues(store.issues)
@@ -300,8 +320,38 @@ final class NavigationTreeContext {
             time: journeyClock(),
             duplicateWindow: logging.duplicateScreenWindow
         )
-        let entries = journey.track(change, in: router.rootNode)
-        logJourney(entries, file: file, line: line)
+        flushHeldJourney()
+        let root = router.rootNode
+        let entries = journey.track(change, in: root)
+        guard let flow = flowAwaitingItsView(entries, in: root) else {
+            logJourney(entries, root: root, file: file, line: line)
+            return
+        }
+        heldJourney = HeldJourney(entries: entries, root: root, flow: flow, file: file, line: line)
+    }
+
+    /// The flow a change presented whose first screen has no view name yet, when renderers name
+    /// views: its box waits until the flow's stack is drawn, so it names the view.
+    private func flowAwaitingItsView(_ entries: [JourneyEntry], in root: any TreeNode) -> FlowID? {
+        guard namesViews, let visible = VisibleScreen(in: root), visible.screen.viewName == nil else {
+            return nil
+        }
+        let started = entries.contains { entry in
+            guard case .flowStarted(let flow) = entry else {
+                return false
+            }
+            return flow.flow == visible.screen.flow
+        }
+        return started ? visible.screen.flow : nil
+    }
+
+    /// Writes the box a presentation held, before the next change or once its stack is drawn.
+    func flushHeldJourney() {
+        guard let held = heldJourney else {
+            return
+        }
+        heldJourney = nil
+        logJourney(held.entries, root: held.root, file: held.file, line: held.line)
     }
 
     /// Reports an issue to the observers and logs it in the `issues` category.
@@ -361,4 +411,22 @@ final class NavigationTreeContext {
         turn = turn.withQueue(Array(turn.queue.dropFirst()))
         return call
     }
+}
+
+/// A box the journey wrote for a presentation, waiting for the presented stack to be drawn.
+struct HeldJourney {
+    /// What the journey wrote.
+    let entries: [JourneyEntry]
+
+    /// The root of the tree.
+    let root: any TreeNode
+
+    /// The presented flow whose stack the box waits for.
+    let flow: FlowID
+
+    /// The call's file.
+    let file: StaticString
+
+    /// The call's line.
+    let line: UInt
 }

@@ -87,14 +87,13 @@ package final class RecordingLogHandler: LogHandler, @unchecked Sendable {
         routerMessages.map(\.text)
     }
 
-    /// The text of each journey line so far, without the debug boxes.
+    /// The text of each journey message so far: a box per change in the readable format, a
+    /// line per entry in the structured format.
     package var journeyTexts: [String] {
-        texts.filter { text in
-            Self.isJourney(text) && !Self.isJourneyBox(text)
-        }
+        texts.filter(Self.isJourney)
     }
 
-    /// The journey's debug boxes so far.
+    /// The journey's boxes so far.
     package var journeyBoxes: [String] {
         texts.filter(Self.isJourneyBox)
     }
@@ -125,7 +124,7 @@ package final class RecordingLogHandler: LogHandler, @unchecked Sendable {
         }
     }
 
-    /// Whether a message is a journey debug box.
+    /// Whether a message is a journey box.
     private static func isJourneyBox(_ text: String) -> Bool {
         text.hasPrefix("┌─ 🧭") || text.hasPrefix("+- Waypoint")
     }
