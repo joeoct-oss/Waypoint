@@ -15,7 +15,7 @@ enum JourneyEntry: Equatable {
     /// Another tab was selected: its name, and the name of the tab before it.
     case tabSelected(String, from: String, trigger: String?)
     /// Another screen came on display. `showsSource` when its source differs from the last
-    /// visit's, or it is the first visit.
+    /// visit's, or it is the first visit, and isn't the screen itself.
     case screenViewed(ScreenVisit, showsSource: Bool)
     /// The same screen came on display again soon after the last time.
     case duplicate(ScreenReference, interval: Duration, callSite: String?)
@@ -231,7 +231,7 @@ final class JourneyTracker {
             timeOnPrevious: shown.map { change.time - $0.since }
         )
         let duplicate = duplicateEntry(for: next, key: visible.key, change: change)
-        let showsSource = visit?.source != next.source
+        let showsSource = visit?.source != next.source && next.source != next.screen
         visit = next
         shown = (visible.key, change.time)
         lastSeen[DuplicateKey(visible.key)] = change.time
