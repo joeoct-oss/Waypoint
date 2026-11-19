@@ -128,7 +128,7 @@ WaypointStack(router) {
 .tabBarOnPushedScreens(.hidden)
 ```
 
-The stack applies it around each pushed screen, the missing-destination screen included, and sends nothing for `.automatic`. Screens don't decide it themselves, so a new screen gets it right without doing anything, and a screen in a sheet or a full-screen cover never touches the tab bar. A screen that must differ, such as a demo of "tap the selected tab to pop to root", sets its own `.toolbar(_:for: .tabBar)`. The tab bar only exists on iOS, so other systems ignore it.
+The stack applies it around each pushed screen, the missing-destination screen included, and sends nothing for `.automatic`. Screens don't decide it themselves, so a new screen gets it right without doing anything, and a screen in a sheet or a full-screen cover never touches the tab bar. SwiftUI lets the stack's value win over one a screen sets inside itself, so every pushed screen of the stack gets the same visibility. The bar leaves and comes back as SwiftUI draws it: it disappears at the start of a push and appears once a pop ends, without UIKit's slide. The tab bar only exists on iOS, so other systems ignore it.
 
 > Note: Stack containers are changing. Waypoint will create the container itself wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code. Apps show a coordinator and never create or wire a container. A pushed child coordinator shares its parent's stack. A route's destination will be able to return a SwiftUI view or a UIKit view controller in either renderer. Apps still push routes, never views. Tracked in #151.
 

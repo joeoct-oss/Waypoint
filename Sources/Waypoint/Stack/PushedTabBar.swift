@@ -29,9 +29,11 @@
         /// ```
         ///
         /// The stack applies `visibility` around each pushed screen with
-        /// `.toolbar(_:for: .tabBar)`, so a screen can still choose for itself with its own
-        /// `.toolbar(_:for: .tabBar)`, which SwiftUI applies over the stack's. The tab bar only
-        /// exists on iOS, so other systems ignore it.
+        /// `.toolbar(_:for: .tabBar)`, and SwiftUI lets that outer value win over one a screen
+        /// sets inside itself, so every pushed screen of the stack gets the same visibility. The
+        /// tab bar leaves and comes back as SwiftUI draws it: it disappears at the start of a push
+        /// and appears once a pop ends, without UIKit's slide. The tab bar only exists on iOS, so
+        /// other systems ignore it.
         ///
         /// - Parameter visibility: The tab bar's visibility on every pushed screen.
         public func tabBarOnPushedScreens(_ visibility: Visibility) -> some View {
