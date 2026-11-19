@@ -21,7 +21,8 @@
         return;
     }
 
-    scatterStars(hero.querySelector(".starfield"));
+    scatterStars(document.querySelector(".starfield"));
+    setUpNavigation();
 
     if (!window.gsap || !window.ScrollTrigger) {
         root.classList.remove("motion");
@@ -53,9 +54,12 @@
             });
         });
 
+        var lenis = smoothScroll();
+
         introduceText();
         journey.play(0);
         followPointer(mark);
+        revealSections();
         followScroll(mark, function replay() {
             loops.forEach(function (loop) {
                 loop.pause(0);
@@ -65,6 +69,9 @@
         shootStars();
 
         return function () {
+            if (lenis) {
+                lenis.destroy();
+            }
             root.classList.remove("motion");
         };
     });
@@ -72,6 +79,65 @@
     media.add("(prefers-reduced-motion: reduce)", function () {
         root.classList.remove("motion");
     });
+
+    // The bar turns to glass once the page scrolls, marks the section in view, and opens as a
+    // menu on narrow screens. It works without GSAP.
+    function setUpNavigation() {
+        var nav = document.querySelector(".site-nav");
+
+        if (!nav) {
+            return;
+        }
+
+        var button = nav.querySelector(".menu-button");
+        var links = Array.prototype.slice.call(nav.querySelectorAll('.nav-links a[href^="#"]'));
+
+        function onScroll() {
+            nav.classList.toggle("scrolled", window.scrollY > 24);
+        }
+
+        function setOpen(open) {
+            nav.classList.toggle("open", open);
+            button.setAttribute("aria-expanded", String(open));
+        }
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+
+        button.addEventListener("click", function () {
+            setOpen(!nav.classList.contains("open"));
+        });
+        nav.querySelectorAll(".nav-links a").forEach(function (link) {
+            link.addEventListener("click", function () {
+                setOpen(false);
+            });
+        });
+
+        if (!("IntersectionObserver" in window)) {
+            return;
+        }
+
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) {
+                    return;
+                }
+
+                links.forEach(function (link) {
+                    link.classList.toggle("active", link.getAttribute("href") === "#" + entry.target.id);
+                });
+            });
+        }, { rootMargin: "-45% 0px -50% 0px" });
+
+        links.forEach(function (link) {
+            var section = document.querySelector(link.getAttribute("href"));
+
+            if (section) {
+                observer.observe(section);
+            }
+        });
+        observer.observe(hero);
+    }
 
     // Scatters the sky: small dots on the far layer, a few sparkles in the mark's star shape on
     // the near one. A fixed seed keeps the sky the same on every visit.
@@ -92,7 +158,7 @@
         var sparkle = '<svg viewBox="-6 -6 12 12"><path d="M0 -5.5 Q1.32 -1.32 5.5 0 Q1.32 1.32 0 ' +
             '5.5 Q-1.32 1.32 -5.5 0 Q-1.32 -1.32 0 -5.5Z" fill="#EEF0FF"/></svg>';
 
-        for (var index = 0; index < 110; index += 1) {
+        for (var index = 0; index < 170; index += 1) {
             var dot = document.createElement("span");
             var size = random() < 0.85 ? 1 + random() * 1.2 : 2 + random() * 1.2;
 
@@ -107,7 +173,7 @@
             far.appendChild(dot);
         }
 
-        for (var star = 0; star < 9; star += 1) {
+        for (var star = 0; star < 14; star += 1) {
             var shape = document.createElement("span");
 
             shape.className = "sparkle";
@@ -167,10 +233,16 @@
 
         timeline
             .set(".hero-body > *", { visibility: "visible" })
-            .from(".topbar", { autoAlpha: 0, y: -12, duration: 0.6 })
+            .fromTo(".site-nav", { autoAlpha: 0, y: -12 }, {
+                autoAlpha: 1,
+                y: 0,
+                duration: 0.6,
+                clearProps: "transform"
+            })
             .from("h1 .word", { autoAlpha: 0, yPercent: 60, rotate: 4, duration: 0.8, stagger: 0.07 }, 0.1)
-            .from(".lede", { autoAlpha: 0, y: 18, duration: 0.7 }, 0.55)
-            .from(".actions .button", { autoAlpha: 0, y: 16, duration: 0.6, stagger: 0.1 }, 0.75)
+            .from(".hero .eyebrow", { autoAlpha: 0, x: -12, duration: 0.6 }, 0)
+            .from(".hero .lede", { autoAlpha: 0, y: 18, duration: 0.7 }, 0.55)
+            .from(".hero .actions .button", { autoAlpha: 0, y: 16, duration: 0.6, stagger: 0.1 }, 0.75)
             .fromTo(".scroll-cue", { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 0.6 }, 1.6);
     }
 
@@ -466,10 +538,9 @@
             };
         });
 
-        hero.addEventListener("pointermove", function (event) {
-            var bounds = hero.getBoundingClientRect();
-            var dx = (event.clientX - bounds.left) / bounds.width - 0.5;
-            var dy = (event.clientY - bounds.top) / bounds.height - 0.5;
+        window.addEventListener("pointermove", function (event) {
+            var dx = event.clientX / window.innerWidth - 0.5;
+            var dy = event.clientY / window.innerHeight - 0.5;
 
             layers.forEach(function (layer) {
                 layer.x(dx * layer.reach * 2);
@@ -486,8 +557,8 @@
         });
     }
 
-    // Scrolling down lifts the message away, tilts the mark back and lets the sky lag behind.
-    // Coming back to the top replays the journey.
+    // Scrolling down lifts the message away and tilts the mark back, and the sky drifts up
+    // slower than the page, the far stars slowest. Coming back to the top replays the journey.
     function followScroll(mark, replay) {
         var scrub = { trigger: hero, start: "top top", end: "bottom top", scrub: 0.6 };
 
@@ -505,7 +576,10 @@
             onUpdate: mark.drawTilt,
             scrollTrigger: scrub
         });
-        gsap.to(".starfield", { y: 140, ease: "none", scrollTrigger: scrub });
+        var page = { trigger: document.body, start: "top top", end: "bottom bottom", scrub: 0.8 };
+
+        gsap.to(".starfield .far", { yPercent: -9, ease: "none", scrollTrigger: page });
+        gsap.to(".starfield .near", { yPercent: -22, ease: "none", scrollTrigger: page });
 
         window.ScrollTrigger.create({
             trigger: hero,
@@ -514,40 +588,136 @@
         });
     }
 
-    // A shooting star every few seconds, from a random point in the upper sky, while the hero
-    // is on screen.
+    // Meteors across the whole sky: a single one every few seconds, and now and then a shower
+    // of three to five from the same direction.
     function shootStars() {
-        var field = hero.querySelector(".starfield");
+        var field = document.querySelector(".starfield");
 
-        function shoot() {
-            var rect = hero.getBoundingClientRect();
+        function meteor(left, top, angle, delay) {
+            var streak = document.createElement("span");
+            var distance = gsap.utils.random(380, 700);
+            var radians = angle * Math.PI / 180;
 
-            if (rect.bottom > 0 && document.visibilityState === "visible") {
-                var streak = document.createElement("span");
-                var angle = gsap.utils.random(10, 26);
-                var distance = gsap.utils.random(360, 640);
-                var radians = angle * Math.PI / 180;
+            streak.className = "meteor";
+            streak.style.left = left + "%";
+            streak.style.top = top + "%";
+            field.appendChild(streak);
 
-                streak.className = "shooting-star";
-                streak.style.left = gsap.utils.random(-5, 60) + "%";
-                streak.style.top = gsap.utils.random(2, 45) + "%";
-                field.appendChild(streak);
-
-                gsap.timeline({ onComplete: function () { streak.remove(); } })
-                    .set(streak, { rotation: angle, autoAlpha: 0, scaleX: 0.3 })
-                    .to(streak, { autoAlpha: 1, scaleX: 1, duration: 0.18, ease: "power1.out" })
-                    .to(streak, {
-                        x: Math.cos(radians) * distance,
-                        y: Math.sin(radians) * distance,
-                        duration: 1,
-                        ease: "power1.in"
-                    }, 0)
-                    .to(streak, { autoAlpha: 0, duration: 0.35, ease: "power1.in" }, 0.65);
-            }
-
-            gsap.delayedCall(gsap.utils.random(4, 9), shoot);
+            gsap.timeline({ delay: delay, onComplete: function () { streak.remove(); } })
+                .set(streak, { rotation: angle, autoAlpha: 0, scaleX: 0.3 })
+                .to(streak, { autoAlpha: 1, scaleX: 1, duration: 0.18, ease: "power1.out" })
+                .to(streak, {
+                    x: Math.cos(radians) * distance,
+                    y: Math.sin(radians) * distance,
+                    duration: gsap.utils.random(0.8, 1.2),
+                    ease: "power1.in"
+                }, 0)
+                .to(streak, { autoAlpha: 0, duration: 0.35, ease: "power1.in" }, 0.65);
         }
 
-        gsap.delayedCall(2.6, shoot);
+        function single() {
+            if (document.visibilityState === "visible") {
+                meteor(gsap.utils.random(-5, 70), gsap.utils.random(0, 55), gsap.utils.random(12, 28), 0);
+            }
+
+            gsap.delayedCall(gsap.utils.random(4, 8), single);
+        }
+
+        function shower() {
+            if (document.visibilityState === "visible") {
+                var angle = gsap.utils.random(16, 30);
+                var left = gsap.utils.random(0, 45);
+                var top = gsap.utils.random(0, 30);
+                var count = gsap.utils.random(3, 5, 1);
+
+                for (var index = 0; index < count; index += 1) {
+                    meteor(
+                        left + gsap.utils.random(-8, 14),
+                        top + gsap.utils.random(-6, 12),
+                        angle + gsap.utils.random(-2, 2),
+                        index * gsap.utils.random(0.12, 0.35)
+                    );
+                }
+            }
+
+            gsap.delayedCall(gsap.utils.random(12, 20), shower);
+        }
+
+        gsap.delayedCall(2.6, single);
+        gsap.delayedCall(6, shower);
     }
+
+    // Smooth scrolling with Lenis, driven by GSAP's clock so the scroll animations move with it.
+    // Touch scrolling stays native. Links to a section on this page glide there.
+    function smoothScroll() {
+        if (!window.Lenis) {
+            return null;
+        }
+
+        var lenis = new window.Lenis({ lerp: 0.1, wheelMultiplier: 1 });
+        var nav = document.querySelector(".site-nav");
+
+        lenis.on("scroll", window.ScrollTrigger.update);
+        gsap.ticker.add(function (time) {
+            lenis.raf(time * 1000);
+        });
+        gsap.ticker.lagSmoothing(0);
+
+        document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+            link.addEventListener("click", function (event) {
+                var target = document.querySelector(link.getAttribute("href"));
+
+                if (!target) {
+                    return;
+                }
+
+                event.preventDefault();
+                lenis.scrollTo(target, { offset: -(nav ? nav.offsetHeight : 0) - 16, duration: 1.2 });
+            });
+        });
+
+        return lenis;
+    }
+
+    // Section headings, cards and the code sample rise in as they come into view, once. The
+    // code appears line by line.
+    function revealSections() {
+        gsap.utils.toArray("[data-reveal]").forEach(function (element) {
+            gsap.from(element, {
+                autoAlpha: 0,
+                y: 32,
+                duration: 0.9,
+                ease: "power3.out",
+                scrollTrigger: { trigger: element, start: "top 86%", once: true }
+            });
+        });
+
+        gsap.utils.toArray("[data-reveal-group]").forEach(function (group) {
+            gsap.from(group.children, {
+                autoAlpha: 0,
+                y: 36,
+                duration: 0.8,
+                ease: "power3.out",
+                stagger: 0.08,
+                scrollTrigger: { trigger: group, start: "top 86%", once: true }
+            });
+        });
+
+        gsap.utils.toArray("pre").forEach(function (code) {
+            var lines = code.innerHTML.split("\n").map(function (line) {
+                return '<span class="line">' + (line || "\u200b") + "</span>";
+            });
+
+            code.innerHTML = lines.join("");
+            gsap.from(code.querySelectorAll(".line"), {
+                autoAlpha: 0,
+                x: -12,
+                duration: 0.5,
+                ease: "power2.out",
+                stagger: 0.06,
+                scrollTrigger: { trigger: code, start: "top 82%", once: true }
+            });
+        });
+    }
+
 })();
