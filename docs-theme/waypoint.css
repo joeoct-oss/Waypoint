@@ -420,3 +420,58 @@ body.wp-resizing {
     cursor: col-resize !important;
     user-select: none !important;
 }
+
+/* Scrollbars: a slim rounded thumb in the theme's star-line color on a clear track, for the
+   page, the sidebar and code blocks. WebKit and Blink use the ::-webkit-scrollbar parts;
+   Firefox, which lacks them, uses the standard properties. */
+:root {
+    --wp-scroll-thumb: rgba(79, 95, 224, 0.3);
+    --wp-scroll-thumb-hover: rgba(79, 95, 224, 0.55);
+    --wp-scroll-thumb-active: #D62F86;
+}
+
+:root:has(body[data-color-scheme="dark"]) {
+    --wp-scroll-thumb: rgba(141, 155, 255, 0.28);
+    --wp-scroll-thumb-hover: rgba(141, 155, 255, 0.5);
+    --wp-scroll-thumb-active: #FF5BAA;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:has(body[data-color-scheme="auto"]) {
+        --wp-scroll-thumb: rgba(141, 155, 255, 0.28);
+        --wp-scroll-thumb-hover: rgba(141, 155, 255, 0.5);
+        --wp-scroll-thumb-active: #FF5BAA;
+    }
+}
+
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    min-height: 40px;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: var(--wp-scroll-thumb) padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--wp-scroll-thumb-hover);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background-color: var(--wp-scroll-thumb-active);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--wp-scroll-thumb) transparent;
+    }
+}
