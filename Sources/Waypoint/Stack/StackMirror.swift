@@ -62,9 +62,17 @@ final class StackMirror {
 
     /// When the last transition started, or `nil` before the first.
     ///
-    /// `var` because each change shown starts a transition. Only `show(_:)` and
-    /// ``screenDidShow(count:)`` change it.
+    /// `var` because each change shown starts a transition, which starts again once it is drawn.
+    /// Only `show(_:)`, `restartTransitionAfterDrawing(_:)` and ``screenDidShow(count:)`` change
+    /// it.
     @ObservationIgnored private var lastTransition: Duration?
+
+    /// Whether the last transition waits for the main actor to finish drawing it. Until then it
+    /// counts as running from the start.
+    ///
+    /// `var` because each change shown waits for its drawing. Only `show(_:)` and
+    /// `restartTransitionAfterDrawing(_:)` change it.
+    @ObservationIgnored private var isAwaitingDrawing = false
 
     /// Whether a held change waits for the running transition to end.
     ///
@@ -192,9 +200,27 @@ final class StackMirror {
     private func show(_ routes: [AnyRoute]) {
         let pushes = routes.count > shown.count
         shown = routes
-        lastTransition = clock.now
+        let started = clock.now
+        lastTransition = started
+        if holdsTransitions {
+            isAwaitingDrawing = true
+            restartTransitionAfterDrawing(started)
+        }
         if pushes, let top = routes.last {
             reportPush(of: top)
+        }
+    }
+
+    /// Starts the transition that began at `started` again once the main actor is free. Drawing new
+    /// screens can block the main actor for seconds on a busy device, and iOS 17 runs the
+    /// transition only after that, so a hold counted from the path change would end too soon.
+    private func restartTransitionAfterDrawing(_ started: Duration) {
+        clock.run(after: .zero) { [weak self] in
+            guard let self, self.lastTransition == started else {
+                return
+            }
+            self.isAwaitingDrawing = false
+            self.lastTransition = self.clock.now
         }
     }
 
@@ -266,11 +292,18 @@ final class StackMirror {
         guard shown != router.state.path else {
             return
         }
+        if let wait = remainingTransition() {
+            hold(for: wait)
+            return
+        }
         showNewest()
     }
 
     /// How long the running transition still runs, or `nil` when none does.
     private func remainingTransition() -> Duration? {
+        guard !isAwaitingDrawing else {
+            return Self.transitionDuration
+        }
         guard let lastTransition else {
             return nil
         }

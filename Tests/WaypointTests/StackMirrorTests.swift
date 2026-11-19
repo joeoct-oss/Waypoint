@@ -115,6 +115,34 @@ struct StackMirrorTests {
         #expect(!mirror.isHoldingChange)
     }
 
+    // On a busy device, drawing a push can block the main actor for seconds, and iOS 17 runs the
+    // push only after that (#204). A change that lands as the drawing ends is held until the push
+    // that runs from then ends.
+    @Test
+    func transitionCountsFromWhenDrawingEnds() {
+        let router = StackRouter(configuration: .permissive)
+        let clock = ManualTransitionClock()
+        let mirror = Self.holdingMirror(router, clock)
+        router.push(ProductRoute(id: 1))
+        mirror.routerDidChange()
+
+        clock.block(for: .seconds(2))
+        router.pop()
+        mirror.routerDidChange()
+
+        #expect(mirror.shown.count == 1)
+        #expect(mirror.isHoldingChange)
+
+        clock.advance(by: .milliseconds(599))
+
+        #expect(mirror.shown.count == 1)
+
+        clock.advance(by: .milliseconds(1))
+
+        #expect(mirror.shown.isEmpty)
+        #expect(!mirror.isHoldingChange)
+    }
+
     @Test
     func replacementGoesBackThenForward() {
         let router = StackRouter(configuration: .permissive)
@@ -397,13 +425,22 @@ final class ManualTransitionClock: TransitionClock {
         scheduled.append(Scheduled(time: now + delay, action: action))
     }
 
-    /// Moves the clock on, and runs the work that is due, in order.
+    /// Moves the clock on, and runs the work that is due, in time order, each at its own time,
+    /// as on a main actor that is free. Work that is already late runs at once.
     func advance(by duration: Duration) {
-        now += duration
-        let due = scheduled.filter { $0.time <= now }
-        scheduled.removeAll { $0.time <= now }
-        for work in due {
+        let end = now + duration
+        while let next = scheduled.indices.filter({ scheduled[$0].time <= end }).min(by: {
+            scheduled[$0].time < scheduled[$1].time
+        }) {
+            let work = scheduled.remove(at: next)
+            now = max(now, work.time)
             work.action()
         }
+        now = end
+    }
+
+    /// Moves the clock on without running anything, as while drawing blocks the main actor.
+    func block(for duration: Duration) {
+        now += duration
     }
 }
