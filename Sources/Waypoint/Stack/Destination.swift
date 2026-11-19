@@ -80,6 +80,7 @@
             let navigator = NavigatorLookup.destination(router, route: R.self, report: NavigationIssueLog.report)
             return view.navigationDestination(for: R.self) { route in
                 content(route, navigator)
+                    .pushedTabBar()
             }
         }
     }

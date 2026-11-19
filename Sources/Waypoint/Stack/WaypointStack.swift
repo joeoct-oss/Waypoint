@@ -43,6 +43,10 @@
     /// the screen chosen by ``SwiftUICore/View/missingDestination(_:)``: by default a debug
     /// screen that names the route and the fix in debug builds, and a blank screen in release.
     ///
+    /// The tab bar stays on pushed screens, as the system shows it. To hide it on every screen
+    /// pushed above a tab's root, as `hidesBottomBarWhenPushed` does in UIKit, use
+    /// ``SwiftUICore/View/tabBarOnPushedScreens(_:)``.
+    ///
     /// A stack keeps drawing the router it was first given. Pass another router and the stack
     /// starts again from that router's path.
     ///
@@ -154,6 +158,7 @@
                 root
                     .navigationDestination(for: MissingDestinationEntry.self) { entry in
                         MissingDestinationHost(entry: entry, mirror: mirror)
+                            .pushedTabBar()
                     }
             }
             .environment(\.waypointStackRouter, mirror.router)

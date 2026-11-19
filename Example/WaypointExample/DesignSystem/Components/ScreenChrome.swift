@@ -18,6 +18,9 @@ import SwiftUI
 // content scrolls under the bars. Earlier systems show the trail as a strip on the bar material
 // below the bar.
 //
+// The chrome never touches the tab bar: each stack hides it on the screens pushed above a tab's
+// root, so a screen in a sheet or a full-screen cover sends nothing.
+//
 // Conformances:
 // - `ViewModifier`, so the app coordinator gives every screen the same chrome with
 //   `.screenChrome(...)`.
@@ -31,11 +34,6 @@ struct ScreenChrome: ViewModifier {
 
     private var isRoot: Bool {
         trail.count <= 1
-    }
-
-    // A tab's root shows the tab bar; every screen pushed above it hides it.
-    private var tabBarVisibility: Visibility {
-        isRoot ? .automatic : .hidden
     }
 
     private var titleDisplayMode: NavigationBarItem.TitleDisplayMode {
@@ -79,7 +77,6 @@ struct ScreenChrome: ViewModifier {
             .navigationBarTitleDisplayMode(titleDisplayMode)
             .navigationSubtitle(trailText)
             .toolbar { kindItem }
-            .toolbar(tabBarVisibility, for: .tabBar)
     }
 
     private func makeTrailStrip() -> some View {
@@ -96,7 +93,6 @@ struct ScreenChrome: ViewModifier {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(titleDisplayMode)
             .toolbar { kindItem }
-            .toolbar(tabBarVisibility, for: .tabBar)
     }
 }
 
