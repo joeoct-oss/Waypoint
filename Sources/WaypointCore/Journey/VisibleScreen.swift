@@ -125,8 +125,10 @@ struct VisibleScreen {
         guard let presented = container.presentedNode else {
             return shown === container ? [] : levels(from: shown)
         }
-        let below = (shown as? StackRouter).map { [level(of: $0)] } ?? []
-        return below + levels(from: presented)
+        guard let stack = shown as? StackRouter else {
+            return levels(from: presented)
+        }
+        return [level(of: stack)] + levels(from: presented)
     }
 
     /// One stack, with its role and its screens.
@@ -136,10 +138,11 @@ struct VisibleScreen {
         let pushed = stack.showsRootRoute ? Array(stack.shownRoutes.dropFirst()) : stack.shownRoutes
         let root = rootRoute.map { ScreenReference(route: $0, flow: stack.flowID) }
             ?? ScreenReference(rootNamed: rootName(of: stack, role: role), flow: stack.flowID)
-        let screens = pushed.map { route in
+        let pushedScreens = pushed.map { route in
             ScreenReference(route: route, flow: stack.flowID)
         }
-        return Level(stack: stack, role: role, screens: [root] + screens)
+        let screens = [root] + pushedScreens
+        return Level(stack: stack, role: role, screens: screens)
     }
 
     /// Whether a stack is the tree's root, a tab's stack or a presented flow.

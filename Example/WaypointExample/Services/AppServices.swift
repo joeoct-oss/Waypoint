@@ -48,9 +48,9 @@ final class AppServices {
     }
 
     // Debug builds write from `.info`, with route values, so Xcode's console and Console.app show
-    // the reader's journey: one line per screen, tab switch and flow. Set `.debug` to add a box with
-    // every field of each visit and the routers' own lines (push, hold, queue). Release builds keep
-    // the defaults: `.notice` and above, with route values hidden.
+    // the reader's journey: one line per screen, tab switch and flow. Set `.debug` to add a box
+    // with every field of each visit and the routers' own lines (push, hold, queue). Release builds
+    // keep the defaults: `.notice` and above, with route values hidden.
     private static func makeLogging(issues: IssueLog) -> LogConfiguration {
         let handler = AppLogHandler(issues: issues)
         #if DEBUG

@@ -92,7 +92,8 @@ public struct FlowNavigator<Flow: NavigationFlow> {
     }
 
     /// Presents `route` over this flow, as the root screen of a new child flow. Any route, since
-    /// the presented flow is another flow. See ``StackRouter/present(_:style:trigger:else:file:line:)``.
+    /// the presented flow is another flow. See
+    /// ``StackRouter/present(_:style:trigger:else:file:line:)``.
     @discardableResult
     public func present<R: Route>(
         _ route: R,

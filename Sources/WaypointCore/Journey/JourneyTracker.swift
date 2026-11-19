@@ -193,7 +193,11 @@ final class JourneyTracker {
     }
 
     /// Starts one presented flow, from the screen on display before it.
-    private func startFlow(_ presentation: Presentation, _ origin: ChangeOrigin, _ change: JourneyChange) -> JourneyEntry {
+    private func startFlow(
+        _ presentation: Presentation,
+        _ origin: ChangeOrigin,
+        _ change: JourneyChange
+    ) -> JourneyEntry {
         let screen = presentation.route.map { route in
             ScreenReference(route: route, flow: presentation.flow)
         } ?? ScreenReference(rootNamed: VisibleScreen.words(presentation.flow.name), flow: presentation.flow)
@@ -239,7 +243,11 @@ final class JourneyTracker {
     }
 
     /// A duplicate warning when the screen came forward again within the window.
-    private func duplicateEntry(for visit: ScreenVisit, key: VisibleScreen.Key, change: JourneyChange) -> [JourneyEntry] {
+    private func duplicateEntry(
+        for visit: ScreenVisit,
+        key: VisibleScreen.Key,
+        change: JourneyChange
+    ) -> [JourneyEntry] {
         guard Self.isForward(visit.transition), let last = lastSeen[DuplicateKey(key)] else {
             return []
         }

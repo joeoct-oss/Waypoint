@@ -18,9 +18,9 @@ import WaypointCore
 //
 // The stack runs on Waypoint: `router`, the tab's stack router from the main tab router, owns the
 // path, `ProductsFlowView` draws it with `WaypointStack`, and a swipe back comes back to the router
-// by itself. The journey names the stack's first screen `Product list` or `Search`. A product page links to a
-// related product with `WaypointLink`, which pushes through the same router. The sheets are still
-// plain SwiftUI state until Waypoint's sheets are built.
+// by itself. The journey names the stack's first screen `Product list` or `Search`. A product page
+// links to a related product with `WaypointLink`, which pushes through the same router. The sheets
+// are still plain SwiftUI state until Waypoint's sheets are built.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the sheet changes.

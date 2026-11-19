@@ -138,10 +138,16 @@ enum JourneyLog {
     }
 
     /// `⚠️ duplicate      Product 3 viewed twice, 180 ms apart (ProductRow.swift:41)`.
-    private static func duplicateLine(_ screen: ScreenReference, interval: Duration, site: String?, symbols: Bool) -> String {
+    private static func duplicateLine(
+        _ screen: ScreenReference,
+        interval: Duration,
+        site: String?,
+        symbols: Bool
+    ) -> String {
         let siteText = site.map { " (\($0))" } ?? ""
         let warning = symbols ? "⚠️" : "Waypoint"
-        return "\(warning) \(padded("duplicate", eventWidth)) \(screen.title) viewed twice, \(text(interval)) apart\(siteText)"
+        let message = "\(screen.title) viewed twice, \(text(interval)) apart\(siteText)"
+        return "\(warning) \(padded("duplicate", eventWidth)) \(message)"
     }
 
     /// `🧭 event  subject  detail · detail`.
@@ -154,7 +160,11 @@ enum JourneyLog {
     }
 
     /// `push by app (ProductListView.swift:88)`, or `back by user`.
-    private static func howText(_ transition: ScreenVisit.Transition, _ origin: ScreenVisit.Origin, _ site: String?) -> String {
+    private static func howText(
+        _ transition: ScreenVisit.Transition,
+        _ origin: ScreenVisit.Origin,
+        _ site: String?
+    ) -> String {
         "\(transition) \(byText(origin, site))"
     }
 

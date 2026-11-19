@@ -146,8 +146,11 @@ struct JourneyTests {
 
         tabs.select(.profile)
 
+        let expectedJourney = [
+            "Profile",
+        ]
         #expect(tabs.screenVisit?.screen.title == "Profile")
-        #expect(tabs.screenVisit?.journey.map(\.title) == ["Profile"])
+        #expect(tabs.screenVisit?.journey.map(\.title) == expectedJourney)
     }
 
     @Test
@@ -214,7 +217,8 @@ struct JourneyTests {
         #expect(texts.count == 6)
         #expect(texts[1].hasPrefix("🧭 flow_started   Checkout                   from Cart · full screen · by app ("))
         #expect(texts[1].hasSuffix(") · trigger checkout_button"))
-        #expect(texts[2].hasPrefix("🧭 screen_viewed  Checkout                   ◀ Cart after 0 ms · full screen by app"))
+        let checkoutLine = "🧭 screen_viewed  Checkout                   ◀ Cart after 0 ms · full screen by app"
+        #expect(texts[2].hasPrefix(checkoutLine))
         #expect(texts[4].hasPrefix("🧭 flow_finished  Checkout                   after 12.0 s · by app ("))
         #expect(texts[5].hasPrefix("🧭 screen_viewed  Cart                       ◀ Checkout step: payment after 9.0 s"))
         #expect(router.screenVisit?.transition == .dismiss)
@@ -265,7 +269,8 @@ struct JourneyTests {
         }
         #expect(duplicates.count == 1)
         #expect(duplicates.first?.level == .notice)
-        #expect(duplicates.first?.text.hasPrefix("⚠️ duplicate      Product 3 viewed twice, 180 ms apart (JourneyTests.swift:") == true)
+        let expectedStart = "⚠️ duplicate      Product 3 viewed twice, 180 ms apart (JourneyTests.swift:"
+        #expect(duplicates.first?.text.hasPrefix(expectedStart) == true)
     }
 
     @Test
@@ -373,7 +378,8 @@ struct JourneyTests {
         let expectedTexts = [
             "🧭 screen_viewed  Product 3 \"Orbit Lamp\"     ◀ Product list after 0 ms · push by app",
             "🧭 screen_viewed  Product list               ◀ Product 3 after 5.7 s · back by user",
-            "🧭 screen_viewed  Product 3 \"Orbit Lamp\"     ◀ Product list after 0 ms · push by app · trigger related_products",
+            "🧭 screen_viewed  Product 3 \"Orbit Lamp\"     ◀ Product list after 0 ms · push by app"
+                + " · trigger related_products",
             "🧭 tab_selected   Home                       ◀ Shop",
             "🧭 screen_viewed  Home                       ◀ Product 3 after 0 ms · tab by app",
         ]
