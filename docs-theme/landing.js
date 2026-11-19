@@ -397,7 +397,7 @@
     }
 
     // Returns the loops that start when the journey ends; the rest start now. The arrow leans
-    // forward, the star twinkles, the way back flows along the dashed ring, and now and then a
+    // forward, the star twinkles, the dashed way back glows softly, and now and then a
     // light runs along the trail.
     function idle(mark) {
         var parts = mark.parts;
@@ -416,10 +416,13 @@
             gsap.to(parts.planet, Object.assign({ attr: { r: 4.3 }, duration: 2.6 }, loop))
         ];
 
-        gsap.fromTo(parts.ring, { attr: { "stroke-dashoffset": 0 } }, {
-            attr: { "stroke-dashoffset": -96 },
-            duration: 30,
-            ease: "none",
+        // The dashes stay put: 13 dashes fit the ring exactly, whole at both ends, and a moving
+        // offset would cut the end ones short. The way back breathes instead.
+        gsap.fromTo(parts.ring, { attr: { "stroke-opacity": 0.45 } }, {
+            attr: { "stroke-opacity": 0.7 },
+            duration: 2.4,
+            ease: "sine.inOut",
+            yoyo: true,
             repeat: -1
         });
 
