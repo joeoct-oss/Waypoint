@@ -58,7 +58,7 @@
     /// Registers one route type's screen with SwiftUI and with the stack's router.
     ///
     /// Conformances:
-    /// - `ViewModifier`, so ``SwiftUICore/View/destination(_:_:)`` can apply it.
+    /// - `ViewModifier`, so ``SwiftUICore/View/destination(_:_:)-(_,(R)->Content)`` can apply it.
     /// - `R: Route`: the route type this registers.
     /// - `Destination: View`: the screen it shows.
     struct DestinationModifier<R: Route, Destination: View>: ViewModifier {
