@@ -166,7 +166,7 @@ struct DefaultLogHandlerTests {
         #expect(handler.messages.map(\.level) == [.debug, .debug])
         #expect(handler.messages.map(\.category) == [.renderer, .renderer])
         #expect(handler.texts[0] == "heldChange flow=main wait=450ms")
-        #expect(handler.texts[1] == "main       … held until the running transition ends (450 ms)")
+        #expect(handler.texts[1] == "Waypoint  main       hold     waits 450 ms for the running transition")
     }
 
     @Test

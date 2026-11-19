@@ -203,7 +203,7 @@ struct RendererReportTests {
 
         router.rendererDidPop(toCount: 0)
 
-        #expect(handler.texts.contains { $0.contains("· by user") })
+        #expect(handler.texts.contains { $0.contains(", by user") })
     }
 
     @Test

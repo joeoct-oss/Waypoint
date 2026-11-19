@@ -34,9 +34,15 @@ extension StackRouter: TreeNode {
         (rootRoute.map { [$0] } ?? []) + current.state.path
     }
 
+    /// Whether the stack was made with a root route.
+    var showsRootRoute: Bool {
+        rootRoute != nil
+    }
+
     /// `shop      Product list (…)`, with the presented flow below.
     func readableTree(_ naming: RouteNaming) -> ReadableTree {
-        let detail = ReadableLog.stackText(shownRoutes, naming: naming)
+        let stack = ReadableLog.Stack(routes: shownRoutes, startsWithRootRoute: showsRootRoute)
+        let detail = ReadableLog.stackText(stack, naming: naming, shortens: false)
         let style = current.state.presentation?.style
         let children = presented.map { child in
             [child.readableTree(naming).presented(as: style)]

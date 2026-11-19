@@ -67,6 +67,10 @@ protocol TreeNode: NavigationRouter, TransactionParticipant {
     /// container's selected stack.
     var shownRoutes: [AnyRoute] { get }
 
+    /// Whether ``shownRoutes`` starts with the stack's root route, rather than a root screen that
+    /// has no route.
+    var showsRootRoute: Bool { get }
+
     /// This router and the routers inside it, as the readable tree prints them.
     func readableTree(_ naming: RouteNaming) -> ReadableTree
 

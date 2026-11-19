@@ -239,7 +239,7 @@ public struct LogConfiguration: Sendable {
 /// - `Sendable`, so a configuration that holds it can be shared with the whole tree.
 /// - `Equatable`, so tests can compare formats.
 public enum LogFormat: Sendable, Equatable {
-    /// Sentences for people reading a console, with friendly route names. The default.
+    /// One line per change for people reading a console: the action, then the stack. The default.
     case readable
     /// The stable `key=value` lines of `NavigationDescribable`, for tools that parse logs.
     case structured
@@ -274,7 +274,7 @@ Logging is set once for the whole tree, in the `NavigationConfiguration` given t
 
 ```swift
 #if DEBUG
-let logging = LogConfiguration(minimumLevel: .debug, treeLogging: .changedStacks)
+let logging = LogConfiguration(minimumLevel: .debug, revealsPrivateValues: true)
 #else
 let logging = LogConfiguration.default
 #endif
@@ -341,34 +341,38 @@ Every message is built only after the level, the category and the handler's `isE
 
 #### The readable format
 
-By default each line names the flow, then a symbol and a sentence. Routes read as words, so `ProductListRoute` prints as "Product list". Fields listed in `publicLogFields` show their values, and private fields fold into `…`. With `revealsPrivateValues` on, every value shows, in the change lines and in issue messages.
+By default each change is one line, in columns: `Waypoint`, the flow, a verb, what changed, then `│` and the stack the flow shows after the call. You read what happened and where you are on the same line. Routes read as words, so `ProductListRoute` prints as "Product list". Fields listed in `publicLogFields` show their values, and private fields fold into `…`. With `revealsPrivateValues` on, every value shows, in the change lines and in issue messages.
 
 ```text
-tabs       ⇥ tab home → shop
-shop       ▸ push Product list (…)
-shop       ▸ push Product (id: 42, …)
-shop       ⚠︎ recovered: can't go back to a screen that isn't in the stack
-             Cart is not in the path [Product list (…) › Product (id: 42, …)]. Check contains(_:) first, or handle the .failed outcome.
-             at ShopCoordinator.swift:28
-shop       ◂ back to the first screen (closed Product list (…) › Product (id: 42, …)) · by fallback
-shop       = already there (ShopCoordinator.swift:30)
-shop       = skipped: Product (id: 42, …) is still being pushed (ProductListView.swift:24)
-tabs       ↑ present sheet checkout: Checkout (…)
-shop       … queued until the current change ends (CartObserver.swift:36)
-checkout   ∅ ignored: this flow is closed (AddressView.swift:45)
-tabs       ↓ dismiss checkout
+Waypoint  tabs       tab      home → shop              │ root
+Waypoint  shop       push     Product list (…)         │ root › Product list (…)
+Waypoint  shop       push     Product (id: 42, …)      │ root › Product list (…) › Product (id: 42, …)
+Waypoint  shop       recover  can't go back to a screen that isn't in the stack
+                              Cart is not in the path [Product list (…) › Product (id: 42, …)]. Check contains(_:) first, or handle the .failed outcome.
+                              at ShopCoordinator.swift:28
+Waypoint  shop       back     Product list (…) › Product (id: 42, …), by fallback │ root
+Waypoint  shop       same     already there (ShopCoordinator.swift:30)
+Waypoint  shop       skip     Product (id: 42, …) is still being pushed (ProductListView.swift:24)
+Waypoint  tabs       present  sheet checkout           │ Checkout (…)
+Waypoint  shop       queue    waits for the current change to end (CartObserver.swift:36)
+Waypoint  checkout   ignore   this flow is closed (AddressView.swift:45)
+Waypoint  tabs       dismiss  checkout                 │ root › Product list (…) › Product (id: 42, …)
+Waypoint  shop       back     Product (id: 42, …), by user │ root › Product list (…)
 ```
 
-| Symbol | Meaning | Symbol | Meaning |
+| Verb | Meaning | Verb | Meaning |
 | --- | --- | --- | --- |
-| `▸` | push | `⚠︎` | an issue a fallback recovered |
-| `◂` | back | `✖︎` | a failed call |
-| `↻` | the stack was set | `=` | nothing changed |
-| `↑` | present | `…` | queued behind a change, or held until a transition ends |
-| `↓` | dismiss | `∅` | ignored: the flow is closed |
-| `⇥` | tab selected | `≡` | the stack after a change |
+| `push` | routes pushed | `recover` | an issue a fallback recovered |
+| `back` | routes closed by going back | `fail` | a failed call |
+| `set` | the stack was set | `same` | nothing changed |
+| `present` | a flow was presented | `skip` | a push skipped while the same one runs |
+| `dismiss` | a flow was dismissed | `queue` | a call queued behind a change |
+| `tab` | a tab was selected | `hold` | a change held until a transition ends |
+| `stack` | the full stack, with `.changedStacks` | `ignore` | a call on a closed flow |
 
-`usesSymbols: false` drops the symbols and joins routes with `>` instead of `›`, for consoles that can't show them. An issue is written before the change its fallback made, so the cause reads first.
+The stack starts at `root`, the stack's first screen, or at its root route's name when the router was made with one. A stack more than four routes deep keeps the root, the first route and the last two, with `…` between them and its depth at the end, such as `root › Product (id: 2) › … › Product (id: 5) › Product (id: 6) (5)`; `debugTree()` always prints it in full. `, by user` marks a change the user made on the screen, such as a swipe back, and `, by fallback` a change a fallback made. A call that changes the stack more than once, such as a recovered call, shows the stack after the whole call on each line. An issue is written before the change its fallback made, so the cause reads first. `usesSymbols: false` writes `>`, `|` and `->` instead of `›`, `│` and `→`, for consoles that can't show them.
+
+To see only Waypoint's lines in Xcode's console, filter on `subsystem:` followed by your bundle identifier and `.waypoint`. The other lines in the console come from the system frameworks.
 
 #### The navigation tree
 
@@ -376,13 +380,13 @@ tabs       ↓ dismiss checkout
 
 ```text
 tabs               home · [shop] · profile
-├ home             first screen
-├ shop             Product (…)
+├ home             root
+├ shop             root › Product (…)
 │ └ sheet settings Settings › Home
-└ profile          first screen
+└ profile          root
 ```
 
-`treeLogging` adds it to the log after each change: `.changedStacks` writes one line per changed stack, such as `shop       ≡ Product list (…) › Product (id: 42, …)`, and `.wholeTree` writes the tree above.
+`treeLogging` adds it to the log after each change: `.changedStacks` writes one more line per changed stack, in full, such as `Waypoint  shop       stack    root › Product list (…) › Product (id: 42, …)`, and `.wholeTree` writes the tree above. Change lines already end with the stack, so most apps leave it off.
 
 #### The structured format
 

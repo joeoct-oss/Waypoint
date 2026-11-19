@@ -6,166 +6,141 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-/// The readable console format: the flow first, then a symbol and a sentence.
+/// The readable console format: one aligned line per event, the action first, then the stack of
+/// the flow on screen.
 ///
 /// ```text
-/// shop       ▸ push Product (id: 42, …)
-/// shop       ⚠︎ recovered: can't go back to a screen that isn't in the stack
-///              Cart is not in the path [Product list (…) › Product (id: 42, …)]. Check contains(_:) first, …
-///              at ShopCoordinator.swift:39
-/// shop       ◂ back to the first screen (closed Product list (…) › Product (id: 42, …)) · by fallback
+/// Waypoint  shop      push     Product (id: 42)         │ root › Product list › Product (id: 42)
+/// Waypoint  shop      recover  can't go back to a screen that isn't in the stack
+///                              Cart is not in the path [Product list › Product (id: 42)]. …
+///                              at ShopCoordinator.swift:39
+/// Waypoint  shop      back     Product (id: 42), by fallback │ root › Product list
 /// ```
 enum ReadableLog {
-    /// What a line is about, shown as a symbol, or left out when symbols are off.
-    enum Marker {
-        /// A push, `▸`.
-        case push
-        /// A pop, `◂`.
-        case back
-        /// A new path, `↻`.
-        case set
-        /// A presentation, `↑`.
-        case present
-        /// A dismissal, `↓`.
-        case dismiss
-        /// A tab selection, `⇥`.
-        case tab
-        /// An issue a fallback recovered, `⚠︎`.
-        case recovered
-        /// A failed call, `✖︎`.
-        case failed
-        /// A call that changed nothing, `=`.
-        case same
-        /// A call queued behind a change, `…`.
-        case queued
-        /// A call on a closed flow, `∅`.
-        case ignored
-        /// The stack after a change, `≡`.
-        case stack
-        /// A route type problem, `!`.
-        case problem
-
-        /// The symbol, such as `▸`.
-        var symbol: String {
-            switch self {
-            case .push:
-                return "▸"
-            case .back:
-                return "◂"
-            case .set:
-                return "↻"
-            case .present:
-                return "↑"
-            case .dismiss:
-                return "↓"
-            case .tab:
-                return "⇥"
-            case .recovered:
-                return "⚠︎"
-            case .failed:
-                return "✖︎"
-            case .same:
-                return "="
-            case .queued:
-                return "…"
-            case .ignored:
-                return "∅"
-            case .stack:
-                return "≡"
-            case .problem:
-                return "!"
-            }
-        }
+    /// The routes on screen in one flow, and whether the first one is the stack's root route.
+    struct Stack {
+        /// The routes, root route first when there is one.
+        let routes: [AnyRoute]
+        /// Whether `routes` starts with the stack's root route. Otherwise the root is a screen
+        /// with no route, written `root`.
+        let startsWithRootRoute: Bool
     }
 
-    /// Flow names are padded to this width, so the sentences line up.
+    /// Every line starts with this, so Waypoint's lines stand out in a busy console.
+    static let prefix = "Waypoint"
+
+    /// Flow names are padded to this width, so the columns line up.
     static let flowWidth = 10
 
-    /// `shop       ▸ push Product (id: 42, …)`.
-    static func line(_ flow: FlowID, _ marker: Marker, _ sentence: String, symbols: Bool) -> String {
-        let head = flow.name.padding(toLength: max(flowWidth, flow.name.count), withPad: " ", startingAt: 0)
-        guard symbols else {
-            return "\(head) \(sentence)"
-        }
-        return "\(head) \(marker.symbol) \(sentence)"
+    /// Verbs are padded to this width.
+    static let verbWidth = 8
+
+    /// Subjects are padded to this width before the stack column.
+    static let subjectWidth = 24
+
+    /// A stack with more routes than this above its root is shortened in change lines.
+    static let longStack = 4
+
+    /// `Waypoint  shop      push     Product (id: 42)`.
+    static func line(_ flow: FlowID, _ verb: String, _ subject: String) -> String {
+        "\(prefix)  \(padded(flow.name, flowWidth)) \(padded(verb, verbWidth)) \(subject)"
     }
 
-    /// The lines after the first one, indented under the sentence.
-    static func continuation(_ lines: [String], symbols: Bool) -> String {
-        let indent = String(repeating: " ", count: flowWidth + (symbols ? 3 : 1))
+    /// A line with the stack after the subject: `… push     Product (id: 42)  │ root › …`.
+    static func line(_ flow: FlowID, _ verb: String, _ subject: String, stack: String, symbols: Bool) -> String {
+        let bar = symbols ? "│" : "|"
+        return line(flow, verb, "\(padded(subject, subjectWidth)) \(bar) \(stack)")
+    }
+
+    /// The lines after the first one, indented under the subject.
+    static func continuation(_ lines: [String]) -> String {
+        let indent = String(repeating: " ", count: prefix.count + 2 + flowWidth + 1 + verbWidth + 1)
         return lines.map { "\n\(indent)\($0)" }.joined()
     }
 
-    /// One applied change. `path` is the flow's path after the change, for "back to".
-    static func change(_ applied: AppliedChange, path: [AnyRoute]?, naming: RouteNaming) -> String {
-        let origin = originText(applied.origin)
-        let (marker, sentence) = describe(applied.change, path: path, naming: naming)
-        return line(applied.flow, marker, sentence + origin, symbols: naming.usesSymbols)
+    /// One applied change, with the stack of the flow on screen after it, when known.
+    static func change(_ applied: AppliedChange, stack: Stack?, naming: RouteNaming) -> String {
+        let (verb, subject) = describe(applied.change, naming: naming)
+        let full = subject + originText(applied.origin, after: subject)
+        guard let stack else {
+            return line(applied.flow, verb, full)
+        }
+        let stackText = stackText(stack, naming: naming, shortens: true)
+        return line(applied.flow, verb, full, stack: stackText, symbols: naming.usesSymbols)
     }
 
-    /// ` · by fallback` or ` · by user`, or nothing for a change app code asked for.
-    private static func originText(_ origin: ChangeOrigin) -> String {
+    /// `, by fallback` or `, by user` after a subject, or `by user` alone, or nothing for a
+    /// change app code asked for.
+    private static func originText(_ origin: ChangeOrigin, after subject: String) -> String {
+        let separator = subject.isEmpty ? "" : ", "
         switch origin {
         case .app:
             return ""
         case .fallback:
-            return " · by fallback"
+            return separator + "by fallback"
         case .user:
-            return " · by user"
+            return separator + "by user"
         }
     }
 
     /// An issue: a headline, the message, and the call site.
     static func issue(_ issue: NavigationIssue, recovered: Bool, naming: RouteNaming) -> String {
-        let marker: Marker = recovered ? .recovered : .failed
-        let verb = recovered ? "recovered" : "failed"
-        let head = line(issue.flow, marker, "\(verb): \(headline(issue.kind))", symbols: naming.usesSymbols)
-        let details = [issue.message(in: naming), "at \(issue.callSite)"]
-        return head + continuation(details, symbols: naming.usesSymbols)
+        let head = line(issue.flow, recovered ? "recover" : "fail", headline(issue.kind))
+        return head + continuation([issue.message(in: naming), "at \(issue.callSite)"])
     }
 
     /// A call that changed nothing.
     static func unchanged(_ flow: FlowID, site: String, symbols: Bool) -> String {
-        line(flow, .same, "already there (\(site))", symbols: symbols)
+        line(flow, "same", "already there (\(site))")
     }
 
     /// A push skipped because the same route is still being pushed, such as a double tap.
     static func skippedPush(_ flow: FlowID, route: AnyRoute, site: String, naming: RouteNaming) -> String {
-        let sentence = "skipped: \(naming.name(route)) is still being pushed (\(site))"
-        return line(flow, .same, sentence, symbols: naming.usesSymbols)
+        line(flow, "skip", "\(naming.name(route)) is still being pushed (\(site))")
     }
 
     /// A call queued behind the change being applied.
     static func queued(_ flow: FlowID, site: String, symbols: Bool) -> String {
-        line(flow, .queued, "queued until the current change ends (\(site))", symbols: symbols)
+        line(flow, "queue", "waits for the current change to end (\(site))")
     }
 
     /// A change the screen holds until the running transition ends.
     static func held(_ flow: FlowID, milliseconds: Int64, symbols: Bool) -> String {
-        line(flow, .queued, "held until the running transition ends (\(milliseconds) ms)", symbols: symbols)
+        line(flow, "hold", "waits \(milliseconds) ms for the running transition")
     }
 
     /// A call on a router that left the tree.
     static func ignored(_ flow: FlowID, site: String, symbols: Bool) -> String {
-        line(flow, .ignored, "ignored: this flow is closed (\(site))", symbols: symbols)
+        line(flow, "ignore", "this flow is closed (\(site))")
     }
 
-    /// The stack of one flow after a change.
-    static func stack(_ flow: FlowID, routes: [AnyRoute], naming: RouteNaming) -> String {
-        line(flow, .stack, stackText(routes, naming: naming), symbols: naming.usesSymbols)
+    /// The stack of one flow after a change, in full.
+    static func stack(_ flow: FlowID, _ stack: Stack, naming: RouteNaming) -> String {
+        line(flow, "stack", stackText(stack, naming: naming, shortens: false))
     }
 
-    /// A breadcrumb of routes, or `first screen` for an empty stack.
-    static func stackText(_ routes: [AnyRoute], naming: RouteNaming) -> String {
-        guard !routes.isEmpty else {
-            return "first screen"
+    /// A breadcrumb that starts at the root: `root › Product list › Product (id: 42)`. When
+    /// `shortens` is on, a stack deeper than ``longStack`` keeps the root, the first route and the
+    /// last two, and ends with its depth: `root › Product (id: 2) › … › Product (id: 6) (5)`.
+    static func stackText(_ stack: Stack, naming: RouteNaming, shortens: Bool) -> String {
+        let root = stack.startsWithRootRoute ? stack.routes.first.map(naming.name) : "root"
+        let pushed = stack.startsWithRootRoute ? Array(stack.routes.dropFirst()) : stack.routes
+        let separator = naming.usesSymbols ? " › " : " > "
+        guard shortens, pushed.count > longStack else {
+            return ([root].compactMap { $0 } + pushed.map(naming.name)).joined(separator: separator)
         }
-        return naming.path(routes)
+        let kept = [pushed[0]].map(naming.name) + ["…"] + pushed.suffix(2).map(naming.name)
+        return ([root].compactMap { $0 } + kept).joined(separator: separator) + " (\(pushed.count))"
     }
 
     /// A problem found while registering a route type.
     static func registryProblem(_ problem: RouteDecodingError, symbols: Bool) -> String {
-        line(FlowID("registry"), .problem, problem.description, symbols: symbols)
+        line(FlowID("registry"), "error", problem.description)
+    }
+
+    /// `name` with spaces after it up to `width`, and one space at least.
+    private static func padded(_ name: String, _ width: Int) -> String {
+        name.padding(toLength: max(width, name.count), withPad: " ", startingAt: 0)
     }
 
     /// What an issue kind means, in words.
@@ -204,49 +179,26 @@ enum ReadableLog {
         }
     }
 
-    /// The marker and sentence of one change.
-    private static func describe(
-        _ change: NavigationChange,
-        path: [AnyRoute]?,
-        naming: RouteNaming
-    ) -> (Marker, String) {
+    /// The verb and subject of one change.
+    private static func describe(_ change: NavigationChange, naming: RouteNaming) -> (String, String) {
         switch change {
         case .pushed(let routes):
-            return (.push, "push \(naming.path(routes))")
+            return ("push", naming.path(routes))
         case .popped(let routes):
-            return (.back, backSentence(closed: routes, path: path, naming: naming))
-        case .replaced(_, let new):
-            return (.set, "set the stack to \(stackText(new, naming: naming))")
+            return ("back", naming.path(routes))
+        case .replaced:
+            return ("set", "")
         case .presented(let presentation):
-            return (.present, presentSentence(presentation, naming: naming))
+            return ("present", "\(presentation.style) \(presentation.flow)")
         case .dismissed(let flow):
-            return (.dismiss, "dismiss \(flow)")
+            return ("dismiss", flow.name)
         case .tabSelected(let old, let new):
-            return (.tab, tabSentence(from: old, to: new, symbols: naming.usesSymbols))
+            return ("tab", tabSubject(from: old, to: new, symbols: naming.usesSymbols))
         }
     }
 
-    /// `back to Product list (closed Product (id: 42, …))`.
-    private static func backSentence(closed: [AnyRoute], path: [AnyRoute]?, naming: RouteNaming) -> String {
-        let closedText = "(closed \(naming.path(closed)))"
-        guard let path else {
-            return "back \(closedText)"
-        }
-        let target = path.last.map(naming.name) ?? "the first screen"
-        return "back to \(target) \(closedText)"
-    }
-
-    /// `present sheet checkout: Checkout (…)`.
-    private static func presentSentence(_ presentation: Presentation, naming: RouteNaming) -> String {
-        let head = "present \(presentation.style) \(presentation.flow)"
-        guard let route = presentation.route else {
-            return head
-        }
-        return "\(head): \(naming.name(route))"
-    }
-
-    /// `tab home → shop`.
-    private static func tabSentence(from old: String, to new: String, symbols: Bool) -> String {
-        "tab \(old) \(symbols ? "→" : "->") \(new)"
+    /// `home → shop`.
+    private static func tabSubject(from old: String, to new: String, symbols: Bool) -> String {
+        "\(old) \(symbols ? "→" : "->") \(new)"
     }
 }

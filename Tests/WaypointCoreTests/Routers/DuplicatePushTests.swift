@@ -163,7 +163,7 @@ struct DuplicatePushTests {
         router.push(HomeRoute())
 
         let text = handler.texts.last ?? ""
-        #expect(text.hasPrefix("main       = skipped: Home is still being pushed (DuplicatePushTests.swift:"))
+        #expect(text.hasPrefix("Waypoint  main       skip     Home is still being pushed (DuplicatePushTests.swift:"))
         #expect(handler.messages.last?.level == .debug)
     }
 

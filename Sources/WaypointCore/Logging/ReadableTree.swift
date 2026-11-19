@@ -10,10 +10,10 @@
 ///
 /// ```text
 /// tabs      home · [shop] · profile
-/// ├ home    first screen
+/// ├ home    root
 /// ├ shop    Product list (…) › Product (id: 42, …)
 /// │ └ sheet checkout  Checkout (…) › Address (…)
-/// └ profile first screen
+/// └ profile root
 /// ```
 struct ReadableTree {
     /// The flow's name, such as `shop` or `sheet checkout`.

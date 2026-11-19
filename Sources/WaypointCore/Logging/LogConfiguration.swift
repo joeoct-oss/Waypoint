@@ -56,8 +56,8 @@ public struct LogConfiguration: Sendable {
     /// Default: `.readable`.
     public let format: LogFormat
 
-    /// Whether readable lines start with a symbol, such as `▸` for a push, and join routes with
-    /// `›`. Turn it off for consoles that can't show them. Default: `true`.
+    /// Whether readable lines use `›`, `│` and `→` between routes, columns and tabs. Turn it off
+    /// for consoles that can't show them, to get `>`, `|` and `->`. Default: `true`.
     public let usesSymbols: Bool
 
     /// Which part of the tree is logged after each change, at `.info`. Default: `.off`.
@@ -181,7 +181,7 @@ public struct LogConfiguration: Sendable {
         )
     }
 
-    /// The same configuration, with or without the readable format's symbols.
+    /// The same configuration, with or without the readable format's `›`, `│` and `→`.
     public func withSymbols(_ usesSymbols: Bool) -> LogConfiguration {
         LogConfiguration(
             handler: handler,
