@@ -33,6 +33,9 @@ enum Identifiers {
     static let addToCart = "product.addToCart"
     static let relatedProduct = "product.related"
     static let navigationIssue = "navigation.issue"
+    // Waypoint's own debug screen for a route with no destination in its stack names its title
+    // this way.
+    static let missingDestinationTitle = "waypoint.missingDestination.title"
     static let wishlist = "product.wishlist"
     static let checkout = "cart.checkout"
     static let checkoutAddress = "checkout.address"

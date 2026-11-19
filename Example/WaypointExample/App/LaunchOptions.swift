@@ -10,7 +10,8 @@ import Foundation
 
 // What the launch arguments ask for: start from a fresh install, start signed in, open the
 // Navigation Lab, open one of its entries, keep the splash up longer, push products onto the shop
-// with a change mid-push, or draw the product page's related link as a system link. UI tests use
+// with a change mid-push, draw the product page's related link as a system link, or make it push a
+// route with no destination in its stack. UI tests use
 // them to start a journey or open any Lab entry directly. `startingOver()` gives the options for
 // starting a window over after Clear all data: the same splash, and no screen opened directly.
 struct LaunchOptions {
@@ -24,6 +25,7 @@ struct LaunchOptions {
     let splashDuration: Duration
     let shopSteps: ShopLaunchSteps
     let usesSystemLinks: Bool
+    let linksToMissingDestination: Bool
 
     init(defaults: UserDefaults) {
         let branch = Self.value(Branch.self, for: .branch, in: defaults)
@@ -45,6 +47,7 @@ struct LaunchOptions {
             followUp: Self.value(ShopFollowUp.self, for: .shopFollowUp, in: defaults)
         )
         usesSystemLinks = defaults.bool(forKey: LaunchArgument.systemLinks.rawValue)
+        linksToMissingDestination = defaults.bool(forKey: LaunchArgument.missingDestination.rawValue)
     }
 
     private init(splashDuration: Duration) {
@@ -56,6 +59,7 @@ struct LaunchOptions {
         self.splashDuration = splashDuration
         shopSteps = .none
         usesSystemLinks = false
+        linksToMissingDestination = false
     }
 
     // Conformances:

@@ -27,6 +27,9 @@ import WaypointCore
 ///   router.
 /// - When the mirror shows a push, it tells the router the push started, and when the push ends,
 ///   so a second tap on the same row while the screen slides in pushes nothing (#142).
+/// - When a push ends, and when the stack appears, the mirror checks that every route it
+///   shows has a destination inside this stack. A route type with none is reported once as
+///   `missingDestination`, and the stack shows its missing-destination screen for it (#166).
 ///
 /// Conformances:
 /// - `Observable`, so the stack redraws when `shown` changes.
@@ -73,6 +76,26 @@ final class StackMirror {
     /// `var` because each push shown adds one. Only `reportPush(of:)` changes it.
     @ObservationIgnored private var pushCount = 0
 
+    /// The route types whose destination a screen inside this stack registered.
+    ///
+    /// `var` because destinations register as screens are drawn. Only
+    /// ``registerDestination(_:)`` changes it. Not observed, so registering while drawing is safe.
+    @ObservationIgnored private var destinations: Set<RouteKey> = []
+
+    /// The issue reported for each route type with no destination in this stack, kept so each
+    /// type is reported once.
+    ///
+    /// `var` because a type is added when first found missing. Only `checkDestinations()` changes
+    /// it.
+    @ObservationIgnored private var reportedMissing: [RouteKey: NavigationIssue] = [:]
+
+    /// The route types on screen with no destination in this stack, with the issue reported for
+    /// each. The stack shows its missing-destination screen for these.
+    ///
+    /// `var` because it follows what is shown and what registers. Only `checkDestinations()`
+    /// changes it.
+    private(set) var missingDestinations: [RouteKey: NavigationIssue] = [:]
+
     /// Whether a change is waiting for the running transition to end.
     var isHoldingChange: Bool {
         isHolding
@@ -103,6 +126,34 @@ final class StackMirror {
             return
         }
         hold(for: wait)
+    }
+
+    /// Checks a restored path for missing destinations once the stack is on screen and its
+    /// screens have drawn.
+    ///
+    /// Called when the stack appears, never from `init`: SwiftUI makes a mirror each time it makes
+    /// the stack's view value and keeps only the first, so a check started in `init` would run in a
+    /// mirror that no screen registers with.
+    func stackDidAppear() {
+        guard !shown.isEmpty else {
+            return
+        }
+        scheduleDestinationCheck(after: Self.transitionDuration)
+    }
+
+    /// Notes that a screen inside this stack registered a destination for `type`. Safe while
+    /// drawing: when `type` was found missing, the check runs again on the next turn.
+    func registerDestination<R: Route>(_ type: R.Type) {
+        let key = R.routeKey
+        guard destinations.insert(key).inserted, missingDestinations[key] != nil else {
+            return
+        }
+        scheduleDestinationCheck(after: .zero)
+    }
+
+    /// Whether this stack has no destination for `route`'s type, as last checked.
+    func isMissingDestination(_ route: AnyRoute) -> Bool {
+        missingDestinations[route.routeKey] != nil
     }
 
     /// Takes what the screen shows after the user changed it: fewer routes is a pop, reported to
@@ -148,7 +199,8 @@ final class StackMirror {
     }
 
     /// Tells the router a push of `route` started, and that it ended once the transition ends,
-    /// unless a newer push started meanwhile.
+    /// unless a newer push started meanwhile. When it ends, the routes on screen are checked for
+    /// missing destinations.
     private func reportPush(of route: AnyRoute) {
         pushCount += 1
         let push = pushCount
@@ -158,7 +210,41 @@ final class StackMirror {
                 return
             }
             self.router.rendererDidEndPush(of: route)
+            self.checkDestinations()
         }
+    }
+
+    /// Checks the routes on screen for missing destinations after `delay`. By then SwiftUI has
+    /// drawn the screens below them, which register their destinations.
+    private func scheduleDestinationCheck(after delay: Duration) {
+        clock.run(after: delay) { [weak self] in
+            self?.checkDestinations()
+        }
+    }
+
+    /// Finds the route types on screen with no destination in this stack, and reports each one
+    /// the first time it is found.
+    private func checkDestinations() {
+        let entries = shown
+            .filter { !destinations.contains($0.routeKey) }
+            .map { ($0.routeKey, missingIssue(for: $0)) }
+        let missing = Dictionary(entries) { first, _ in
+            first
+        }
+        guard missing != missingDestinations else {
+            return
+        }
+        missingDestinations = missing
+    }
+
+    /// The issue for `route`'s type, reported to the router the first time.
+    private func missingIssue(for route: AnyRoute) -> NavigationIssue {
+        if let issue = reportedMissing[route.routeKey] {
+            return issue
+        }
+        let issue = router.rendererFoundNoDestination(for: route)
+        reportedMissing[route.routeKey] = issue
+        return issue
     }
 
     /// Waits for the running transition to end, then shows the newest path. One hold at a time,

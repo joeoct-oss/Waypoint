@@ -38,6 +38,11 @@
     /// with `@DismissFlow`, or read the router with `@Environment(StackRouter.self)`. A stack made
     /// with ``init(flow:router:root:)`` belongs to a flow, which `@FlowNavigation` finds.
     ///
+    /// A route whose type the router knows but no screen inside this stack registered, such as
+    /// one registered only in another stack, is reported as `missingDestination` and drawn with
+    /// the screen chosen by ``SwiftUICore/View/missingDestination(_:)``: by default a debug
+    /// screen that names the route and the fix in debug builds, and a blank screen in release.
+    ///
     /// A stack keeps drawing the router it was first given. Pass another router and the stack
     /// starts again from that router's path.
     ///
@@ -147,12 +152,19 @@
         var body: some View {
             NavigationStack(path: path) {
                 root
+                    .navigationDestination(for: MissingDestinationEntry.self) { entry in
+                        MissingDestinationHost(entry: entry, mirror: mirror)
+                    }
             }
             .environment(\.waypointStackRouter, mirror.router)
+            .environment(\.waypointStackMirror, mirror)
             .environment(\.waypointFlowRouters, flowRouters.adding(mirror.router))
             .environment(mirror.router)
             .onChange(of: mirror.router.state.path) {
                 mirror.routerDidChange()
+            }
+            .onAppear {
+                mirror.stackDidAppear()
             }
         }
 
@@ -181,13 +193,22 @@
 
     extension StackMirror {
         /// The routes on screen as a `NavigationPath`, each as its own type, so SwiftUI finds the
-        /// destination registered for it.
+        /// destination registered for it. A route with no destination in this stack goes in as a
+        /// ``MissingDestinationEntry``, which the stack draws with its missing-destination screen.
         var navigationPath: NavigationPath {
             // Read so the stack is drawn again from `shown` after a refused change.
             _ = redrawCount
             return shown.reduce(into: NavigationPath()) { path, route in
-                path.append(route.base)
+                path.append(pathEntry(for: route))
             }
+        }
+
+        /// `route` as its own type, or as a missing-destination entry.
+        private func pathEntry(for route: AnyRoute) -> any Hashable {
+            guard isMissingDestination(route) else {
+                return route.base
+            }
+            return MissingDestinationEntry(route: route)
         }
     }
 #endif

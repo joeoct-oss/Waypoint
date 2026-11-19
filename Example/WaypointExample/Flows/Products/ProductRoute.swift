@@ -42,6 +42,20 @@ struct CollectionRoute: Route {
     var preview: ProductCollection?
 }
 
+// A product's reviews. No screen in the products stacks draws it yet: only the `missingDestination`
+// launch argument links to it, and lists it in the router's registry, so a UI test can check the
+// screen a stack shows for a route with no destination of its own.
+//
+// Conformances:
+// - `Route`, so the related link can push it onto a Waypoint stack.
+struct ProductReviewsRoute: Route {
+    static let publicLogFields: Set<String> = [
+        "productID",
+    ]
+
+    let productID: Int
+}
+
 // Where a products stack starts: browsing the shop, or searching it.
 enum ProductsStart {
     case browse

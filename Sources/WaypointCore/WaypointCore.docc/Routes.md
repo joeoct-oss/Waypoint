@@ -394,4 +394,4 @@ public struct RouteTable<Payload> {
 }
 ```
 
-A route with no destination never crashes the app. The router reports an `unregisteredRoute` issue with the file and line of the call. Debug builds show a "No destination for …" screen, and release builds refuse the push.
+A route with no destination never crashes the app. The router refuses the push in every build and reports an `unregisteredRoute` issue with the file and line of the call. A type the tree knows, but that the stack it is pushed onto has no destination for, is pushed and then reported as `missingDestination` by the renderer, which shows a "No destination for …" screen in debug builds and a blank one in release (see the SwiftUI renderer article).
