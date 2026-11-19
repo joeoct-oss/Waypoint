@@ -9,6 +9,23 @@
 #if canImport(SwiftUI)
     import SwiftUI
 
+    /// How the tab bar leaves when a screen that hides it is pushed, and comes back when it is
+    /// popped.
+    ///
+    /// Conformances:
+    /// - `Sendable`, so it can sit in the environment.
+    /// - `Hashable`, so the stack can compare the app's choice.
+    public enum PushedTabBarMotion: Sendable, Hashable {
+        /// The pushed screen slides in on top of the tab bar, and the bar leaves with the screen
+        /// underneath, as `hidesBottomBarWhenPushed` does in UIKit. A pop and a swipe back bring
+        /// it back the same way. The default.
+        case slidesWithScreen
+
+        /// SwiftUI's own `.toolbar(_:for: .tabBar)`: the bar disappears at the start of a push
+        /// and appears once a pop ends.
+        case system
+    }
+
     extension View {
         /// Chooses whether the tab bar shows on the screens pushed onto the stacks inside this
         /// view, as `hidesBottomBarWhenPushed` does in UIKit. A stack's first screen is never
@@ -28,16 +45,41 @@
         /// .tabBarOnPushedScreens(.hidden)
         /// ```
         ///
-        /// The stack applies `visibility` around each pushed screen with
-        /// `.toolbar(_:for: .tabBar)`, and SwiftUI lets that outer value win over one a screen
-        /// sets inside itself, so every pushed screen of the stack gets the same visibility. The
-        /// tab bar leaves and comes back as SwiftUI draws it: it disappears at the start of a push
-        /// and appears once a pop ends, without UIKit's slide. The tab bar only exists on iOS, so
-        /// other systems ignore it.
+        /// With `.hidden`, the tab bar is never hidden on its own: each pushed screen slides in
+        /// on top of it and the bar leaves with the screen underneath, as in UIKit
+        /// (``PushedTabBarMotion/slidesWithScreen``). Pass ``PushedTabBarMotion/system`` for
+        /// SwiftUI's own `.toolbar(_:for: .tabBar)` instead. When the stack can't reach the
+        /// controller UIKit pushes, it falls back to SwiftUI's own way, so the bar is still
+        /// hidden. `.visible` always uses SwiftUI's way, and every pushed screen of the stack gets
+        /// the same visibility, whatever a screen sets inside itself. The tab bar only exists on
+        /// iOS, so other systems ignore it.
         ///
-        /// - Parameter visibility: The tab bar's visibility on every pushed screen.
-        public func tabBarOnPushedScreens(_ visibility: Visibility) -> some View {
-            environment(\.waypointPushedTabBar, visibility)
+        /// - Parameters:
+        ///   - visibility: The tab bar's visibility on every pushed screen.
+        ///   - motion: How the bar leaves and comes back when it is hidden. Default:
+        ///     ``PushedTabBarMotion/slidesWithScreen``.
+        public func tabBarOnPushedScreens(
+            _ visibility: Visibility,
+            motion: PushedTabBarMotion = .slidesWithScreen
+        ) -> some View {
+            environment(\.waypointPushedTabBar, PushedTabBar(visibility: visibility, motion: motion))
+        }
+    }
+
+    /// The app's choice for the tab bar on pushed screens.
+    ///
+    /// Conformances:
+    /// - `Sendable`, so it can sit in the environment.
+    struct PushedTabBar: Sendable {
+        /// The tab bar's visibility on every pushed screen.
+        let visibility: Visibility
+
+        /// How the bar leaves and comes back when it is hidden.
+        let motion: PushedTabBarMotion
+
+        /// Whether the stack slides the bar away with the screen, through UIKit.
+        var slidesWithScreen: Bool {
+            visibility == .hidden && motion == .slidesWithScreen
         }
     }
 
@@ -47,17 +89,27 @@
     /// Conformances:
     /// - `ViewModifier`, so every pushed screen of a stack gets it the same way.
     struct PushedTabBarModifier: ViewModifier {
-        /// What the app chose with ``SwiftUICore/View/tabBarOnPushedScreens(_:)``.
-        @Environment(\.waypointPushedTabBar) private var visibility
+        /// What the app chose with ``SwiftUICore/View/tabBarOnPushedScreens(_:motion:)``.
+        @Environment(\.waypointPushedTabBar) private var choice
+
+        /// Whether the bridge couldn't reach the pushed controller, so SwiftUI hides the bar.
+        @State private var bridgeFailed = false
 
         /// The screen, with the chosen tab bar visibility.
         @ViewBuilder
         func body(content: Content) -> some View {
             #if os(iOS)
-                if visibility == .automatic {
+                if choice.visibility == .automatic {
                     content
+                } else if choice.slidesWithScreen, !bridgeFailed {
+                    content.background {
+                        PushedTabBarBridge(onFailure: { bridgeFailed = true })
+                            .frame(width: 0, height: 0)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
                 } else {
-                    content.toolbar(visibility, for: .tabBar)
+                    content.toolbar(choice.visibility, for: .tabBar)
                 }
             #else
                 content
@@ -73,8 +125,8 @@
     }
 
     extension EnvironmentValues {
-        /// The tab bar visibility on pushed screens, chosen with
-        /// ``SwiftUICore/View/tabBarOnPushedScreens(_:)``. Default: `.automatic`.
-        @Entry var waypointPushedTabBar: Visibility = .automatic
+        /// The tab bar on pushed screens, chosen with
+        /// ``SwiftUICore/View/tabBarOnPushedScreens(_:motion:)``. Default: `.automatic`.
+        @Entry var waypointPushedTabBar = PushedTabBar(visibility: .automatic, motion: .slidesWithScreen)
     }
 #endif
