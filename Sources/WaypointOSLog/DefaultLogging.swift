@@ -27,7 +27,7 @@
 
         /// Installs ``handler`` on the tree of `router`, unless the app chose a handler.
         @MainActor
-        package static func install(on router: TabRouter) {
+        package static func install<Tab: NavigationTab>(on router: TabRouter<Tab>) {
             router.installDefaultLogHandler {
                 handler
             }
