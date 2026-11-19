@@ -224,7 +224,7 @@ struct JourneyTests {
             "SHOWN ▸ Cart",
             "FULL SCREEN ▸ Checkout · NEW COORDINATOR",
             "PUSH ▸ Checkout step: payment",
-            "DISMISS ▸ Cart · COORDINATOR ENDED",
+            "DISMISS ▸ Cart · FLOW ENDED",
         ]
         #expect(titles == expectedTitles)
         let started = Self.rows(of: texts[1])
@@ -233,7 +233,7 @@ struct JourneyTests {
         #expect(started.contains("step         1 of 3"))
         let ended = Self.rows(of: texts[3])
         #expect(ended.contains("previous     Checkout step: payment · 9.0 s there"))
-        #expect(ended.contains("ended        Checkout · finished after 12.0 s"))
+        #expect(ended.contains("ended        checkout flow · finished after 12.0 s"))
         #expect(router.screenVisit?.transition == .dismiss)
     }
 
@@ -246,7 +246,7 @@ struct JourneyTests {
         router.rendererDidDismiss()
 
         let rows = Self.rows(of: handler.journeyTexts.last)
-        #expect(rows.contains("ended        Checkout · cancelled by the user after 0 ms"))
+        #expect(rows.contains("ended        checkout flow · cancelled by the user after 0 ms"))
         #expect(rows.contains("by           user"))
     }
 
@@ -363,21 +363,21 @@ struct JourneyTests {
 
         let box = try #require(handler.journeyBoxes.first)
         let expectedBox = [
-            "┌─ 🧭 PUSH ▸ ProductDetailView ──────────────────────────────┐",
-            "│ coordinator  ShopCoordinator · same coordinator (sub view) │",
-            "│ tab          Shop                                          │",
-            "│ previous     ProductListView · 0 ms there                  │",
-            "│ by           app · JourneyTests.swift:NNN                  │",
-            "│ trigger      related_products                              │",
-            "│ route        Item (id: 3, …)                               │",
-            "├─ app ──────────────────────────────────────────────────────┤",
-            "│ MainCoordinator · tabs                                     │",
-            "│ ├── Home                    └ HomeView                     │",
-            "│ ├─▶ Shop · ShopCoordinator                                 │",
-            "│ │     ├ ProductListView                                    │",
-            "│ │     └ ProductDetailView (id: 3, …)   ◀ NEW               │",
-            "│ └── Profile                 └ Profile                      │",
-            "└────────────────────────────────────────────────────────────┘",
+            "┌─ 🧭 PUSH ▸ ProductDetailView ────────────────────────────────────────────────┐",
+            "│ coordinator  ShopCoordinator · same coordinator (sub view)                   │",
+            "│ tab          Shop                                                            │",
+            "│ previous     ProductListView · 0 ms there                                    │",
+            "│ by           app · JourneyTests.swift:NNN                                    │",
+            "│ trigger      related_products                                                │",
+            "│ route        Item (id: 3, …)                                                 │",
+            "├─ app ────────────────────────────────────────────────────────────────────────┤",
+            "│ MainCoordinator · tabs                                                       │",
+            "│ ├── Home                    └ HomeView                                       │",
+            "│ ├─▶ Shop · ShopCoordinator                                                   │",
+            "│ │     ├ ProductListView                                                      │",
+            "│ │     └ ProductDetailView (id: 3, …)   ◀ NEW                                 │",
+            "│ └── Profile                 └ Profile                                        │",
+            "└──────────────────────────────────────────────────────────────────────────────┘",
         ]
         let lines = box.replacingOccurrences(
             of: #"JourneyTests\.swift:\d{3}"#,
@@ -480,6 +480,63 @@ struct JourneyTests {
         ]
         #expect(Array(tree.dropLast()) == expectedTree)
         #expect(rows.contains("coordinator  CheckoutCoordinator · same coordinator (sub view)"))
+    }
+
+    @Test
+    func aPresentationWaitsForItsViewBeforeItsBox() throws {
+        let handler = RecordingLogHandler()
+        let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
+        router.setCoordinatorName("CartCoordinator")
+        router.setRootViewName("CartView")
+        router.rendererDidAppear()
+
+        router.present(JourneyFixtures.CheckoutRoute(), style: .fullScreenCover)
+        #expect(handler.journeyBoxes.count == 1)
+        let checkout = try #require(router.presented)
+        checkout.setRootViewName("CheckoutAddressView")
+        checkout.rendererDidAppear()
+        checkout.push(JourneyFixtures.CheckoutStep.payment)
+
+        let titles = handler.journeyBoxes.map(Self.title)
+        let expectedTitles = [
+            "SHOWN ▸ CartView",
+            "FULL SCREEN ▸ CheckoutAddressView · NEW FLOW",
+            "PUSH ▸ Checkout step: payment",
+        ]
+        #expect(titles == expectedTitles)
+        #expect(Self.rows(of: handler.journeyBoxes.last).contains("previous     CheckoutAddressView · 0 ms there"))
+    }
+
+    @Test
+    func aFlowWithItsOwnCoordinatorEndsThatCoordinator() throws {
+        let handler = RecordingLogHandler()
+        let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
+        router.setCoordinatorName("CartCoordinator")
+        router.present(JourneyFixtures.CheckoutRoute())
+        let checkout = try #require(router.presented)
+        checkout.setCoordinatorName("CheckoutCoordinator")
+        checkout.push(JourneyFixtures.CheckoutStep.payment)
+
+        router.dismiss()
+
+        let box = handler.journeyBoxes.last
+        #expect(Self.title(of: box) == "DISMISS ▸ Main · COORDINATOR ENDED")
+        #expect(Self.rows(of: box).contains("ended        CheckoutCoordinator · finished after 0 ms"))
+    }
+
+    @Test
+    func longMessagesSplitBetweenLinesUnderTheLimit() {
+        let row = "│ " + String(repeating: "─", count: 40) + " │"
+        let box = Array(repeating: row, count: 30).joined(separator: "\n")
+
+        let pieces = LogChunks.split(box)
+
+        #expect(pieces.count > 1)
+        #expect(pieces.allSatisfy { $0.utf8.count <= LogChunks.maxBytes })
+        #expect(pieces.joined(separator: "\n") == box)
+        #expect(LogChunks.split("short") == ["short"])
+        let long = String(repeating: "é", count: 20)
+        #expect(LogChunks.split(long, maxBytes: 10).allSatisfy { $0.utf8.count <= 10 })
     }
 
     @Test

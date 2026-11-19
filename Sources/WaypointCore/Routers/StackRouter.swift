@@ -545,12 +545,14 @@ public final class StackRouter: NavigationRouter {
     /// Names the view that draws the stack's root screen. Renderers call this.
     package func setRootViewName(_ name: String) {
         rootViewName = name
+        tree.namesViews = true
     }
 
     /// Names the view that draws the screens of route type `R` in the journey box. Renderers
     /// call this as they register destinations.
     package func registerViewName<R: Route>(_ name: String, for type: R.Type) {
         tree.viewNames[R.routeKey] = name
+        tree.namesViews = true
     }
 
     /// Declares the flow whose screens this stack shows, so ``navigator(for:file:line:)`` can

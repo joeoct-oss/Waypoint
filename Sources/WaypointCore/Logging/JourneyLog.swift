@@ -32,6 +32,10 @@ enum JourneyLog {
     /// The labels in the box are padded to this width.
     static let labelWidth = 12
 
+    /// The narrowest a box's inside is, so boxes one after another line up unless one needs
+    /// more room.
+    static let minimumWidth = 76
+
     /// One entry as a `key=value` line, for the structured format.
     static func line(_ entry: JourneyEntry) -> String {
         structured(entry)

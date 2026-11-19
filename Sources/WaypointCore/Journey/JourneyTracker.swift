@@ -218,7 +218,11 @@ final class JourneyTracker {
     /// The visit to the screen on display, when it changed and is tracked, and a duplicate
     /// warning when it came back too soon.
     private func visitScreen(_ change: JourneyChange, in root: any TreeNode) -> [JourneyEntry] {
-        guard let visible = VisibleScreen(in: root), visible.isTracked, visible.key != shown?.key else {
+        guard let visible = VisibleScreen(in: root), visible.isTracked else {
+            return []
+        }
+        guard visible.key != shown?.key else {
+            learnViewName(of: visible)
             return []
         }
         let (transition, origin) = Self.transition(of: change.changes)
@@ -240,6 +244,15 @@ final class JourneyTracker {
         shown = (visible.key, change.time)
         lastSeen[DuplicateKey(visible.key)] = change.time
         return [.screenViewed(next, showsSource: showsSource)] + duplicate
+    }
+
+    /// Keeps the view name of the screen still on display once its renderer named it, so the
+    /// next visit's previous screen names its view.
+    private func learnViewName(of visible: VisibleScreen) {
+        guard let visit, visit.screen.viewName == nil, visible.screen.viewName != nil else {
+            return
+        }
+        self.visit = visit.withScreen(visible.screen)
     }
 
     /// A duplicate warning when the screen came forward again within the window.

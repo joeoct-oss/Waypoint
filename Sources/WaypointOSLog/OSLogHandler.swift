@@ -74,10 +74,16 @@
             true
         }
 
-        /// Writes the line at its level, in its category, as one public string.
+        /// Writes the line at its level, in its category, as public strings in pieces the unified
+        /// log keeps whole.
         public func log(_ message: LogMessage) {
             let logger = channels.channel(for: message.category).logger
-            logger.log(level: Self.osLogType(for: message.level), "\(message.text, privacy: .public)")
+            let type = Self.osLogType(for: message.level)
+            // The unified log cuts a message at about 1 KB, so a long one, such as a journey
+            // box, goes out as consecutive messages of whole lines.
+            for piece in LogChunks.split(message.text) {
+                logger.log(level: type, "\(piece, privacy: .public)")
+            }
         }
 
         /// Starts a signpost interval in the interval's category.

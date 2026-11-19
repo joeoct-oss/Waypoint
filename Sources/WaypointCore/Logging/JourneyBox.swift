@@ -48,6 +48,18 @@ struct JourneyBox {
         }.first
     }
 
+    /// The screen the box is about: the one on display when it is the visit's, which may have
+    /// learned its view's name since, else the visit's, else the one on display.
+    private var shownScreen: ScreenReference? {
+        guard let screen = visit?.screen else {
+            return visible?.screen
+        }
+        guard let shown = visible?.screen, shown.flow == screen.flow, shown.route == screen.route else {
+            return screen
+        }
+        return shown
+    }
+
     /// The flow the change started, if any.
     private var startedFlow: FlowJourney? {
         entries.lazy.compactMap { entry -> FlowJourney? in
@@ -89,16 +101,18 @@ struct JourneyBox {
     }
 
     /// `🧭 PUSH ▸ ProductDetailView`, with `NEW COORDINATOR` (or `NEW FLOW` when the presenting
-    /// coordinator runs it) or `COORDINATOR ENDED`.
+    /// coordinator runs it) or `COORDINATOR ENDED` (or `FLOW ENDED` when its coordinator lives on).
     private func title() -> String {
-        let screen = visit?.screen ?? visible?.screen
+        let screen = shownScreen
         let subject = screen.map { $0.screenLabel } ?? "nothing on display"
         let action = visit.map { Self.word(for: $0.transition) } ?? "CHANGE"
         let started = startedFlow.map { flow in
             let presenter = flow.presenter.map(Self.ownerName)
             return Self.ownerName(flow.screen, in: visit) == presenter ? "NEW FLOW" : "NEW COORDINATOR"
         }
-        let ended = endedFlows.isEmpty ? nil : "COORDINATOR ENDED"
+        let ended = endedFlows.first.map { ended in
+            endedOwner(of: ended.flow) == nil ? "FLOW ENDED" : "COORDINATOR ENDED"
+        }
         let head = "\(symbols ? "🧭" : "Waypoint") \(action) \(symbols ? "▸" : ">") \(subject)"
         return ([head] + [started, ended].compactMap { $0 }).joined(separator: " \(dot) ")
     }
@@ -125,7 +139,7 @@ struct JourneyBox {
             ("by", byText()),
             ("trigger", visit?.trigger ?? startedFlow?.trigger),
             ("step", visit?.step.map { "\($0.number) of \($0.count)" }),
-            ("route", (visit?.screen ?? visible?.screen)?.route.map(naming.name)),
+            ("route", shownScreen?.route.map(naming.name)),
             ("ended", endedText()),
             ("warning", duplicateInterval.map { "shown again \(JourneyLog.text($0)) after the last time" }),
         ]
@@ -137,7 +151,7 @@ struct JourneyBox {
     /// `ProductsCoordinator · same coordinator (sub view)`, `CheckoutCoordinator · presented by
     /// CartCoordinator` or `CartCoordinator · tab switch`.
     private func coordinatorText() -> String? {
-        guard let screen = visit?.screen ?? visible?.screen else {
+        guard let screen = shownScreen else {
             return nil
         }
         let owner = screen.coordinator ?? "\(VisibleScreen.words(screen.flow.name)) (no coordinator named)"
@@ -228,13 +242,22 @@ struct JourneyBox {
     /// `checkout · finished after 20.7 s`, or `cancelled by the user after 3.0 s`.
     private func endedText() -> String? {
         let texts = endedFlows.map { ended in
-            let last = visit?.previous.flatMap { $0.flow == ended.flow.flow ? $0 : nil }
-            let name = Self.ownerName(last ?? ended.flow.screen)
+            let name = endedOwner(of: ended.flow) ?? "\(ended.flow.flow.name) flow"
             let how = ended.cancelled ? "cancelled by the user" : "finished"
             let after = ended.flow.duration.map { " after \(JourneyLog.text($0))" } ?? ""
             return "\(name) \(dot) \(how)\(after)"
         }
         return texts.isEmpty ? nil : texts.joined(separator: "; ")
+    }
+
+    /// The coordinator of an ended flow, from its last screen, or `nil` when it had none of its
+    /// own: unnamed, or the coordinator still on display, which ran the flow and lives on.
+    private func endedOwner(of flow: FlowJourney) -> String? {
+        let last = visit?.previous.flatMap { $0.flow == flow.flow ? $0 : nil }
+        guard let owner = last?.coordinator ?? flow.screen.coordinator, owner != shownScreen?.coordinator else {
+            return nil
+        }
+        return owner
     }
 
     /// The tree's lines, the screen on display marked `◀ NEW` when it came forward, else
@@ -265,7 +288,8 @@ struct JourneyBox {
     private func frame(title: String, facts: [String], tree: [String]) -> String {
         let section = "app"
         let titleWidth = title.count + (symbols ? 1 : 0)
-        let contentWidth = max((facts + tree).map(\.count).max() ?? 0, titleWidth + 4, section.count + 4)
+        let widest = (facts + tree).map(\.count).max() ?? 0
+        let contentWidth = max(widest, titleWidth + 4, JourneyLog.minimumWidth)
         let line = symbols ? "─" : "-"
         let side = symbols ? "│" : "|"
         let top = (symbols ? "┌─ " : "+- ") + title + " " + rule(line, contentWidth - titleWidth - 1)
