@@ -11,7 +11,8 @@ import XCTest
 // Launches the example app for a UI test, always from a fresh install: as a guest from the splash
 // (held longer when a test needs to see it), signed in, or straight into the Navigation Lab, one of
 // its branches or one of its twenty entries. `systemLinks` draws the product page's related link as
-// a system `NavigationLink`.
+// a system `NavigationLink`, and `missingDestination` makes it push a route with no destination in
+// its stack.
 enum ExampleApp {
     private static let yes = "YES"
 
@@ -25,7 +26,8 @@ enum ExampleApp {
         splashSeconds: Int? = nil,
         shopPath: [Int] = [],
         shopFollowUp: ShopFollowUp? = nil,
-        systemLinks: Bool = false
+        systemLinks: Bool = false,
+        missingDestination: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = arguments(
@@ -37,7 +39,8 @@ enum ExampleApp {
             splashSeconds: splashSeconds,
             shopPath: shopPath,
             shopFollowUp: shopFollowUp,
-            systemLinks: systemLinks
+            systemLinks: systemLinks,
+            missingDestination: missingDestination
         )
         app.launch()
         return app
@@ -52,7 +55,8 @@ enum ExampleApp {
         splashSeconds: Int?,
         shopPath: [Int],
         shopFollowUp: ShopFollowUp?,
-        systemLinks: Bool
+        systemLinks: Bool,
+        missingDestination: Bool
     ) -> [String] {
         let path = shopPath.isEmpty ? nil : shopPath.map(String.init).joined(separator: ",")
         let values: [(LaunchArgument, String?)] = [
@@ -66,6 +70,7 @@ enum ExampleApp {
             (LaunchArgument.shopPath, path),
             (LaunchArgument.shopFollowUp, shopFollowUp?.rawValue),
             (LaunchArgument.systemLinks, systemLinks ? yes : nil),
+            (LaunchArgument.missingDestination, missingDestination ? yes : nil),
         ]
         return values.flatMap { argumentPair($0.0, $0.1) }
     }

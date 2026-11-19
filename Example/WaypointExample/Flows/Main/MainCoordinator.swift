@@ -46,7 +46,8 @@ final class MainCoordinator {
         let navigation = ProductsNavigation(
             configuration: services.navigation,
             issues: services.issues,
-            usesSystemLinks: launch.usesSystemLinks
+            usesSystemLinks: launch.usesSystemLinks,
+            linksToMissingDestination: launch.linksToMissingDestination
         )
         self.gate = gate
         self.tabs = tabs

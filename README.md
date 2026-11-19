@@ -21,7 +21,7 @@ Waypoint is a navigation library for iOS apps. Every screen is named by a small 
 | Navigation state and pure reducers | ✅ Built |
 | `StackRouter` and `TabRouter`: push, pop, present, dismiss, tabs, the router tree | ✅ Built |
 | Transactions, path helpers, `else:` fallbacks and outcomes | ✅ Built |
-| Logging seam | ✅ Built |
+| Logging seam, unified log and signposts, on by default in the renderers | ✅ Built |
 | One `NavigationConfiguration` on the root, strict route registry, route hints, one push per tap, the replace-presentation fallback | ✅ Built |
 | SwiftUI stacks: `WaypointStack`, `destination(_:_:)`, swipe-back sync | ✅ Built in `Waypoint` |
 | `WaypointLink`, navigators and property wrappers for views and view models | ✅ Built in `Waypoint` |
@@ -184,8 +184,8 @@ A route with no destination never crashes either. Debug builds show a screen tha
 | Product | What it is | Runs on |
 |---|---|---|
 | `WaypointCore` | The navigation state engine: routes, routers, outcomes, fallbacks, transactions and logging, with coordinators, guards, deep links, restoration and events to come. No UI framework. | iOS, macOS, Linux |
-| `Waypoint` | The SwiftUI renderer: `WaypointRoot`, `WaypointStack`, sheets, tabs, `WaypointLink` and coordinators. Built on `WaypointCore`. | iOS 17+ |
-| `WaypointUIKit` | The UIKit renderer: navigation controllers, presentations and tab bar controllers driven by the same core. | iOS 17+ |
+| `Waypoint` | The SwiftUI renderer: `WaypointRoot`, `WaypointStack`, sheets, tabs, `WaypointLink` and coordinators, logging to the unified log by default. Built on `WaypointCore`. | iOS 17+ |
+| `WaypointUIKit` | The UIKit renderer: navigation controllers, presentations and tab bar controllers driven by the same core, logging to the unified log by default. | iOS 17+ |
 
 ## Requirements
 

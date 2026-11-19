@@ -1,5 +1,5 @@
 //
-//  ViewModelTests.swift
+//  ViewModelStyleUITests.swift
 //  WaypointExampleUITests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
@@ -13,7 +13,7 @@ import XCTest
 // ignored while one made in time pushes, and a wrapper with no stack above it fails with
 // `noRouterInScope`.
 @MainActor
-final class ViewModelTests: XCTestCase {
+final class ViewModelStyleUITests: XCTestCase {
     private static let styleTitles = [
         "Outputs",
         "Navigator",

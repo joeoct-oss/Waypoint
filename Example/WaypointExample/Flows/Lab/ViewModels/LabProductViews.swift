@@ -34,11 +34,22 @@ struct NavigatorProductView: View {
     var body: some View {
         LabProductContent(
             note: NavigationStyle.navigator.pusher,
-            detail: model.status ?? NavigationStyle.navigator.explanation,
+            detail: detail,
             isLoadingReviews: model.isLoadingReviews,
             onReviews: { model.loadReviews() },
             onAddToCart: { model.buy() }
         )
+    }
+
+    // What the model is doing, in words. The model keeps state; the view says it.
+    private var detail: String {
+        if model.isLoadingReviews {
+            return "Loading reviews. The model pushes them when they arrive."
+        }
+        guard let outcome = model.reviewsOutcome else {
+            return NavigationStyle.navigator.explanation
+        }
+        return "Reviews pushed: \(outcome.description)"
     }
 }
 
@@ -55,61 +66,6 @@ struct WrapperProductView: View {
             onReviews: nil,
             onAddToCart: { shop.push(LabCartRoute()) }
         )
-    }
-}
-
-// The demo product's view model. It imports nothing from SwiftUI's side of Waypoint: it holds a
-// `FlowNavigator<LabShopFlow>`, so it can only push the demo flow's routes, and it can be tested
-// with a real router and no screen. Reviews load slowly on purpose. If the flow is gone when they
-// arrive, the navigator holds no router any more, the push returns `.ignored`, and the model
-// reports the outcome instead of moving another screen.
-//
-// Conformances:
-// - `Observable` (from `@Observable`), so the product redraws while reviews load.
-@MainActor
-@Observable
-final class LabProductModel {
-    private let navigation: FlowNavigator<LabShopFlow>
-    private let reviewsDelay: Duration
-    private let onLateOutcome: (NavigationOutcome) -> Void
-    // `var` because `loadReviews()` sets it while the reviews load.
-    private(set) var isLoadingReviews: Bool
-    // `var` because `loadReviews()` says here what its push did, while the flow is still there.
-    private(set) var status: String?
-
-    init(
-        navigation: FlowNavigator<LabShopFlow>,
-        reviewsDelay: Duration,
-        onLateOutcome: @escaping (NavigationOutcome) -> Void
-    ) {
-        self.navigation = navigation
-        self.reviewsDelay = reviewsDelay
-        self.onLateOutcome = onLateOutcome
-        isLoadingReviews = false
-        status = nil
-    }
-
-    func buy() {
-        navigation.push(LabCartRoute())
-    }
-
-    func loadReviews() {
-        isLoadingReviews = true
-        status = "Loading reviews. The model pushes them when they arrive."
-        Task {
-            try? await Task.sleep(for: reviewsDelay)
-            showReviews()
-        }
-    }
-
-    private func showReviews() {
-        isLoadingReviews = false
-        let outcome = navigation.push(LabReviewsRoute())
-        if navigation.isActive {
-            status = "Reviews pushed: \(outcome.description)"
-        } else {
-            onLateOutcome(outcome)
-        }
     }
 }
 

@@ -55,6 +55,11 @@ public struct NavigationIssue: NavigationRecord {
         /// path holds. The router keeps its state. A `NavigationLink(value:)` inside a Waypoint
         /// stack causes it.
         case rendererMismatch
+
+        /// A stack shows a route whose type the tree knows, but no screen inside that stack
+        /// registered a destination for it, such as a type registered only in another stack or
+        /// only in the configuration's registry. The router keeps its state.
+        case missingDestination
     }
 
     /// What went wrong.

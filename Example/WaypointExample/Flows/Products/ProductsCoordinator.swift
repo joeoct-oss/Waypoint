@@ -251,14 +251,19 @@ final class ProductsCoordinator {
 
     // Links to `product` with `WaypointLink`, which pushes through `router`. When a UI test passes
     // the `systemLinks` launch argument, it gets a system `NavigationLink` instead, which Waypoint
-    // refuses and reports.
+    // refuses and reports. With `missingDestination`, the link pushes the product's reviews, which
+    // no screen of the stack draws, so the stack shows its missing-destination screen.
     @ViewBuilder
     private func makeRelatedLink(to product: Product) -> some View {
         let route = ProductRoute(
             id: product.id,
             preview: product
         )
-        if navigation.usesSystemLinks {
+        if navigation.linksToMissingDestination {
+            WaypointLink(value: ProductReviewsRoute(productID: product.id)) {
+                RelatedProductRow(product: product)
+            }
+        } else if navigation.usesSystemLinks {
             NavigationLink(value: route) {
                 RelatedProductRow(product: product)
             }

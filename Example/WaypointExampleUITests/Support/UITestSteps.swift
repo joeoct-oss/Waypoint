@@ -54,13 +54,23 @@ extension XCUIApplication {
         navigationBars.buttons.element(boundBy: 0).tap()
     }
 
-    // Drags from the screen's left edge, the way a person swipes back. The drag starts on the edge
-    // itself and moves slowly, because iOS 17 ignores a drag that starts a few points in, and a
-    // fast drag can cancel.
+    // Drags across the app's window, the way a person swipes back, slowly, because a fast drag can
+    // cancel. The drag uses the window's coordinates, not the app's: on an iPad the window can
+    // float in the middle of the screen, and the app's coordinates then point at the wallpaper.
+    // iOS 17 ignores a drag that starts a few points in, so there it starts on the edge itself.
+    // iOS 26 swipes back from anywhere in the content, and a drag on a floating window's edge
+    // resizes the window, so there it starts a little in.
     @MainActor
     func swipeBack() {
-        let edge = coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
-        let middle = coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
+        let window = windows.firstMatch
+        let startX: CGFloat
+        if #available(iOS 26, *) {
+            startX = 0.1
+        } else {
+            startX = 0
+        }
+        let edge = window.coordinate(withNormalizedOffset: CGVector(dx: startX, dy: 0.5))
+        let middle = window.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
         edge.press(
             forDuration: 0.05,
             thenDragTo: middle,

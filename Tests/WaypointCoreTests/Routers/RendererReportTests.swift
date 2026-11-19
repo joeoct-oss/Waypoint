@@ -217,4 +217,31 @@ struct RendererReportTests {
 
         #expect(handler.texts.contains { $0.contains("origin=user") })
     }
+
+    @Test
+    func missingDestinationIsReportedWithTheFix() {
+        let router = StackRouter(flow: FlowID("shop"), configuration: .permissive)
+        router.push(ProductRoute(id: 7))
+        let batches = Recorder<[AppliedChange]>()
+        router.tree.onApplied { changes in
+            batches.record(changes)
+        }
+        let reported = Recorder<NavigationIssue>()
+        router.tree.onReported { issue in
+            reported.record(issue)
+        }
+
+        let line: UInt = #line + 1
+        let issue = router.rendererFoundNoDestination(for: AnyRoute(ProductRoute(id: 7)))
+
+        #expect(issue.kind == .missingDestination)
+        #expect(issue.flow == FlowID("shop"))
+        #expect(issue.line == line)
+        #expect(issue.message.contains(".destination(ProductRoute.self)"))
+        #expect(!issue.message.contains("7"))
+        let expectedIssues = [issue]
+        #expect(reported.values == expectedIssues)
+        #expect(batches.count == 0)
+        #expect(router.state.path.count == 1)
+    }
 }

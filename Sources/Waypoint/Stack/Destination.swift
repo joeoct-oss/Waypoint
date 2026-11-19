@@ -68,11 +68,15 @@
         /// The router of the enclosing stack, if any.
         @Environment(\.waypointStackRouter) private var router
 
+        /// The mirror of the enclosing stack, if any, which learns the stack's destinations.
+        @Environment(\.waypointStackMirror) private var mirror
+
         /// The view, with the route type's destination.
         func body(content view: Content) -> some View {
             // Registering is idempotent and observed by nothing, so it is safe while drawing,
             // and it happens before the first push the screen can make.
             router?.register(R.self)
+            mirror?.registerDestination(R.self)
             let navigator = NavigatorLookup.destination(router, route: R.self, report: NavigationIssueLog.report)
             return view.navigationDestination(for: R.self) { route in
                 content(route, navigator)
@@ -83,6 +87,14 @@
     extension EnvironmentValues {
         /// The router of the nearest ``WaypointStack``, or `nil` outside one.
         @Entry var waypointStackRouter: StackRouter?
+
+        /// The mirror of the nearest ``WaypointStack``, or `nil` outside one. Destinations register
+        /// with it, so the stack knows which route types it can draw.
+        @Entry var waypointStackMirror: StackMirror?
+
+        /// The screen the app chose for a route with no destination in its stack, or `nil` for
+        /// the default.
+        @Entry var waypointMissingDestination: MissingDestinationScreen?
 
         /// The nearest stack of each declared flow, for `@FlowNavigation`.
         @Entry var waypointFlowRouters = FlowRouters()

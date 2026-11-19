@@ -75,6 +75,31 @@ struct StackMirrorTests {
     }
 
     @Test
+    func heldChangeIsLoggedOnceAtDebug() {
+        let handler = RecordingLogHandler()
+        let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
+        let router = StackRouter(configuration: NavigationConfiguration(logging: logging, registry: .permissive))
+        let clock = ManualTransitionClock()
+        let mirror = Self.holdingMirror(router, clock)
+        router.push {
+            HomeRoute()
+            ProductRoute(id: 1)
+        }
+        mirror.routerDidChange()
+        clock.advance(by: .milliseconds(150))
+        handler.removeAll()
+
+        router.pop()
+        mirror.routerDidChange()
+        router.pop()
+        mirror.routerDidChange()
+
+        let held = handler.messages.filter { $0.category == .renderer }
+        #expect(held.map(\.text) == ["heldChange flow=main wait=450ms"])
+        #expect(held.map(\.level) == [.debug])
+    }
+
+    @Test
     func changeAfterTransitionEndsShowsAtOnce() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
