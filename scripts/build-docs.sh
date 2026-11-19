@@ -38,6 +38,7 @@ apply_theme() {
     cp "$THEME_DIR/waypoint.css" "$SITE_DIR/css/waypoint.css"
     mkdir -p "$SITE_DIR/js"
     cp "$THEME_DIR/waypoint.js" "$SITE_DIR/js/waypoint.js"
+    python3 scripts/shorten-sidebar-titles.py "$SITE_DIR"
 
     local head_links="<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link rel=\"stylesheet\" href=\"$FONTS_URL\"><link rel=\"stylesheet\" href=\"/css/waypoint.css\"><script defer src=\"/js/waypoint.js\"></script>"
     find "$SITE_DIR" -name index.html -print0 |

@@ -192,6 +192,20 @@
         }
     }
 
+    // A sidebar title cut short by "…" shows in full on hover.
+    function onPointerOver(event) {
+        var link = event.target.closest && event.target.closest(".navigator-card-item .leaf-link");
+
+        if (!link) {
+            return;
+        }
+        if (link.scrollWidth > link.clientWidth) {
+            link.title = link.textContent.trim();
+        } else {
+            link.removeAttribute("title");
+        }
+    }
+
     function installAll() {
         install();
         installHomeLink();
@@ -204,6 +218,7 @@
         passive: false
     });
     document.addEventListener("dblclick", onDoubleClick, true);
+    document.addEventListener("mouseover", onPointerOver);
 
     // DocC renders the page after load and redraws the bar on navigation, so watch for it.
     new MutationObserver(installAll).observe(document.documentElement, {
