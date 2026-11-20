@@ -27,7 +27,7 @@ enum NavigatorLookup {
         guard let router else {
             return StackNavigator(missing: missingStackMessage("@StackNavigation", site), report: report)
         }
-        return router.navigator
+        return router.rootScreenNavigator
     }
 
     /// The navigator of the nearest stack of `flow`, for `@FlowNavigation(flow)`.
@@ -40,7 +40,7 @@ enum NavigatorLookup {
         guard let router = routers.router(for: flow) else {
             return FlowNavigator(missing: missingFlowMessage(flow, site), report: report)
         }
-        return router.navigator(for: flow, file: site.file, line: site.line)
+        return router.rootScreenNavigator(for: flow, file: site.file, line: site.line)
     }
 
     /// The action that dismisses the nearest stack's flow, for `@DismissFlow`.
@@ -53,20 +53,21 @@ enum NavigatorLookup {
             let navigator = StackNavigator(missing: missingStackMessage("@DismissFlow", site), report: report)
             return DismissFlowAction(navigator: navigator)
         }
-        return DismissFlowAction(navigator: router.navigator)
+        return DismissFlowAction(navigator: router.rootScreenNavigator)
     }
 
-    /// The navigator a destination closure gets: its stack's, or, outside a Waypoint stack, one
-    /// that fails every call.
+    /// The navigator a destination closure gets: one for the screen showing `route`, which does
+    /// nothing once that screen is popped, or, outside a Waypoint stack, one that fails every
+    /// call.
     static func destination<R: Route>(
         _ router: StackRouter?,
-        route: R.Type,
+        route: R,
         report: @escaping @MainActor (NavigationIssue) -> Void
     ) -> StackNavigator {
         guard let router else {
-            return StackNavigator(missing: missingDestinationMessage(route), report: report)
+            return StackNavigator(missing: missingDestinationMessage(R.self), report: report)
         }
-        return router.navigator
+        return router.navigator(forScreenShowing: AnyRoute(route))
     }
 
     /// Why a wrapper that needs any stack found none, and the fix.

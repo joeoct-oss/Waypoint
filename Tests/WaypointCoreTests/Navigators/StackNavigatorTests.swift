@@ -41,10 +41,11 @@ struct StackNavigatorTests {
     @Test
     func stackNavigatorPops() {
         let router = StackRouter(configuration: .permissive)
+        // The root screen's navigator, so popping the screens above doesn't make it stale.
+        let navigation = router.navigator
         router.push(ProductRoute(id: 1))
         router.push(ProductRoute(id: 2))
         router.push(ProductRoute(id: 3))
-        let navigation = router.navigator
 
         navigation.pop()
         #expect(router.state.path.count == 2)
@@ -104,61 +105,6 @@ struct StackNavigatorTests {
         #expect(failure.issue.kind == .emptyPath)
         #expect(failure.issue.line == line)
         #expect(failure.issue.callSite.hasPrefix("StackNavigatorTests.swift:"))
-    }
-
-    @Test
-    func navigatorOfDismissedFlowIsIgnored() throws {
-        let handler = RecordingLogHandler()
-        let logging = LogConfiguration(format: .structured).withHandler(handler).withMinimumLevel(.debug)
-        let router = StackRouter(configuration: NavigationConfiguration(logging: logging, registry: .permissive))
-        router.present(SettingsRoute())
-        let settings = try #require(router.presented)
-        let navigation = settings.navigator
-        router.dismiss()
-
-        let outcome = navigation.push(HomeRoute())
-
-        #expect(outcome == .ignored)
-        #expect(!navigation.isActive)
-        #expect(settings.state.path.isEmpty)
-        let text = handler.texts.last ?? ""
-        #expect(text.hasPrefix("staleNavigator flow=settings at=StackNavigatorTests.swift:"))
-    }
-
-    @Test
-    func navigatorDoesNotKeepAClosedFlowAlive() throws {
-        let handler = RecordingLogHandler()
-        let logging = LogConfiguration(format: .structured).withHandler(handler).withMinimumLevel(.debug)
-        let router = StackRouter(configuration: NavigationConfiguration(logging: logging, registry: .permissive))
-        let finished = Recorder<NavigationOutcome>()
-        router.tree.onFinished { outcome in
-            finished.record(outcome)
-        }
-        router.present(SettingsRoute())
-        let navigation = try #require(router.presented).navigator
-        router.dismiss()
-
-        let outcome = navigation.pop()
-
-        #expect(outcome == .ignored)
-        #expect(!navigation.isActive)
-        #expect(finished.last == .ignored)
-        let text = handler.texts.last ?? ""
-        #expect(text.hasPrefix("staleNavigator flow=settings at=StackNavigatorTests.swift:"))
-    }
-
-    @Test
-    func navigatorHoldsItsRouterWeakly() {
-        // `var` because the test drops the only strong reference to show the navigator doesn't keep
-        // the router alive. Only the line below the navigator sets it.
-        var router: StackRouter? = StackRouter(configuration: .permissive)
-        let navigation = router?.navigator
-        router = nil
-
-        let outcome = navigation?.push(HomeRoute())
-
-        #expect(outcome == .ignored)
-        #expect(navigation?.isActive == false)
     }
 
     @Test

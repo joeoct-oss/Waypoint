@@ -6,10 +6,13 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Runs every test layer on a Mac: the package unit tests on the host, then all
-# unit test targets on the project simulator (including UIKit-only tests), then
-# the example app's UI tests in a project generated with Tuist, and the system
-# link and missing destination tests once more in the release configuration.
+# Runs every test layer on a Mac: the concurrency guard rail and compile fixtures,
+# a host build with warnings as errors, the package unit tests on the host, the
+# unified log tests under the thread sanitizer, an iOS build with warnings as
+# errors, then all unit test targets on the project simulator (including
+# UIKit-only tests), then the example app's UI tests in a project generated with
+# Tuist, and the system link and missing destination tests once more in the
+# release configuration.
 #
 # Usage: scripts/test-mac.sh
 # Environment: WAYPOINT_SIMULATOR overrides the simulator name (default waypoint-01).
@@ -51,11 +54,27 @@ print(max(phones, key=rank)["identifier"] if phones else "")' "$runtime")
     xcrun simctl create "$SIMULATOR_NAME" "$device_type" "$runtime"
 }
 
+echo "==> Checking the concurrency guard rail"
+scripts/check-concurrency.sh
+
+echo "==> Checking compile fixtures"
+scripts/check-compile-failures.sh
+
+echo "==> swift build --build-tests with warnings as errors (macOS host)"
+swift build --build-tests -Xswiftc -warnings-as-errors --scratch-path .build/warnings-as-errors
+
 echo "==> swift test (macOS host)"
 swift test
 
+echo "==> swift test WaypointOSLogTests under the thread sanitizer (macOS host)"
+swift test --sanitize=thread --scratch-path .build/thread-sanitizer --filter WaypointOSLogTests
+
 UDID=$(simulator_udid)
 DESTINATION="platform=iOS Simulator,id=$UDID"
+
+echo "==> xcodebuild build Waypoint-Package for iOS with warnings as errors"
+xcodebuild build -quiet -scheme Waypoint-Package -destination generic/platform=iOS \
+    SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
 
 echo "==> xcodebuild test Waypoint-Package on $SIMULATOR_NAME"
 xcodebuild test -quiet -scheme Waypoint-Package -destination "$DESTINATION"

@@ -6,8 +6,9 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Runs the WaypointCore checks that must pass on Linux: the import check, a build, the
-# compile-failure check and the unit tests.
+# Runs the WaypointCore checks that must pass on Linux: the import check, the concurrency guard
+# rail, a build with warnings as errors, the compile-fixture check, the unit tests, and the unit
+# tests again under the thread sanitizer (#24).
 # The renderer targets compile empty on Linux, so this covers the core only.
 #
 # Usage: scripts/test-linux.sh [extra swift test arguments]
@@ -22,13 +23,22 @@ scripts/check-core-imports.sh
 echo "==> Checking comment line width"
 scripts/check-comment-width.sh
 
+echo "==> Checking the concurrency guard rail"
+scripts/check-concurrency.sh
+
 echo "==> swift build"
 swift build
 
-echo "==> Checking compile failures"
+echo "==> swift build --build-tests with warnings as errors"
+swift build --build-tests -Xswiftc -warnings-as-errors --scratch-path .build/warnings-as-errors
+
+echo "==> Checking compile fixtures"
 scripts/check-compile-failures.sh
 
 echo "==> swift test"
 swift test "$@"
+
+echo "==> swift test under the thread sanitizer"
+swift test --sanitize=thread --scratch-path .build/thread-sanitizer "$@"
 
 echo "==> Linux checks passed"

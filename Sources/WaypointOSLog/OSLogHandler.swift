@@ -103,6 +103,7 @@
     /// Conformances:
     /// - `@unchecked Sendable`, because handlers are called from any thread; every stored value
     ///   is read and written only under `lock`.
+    // concurrency-escape: every stored value is read and written under `lock` (https://github.com/JoeOCT91/Waypoint/issues/24)
     final class OSLogChannels: @unchecked Sendable {
         /// One category's logger and signposter.
         struct Channel {

@@ -116,6 +116,18 @@ public final class StackRouter: NavigationRouter {
     /// ``setCoordinator(_:)`` and ``setCoordinatorName(_:)`` change it.
     @ObservationIgnored private(set) var ownerName: String?
 
+    /// An id for each screen on the committed path, bottom first, so a navigator can tell its
+    /// screen from another one showing the same route later.
+    ///
+    /// `var` because screens are pushed and popped. Only `commitWorkingCopy()` changes it.
+    @ObservationIgnored private(set) var screenIDs: [UInt64] = []
+
+    /// The screen a navigator is calling for, read once by the call it makes.
+    ///
+    /// `var` because each navigator call sets it. Only ``calling(from:_:)`` and `perform` change
+    /// it.
+    @ObservationIgnored private var callingScreen: ScreenBinding?
+
     /// The flow this stack was declared for, or `nil` when it was declared for none.
     ///
     /// `var` because a renderer or coordinator declares it after the router exists. Only
@@ -594,9 +606,31 @@ public final class StackRouter: NavigationRouter {
             file: file,
             line: line
         )
-        return tree.perform(on: self, file: file, line: line, trigger: trigger) { [unowned self] store in
+        let screen = takeCallingScreen()
+        let isLive = { [weak self] in
+            self?.isOnStack(screen) ?? false
+        }
+        return tree.perform(on: self, file: file, line: line, trigger: trigger, isLive: isLive) { [unowned self] store in
             store.resolve(step(self, store), on: self, context)
         }
+    }
+
+    /// Runs `call` as made by a navigator of `screen`, so it is ignored once that screen is
+    /// popped, including when it was queued and runs later.
+    func calling<Result>(from screen: ScreenBinding, _ call: () -> Result) -> Result {
+        callingScreen = screen
+        defer {
+            callingScreen = nil
+        }
+        return call()
+    }
+
+    /// The screen of the navigator making this call, read once, or the root screen when a
+    /// router method was called directly.
+    private func takeCallingScreen() -> ScreenBinding {
+        let screen = callingScreen ?? .root
+        callingScreen = nil
+        return screen
     }
 }
 
@@ -616,18 +650,26 @@ extension StackRouter: TransactionParticipant {
         self.working = change(working)
     }
 
-    /// Writes the working copy once, when it differs, and swaps the presented router if it
-    /// changed.
-    func commitWorkingCopy() {
+    /// Writes the working copy once, when it differs, around the other participants' commits,
+    /// and swaps the presented router if it changed.
+    func commitWorkingCopy(around others: () -> Void) {
         guard let next = working else {
+            others()
             return
         }
         working = nil
         let previous = committed
         guard next.state != previous.state || next.presented !== previous.presented else {
+            others()
             return
         }
-        committed = next
+        withMutation(keyPath: \.committed) {
+            others()
+            committed = next
+        }
+        screenIDs = ScreenBinding.ids(screenIDs, from: previous.state.path, to: next.state.path) {
+            tree.claimScreenID()
+        }
         guard next.presented !== previous.presented else {
             return
         }
