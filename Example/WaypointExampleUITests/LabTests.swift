@@ -21,14 +21,6 @@ final class LabTests: XCTestCase {
         }
     }
 
-    func testSwiftUIBranchListsAllFlows() {
-        assertBranchListsAllFlows(.swiftUI)
-    }
-
-    func testUIKitBranchListsAllFlows() {
-        assertBranchListsAllFlows(.uiKit)
-    }
-
     func testEveryEntryOpensItsPlaceholder() {
         let app = ExampleApp.launch(lab: true)
 
@@ -55,15 +47,6 @@ final class LabTests: XCTestCase {
 
         let placeholder = app.otherElements[Identifiers.placeholder(entry)]
         XCTAssertTrue(placeholder.waitForExistence(timeout: UITestSteps.timeout))
-    }
-
-    private func assertBranchListsAllFlows(_ branch: Branch) {
-        let app = ExampleApp.launch(branch: branch)
-
-        for entry in FlowEntry.entries(in: branch) {
-            let button = app.buttons[Identifiers.entry(entry)]
-            XCTAssertTrue(app.reveal(button), "missing \(Identifiers.entry(entry))")
-        }
     }
 
     private func assertEntryOpensPlaceholder(

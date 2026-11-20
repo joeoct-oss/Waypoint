@@ -48,10 +48,18 @@ The same `swift test` run works on a Mac. The tests in `Tests/WaypointCoreTests/
 The renderers and the UI tests need a Mac with Xcode 16 or later:
 
 ```sh
-scripts/test-mac.sh
+scripts/test-mac.sh          # quick: while working on a branch
+scripts/test-mac.sh full     # before every merge
+scripts/test-mac.sh release  # before a tag
 ```
 
-It runs the package tests on the host, then every unit test target on the simulator (including the UIKit-only tests), then the example app's UI tests. Set `WAYPOINT_SIMULATOR` to use a simulator other than `waypoint-01`.
+| Tier | What it runs |
+|---|---|
+| `quick` (default) | The concurrency guard rail, the compile fixtures, the package tests on the host and on the simulator (each built once with warnings as errors), and the example app's UI tests when the branch changes `Example/` or a renderer. It skips the parts the branch can't affect: a docs-only branch runs only the guard rail. `--ui` adds the UI tests, `--all` runs every part, and `--only WaypointExampleUITests/StackTests/testPushAndBack` runs just that UI test. |
+| `full` | Every check, whatever changed: `quick` with every part, the example app's UI tests, the unified log tests under the thread sanitizer, and the system link and missing destination UI tests again in the release configuration. A pull request labelled `runs:mac` passes it before merging. |
+| `release` | `full`, plus a build for an iOS device with warnings as errors, and the package and example app tests again on the iOS 17 simulator. |
+
+To keep the Mac usable, builds use at most `WAYPOINT_JOBS` jobs (default half the performance cores), Xcode never clones the simulator, only one run uses a simulator at a time, and the script shuts down each simulator it booted. It ends with the time each step took. Set `WAYPOINT_SIMULATOR` to use a simulator other than `waypoint-01`, `WAYPOINT_IOS17_SIMULATOR` for one other than `waypoint-02` (it must exist, on an iOS 17 runtime), and `WAYPOINT_BASE` to compare the branch with something other than `origin/main`.
 
 ## Documentation site
 

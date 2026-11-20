@@ -20,8 +20,16 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-swift build --target WaypointCore > /dev/null
-bin_path="$(swift build --show-bin-path)"
+# Extra `swift build` flags from WAYPOINT_SWIFT_BUILD_FLAGS. scripts/test-mac.sh passes the flags
+# its `swift test` builds with, so the core built here is the one the tests reuse, not a second
+# build.
+build_flags=()
+if [ -n "${WAYPOINT_SWIFT_BUILD_FLAGS:-}" ]; then
+    read -r -a build_flags <<< "$WAYPOINT_SWIFT_BUILD_FLAGS"
+fi
+
+swift build --target WaypointCore ${build_flags[@]+"${build_flags[@]}"} > /dev/null
+bin_path="$(swift build --show-bin-path ${build_flags[@]+"${build_flags[@]}"})"
 module="$(find "$bin_path" -maxdepth 3 -name WaypointCore.swiftmodule -print -quit)"
 if [ -z "$module" ]; then
     echo "error: WaypointCore.swiftmodule not found under $bin_path" >&2

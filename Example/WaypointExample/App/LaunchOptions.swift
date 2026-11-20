@@ -9,11 +9,11 @@
 import Foundation
 
 // What the launch arguments ask for: start from a fresh install, start signed in, open the
-// Navigation Lab, open one of its entries, keep the splash up longer, push products onto the shop
-// with a change mid-push, draw the product page's related link as a system link, or make it push a
-// route with no destination in its stack. UI tests use
-// them to start a journey or open any Lab entry directly. `startingOver()` gives the options for
-// starting a window over after Clear all data: the same splash, and no screen opened directly.
+// Navigation Lab, open one of its entries, skip the splash or keep it up longer, push products onto
+// the shop with a change mid-push, draw the product page's related link as a system link, or make
+// it push a route with no destination in its stack. UI tests use them to start a journey or open
+// any Lab entry directly. `startingOver()` gives the options for starting a window over after Clear
+// all data: the same splash, and no screen opened directly.
 struct LaunchOptions {
     private static let defaultSplashDuration = Duration.seconds(1)
 
@@ -73,12 +73,13 @@ struct LaunchOptions {
         defaults.string(forKey: argument.rawValue).flatMap(Value.init(rawValue:))
     }
 
+    // No `-splashSeconds` keeps the usual splash; `-splashSeconds 0` skips it, as UI tests do.
     private static func makeSplashDuration(in defaults: UserDefaults) -> Duration {
-        let seconds = defaults.double(forKey: LaunchArgument.splashSeconds.rawValue)
-        guard seconds > 0 else {
+        guard defaults.object(forKey: LaunchArgument.splashSeconds.rawValue) != nil else {
             return defaultSplashDuration
         }
-        return .seconds(seconds)
+        let seconds = defaults.double(forKey: LaunchArgument.splashSeconds.rawValue)
+        return .seconds(max(0, seconds))
     }
 
     private static func makeProductIDs(in defaults: UserDefaults) -> [Int] {

@@ -8,11 +8,11 @@
 
 import XCTest
 
-// Launches the example app for a UI test, always from a fresh install: as a guest from the splash
-// (held longer when a test needs to see it), signed in, or straight into the Navigation Lab, one of
-// its branches or one of its twenty entries. `systemLinks` draws the product page's related link as
-// a system `NavigationLink`, and `missingDestination` makes it push a route with no destination in
-// its stack.
+// Launches the example app for a UI test, always from a fresh install: as a guest, signed in, or
+// straight into the Navigation Lab, one of its branches or one of its twenty entries. The splash is
+// skipped, which saves a second on every launch, unless a test holds it up to see it. `systemLinks`
+// draws the product page's related link as a system `NavigationLink`, and `missingDestination`
+// makes it push a route with no destination in its stack.
 enum ExampleApp {
     private static let yes = "YES"
 
@@ -23,7 +23,7 @@ enum ExampleApp {
         branch: Branch? = nil,
         flow: ExampleFlow? = nil,
         kind: FlowKind? = nil,
-        splashSeconds: Int? = nil,
+        splashSeconds: Int = 0,
         shopPath: [Int] = [],
         shopFollowUp: ShopFollowUp? = nil,
         systemLinks: Bool = false,
@@ -52,7 +52,7 @@ enum ExampleApp {
         branch: Branch?,
         flow: ExampleFlow?,
         kind: FlowKind?,
-        splashSeconds: Int?,
+        splashSeconds: Int,
         shopPath: [Int],
         shopFollowUp: ShopFollowUp?,
         systemLinks: Bool,
@@ -66,7 +66,7 @@ enum ExampleApp {
             (LaunchArgument.branch, branch?.rawValue),
             (LaunchArgument.flow, flow?.rawValue),
             (LaunchArgument.kind, kind?.rawValue),
-            (LaunchArgument.splashSeconds, splashSeconds.map(String.init)),
+            (LaunchArgument.splashSeconds, String(splashSeconds)),
             (LaunchArgument.shopPath, path),
             (LaunchArgument.shopFollowUp, shopFollowUp?.rawValue),
             (LaunchArgument.systemLinks, systemLinks ? yes : nil),
