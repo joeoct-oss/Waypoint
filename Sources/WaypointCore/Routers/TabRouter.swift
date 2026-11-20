@@ -467,9 +467,11 @@ extension TabRouter: TransactionParticipant {
         self.working = change(working)
     }
 
-    /// Writes the working copy once, when it differs, and swaps routers that changed.
-    func commitWorkingCopy() {
+    /// Writes the working copy once, when it differs, around the other participants' commits,
+    /// and swaps routers that changed.
+    func commitWorkingCopy(around others: () -> Void) {
         guard let next = working else {
+            others()
             return
         }
         working = nil
@@ -479,9 +481,13 @@ extension TabRouter: TransactionParticipant {
                 previous.tabRouters[tab] !== router
             }
         guard next.state != previous.state || next.presented !== previous.presented || routersChanged else {
+            others()
             return
         }
-        committed = next
+        withMutation(keyPath: \.committed) {
+            others()
+            committed = next
+        }
         commitTabRouters(from: previous.tabRouters, to: next.tabRouters)
         commitPresented(from: previous.presented, to: next.presented)
     }

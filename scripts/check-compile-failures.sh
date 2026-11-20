@@ -6,10 +6,13 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Checks that code Waypoint promises to refuse at compile time really fails to compile, such as
-# pushing another flow's route through a `FlowNavigator` (#25). Each file in Tests/CompileFailures
-# has one `// expected-error: <text>` line; the file must fail to type-check against WaypointCore
-# with an error that contains that text.
+# Checks the promises the compiler keeps (#25, #24):
+#
+# - Each file in Tests/CompileFailures must fail to type-check against WaypointCore, in the Swift 6
+#   language mode, with an error containing the text of its `// expected-error: <text>` line.
+#   A `// swift-5: fails` line checks the same error in the Swift 5 mode too; `// swift-5: warns`
+#   checks that the Swift 5 mode at least warns with that text.
+# - Each file in Tests/CompileSuccesses must type-check cleanly in the Swift 6 mode.
 #
 # Usage: scripts/check-compile-failures.sh
 
@@ -33,23 +36,69 @@ if [ "$(uname -s)" = "Darwin" ]; then
     target_flags=(-target "$(uname -m)-apple-macosx14.0")
 fi
 
+# Type-checks one file in a language mode, printing the compiler's output.
+typecheck() {
+    swiftc -typecheck -swift-version "$2" "${target_flags[@]}" -I "$module_dir" "$1" 2>&1
+}
+
 failed=0
 for fixture in Tests/CompileFailures/*.swift; do
     expected="$(sed -n 's|^// expected-error: ||p' "$fixture")"
+    swift5="$(sed -n 's|^// swift-5: ||p' "$fixture")"
     if [ -z "$expected" ]; then
         echo "error: $fixture has no '// expected-error:' line" >&2
         failed=1
         continue
     fi
-    if output="$(swiftc -typecheck -swift-version 6 "${target_flags[@]}" -I "$module_dir" "$fixture" 2>&1)"; then
+    if output="$(typecheck "$fixture" 6)"; then
         echo "error: $fixture compiled, but it must fail with: $expected" >&2
         failed=1
+        continue
     elif ! grep -qF -- "$expected" <<< "$output"; then
         echo "error: $fixture failed with another error than: $expected" >&2
         echo "$output" >&2
         failed=1
+        continue
+    fi
+    case "$swift5" in
+        fails)
+            if output="$(typecheck "$fixture" 5)" || ! grep -qF -- "error: $expected" <<< "$output"; then
+                echo "error: $fixture must also fail in the Swift 5 mode with: $expected" >&2
+                echo "$output" >&2
+                failed=1
+                continue
+            fi
+            ;;
+        warns)
+            output="$(typecheck "$fixture" 5 || true)"
+            if ! grep -qF -- "warning: $expected" <<< "$output"; then
+                echo "error: $fixture must at least warn in the Swift 5 mode with: $expected" >&2
+                echo "$output" >&2
+                failed=1
+                continue
+            fi
+            ;;
+        "") ;;
+        *)
+            echo "error: $fixture has an unknown '// swift-5:' value: $swift5" >&2
+            failed=1
+            continue
+            ;;
+    esac
+    echo "ok: $fixture${swift5:+ (Swift 5: $swift5)}"
+done
+
+for fixture in Tests/CompileSuccesses/*.swift; do
+    if ! output="$(typecheck "$fixture" 6)"; then
+        echo "error: $fixture must compile, but failed:" >&2
+        echo "$output" >&2
+        failed=1
+    elif grep -q "warning:" <<< "$output"; then
+        echo "error: $fixture must compile without warnings:" >&2
+        echo "$output" >&2
+        failed=1
     else
-        echo "ok: $fixture"
+        echo "ok: $fixture compiles"
     fi
 done
 

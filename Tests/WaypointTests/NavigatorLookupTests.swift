@@ -110,19 +110,51 @@ struct NavigatorLookupTests {
     func destinationGetsItsStacksNavigator() {
         let router = StackRouter(configuration: .permissive)
         let reported = Recorder<NavigationIssue>()
+        let product = ProductRoute(id: 1)
+        router.push(product)
 
-        let navigation = NavigatorLookup.destination(router, route: ProductRoute.self, report: reported.record)
+        let navigation = NavigatorLookup.destination(router, route: product, report: reported.record)
         navigation.push(HomeRoute())
 
-        let expected = [AnyRoute(HomeRoute())]
+        let expected = [AnyRoute(product), AnyRoute(HomeRoute())]
         #expect(router.state.path == expected)
         #expect(reported.count == 0)
     }
 
     @Test
+    func destinationNavigatorGoesInactiveWhenItsScreenIsPopped() {
+        let router = StackRouter(configuration: .permissive)
+        let product = ProductRoute(id: 1)
+        router.push(product)
+        let navigation = NavigatorLookup.destination(router, route: product, report: { _ in })
+        router.push(HomeRoute())
+        #expect(navigation.isActive)
+
+        router.popToRoot()
+        let outcome = navigation.push(SettingsRoute())
+
+        #expect(!navigation.isActive)
+        #expect(outcome == .ignored)
+        #expect(router.state.path.isEmpty)
+    }
+
+    @Test
+    func wrapperNavigatorsLiveAsLongAsTheFlow() {
+        let router = StackRouter(configuration: .permissive)
+        router.push(ProductRoute(id: 1))
+        let navigation = NavigatorLookup.stack(router, site: site, report: { _ in })
+
+        router.popToRoot()
+        navigation.push(HomeRoute())
+
+        let expected = [AnyRoute(HomeRoute())]
+        #expect(router.state.path == expected)
+    }
+
+    @Test
     func destinationOutsideAStackReportsIssue() throws {
         let reported = Recorder<NavigationIssue>()
-        let navigation = NavigatorLookup.destination(nil, route: ProductRoute.self, report: reported.record)
+        let navigation = NavigatorLookup.destination(nil, route: ProductRoute(id: 1), report: reported.record)
 
         let outcome = navigation.push(HomeRoute())
 
