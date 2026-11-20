@@ -33,6 +33,17 @@ let appSources: SourceFilesList = [
     "WaypointExample/**",
 ]
 
+// The asset catalog holds the app icon: the identity's day icon, and its night icon in dark mode.
+let appResources: ResourceFileElements = [
+    "WaypointExample/Resources/**",
+]
+
+// The app has no accent color asset, so the empty name stops the catalog warning about a missing one.
+let appSettings: SettingsDictionary = [
+    "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+    "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "",
+]
+
 let appDependencies: [TargetDependency] = [
     .package(product: "WaypointCore"),
     .package(product: "Waypoint"),
@@ -58,7 +69,9 @@ let app = Target.target(
     deploymentTargets: deploymentTargets,
     infoPlist: .extendingDefault(with: infoPlistValues),
     sources: appSources,
-    dependencies: appDependencies
+    resources: appResources,
+    dependencies: appDependencies,
+    settings: .settings(base: appSettings)
 )
 
 let uiTests = Target.target(

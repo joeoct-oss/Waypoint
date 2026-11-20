@@ -15,8 +15,12 @@ protocol TransactionParticipant: AnyObject {
     /// Copies the committed state into a working copy.
     func beginWorkingCopy()
 
-    /// Writes the working copy back as the state, once.
-    func commitWorkingCopy()
+    /// Writes the working copy back as the state, once, and lets `others` commit in between.
+    ///
+    /// A participant that changed tells its observers first, then runs `others`, then writes. So
+    /// every observer of a transaction hears of it before any router's state changes, and none
+    /// sees one router changed and another not yet.
+    func commitWorkingCopy(around others: () -> Void)
 
     /// Drops the working copy.
     func discardWorkingCopy()
@@ -236,15 +240,32 @@ final class TransactionStore {
         return issue
     }
 
+    /// Whether the transaction is over, committed or rolled back. A step made after that, on a
+    /// transaction value kept past its call, changes nothing.
+    ///
+    /// `var` because a transaction ends once. Only ``commit()`` and ``rollback()`` change it.
+    private(set) var isClosed = false
+
     /// Writes every working copy back.
     func commit() {
-        for participant in participants {
-            participant.commitWorkingCopy()
+        isClosed = true
+        commit(participants[...])
+    }
+
+    /// Commits the first participant around the rest, so all of them announce their change
+    /// before any of them writes it.
+    private func commit(_ remaining: ArraySlice<any TransactionParticipant>) {
+        guard let first = remaining.first else {
+            return
+        }
+        first.commitWorkingCopy {
+            commit(remaining.dropFirst())
         }
     }
 
     /// Drops every working copy.
     func rollback() {
+        isClosed = true
         for participant in participants {
             participant.discardWorkingCopy()
         }

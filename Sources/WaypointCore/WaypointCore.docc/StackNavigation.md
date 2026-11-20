@@ -55,7 +55,8 @@ public final class StackRouter {
 
     // Handles
 
-    /// A handle that can navigate this stack with any route.
+    /// A handle for the screen on top of this stack, taking any route. It
+    /// does nothing once that screen is popped or the flow is gone.
     public var navigator: StackNavigator { get }
     /// The flow this stack was declared for, or `nil`.
     public var declaredFlow: (any NavigationFlow.Type)? { get }
@@ -164,6 +165,7 @@ public final class StackRouter {
     ///
     /// If any step ends `.failed`, the whole transaction is rolled back, and
     /// the outcome is that step's failure with the step's file and line.
+    /// The transaction value works only inside the closure.
     @discardableResult public func transaction(
         _ body: @escaping (NavigationTransaction) -> Void
     ) -> NavigationOutcome
@@ -332,7 +334,7 @@ public enum NavigationOutcome: NavigationRecord {
     /// The call arrived while another change was being applied. It runs
     /// right after, in order. A failure is reported as an issue when it runs.
     case queued
-    /// The navigator's flow is gone, so the call did nothing.
+    /// The call's screen or flow is gone, or its transaction already ended, so it did nothing.
     case ignored
     /// The call failed, and its fallback succeeded.
     case recovered(NavigationIssue, by: NavigationFallback)

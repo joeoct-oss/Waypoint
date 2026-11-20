@@ -7,13 +7,29 @@
 //
 
 extension StackRouter {
-    /// A navigator for this stack that takes any route. Hand it to a view model instead of the
-    /// router.
+    /// A navigator for the screen on top of this stack, taking any route. Hand it to that
+    /// screen's view model instead of the router.
+    ///
+    /// The navigator does nothing once that screen is popped or the flow is gone. Taken while
+    /// the path is empty, it belongs to the root screen and lives as long as the flow.
     public var navigator: StackNavigator {
-        StackNavigator(router: self)
+        StackNavigator(router: self, screen: topScreen)
     }
 
-    /// A navigator for this stack that takes only the routes of `flow`.
+    /// A navigator for the top-most screen showing `route`, or for the root screen when none
+    /// does. Renderers give one to each destination closure, so a screen's view model can't
+    /// navigate once the screen is popped.
+    package func navigator(forScreenShowing route: AnyRoute) -> StackNavigator {
+        StackNavigator(router: self, screen: screen(showing: route))
+    }
+
+    /// A navigator for the stack's root screen, which lives as long as the flow. The property
+    /// wrappers use it, since they are read again on every draw.
+    package var rootScreenNavigator: StackNavigator {
+        StackNavigator(router: self, screen: .root)
+    }
+
+    /// A navigator for the screen on top of this stack that takes only the routes of `flow`.
     ///
     /// ```swift
     /// let model = ProductModel(navigation: router.navigator(for: ShopFlow.self))
@@ -32,10 +48,26 @@ extension StackRouter {
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> FlowNavigator<Flow> {
+        checkFlow(flow, file: file, line: line)
+        return FlowNavigator(unscoped: navigator)
+    }
+
+    /// A navigator for the stack's root screen that takes only the routes of `flow`, for
+    /// `@FlowNavigation`. Reports a mismatch like ``navigator(for:file:line:)``.
+    package func rootScreenNavigator<Flow: NavigationFlow>(
+        for flow: Flow.Type,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) -> FlowNavigator<Flow> {
+        checkFlow(flow, file: file, line: line)
+        return FlowNavigator(unscoped: rootScreenNavigator)
+    }
+
+    /// Reports `flowMismatch` when this stack was declared for another flow than `flow`.
+    func checkFlow<Flow: NavigationFlow>(_ flow: Flow.Type, file: StaticString, line: UInt) {
         if let declared = declaredFlow, declared != flow {
             reportFlowMismatch(asked: flow, declared: declared, file: file, line: line)
         }
-        return FlowNavigator(unscoped: navigator)
     }
 
     /// Reports a scoped navigator asked of a stack declared for another flow.

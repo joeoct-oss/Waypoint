@@ -66,7 +66,7 @@ extension NavigationTreeContext {
         /// Nothing applied, nothing queued.
         static var idle: Turn {
             let emptyQueue: [() -> Void] = []
-            return Turn(isApplying: false, isDraining: false, queue: emptyQueue, queuedCount: 0)
+            return Turn(isApplying: false, isDraining: false, queue: emptyQueue, queuedCount: 0, hasRefusedLoop: false)
         }
 
         /// Whether a transaction is being applied, including its observers.
@@ -81,14 +81,30 @@ extension NavigationTreeContext {
         /// Calls queued since the queue was last empty.
         let queuedCount: Int
 
+        /// Whether a call past `maxQueuedChanges` was refused in this turn. Later ones are dropped
+        /// without calling the failure handlers again, so a handler that navigates can't loop.
+        let hasRefusedLoop: Bool
+
         /// The same turn, applying a transaction or not.
         func applying(_ isApplying: Bool) -> Turn {
-            Turn(isApplying: isApplying, isDraining: isDraining, queue: queue, queuedCount: queuedCount)
+            Turn(
+                isApplying: isApplying,
+                isDraining: isDraining,
+                queue: queue,
+                queuedCount: queuedCount,
+                hasRefusedLoop: hasRefusedLoop
+            )
         }
 
         /// The same turn, running queued calls or not.
         func draining(_ isDraining: Bool) -> Turn {
-            Turn(isApplying: isApplying, isDraining: isDraining, queue: queue, queuedCount: queuedCount)
+            Turn(
+                isApplying: isApplying,
+                isDraining: isDraining,
+                queue: queue,
+                queuedCount: queuedCount,
+                hasRefusedLoop: hasRefusedLoop
+            )
         }
 
         /// The same turn with one more queued call.
@@ -98,13 +114,31 @@ extension NavigationTreeContext {
                 isApplying: isApplying,
                 isDraining: isDraining,
                 queue: longerQueue,
-                queuedCount: queuedCount + 1
+                queuedCount: queuedCount + 1,
+                hasRefusedLoop: hasRefusedLoop
             )
         }
 
         /// The same turn with another queue. The count of queued calls is kept.
         func withQueue(_ queue: [() -> Void]) -> Turn {
-            Turn(isApplying: isApplying, isDraining: isDraining, queue: queue, queuedCount: queuedCount)
+            Turn(
+                isApplying: isApplying,
+                isDraining: isDraining,
+                queue: queue,
+                queuedCount: queuedCount,
+                hasRefusedLoop: hasRefusedLoop
+            )
+        }
+
+        /// The same turn, having refused a loop.
+        func refusingLoop() -> Turn {
+            Turn(
+                isApplying: isApplying,
+                isDraining: isDraining,
+                queue: queue,
+                queuedCount: queuedCount,
+                hasRefusedLoop: true
+            )
         }
     }
 }

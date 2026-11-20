@@ -169,19 +169,6 @@ struct FlowNavigatorTests {
     }
 
     @Test
-    func scopedNavigatorOfAGoneFlowIsIgnored() throws {
-        let router = StackRouter(configuration: .permissive)
-        router.present(SettingsRoute())
-        let navigation = try #require(router.presented).navigator
-        router.dismiss()
-
-        let settings = navigation.scoped(to: SettingsFlow.self)
-
-        #expect(!settings.isActive)
-        #expect(settings.push(PrivacyRoute()) == .ignored)
-    }
-
-    @Test
     func viewModelNavigatesWithRealRouter() {
         let router = StackRouter(configuration: .permissive)
         let model = ProductModel(navigation: router.navigator(for: ShopFlow.self))

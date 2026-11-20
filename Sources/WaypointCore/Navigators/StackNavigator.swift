@@ -28,10 +28,14 @@
 /// let model = ProductListModel(navigation: router.navigator)
 /// ```
 ///
-/// Every call is the router's own method, so outcomes, fallbacks, guards, events and logs are
-/// the same. A navigator holds its router weakly. Once the flow it was made for is gone
-/// (dismissed, popped or released), every call does nothing, returns `.ignored` and logs
-/// `staleNavigator`, and ``isActive`` is `false`. See the Concurrency article.
+/// Every call is the router's own method, so outcomes, fallbacks and logs are the same.
+///
+/// A navigator belongs to one screen: the screen on top of the stack when it was taken, or the
+/// screen a destination closure draws. It holds its router weakly. Once that screen is popped,
+/// or its flow is gone (dismissed, removed or released), every call does nothing, returns
+/// `.ignored` and logs `staleNavigator`, and ``isActive`` is `false`. A screen still on the stack
+/// keeps a live navigator, however many screens are pushed above it, and the root screen's
+/// navigator lives as long as its flow. See <doc:Concurrency>.
 @MainActor
 public struct StackNavigator {
     /// The router this navigator drives, or `nil` once it is released or when none was in scope.
@@ -43,20 +47,27 @@ public struct StackNavigator {
     /// The flow this navigator was made for, or `nil` when no router was in scope.
     private let flowID: FlowID?
 
+    /// The screen this navigator was made for.
+    private let screen: ScreenBinding
+
     /// Why no router was in scope and who hears it, or `nil` for a navigator made by a router.
     private let missing: MissingRouter?
 
-    /// Whether this navigator's flow is still in the tree. When it isn't, every call returns
-    /// `.ignored`.
+    /// Whether this navigator's screen is still on its stack and its flow still in the tree.
+    /// When it isn't, every call returns `.ignored`.
     public var isActive: Bool {
-        router?.isActive ?? false
+        guard let router else {
+            return false
+        }
+        return router.isActive && router.isOnStack(screen)
     }
 
-    /// A navigator for `router`.
-    init(router: StackRouter) {
+    /// A navigator for `screen` of `router`.
+    init(router: StackRouter, screen: ScreenBinding) {
         self.router = router
         self.tree = router.tree
         self.flowID = router.flowID
+        self.screen = screen
         self.missing = nil
     }
 
@@ -67,6 +78,7 @@ public struct StackNavigator {
         self.router = nil
         self.tree = nil
         self.flowID = nil
+        self.screen = .root
         self.missing = MissingRouter(message: message, report: report)
     }
 
@@ -79,10 +91,12 @@ public struct StackNavigator {
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
-        guard let router else {
+        guard let router, router.isOnStack(screen) else {
             return unavailable(file: file, line: line)
         }
-        return router.push(route, trigger: trigger, else: fallback, file: file, line: line)
+        return router.calling(from: screen) {
+            router.push(route, trigger: trigger, else: fallback, file: file, line: line)
+        }
     }
 
     /// Pops `count` routes. See ``StackRouter/pop(count:else:file:line:)``.
@@ -93,10 +107,12 @@ public struct StackNavigator {
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
-        guard let router else {
+        guard let router, router.isOnStack(screen) else {
             return unavailable(file: file, line: line)
         }
-        return router.pop(count: count, else: fallback, file: file, line: line)
+        return router.calling(from: screen) {
+            router.pop(count: count, else: fallback, file: file, line: line)
+        }
     }
 
     /// Pops back to the last screen showing `route`. See ``StackRouter/popTo(_:else:file:line:)``.
@@ -107,10 +123,12 @@ public struct StackNavigator {
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
-        guard let router else {
+        guard let router, router.isOnStack(screen) else {
             return unavailable(file: file, line: line)
         }
-        return router.popTo(route, else: fallback, file: file, line: line)
+        return router.calling(from: screen) {
+            router.popTo(route, else: fallback, file: file, line: line)
+        }
     }
 
     /// Pops back to the stack's root screen. See ``StackRouter/popToRoot(else:file:line:)``.
@@ -120,10 +138,12 @@ public struct StackNavigator {
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
-        guard let router else {
+        guard let router, router.isOnStack(screen) else {
             return unavailable(file: file, line: line)
         }
-        return router.popToRoot(else: fallback, file: file, line: line)
+        return router.calling(from: screen) {
+            router.popToRoot(else: fallback, file: file, line: line)
+        }
     }
 
     /// Presents `route` over this flow, as the root screen of a new child flow. See
@@ -137,10 +157,12 @@ public struct StackNavigator {
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
-        guard let router else {
+        guard let router, router.isOnStack(screen) else {
             return unavailable(file: file, line: line)
         }
-        return router.present(route, style: style, trigger: trigger, else: fallback, file: file, line: line)
+        return router.calling(from: screen) {
+            router.present(route, style: style, trigger: trigger, else: fallback, file: file, line: line)
+        }
     }
 
     /// Dismisses the flow this navigator belongs to, when it was presented. See
@@ -151,10 +173,12 @@ public struct StackNavigator {
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> NavigationOutcome {
-        guard let router else {
+        guard let router, router.isOnStack(screen) else {
             return unavailable(file: file, line: line)
         }
-        return router.dismissFlow(else: fallback, file: file, line: line)
+        return router.calling(from: screen) {
+            router.dismissFlow(else: fallback, file: file, line: line)
+        }
     }
 
     /// The same stack, taking only the routes of `flow`, such as for a view model that gets this
@@ -174,14 +198,12 @@ public struct StackNavigator {
         file: StaticString = #fileID,
         line: UInt = #line
     ) -> FlowNavigator<Flow> {
-        guard let router else {
-            return FlowNavigator(unscoped: self)
-        }
-        return router.navigator(for: flow, file: file, line: line)
+        router?.checkFlow(flow, file: file, line: line)
+        return FlowNavigator(unscoped: self)
     }
 
     /// What a call does with no router: fails when none was in scope, and is ignored when the
-    /// router was released.
+    /// router was released or the screen popped.
     private func unavailable(file: StaticString, line: UInt) -> NavigationOutcome {
         if let missing {
             return missing.fail(file: file, line: line)
@@ -189,7 +211,7 @@ public struct StackNavigator {
         guard let tree, let flowID else {
             return .ignored
         }
-        return tree.ignoreReleased(flowID, file: file, line: line)
+        return tree.ignoreStale(flowID, file: file, line: line)
     }
 }
 

@@ -18,6 +18,9 @@
 ///
 /// Steps navigate the router the transaction was started on, or another router in the tree
 /// through ``presented`` and ``router(for:)``.
+///
+/// A transaction value works only inside its closure. Kept and used after the call returned,
+/// every step returns `.ignored`, changes nothing and logs `staleNavigator`.
 @MainActor
 public struct NavigationTransaction {
     /// The working copies and changes.
@@ -241,10 +244,14 @@ public struct NavigationTransaction {
     }
 
     /// Runs a step on the router, with its fallback if it fails, unless an earlier step failed.
+    /// A step on a transaction value kept after its call returned is ignored.
     private func onRouter(
         _ context: FallbackContext,
         _ step: (any PresentingRouter) -> StepResult
     ) -> NavigationOutcome {
+        guard !store.isClosed else {
+            return ignoreClosed(context)
+        }
         if let failure = store.failure {
             return .failed(failure)
         }
@@ -252,6 +259,15 @@ public struct NavigationTransaction {
             return noteMissingTarget(context)
         }
         return store.note(store.resolve(step(target), on: target, context))
+    }
+
+    /// Ignores a step made after the transaction's call returned, and logs `staleNavigator`, as
+    /// for a navigator whose flow is gone.
+    private func ignoreClosed(_ context: FallbackContext) -> NavigationOutcome {
+        guard let target else {
+            return .ignored
+        }
+        return target.tree.ignoreStale(target.flowID, file: context.file, line: context.line)
     }
 
     /// Fails a step on a value that names no router.

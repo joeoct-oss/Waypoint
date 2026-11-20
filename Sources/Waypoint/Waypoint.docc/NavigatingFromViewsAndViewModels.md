@@ -35,7 +35,7 @@ struct ProductView: View {
 
 ### Injected navigators
 
-The destination closure hands over the stack's `StackNavigator`, and the view model keeps it:
+The destination closure hands over a `StackNavigator` for the screen it draws, and the view model keeps it:
 
 ```swift
 .destination(ProductRoute.self) { route, navigation in
@@ -52,7 +52,7 @@ A view model that only accepts its own flow's routes takes a `FlowNavigator<Flow
 }
 ```
 
-The view model imports only `WaypointCore` and is tested with a real router, on Linux too (see the core's Testing your navigation article). A navigator holds its router weakly: once its flow is gone, every call returns `.ignored`, so a late network reply can't move another screen.
+The view model imports only `WaypointCore` and is tested with a real router, on Linux too (see the core's Testing your navigation article). A navigator holds its router weakly and belongs to its screen: once the screen is popped or its flow is gone, every call returns `.ignored`, so a late network reply can't move another screen. A screen still on the stack keeps a live navigator, however many screens are pushed above it. The property wrappers below are read again on every draw, so theirs belong to the stack's root screen and live as long as the flow.
 
 ### Property wrappers
 

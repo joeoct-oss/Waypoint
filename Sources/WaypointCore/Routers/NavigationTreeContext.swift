@@ -42,6 +42,11 @@ final class NavigationTreeContext {
     /// changes it.
     private var intervalCount: UInt64 = 0
 
+    /// How many pushed screens were given an id, for each screen's id.
+    ///
+    /// `var` because each pushed screen takes the next id. Only ``claimScreenID()`` changes it.
+    private var screenCount: UInt64 = 0
+
     /// The time on the tree's clock, for the journey's durations and duplicate window.
     ///
     /// `var` because tests set a clock they move by hand. Only tests change it.
@@ -173,6 +178,12 @@ final class NavigationTreeContext {
         flowNames.remove(flow.name)
     }
 
+    /// The id of the next pushed screen. Ids start at 1; 0 is every stack's root screen.
+    func claimScreenID() -> UInt64 {
+        screenCount += 1
+        return screenCount
+    }
+
     /// The id of the next measured interval.
     func claimIntervalID() -> UInt64 {
         intervalCount += 1
@@ -181,7 +192,9 @@ final class NavigationTreeContext {
 
     /// Runs one call as a transaction on `router`.
     ///
-    /// A router that left the tree ignores the call. A call made while another transaction is
+    /// A router that left the tree ignores the call, and so does a call whose `isLive` says its
+    /// caller is gone, such as a navigator whose screen was popped. Both are checked again when a
+    /// queued call runs. A call made while another transaction is
     /// applied waits in the queue and returns `.queued`. Otherwise the body changes working
     /// copies, which are committed together, or all rolled back when the call fails.
     func perform(
@@ -189,9 +202,10 @@ final class NavigationTreeContext {
         file: StaticString,
         line: UInt,
         trigger: String? = nil,
+        isLive: @escaping () -> Bool = { true },
         _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
-        let outcome = start(on: router, file: file, line: line, trigger: trigger, body)
+        let outcome = start(on: router, file: file, line: line, trigger: trigger, isLive: isLive, body)
         observers.finished?(outcome)
         return outcome
     }
@@ -202,14 +216,15 @@ final class NavigationTreeContext {
         file: StaticString,
         line: UInt,
         trigger: String?,
+        isLive: @escaping () -> Bool,
         _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
-        guard router.isAttached else {
+        guard router.isAttached, isLive() else {
             logIgnored(router.flowID, file: file, line: line)
             return .ignored
         }
         guard !turn.isApplying else {
-            return enqueue(on: router, file: file, line: line, trigger: trigger, body)
+            return enqueue(on: router, file: file, line: line, trigger: trigger, isLive: isLive, body)
         }
         let outcome = apply(on: router, file: file, line: line, trigger: trigger, body)
         drainQueue()
@@ -296,9 +311,10 @@ final class NavigationTreeContext {
         return .failed(failure)
     }
 
-    /// Ignores a call made through a navigator whose router was released: logs `staleNavigator`
-    /// and tells the observers, as for a router that left the tree.
-    func ignoreReleased(_ flow: FlowID, file: StaticString, line: UInt) -> NavigationOutcome {
+    /// Ignores a call made through a navigator whose router was released or whose screen was
+    /// popped, or on a transaction kept past its call: logs `staleNavigator` and tells the
+    /// observers, as for a router that left the tree.
+    func ignoreStale(_ flow: FlowID, file: StaticString, line: UInt) -> NavigationOutcome {
         logIgnored(flow, file: file, line: line)
         observers.finished?(.ignored)
         return .ignored
@@ -366,6 +382,7 @@ final class NavigationTreeContext {
         file: StaticString,
         line: UInt,
         trigger: String?,
+        isLive: @escaping () -> Bool,
         _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
         guard turn.queuedCount < maxQueuedChanges else {
@@ -373,17 +390,25 @@ final class NavigationTreeContext {
         }
         logQueued(router.flowID, file: file, line: line)
         turn = turn.enqueuing { [unowned self] in
-            _ = self.perform(on: router, file: file, line: line, trigger: trigger, body)
+            _ = self.perform(on: router, file: file, line: line, trigger: trigger, isLive: isLive, body)
         }
         return .queued
     }
 
-    /// Reports `reentrantLoop` for a call past `maxQueuedChanges`.
+    /// Reports `reentrantLoop` for the first call past `maxQueuedChanges` in a turn, and drops
+    /// the rest.
+    ///
+    /// The failure handlers hear the first one only. A handler that navigates would otherwise be
+    /// refused again, call the handler again, and never return (#24).
     private func refuseLoop(on router: some TreeNode, file: StaticString, line: UInt) -> NavigationOutcome {
         let message = "More than \(maxQueuedChanges) calls were made while changes were applied, "
             + "which looks like an observer that navigates on every change. The rest were dropped."
         let issue = NavigationIssue(kind: .reentrantLoop, flow: router.flowID, message: message, file: file, line: line)
         let failure = NavigationFailure(issue: issue)
+        guard !turn.hasRefusedLoop else {
+            return .failed(failure)
+        }
+        turn = turn.refusingLoop()
         report(issue, level: .fault)
         for handler in observers.failureHandlers {
             handler(failure)
