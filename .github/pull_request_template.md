@@ -8,7 +8,7 @@ Closes #
 
 - [ ] Unit tests were written first and failed before the change
 - [ ] UI tests added or updated for visible behaviour (or not needed, because ...)
-- [ ] All tests pass locally
+- [ ] All tests pass locally (`scripts/test-mac.sh full` for a `runs:mac` change)
 - [ ] `scripts/check-concurrency.sh` and `scripts/check-compile-failures.sh` pass (until CI runs them, #5)
 
 ## Checklist

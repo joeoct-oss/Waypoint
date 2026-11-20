@@ -9,11 +9,11 @@
 import XCTest
 
 // A route the router knows, pushed onto a stack where no screen draws it, shows Waypoint's
-// missing-destination screen and reports `missingDestination` (#166). With the
-// `missingDestination` launch argument, the lamp page's related link pushes the lamp's reviews,
-// which the registry lists but no products screen draws. Debug builds show the debug screen that
-// names the route and the fix. `scripts/test-mac.sh` runs this class a second time in the release
-// configuration, where the screen is blank, the issue is still reported, and Back still works.
+// missing-destination screen and reports `missingDestination` (#166). With the `missingDestination`
+// launch argument, the lamp page's related link pushes the lamp's reviews, which the registry lists
+// but no products screen draws. Debug builds show the debug screen that names the route and the
+// fix. `scripts/test-mac.sh full` runs this class a second time in the release configuration, where
+// the screen is blank, the issue is still reported, and Back still works.
 @MainActor
 final class MissingDestinationTests: XCTestCase {
     private static let lampTitle = "Orbit Lamp"

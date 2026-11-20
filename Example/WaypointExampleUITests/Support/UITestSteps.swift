@@ -8,10 +8,11 @@
 
 import XCTest
 
-// The steps every UI test repeats: wait for an element, then use it.
+// The steps every UI test repeats: wait for an element, then use it. Each poll reads the app's
+// whole accessibility tree, so polls are a quarter second apart, not faster.
 enum UITestSteps {
     static let timeout: TimeInterval = 5
-    static let pollInterval: TimeInterval = 0.1
+    static let pollInterval: TimeInterval = 0.25
     static let settleTime: TimeInterval = 1
 }
 
