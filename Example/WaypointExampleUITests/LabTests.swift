@@ -15,7 +15,9 @@ final class LabTests: XCTestCase {
     private static let accountTitle = "Account"
     private static let lampID = 1
     private static let missingRouteName = "ProductReviewsRoute"
-    private static let accountRouteName = "AccountRoute"
+    // How the tree names the route of the screen it is shown on: the account flow, then the
+    // route's case, with its private value folded.
+    private static let currentRouteName = "Account: labTool"
     private static let applied = "applied"
     private static let failed = "failed"
 
@@ -83,11 +85,15 @@ final class LabTests: XCTestCase {
     func testNavigationTreeShowsCurrentRoute() {
         let app = ExampleApp.launch(lab: true)
 
-        app.buttons[Identifiers.labTool(.navigationTree)].tapWhenReady()
+        // The Lab tools sit below the branches and the stories, so the row is scrolled into view
+        // before the tap.
+        let row = app.buttons[Identifiers.labTool(.navigationTree)]
+        XCTAssertTrue(app.reveal(row), "missing \(Identifiers.labTool(.navigationTree))")
+        row.tap()
 
         let tree = app.staticTexts[Identifiers.navigationTree]
         XCTAssertTrue(tree.waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(tree.label.contains(Self.accountRouteName), tree.label)
+        XCTAssertTrue(tree.label.contains(Self.currentRouteName), tree.label)
     }
 
     private func assertEntryOpensPlaceholder(
