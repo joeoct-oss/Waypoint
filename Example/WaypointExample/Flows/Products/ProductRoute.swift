@@ -73,6 +73,15 @@ enum ProductsStart {
     case search
 }
 
+// The cart, pushed above a product on Shop by Go to cart, so Back goes to the product. It shows the
+// Cart tab's products.
+//
+// Conformances:
+// - `TrackableScreen`, a `Route` the journey log names "Cart".
+struct ShopCartRoute: TrackableScreen {
+    static let screenName = "Cart"
+}
+
 // The filters, presented as a sheet over the shop by the products router.
 //
 // Conformances:

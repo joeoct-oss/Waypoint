@@ -55,6 +55,11 @@ final class MainCoordinator {
             cart.add(product)
             tabs.select(.cart, trigger: "added_to_cart")
         }
+        let productsCart = ProductsCart(
+            products: { cart.products },
+            onGoToCart: { Self.goToCart(tabs: tabs, cart: cart) },
+            onCheckout: { Self.checkOut(tabs: tabs, cart: cart) }
+        )
         let navigation = ProductsNavigation(
             configuration: services.navigation,
             issues: services.issues,
@@ -71,7 +76,8 @@ final class MainCoordinator {
             gate: gate,
             launchSteps: launch.shopSteps,
             navigation: navigation,
-            onAddToCart: addToCart
+            onAddToCart: addToCart,
+            cart: productsCart
         )
         search = ProductsCoordinator(
             start: .search,
@@ -80,7 +86,8 @@ final class MainCoordinator {
             gate: gate,
             launchSteps: .none,
             navigation: navigation,
-            onAddToCart: addToCart
+            onAddToCart: addToCart,
+            cart: productsCart
         )
         account = AccountCoordinator(
             router: tabs.router(for: .account),
@@ -101,6 +108,34 @@ final class MainCoordinator {
     // The tab the reader picked in the tab bar.
     func selectTab(_ tab: MainTab) {
         tabs.select(tab)
+    }
+
+    // TX-02: one transaction selects Shop and sets its path to the cart's first product with the
+    // cart above it. The tabs change once, the stack draws once, and Back goes to the product.
+    private static func goToCart(
+        tabs: TabRouter<MainTab>,
+        cart: CartCoordinator
+    ) {
+        guard let first = cart.products.first else {
+            return
+        }
+        tabs.transaction {
+            $0.select(MainTab.shop)
+            $0.router(for: MainTab.shop).setPath {
+                ProductRoute(id: first.id, preview: first)
+                ShopCartRoute()
+            }
+        }
+    }
+
+    // Check out from the cart pushed on Shop: the Cart tab runs checkout, as its own Check out
+    // does.
+    private static func checkOut(
+        tabs: TabRouter<MainTab>,
+        cart: CartCoordinator
+    ) {
+        tabs.select(.cart, trigger: "checkout_button")
+        cart.checkOut()
     }
 
     func badge(for tab: MainTab) -> Int {

@@ -13,6 +13,8 @@ import SwiftUI
 struct ProductListView: View {
     private static let pickedCount = 2
 
+    let cart: [Product]
+    let onGoToCart: () -> Void
     let onSelect: (Product) -> Void
     let onSelectCollection: (ProductCollection) -> Void
     let onFilter: () -> Void
@@ -31,6 +33,7 @@ struct ProductListView: View {
                 Text("Small things for long nights")
                     .font(Typography.callout)
                     .foregroundStyle(Palette.textTertiary.color)
+                cartCard
                 CollectionBanner(collection: .nebulaNights) { onSelectCollection(.nebulaNights) }
                 pickedSection
                 newSection
@@ -41,6 +44,18 @@ struct ProductListView: View {
         .background(Palette.background.color)
         .accessibilityIdentifier(Identifiers.productList)
         .toolbar { toolbarItems }
+    }
+
+    // "Your cart is waiting", while the cart has products.
+    @ViewBuilder
+    private var cartCard: some View {
+        if let first = cart.first {
+            CartWaitingCard(
+                first: first,
+                count: cart.count,
+                onGoToCart: onGoToCart
+            )
+        }
     }
 
     private var pickedSection: some View {
@@ -118,5 +133,44 @@ struct ProductRowCard: View {
             Divider()
                 .overlay(Palette.line.color)
         }
+    }
+}
+
+// Shop's "Your cart is waiting" card: the cart's first product, how many more there are, and Go to
+// cart, which the card only reports.
+struct CartWaitingCard: View {
+    let first: Product
+    let count: Int
+    let onGoToCart: () -> Void
+
+    private var summary: String {
+        count > 1 ? "\(first.name) and \(count - 1) more" : first.name
+    }
+
+    var body: some View {
+        HStack(spacing: Spacing.medium) {
+            IconTile(
+                symbolName: "cart",
+                size: Size.rowIcon,
+                tint: Palette.brand,
+                fill: Palette.brandSubtle
+            )
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Your cart is waiting")
+                    .font(Typography.headline)
+                    .foregroundStyle(Palette.text.color)
+                Text(summary)
+                    .font(Typography.footnote)
+                    .foregroundStyle(Palette.textTertiary.color)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Go to cart", action: onGoToCart)
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .accessibilityIdentifier(Identifiers.goToCart)
+        }
+        .padding(Spacing.large)
+        .background(Palette.surface.color, in: RoundedRectangle(cornerRadius: Radius.card))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(Palette.line.color))
     }
 }

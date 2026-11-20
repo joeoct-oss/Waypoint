@@ -13,7 +13,6 @@ import XCTest
 // event log and the navigation tree.
 @MainActor
 final class LabTests: XCTestCase {
-    private static let accountTitle = "Account"
     private static let lampID = 1
     private static let missingRouteName = "ProductReviewsRoute"
     // How the tree names the route of the screen it is shown on: the account flow, then the
@@ -74,7 +73,7 @@ final class LabTests: XCTestCase {
         app.goBack()
         XCTAssertTrue(app.waitForTabBar(shown: true))
 
-        openTool(.eventLog, in: app)
+        app.openLabTool(.eventLog)
 
         let applied = app.descendants(matching: .any)[Identifiers.eventLogEntry(Self.applied)].firstMatch
         XCTAssertTrue(applied.waitForExistence(timeout: UITestSteps.timeout))
@@ -171,17 +170,5 @@ final class LabTests: XCTestCase {
         let card = app.buttons[Identifiers.branch(branch)]
         XCTAssertTrue(card.waitForExistence(timeout: UITestSteps.timeout))
         card.tap()
-    }
-
-    private func openTool(
-        _ tool: LabTool,
-        in app: XCUIApplication
-    ) {
-        app.openTab(Self.accountTitle)
-        app.buttons[Identifiers.settingsButton].tapWhenReady()
-        app.buttons[Identifiers.labButton].tapWhenReady()
-        let row = app.buttons[Identifiers.labTool(tool)]
-        XCTAssertTrue(app.reveal(row), "missing \(Identifiers.labTool(tool))")
-        row.tap()
     }
 }

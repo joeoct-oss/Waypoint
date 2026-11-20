@@ -14,6 +14,7 @@ enum UITestSteps {
     static let timeout: TimeInterval = 5
     static let pollInterval: TimeInterval = 0.25
     static let settleTime: TimeInterval = 1
+    static let accountTabTitle = "Account"
 }
 
 extension XCUIElement {
@@ -173,5 +174,17 @@ extension XCUIApplication {
     @MainActor
     func openTab(_ title: String) {
         tabBars.buttons[title].tapWhenReady()
+    }
+
+    // Opens one of the Lab's tools from wherever the app is: Account, Settings, the Lab, then the
+    // tool's row.
+    @MainActor
+    func openLabTool(_ tool: LabTool) {
+        openTab(UITestSteps.accountTabTitle)
+        buttons[Identifiers.settingsButton].tapWhenReady()
+        buttons[Identifiers.labButton].tapWhenReady()
+        let row = buttons[Identifiers.labTool(tool)]
+        XCTAssertTrue(reveal(row), "missing \(Identifiers.labTool(tool))")
+        row.tap()
     }
 }

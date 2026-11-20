@@ -249,6 +249,25 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
     }
 
+    // TX-02: with the lamp in the cart, Shop's Go to cart lands on the cart in one transaction,
+    // with the lamp under it, so Back goes to the lamp, then to Shop.
+    func testGoToCartIsOneTransaction() {
+        let app = ExampleApp.launch(signedIn: true)
+        addProductToCart(in: app)
+        app.openTab(Self.shopTitle)
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+
+        app.buttons[Identifiers.goToCart].tapWhenReady()
+        XCTAssertTrue(app.navigationBars[Self.cartTitle].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.buttons[Identifiers.checkout].exists)
+
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.cartProductTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+    }
+
     private func addProductToCart(in app: XCUIApplication) {
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
         app.buttons[Identifiers.product(id: Self.cartProductID)].tapWhenReady()
