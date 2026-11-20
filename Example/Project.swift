@@ -38,8 +38,10 @@ let appResources: ResourceFileElements = [
     "WaypointExample/Resources/**",
 ]
 
+// The app has no accent color asset, so the empty name stops the catalog warning about a missing one.
 let appSettings: SettingsDictionary = [
     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+    "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "",
 ]
 
 let appDependencies: [TargetDependency] = [
