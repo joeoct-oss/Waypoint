@@ -12,9 +12,11 @@ import WaypointCore
 
 // A stack of products: the shop or search at the root, a collection from Shop's banner and a
 // product pushed above it, with the filters and the wish list as sheets. Add to cart reports to the
-// main tabs, which add the product to the cart and open Cart. Save needs an account, so the account
-// gate asks a guest to sign in first; then the product joins the wish list, which the local store
-// keeps.
+// main tabs, which add the product to the cart and open Cart. When the cart has products, Shop
+// shows "Your cart is waiting", whose Go to cart the main tabs run as one transaction that leaves
+// the cart pushed above its first product here (`ShopCartRoute`). Save needs an account, so the
+// account gate asks a guest to sign in first; then the product joins the wish list, which the local
+// store keeps.
 //
 // The stack runs on Waypoint: `router`, the tab's stack router from the main tab router, owns the
 // path, `ProductsFlowView` draws it with `WaypointStack`, and a swipe back comes back to the router
@@ -39,6 +41,7 @@ final class ProductsCoordinator {
     private let launchSteps: ShopLaunchSteps
     private let navigation: ProductsNavigation
     private let onAddToCart: (Product) -> Void
+    private let cart: ProductsCart
     // `var` because `showFilters()` and `showWishlist()` set it with the router they present, and
     // `releaseSheet()` clears both once the sheet has slid away, so it still draws meanwhile.
     private(set) var presentedSheet: ProductSheet?
@@ -64,7 +67,8 @@ final class ProductsCoordinator {
         gate: AccountGate,
         launchSteps: ShopLaunchSteps,
         navigation: ProductsNavigation,
-        onAddToCart: @escaping (Product) -> Void
+        onAddToCart: @escaping (Product) -> Void,
+        cart: ProductsCart
     ) {
         self.start = start
         self.store = store
@@ -72,6 +76,7 @@ final class ProductsCoordinator {
         self.launchSteps = launchSteps
         self.navigation = navigation
         self.onAddToCart = onAddToCart
+        self.cart = cart
         self.router = router
         router.setRootName(start.rootName)
         router.register(FilterRoute.self)
@@ -107,6 +112,21 @@ final class ProductsCoordinator {
         if let collection = route.preview ?? ProductCollection.find(id: route.id) {
             makeCollectionFlow(collection)
         }
+    }
+
+    // The cart Go to cart pushes above a product. Check out and Keep shopping report like the Cart
+    // tab's: Check out opens checkout from the Cart tab, and Keep shopping goes back to Shop.
+    func makeCartFlow() -> some View {
+        CartView(
+            products: cart.products(),
+            onCheckout: { self.cart.onCheckout() },
+            onShopMore: { self.showShop() }
+        )
+        .screenChrome(
+            title: ShopCartRoute.screenName,
+            kind: nil,
+            trail: ProductsTrail.cart(under: cart.products().first)
+        )
     }
 
     @ViewBuilder
@@ -154,6 +174,14 @@ final class ProductsCoordinator {
 
     func addToCart(_ product: Product) {
         onAddToCart(product)
+    }
+
+    func goToCart() {
+        cart.onGoToCart()
+    }
+
+    func showShop() {
+        router.popToRoot()
     }
 
     func save(_ product: Product) {
@@ -236,6 +264,8 @@ final class ProductsCoordinator {
 
     private func makeShopFlow() -> some View {
         ProductListView(
+            cart: cart.products(),
+            onGoToCart: { self.goToCart() },
             onSelect: { self.showProduct($0) },
             onSelectCollection: { self.showCollection($0) },
             onFilter: { self.showFilters() }
@@ -351,5 +381,11 @@ enum ProductsTrail {
         let root = start == .browse ? shop : search
         let step = product.name.lowercased()
         return root + [step]
+    }
+
+    // The cart Go to cart pushes on Shop, above the cart's first product.
+    static func cart(under product: Product?) -> [String] {
+        let root = product.map { self.product($0, from: .browse) } ?? shop
+        return root + [ShopCartRoute.screenName.lowercased()]
     }
 }

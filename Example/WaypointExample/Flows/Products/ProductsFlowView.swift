@@ -20,6 +20,7 @@ struct ProductsFlowView: View {
             products.makeRootFlow()
                 .destination(ProductRoute.self) { products.makeProductFlow(for: $0) }
                 .destination(CollectionRoute.self) { products.makeCollectionFlow(for: $0) }
+                .destination(ShopCartRoute.self) { _ in products.makeCartFlow() }
                 .task { await products.playLaunchSteps() }
         }
         .tabBarOnPushedScreens(.hidden)

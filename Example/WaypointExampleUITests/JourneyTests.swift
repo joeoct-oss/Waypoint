@@ -31,6 +31,7 @@ final class JourneyTests: XCTestCase {
     private static let signUpName = "Nova Reader"
     private static let cartProductID = 1
     private static let cartProductTitle = "Orbit Lamp"
+    private static let alreadyThere = "alreadyThere"
     private static let savedProductID = 2
     private static let orderID = 1042
     private static let ordersTitle = "Orders"
@@ -247,6 +248,42 @@ final class JourneyTests: XCTestCase {
         XCTAssertFalse(app.buttons[Identifiers.product(id: Self.cartProductID)].exists, "the cart kept a product")
         app.openTab(Self.accountTitle)
         XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    // TX-02: with the lamp in the cart, Shop's Go to cart lands on the cart in one transaction,
+    // with the lamp under it, so Back goes to the lamp, then to Shop.
+    func testGoToCartIsOneTransaction() {
+        let app = ExampleApp.launch(signedIn: true)
+        addProductToCart(in: app)
+        app.openTab(Self.shopTitle)
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+
+        app.buttons[Identifiers.goToCart].tapWhenReady()
+        XCTAssertTrue(app.navigationBars[Self.cartTitle].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.buttons[Identifiers.checkout].exists)
+
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.cartProductTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    // TX-05: a fast double tap on a row pushes the product once, and the event log lists the second
+    // push as alreadyThere.
+    func testDoubleTapPushesOnce() {
+        let app = ExampleApp.launch(signedIn: true)
+        let lampRow = app.buttons[Identifiers.product(id: Self.cartProductID)]
+        XCTAssertTrue(lampRow.waitForExistence(timeout: UITestSteps.timeout))
+
+        lampRow.doubleTap()
+        XCTAssertTrue(app.navigationBars[Self.cartProductTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+
+        app.openLabTool(.eventLog)
+        let skipped = app.descendants(matching: .any)[Identifiers.eventLogEntry(Self.alreadyThere)].firstMatch
+        XCTAssertTrue(app.reveal(skipped), "no alreadyThere entry in the event log")
     }
 
     private func addProductToCart(in app: XCUIApplication) {

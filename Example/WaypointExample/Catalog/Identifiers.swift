@@ -65,6 +65,7 @@ enum Identifiers {
     static let mainTabs = "main.tabs"
     static let productList = "shop.products"
     static let collectionScreen = "shop.collection"
+    static let goToCart = "shop.goToCart"
     static let settingsButton = "account.settings"
     static let labButton = "settings.lab"
     static let lab = "lab"
