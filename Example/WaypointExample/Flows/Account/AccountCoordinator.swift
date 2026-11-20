@@ -17,22 +17,25 @@ import WaypointCore
 // the reader where they are, as a guest. Clear all data reports to the app coordinator, which
 // clears the store and starts the window over.
 //
+// The stack runs on Waypoint: `router` is the account tab's stack router from the main tab router,
+// `AccountFlowView` draws it with `WaypointStack`, and each screen above the root is an
+// `AccountRoute`, so the journey lines follow the reader through Account too.
+//
 // Conformances:
-// - `Observable` (from `@Observable`), so `AccountFlowView` redraws when the path changes.
+// - `Observable` (from `@Observable`), so `AccountFlowView` redraws when the account changes.
 @MainActor
 @Observable
 final class AccountCoordinator {
+    let router: StackRouter
     private let session: Session
     private let addressBook: AddressBook
     private let gate: AccountGate
     private let onClearAllData: () -> Void
     // Runs the Lab's view and view-model demos, each full screen on a Waypoint stack of its own.
     let labDemos: LabDemoCoordinator
-    // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the
-    // stack makes itself.
-    private(set) var path: [AccountScreen]
 
     init(
+        router: StackRouter,
         launch: LaunchOptions,
         session: Session,
         addressBook: AddressBook,
@@ -44,16 +47,33 @@ final class AccountCoordinator {
         self.addressBook = addressBook
         self.gate = gate
         self.onClearAllData = onClearAllData
+        self.router = router
         labDemos = LabDemoCoordinator(navigation: navigation)
-        path = Self.makePath(for: launch)
+        router.setRootName(MainTab.account.title)
+        router.setCoordinator(self)
+        openLaunchPath(launch)
     }
 
-    // A launch that opens the Lab starts on it, or on one of its branches or entries.
-    private static func makePath(for launch: LaunchOptions) -> [AccountScreen] {
+    // A launch that opens the Lab starts on it, or on one of its branches or entries. The route is
+    // registered first, because the stack isn't drawn yet and the registry is strict.
+    private func openLaunchPath(_ launch: LaunchOptions) {
+        let path = Self.makePath(for: launch)
+        guard !path.isEmpty else {
+            return
+        }
+        router.register(AccountRoute.self)
+        router.setPath {
+            for route in path {
+                route
+            }
+        }
+    }
+
+    private static func makePath(for launch: LaunchOptions) -> [AccountRoute] {
         guard launch.opensLab else {
             return []
         }
-        let lab: [AccountScreen] = [.settings, .lab]
+        let lab: [AccountRoute] = [.settings, .lab]
         guard let branch = launch.branch else {
             return lab
         }
@@ -75,11 +95,11 @@ final class AccountCoordinator {
         .screenChrome(
             title: MainTab.account.title,
             kind: nil,
-            trail: AccountScreen.rootTrail
+            trail: AccountRoute.rootTrail
         )
     }
 
-    func makeDestination(for screen: AccountScreen) -> some View {
+    func makeDestination(for screen: AccountRoute) -> some View {
         makeScreen(for: screen)
             .screenChrome(
                 title: screen.title,
@@ -97,11 +117,11 @@ final class AccountCoordinator {
     }
 
     func showOrders() {
-        path.append(.orders)
+        router.push(AccountRoute.orders)
     }
 
     func showOrder(_ order: Order) {
-        path.append(.order(order))
+        router.push(AccountRoute.order(order))
     }
 
     func openAddresses() {
@@ -109,37 +129,43 @@ final class AccountCoordinator {
     }
 
     func showAddresses() {
-        path.append(.addresses)
+        router.push(AccountRoute.addresses)
     }
 
     func showAddAddress() {
-        path.append(.addAddress)
+        router.push(AccountRoute.addAddress)
     }
 
     // Keeps the form's address in the address book and goes back to the list.
     func addAddress(_ address: Address) {
         addressBook.add(address)
-        path.removeLast()
+        router.pop()
     }
 
     func showSettings() {
-        path.append(.settings)
+        router.push(AccountRoute.settings)
     }
 
     func showLab() {
-        path.append(.lab)
+        router.push(AccountRoute.lab)
     }
 
     func showLabBranch(_ branch: Branch) {
-        path.append(.labBranch(branch))
+        router.push(AccountRoute.labBranch(branch))
     }
 
     func showLabFlow(_ entry: FlowEntry) {
-        path.append(.labFlow(entry))
+        router.push(AccountRoute.labFlow(entry))
     }
 
+    // A wrapper with no router above it can't be shown on the account stack, which is a Waypoint
+    // stack, so that story opens full screen in a plain SwiftUI stack instead of being pushed.
     func showLabStory(_ story: ViewModelStory) {
-        path.append(.labStory(story))
+        guard story != .noRouter else {
+            showLabDemo(.noRouter)
+            return
+        }
+        router.push(AccountRoute.labStory(story))
     }
 
     func showLabDemo(_ demo: LabDemo) {
@@ -154,12 +180,8 @@ final class AccountCoordinator {
         onClearAllData()
     }
 
-    func syncPath(_ newPath: [AccountScreen]) {
-        path = newPath
-    }
-
     @ViewBuilder
-    private func makeScreen(for screen: AccountScreen) -> some View {
+    private func makeScreen(for screen: AccountRoute) -> some View {
         switch screen {
         case .orders:
             makeOrdersFlow()
@@ -271,6 +293,8 @@ final class AccountCoordinator {
         )
     }
 
+    // Not reached from the Lab, which opens this story full screen (see `showLabStory(_:)`). Here
+    // the account stack is above the view, so its push finds that router.
     private func makeNoRouterFlow() -> some View {
         NoRouterView()
     }

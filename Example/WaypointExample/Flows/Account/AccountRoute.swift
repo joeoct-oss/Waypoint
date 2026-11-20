@@ -1,17 +1,19 @@
 //
-//  AccountScreen.swift
+//  AccountRoute.swift
 //  WaypointExample
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// A screen the account stack can push: orders, addresses and their form, settings, and the
+import WaypointCore
+
+// A screen the account tab's router can push: orders, addresses and their form, settings, and the
 // Navigation Lab under settings.
 //
 // Conformances:
-// - `Hashable`, so `NavigationStack` can keep screens in its path and tell them apart.
-enum AccountScreen: Hashable {
+// - `TrackableScreen`, a `Route` the journey log names by its title.
+enum AccountRoute: TrackableScreen {
     case orders
     case order(Order)
     case addresses
@@ -49,6 +51,10 @@ enum AccountScreen: Hashable {
         }
     }
 
+    var screenDisplayName: String? {
+        title
+    }
+
     var kind: FlowKind? {
         switch self {
         case .orders, .order, .addresses, .addAddress, .settings, .lab, .labStory:
@@ -79,12 +85,12 @@ enum AccountScreen: Hashable {
         case .labFlow(let entry):
             return Self.labTrail(to: entry)
         case .labStory(let story):
-            return AccountScreen.lab.trail + [story.code]
+            return AccountRoute.lab.trail + [story.code]
         }
     }
 
     private static func labTrail(to branch: Branch) -> [String] {
-        AccountScreen.lab.trail + ["\(branch.rawValue) branch"]
+        AccountRoute.lab.trail + ["\(branch.rawValue) branch"]
     }
 
     private static func labTrail(to entry: FlowEntry) -> [String] {

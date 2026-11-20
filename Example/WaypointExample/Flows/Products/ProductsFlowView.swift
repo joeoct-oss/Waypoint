@@ -24,8 +24,11 @@ struct ProductsFlowView: View {
         }
         .tabBarOnPushedScreens(.hidden)
         .overlay(alignment: .bottom) { IssueBanner(issues: products.issues) }
-        .sheet(item: Binding(reading: products.presentedSheet, writing: products.syncSheet)) {
-            products.makeSheetFlow(for: $0)
+        .sheet(
+            isPresented: Binding(reading: products.isShowingSheet, writing: products.syncSheet),
+            onDismiss: products.releaseSheet
+        ) {
+            products.makeSheetFlow()
         }
     }
 }

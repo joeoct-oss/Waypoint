@@ -12,8 +12,9 @@ import Foundation
 //
 // Conformances:
 // - `Hashable`, so an order can sit in a navigation path.
+// - `Codable`, so an order can sit in an account route, which Waypoint can save and restore.
 // - `Identifiable`, so lists can show orders without naming an id key path.
-struct Order: Hashable, Identifiable {
+struct Order: Hashable, Codable, Identifiable {
     static let all = [
         Order(id: 1042, productName: "Orbit Lamp", status: "Delivered"),
         Order(id: 1057, productName: "Comet Mug", status: "On its way"),

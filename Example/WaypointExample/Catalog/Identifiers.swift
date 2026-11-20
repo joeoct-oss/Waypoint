@@ -29,6 +29,7 @@ enum Identifiers {
     static let signUpTerms = "auth.signUp.terms"
     static let signUpContinue = "auth.signUp.continue"
     static let terms = "auth.terms"
+    static let termsDone = "auth.terms.done"
     static let productSave = "product.save"
     static let addToCart = "product.addToCart"
     static let relatedProduct = "product.related"

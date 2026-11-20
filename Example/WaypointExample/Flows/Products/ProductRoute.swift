@@ -73,15 +73,25 @@ enum ProductsStart {
     case search
 }
 
-// A sheet a products stack can present: the filters over the shop, or the wish list over a product.
+// The filters, presented as a sheet over the shop by the products router.
 //
 // Conformances:
-// - `Identifiable`, so `.sheet(item:)` shows one sheet at a time and swaps them cleanly.
-enum ProductSheet: Identifiable {
+// - `TrackableScreen`, a `Route` the journey log names "Filter".
+struct FilterRoute: TrackableScreen {
+    static let screenName = "Filter"
+}
+
+// The wish list, presented as a sheet over a product by the products router.
+//
+// Conformances:
+// - `TrackableScreen`, a `Route` the journey log names "Wish list".
+struct WishlistRoute: TrackableScreen {
+    static let screenName = "Wish list"
+}
+
+// A sheet a products stack can present: the filters over the shop, or the wish list over a
+// product. The sheet's router draws one of these until the sheet has slid away.
+enum ProductSheet {
     case filters
     case wishlist
-
-    var id: Self {
-        self
-    }
 }

@@ -275,7 +275,7 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.signUpTerms].tapWhenReady()
         let terms = app.descendants(matching: .any)[Identifiers.terms]
         XCTAssertTrue(terms.waitForExistence(timeout: UITestSteps.timeout))
-        terms.buttons.firstMatch.tap()
+        app.buttons[Identifiers.termsDone].tapWhenReady()
         app.switches[Identifiers.signUpAcceptTerms].turnOn()
     }
 }

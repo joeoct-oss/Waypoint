@@ -14,23 +14,22 @@ struct TermsView: View {
     let onDone: () -> Void
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                Text(TermsText.body)
-                    .font(Typography.body)
-                    .foregroundStyle(Palette.text.color)
-                    .padding(Spacing.large)
-            }
-            .navigationTitle("Terms")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { doneItem }
+        ScrollView {
+            Text(TermsText.body)
+                .font(Typography.body)
+                .foregroundStyle(Palette.text.color)
+                .padding(Spacing.large)
         }
+        .navigationTitle("Terms")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { doneItem }
         .accessibilityIdentifier(Identifiers.terms)
     }
 
     private var doneItem: some ToolbarContent {
         ToolbarItem(placement: .confirmationAction) {
             Button("Done", action: onDone)
+                .accessibilityIdentifier(Identifiers.termsDone)
         }
     }
 }
