@@ -9,31 +9,42 @@
 import Waypoint
 import WaypointCore
 
-// Writes every Waypoint line and interval to the unified log, so Console.app shows the lines under
-// the `dev.waypoint.example.waypoint` subsystem and Instruments shows the `transaction` and `push`
-// intervals as signposts. It also sends the lines the issue log wants to `issues`, so the banner
-// keeps working.
+// Writes the Waypoint lines from `systemLevel` up, and every interval, to the unified log, so
+// Console.app shows the lines under the `dev.waypoint.example.waypoint` subsystem and Instruments
+// shows the `transaction` and `push` intervals as signposts. It also sends the lines the issue log
+// wants to `issues`, so the banner keeps working, and every call's line to `events`, so the Lab's
+// event log lists each call, even those below `systemLevel`.
 //
 // Conformances:
 // - `LogHandler`, so the app's navigation configuration can log to it.
 struct AppLogHandler: LogHandler {
     let system: OSLogHandler
+    let systemLevel: LogLevel
     let issues: IssueLogHandler
+    let events: EventLogHandler
 
-    init(issues: IssueLog) {
+    init(systemLevel: LogLevel, issues: IssueLog, events: EventLog) {
         system = OSLogHandler()
+        self.systemLevel = systemLevel
         self.issues = IssueLogHandler(issues: issues)
+        self.events = EventLogHandler(events: events)
     }
 
     func isEnabled(level: LogLevel, category: LogCategory) -> Bool {
-        system.isEnabled(level: level, category: category)
+        sendsToSystem(level: level, category: category)
             || issues.isEnabled(level: level, category: category)
+            || events.isEnabled(level: level, category: category)
     }
 
     func log(_ message: LogMessage) {
-        system.log(message)
+        if sendsToSystem(level: message.level, category: message.category) {
+            system.log(message)
+        }
         if issues.isEnabled(level: message.level, category: message.category) {
             issues.log(message)
+        }
+        if events.isEnabled(level: message.level, category: message.category) {
+            events.log(message)
         }
     }
 
@@ -43,5 +54,9 @@ struct AppLogHandler: LogHandler {
 
     func endInterval(_ interval: LogInterval) {
         system.endInterval(interval)
+    }
+
+    private func sendsToSystem(level: LogLevel, category: LogCategory) -> Bool {
+        level >= systemLevel && system.isEnabled(level: level, category: category)
     }
 }
