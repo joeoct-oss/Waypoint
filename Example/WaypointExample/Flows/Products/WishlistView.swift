@@ -14,13 +14,11 @@ struct WishlistView: View {
     let onDone: () -> Void
 
     var body: some View {
-        NavigationStack {
-            list
-                .navigationTitle("Wish list")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar { doneItem }
-        }
-        .accessibilityIdentifier(Identifiers.wishlist)
+        list
+            .navigationTitle("Wish list")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { doneItem }
+            .accessibilityIdentifier(Identifiers.wishlist)
         .presentationDetents(WishlistDetents.all)
     }
 

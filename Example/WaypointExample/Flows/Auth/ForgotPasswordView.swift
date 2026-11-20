@@ -21,13 +21,11 @@ struct ForgotPasswordView: View {
     @State private var isSent = false
 
     var body: some View {
-        NavigationStack {
-            content
-                .navigationTitle(isSent ? "Link sent" : "Reset password")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar { toolbarItems }
-        }
-        .presentationDetents(ForgotPasswordDetents.all)
+        content
+            .navigationTitle(isSent ? "Link sent" : "Reset password")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbarItems }
+            .presentationDetents(ForgotPasswordDetents.all)
     }
 
     @ViewBuilder

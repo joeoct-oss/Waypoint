@@ -33,15 +33,16 @@ final class MainCoordinator {
         launch: LaunchOptions,
         onClearAllData: @escaping () -> Void
     ) {
-        let gate = AccountGate(
-            session: services.session,
-            service: services.auth
-        )
-        // The tab bar pops nothing on a second tap: the account tab's stack is still plain SwiftUI.
+        // The tab bar pops nothing on a second tap, as before every tab ran on Waypoint.
         let tabs = TabRouter(
             selection: launch.opensLab ? MainTab.account : .shop,
             popsToRootOnReselect: false,
             configuration: services.navigation
+        )
+        let gate = AccountGate(
+            session: services.session,
+            service: services.auth,
+            tabs: tabs
         )
         let cart = CartCoordinator(
             router: tabs.router(for: .cart),
@@ -82,6 +83,7 @@ final class MainCoordinator {
             onAddToCart: addToCart
         )
         account = AccountCoordinator(
+            router: tabs.router(for: .account),
             launch: launch,
             session: services.session,
             addressBook: services.addresses,
@@ -89,10 +91,9 @@ final class MainCoordinator {
             navigation: services.navigation,
             onClearAllData: onClearAllData
         )
-        // The journey box names each router by the coordinator that owns it. The account tab
-        // draws its own SwiftUI stack, so its coordinator only names the tab.
+        // The journey box names each router by the coordinator that owns it; each tab's
+        // coordinator names its own.
         tabs.setCoordinator(self)
-        tabs.router(for: .account).setCoordinator(account)
     }
 
     // The tab the reader picked in the tab bar.

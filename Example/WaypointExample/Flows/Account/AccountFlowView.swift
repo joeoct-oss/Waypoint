@@ -7,21 +7,19 @@
 //
 
 import SwiftUI
+import Waypoint
 
-// Draws the account stack from its coordinator, and the Lab's view and view-model demos full screen
-// over it. The account stack is still a plain SwiftUI stack, so it hides the tab bar on its pushed
-// screens itself, as a Waypoint stack does with `tabBarOnPushedScreens(.hidden)`.
+// Draws the account tab's router with `WaypointStack`, and the Lab's view and view-model demos full
+// screen over it. Pushed screens hide the tab bar, as Shop's and Search's do.
 struct AccountFlowView: View {
     let account: AccountCoordinator
 
     var body: some View {
-        NavigationStack(path: Binding(reading: account.path, writing: account.syncPath)) {
+        WaypointStack(account.router) {
             account.makeAccountFlow()
-                .navigationDestination(for: AccountScreen.self) { screen in
-                    account.makeDestination(for: screen)
-                        .toolbar(.hidden, for: .tabBar)
-                }
+                .destination(AccountRoute.self) { account.makeDestination(for: $0) }
         }
+        .tabBarOnPushedScreens(.hidden)
         .fullScreenCover(
             item: Binding(reading: account.labDemos.presentedDemo, writing: account.labDemos.syncDemo),
             onDismiss: account.labDemos.releaseDemo

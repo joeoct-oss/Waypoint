@@ -1,39 +1,68 @@
 //
-//  AuthScreen.swift
+//  AuthRoute.swift
 //  WaypointExample
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// A screen the accounts flow can push above Sign in.
+/import WaypointCore
+
+// Sign in, the root of the accounts flow the main tab router presents as a sheet.
 //
 // Conformances:
-// - `Hashable`, so `NavigationStack` can keep screens in its path and tell them apart.
-enum AuthScreen: Hashable {
-    case createAccount(CreateAccountStep)
+// - `TrackableScreen`, a `Route` the journey log names "Sign in".
+struct SignInRoute: TrackableScreen {
+    static let screenName = "Sign in"
+}
+
+// A step of Create account, pushed on the accounts flow's router above Sign in.
+//
+// Conformances:
+// - `TrackableScreen`, a `Route` the journey log names by its step.
+struct CreateAccountRoute: TrackableScreen {
+    static let screenName = "Create account"
+    static let publicLogFields: Set<String> = [
+        "step",
+    ]
+
+    let step: CreateAccountStep
 
     var title: String {
-        switch self {
-        case .createAccount:
-            return "Create account"
-        }
+        "Create account"
     }
 
     var trail: [String] {
-        switch self {
-        case .createAccount(let step):
-            return AuthTrail.signIn + step.trail
-        }
+        AuthTrail.signIn + step.trail
+    }
+
+    var screenDisplayName: String? {
+        step.title
     }
 }
 
-// The three pushed steps of creating an account.
+// Reset password, presented as a sheet over Sign in by the accounts flow's router.
+//
+// Conformances:
+// - `TrackableScreen`, a `Route` the journey log names "Reset password".
+struct ResetPasswordRoute: TrackableScreen {
+    static let screenName = "Reset password"
+}
+
+// The terms, presented as a sheet over Choose a password by the accounts flow's router.
+//
+// Conformances:
+// - `TrackableScreen`, a `Route` the journey log names "Terms".
+struct TermsRoute: TrackableScreen {
+    static let screenName = "Terms"
+}
+
+/ The three pushed steps of creating an account.
 //
 // Conformances:
 // - `CaseIterable`, so each step knows the one after it and the trail can name the steps before it.
-// - `Hashable`, so a step can sit in the accounts flow's path.
-enum CreateAccountStep: CaseIterable, Hashable {
+// - `Hashable` and `Codable`, so a step can sit in a `CreateAccountRoute`.
+enum CreateAccountStep: CaseIterable, Hashable, Codable {
     case details
     case password
     case checkEmail
@@ -86,15 +115,10 @@ enum CreateAccountStep: CaseIterable, Hashable {
 // A sheet the accounts flow can present: Reset password over Sign in, or the terms over Choose a
 // password.
 //
-// Conformances:
-// - `Identifiable`, so `.sheet(item:)` can tell one sheet from the next.
-enum AuthSheet: Identifiable {
+// The sheet's router draws one of these until the sheet has slid away.
+enum AuthSheet {
     case resetPassword
     case terms
-
-    var id: Self {
-        self
-    }
 }
 
 // The route trail at the root of the accounts flow.

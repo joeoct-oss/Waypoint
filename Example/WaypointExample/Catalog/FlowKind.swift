@@ -11,8 +11,9 @@
 // Conformances:
 // - `String` raw values, so a launch argument such as `-kind swiftui` names a kind, and
 //   accessibility identifiers use the same word.
+// - `Codable` (from the raw values), so a Lab entry can sit in an account route.
 // - `CaseIterable`, so every flow row offers both kinds in one order.
-enum FlowKind: String, CaseIterable {
+enum FlowKind: String, CaseIterable, Codable {
     case swiftUI = "swiftui"
     case uiKit = "uikit"
 

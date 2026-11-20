@@ -23,10 +23,12 @@ struct MainTabView: View {
         }
         .accessibilityIdentifier(Identifiers.mainTabs)
         .sheet(
-            item: Binding(reading: main.gate.presentedAuth, writing: main.gate.syncAuth),
-            onDismiss: main.gate.runHeldAction
+            isPresented: Binding(reading: main.gate.isShowingAuth, writing: main.gate.syncAuth),
+            onDismiss: main.gate.finishAuth
         ) {
-            main.makeAuthFlow($0)
+            if let auth = main.gate.presentedAuth {
+                main.makeAuthFlow(auth)
+            }
         }
     }
 

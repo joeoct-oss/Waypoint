@@ -19,8 +19,10 @@ import WaypointCore
 // The stack runs on Waypoint: `router`, the tab's stack router from the main tab router, owns the
 // path, `ProductsFlowView` draws it with `WaypointStack`, and a swipe back comes back to the router
 // by itself. The journey names the stack's first screen `Product list` or `Search`. A product page
-// links to a related product with `WaypointLink`, which pushes through the same router. The sheets
-// are still plain SwiftUI state until Waypoint's sheets are built.
+// links to a related product with `WaypointLink`, which pushes through the same router. The router
+// also presents the filters and the wish list (`FilterRoute`, `WishlistRoute`), each drawn on the
+// presented router with `WaypointStack`; the sheet itself is still SwiftUI's, bound to the router,
+// until Waypoint draws sheets.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the sheet changes.
@@ -37,15 +39,22 @@ final class ProductsCoordinator {
     private let launchSteps: ShopLaunchSteps
     private let navigation: ProductsNavigation
     private let onAddToCart: (Product) -> Void
-    // `var` because `showFilters()`, `showWishlist()` and `dismissSheet()` change it, and
-    // `syncSheet(_:)` takes a swipe down.
+    // `var` because `showFilters()` and `showWishlist()` set it with the router they present, and
+    // `releaseSheet()` clears both once the sheet has slid away, so it still draws meanwhile.
     private(set) var presentedSheet: ProductSheet?
+    // `var` for the same reason as `presentedSheet`: the presented sheet's router.
+    private(set) var sheetRouter: StackRouter?
     // `var` because `playLaunchSteps()` plays them once, and the shop appears again on every tab
     // switch.
     private var hasPlayedLaunchSteps: Bool
 
     var issues: IssueLog {
         navigation.issues
+    }
+
+    // Whether the filters or the wish list is presented over the stack.
+    var isShowingSheet: Bool {
+        router.presented != nil
     }
 
     init(
@@ -65,7 +74,10 @@ final class ProductsCoordinator {
         self.onAddToCart = onAddToCart
         self.router = router
         router.setRootName(start.rootName)
+        router.register(FilterRoute.self)
+        router.register(WishlistRoute.self)
         presentedSheet = nil
+        sheetRouter = nil
         hasPlayedLaunchSteps = false
         router.setCoordinator(self)
     }
@@ -98,7 +110,16 @@ final class ProductsCoordinator {
     }
 
     @ViewBuilder
-    func makeSheetFlow(for sheet: ProductSheet) -> some View {
+    func makeSheetFlow() -> some View {
+        if let sheetRouter, let presentedSheet {
+            WaypointStack(sheetRouter) {
+                makeSheetScreen(for: presentedSheet)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func makeSheetScreen(for sheet: ProductSheet) -> some View {
         switch sheet {
         case .filters:
             makeFiltersFlow()
@@ -124,11 +145,11 @@ final class ProductsCoordinator {
     }
 
     func showFilters() {
-        presentedSheet = .filters
+        showSheet(.filters, route: FilterRoute())
     }
 
     func showWishlist() {
-        presentedSheet = .wishlist
+        showSheet(.wishlist, route: WishlistRoute())
     }
 
     func addToCart(_ product: Product) {
@@ -140,11 +161,33 @@ final class ProductsCoordinator {
     }
 
     func dismissSheet() {
-        presentedSheet = nil
+        router.dismiss()
     }
 
-    func syncSheet(_ sheet: ProductSheet?) {
+    // Takes the system's own dismissal of the sheet, a swipe down.
+    func syncSheet(_ isShowing: Bool) {
+        guard !isShowing else {
+            return
+        }
+        dismissSheet()
+    }
+
+    // Drops the sheet's router once the sheet has gone.
+    func releaseSheet() {
+        presentedSheet = nil
+        sheetRouter = nil
+    }
+
+    private func showSheet<R: Route>(
+        _ sheet: ProductSheet,
+        route: R
+    ) {
+        router.present(route, style: .sheet)
+        guard let presented = router.presented else {
+            return
+        }
         presentedSheet = sheet
+        sheetRouter = presented
     }
 
     private func addToWishlist(_ product: Product) {

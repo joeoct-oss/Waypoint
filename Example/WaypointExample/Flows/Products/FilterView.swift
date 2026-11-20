@@ -17,20 +17,18 @@ struct FilterView: View {
     @State private var sortsByPrice = false
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Price") {
-                    Slider(value: $maximumPrice, in: 10...100)
-                    Text("Up to \(Int(maximumPrice)) USD")
-                }
-                Section {
-                    Toggle("Sort by price", isOn: $sortsByPrice)
-                }
+        Form {
+            Section("Price") {
+                Slider(value: $maximumPrice, in: 10...100)
+                Text("Up to \(Int(maximumPrice)) USD")
             }
-            .navigationTitle("Filter")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { applyItem }
+            Section {
+                Toggle("Sort by price", isOn: $sortsByPrice)
+            }
         }
+        .navigationTitle("Filter")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { applyItem }
         .presentationDetents(FilterDetents.all)
     }
 

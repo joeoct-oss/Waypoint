@@ -10,7 +10,8 @@
 //
 // Conformances:
 // - `Hashable`, so the app coordinator can keep an entry in its navigation path.
-struct FlowEntry: Hashable {
+// - `Codable`, so an entry can sit in an account route, which Waypoint can save and restore.
+struct FlowEntry: Hashable, Codable {
     static var all: [FlowEntry] {
         Branch.allCases.flatMap(entries(in:))
     }

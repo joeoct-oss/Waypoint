@@ -7,6 +7,8 @@
 //
 
 import SwiftUI
+import Waypoint
+import WaypointCore
 
 // The accounts flow, presented as a sheet when the reader does something that needs an account:
 // Sign in at the root, the three steps of Create account pushed above it, Reset password as a sheet
@@ -14,45 +16,58 @@ import SwiftUI
 // going back keeps what the reader typed. Signing in and creating an account go through the auth
 // service; the flow reports the account, or Cancel, to the account gate that presented it.
 //
+// The flow runs on Waypoint: `router` is the flow the main tab router presents, the steps are
+// `CreateAccountRoute` pushes, and Reset password and the terms are flows this router presents.
+// The sheets themselves are still SwiftUI's, bound to the routers, until Waypoint draws them.
+//
 // Conformances:
-// - `Observable` (from `@Observable`), so `AuthFlowView` redraws when the path, a sheet, the error
-//   or the busy state changes.
-// - `Identifiable` (an object's identity), so the main tabs can present the flow with
-//   `.sheet(item:)`.
+// - `Observable` (from `@Observable`), so `AuthFlowView` redraws when a sheet, the error or the
+//   busy state changes.
 @MainActor
 @Observable
-final class AuthCoordinator: Identifiable {
+final class AuthCoordinator {
+    let router: StackRouter
     private let service: any AuthService
     private let onSignedIn: (Account) -> Void
     private let onCancel: () -> Void
     private let draft: SignUpDraft
     // `var` because creating an account keeps it until Check your email reports Start shopping.
     private var newAccount: Account?
-    // `var` because the `show…()` functions push onto it, and `syncPath(_:)` takes the pops the
-    // stack makes itself.
-    private(set) var path: [AuthScreen]
-    // `var` because `showResetPassword()`, `showTerms()` and `dismissSheet()` change it, and
-    // `syncSheet(_:)` takes a swipe down.
+    // `var` because `showResetPassword()` and `showTerms()` set it with the router they present,
+    // and `releaseSheet()` clears both once the sheet has slid away, so it still draws meanwhile.
     private(set) var presentedSheet: AuthSheet?
+    // `var` for the same reason as `presentedSheet`: the presented sheet's router.
+    private(set) var sheetRouter: StackRouter?
     // `var` because a call to the auth service sets it while the call runs.
     private(set) var isWorking: Bool
     // `var` because a failed call to the auth service sets it, and the next call clears it.
     private(set) var errorMessage: String?
 
+    // Whether Reset password or the terms is presented over the flow.
+    var isShowingSheet: Bool {
+        router.presented != nil
+    }
+
     init(
+        router: StackRouter,
         service: any AuthService,
         onSignedIn: @escaping (Account) -> Void,
         onCancel: @escaping () -> Void
     ) {
+        self.router = router
         self.service = service
         self.onSignedIn = onSignedIn
         self.onCancel = onCancel
         draft = SignUpDraft()
         newAccount = nil
-        path = []
         presentedSheet = nil
+        sheetRouter = nil
         isWorking = false
         errorMessage = nil
+        router.setRootName("Sign in")
+        router.register(ResetPasswordRoute.self)
+        router.register(TermsRoute.self)
+        router.setCoordinator(self)
     }
 
     func makeSignInFlow() -> some View {
@@ -71,36 +86,35 @@ final class AuthCoordinator: Identifiable {
         )
     }
 
-    func makeDestination(for screen: AuthScreen) -> some View {
-        makeScreen(for: screen)
+    func makeDestination(for route: CreateAccountRoute) -> some View {
+        makeCreateAccountFlow(route.step)
             .screenChrome(
-                title: screen.title,
+                title: route.title,
                 kind: nil,
-                trail: screen.trail
+                trail: route.trail
             )
     }
 
     @ViewBuilder
-    func makeSheetFlow(for sheet: AuthSheet) -> some View {
-        switch sheet {
-        case .resetPassword:
-            makeResetPasswordFlow()
-        case .terms:
-            makeTermsFlow()
+    func makeSheetFlow() -> some View {
+        if let sheetRouter, let presentedSheet {
+            WaypointStack(sheetRouter) {
+                makeSheetScreen(for: presentedSheet)
+            }
         }
     }
 
     func showCreateAccount() {
         errorMessage = nil
-        path.append(.createAccount(.details))
+        router.push(CreateAccountRoute(step: .details))
     }
 
     func showResetPassword() {
-        presentedSheet = .resetPassword
+        showSheet(.resetPassword, route: ResetPasswordRoute())
     }
 
     func showTerms() {
-        presentedSheet = .terms
+        showSheet(.terms, route: TermsRoute())
     }
 
     func signIn(
@@ -120,22 +134,42 @@ final class AuthCoordinator: Identifiable {
     }
 
     func dismissSheet() {
+        router.dismiss()
+    }
+
+    // Takes the system's own dismissal of the sheet, a swipe down.
+    func syncSheet(_ isShowing: Bool) {
+        guard !isShowing else {
+            return
+        }
+        dismissSheet()
+    }
+
+    // Drops the sheet's router once the sheet has gone.
+    func releaseSheet() {
         presentedSheet = nil
+        sheetRouter = nil
     }
 
-    func syncPath(_ newPath: [AuthScreen]) {
-        path = newPath
-    }
-
-    func syncSheet(_ sheet: AuthSheet?) {
+    private func showSheet<R: Route>(
+        _ sheet: AuthSheet,
+        route: R
+    ) {
+        router.present(route, style: .sheet)
+        guard let presented = router.presented else {
+            return
+        }
         presentedSheet = sheet
+        sheetRouter = presented
     }
 
     @ViewBuilder
-    private func makeScreen(for screen: AuthScreen) -> some View {
-        switch screen {
-        case .createAccount(let step):
-            makeCreateAccountFlow(step)
+    private func makeSheetScreen(for sheet: AuthSheet) -> some View {
+        switch sheet {
+        case .resetPassword:
+            makeResetPasswordFlow()
+        case .terms:
+            makeTermsFlow()
         }
     }
 
@@ -175,7 +209,7 @@ final class AuthCoordinator: Identifiable {
 
     private func showStep(_ step: CreateAccountStep) {
         errorMessage = nil
-        path.append(.createAccount(step))
+        router.push(CreateAccountRoute(step: step))
     }
 
     private func register() {
