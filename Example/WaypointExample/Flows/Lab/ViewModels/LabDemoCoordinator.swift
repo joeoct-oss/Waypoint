@@ -10,8 +10,10 @@ import SwiftUI
 import Waypoint
 import WaypointCore
 
-// Runs the Lab's view and view-model demos, presented full screen over the Lab. Each product demo
-// is the small `LabShopFlow` on a Waypoint stack of its own, because stacks don't nest. Every
+// Runs the Lab's demos, presented full screen over the Lab: the view and view-model demos, and the
+// Detail push flow, which `DetailPushCoordinator` runs. Each product demo is the small
+// `LabShopFlow` on a Waypoint stack of its own, because stacks don't nest, and Detail push is
+// `DetailPushFlow` on another. Every
 // product demo gets a fresh router, which this coordinator owns while the demo is up and drops once
 // it has closed, so a navigator that outlives the demo has no router left. The no-router demo runs
 // in a plain SwiftUI stack instead: the account stack above the Lab is a Waypoint stack, so only a
@@ -24,7 +26,8 @@ import WaypointCore
 @MainActor
 @Observable
 final class LabDemoCoordinator {
-    private static let flowID = FlowID("labShop")
+    private static let shopFlowID = FlowID("labShop")
+    private static let detailPushFlowID = FlowID("detailPush")
     private static let reviewsDelay = Duration.milliseconds(2500)
 
     private let navigation: NavigationConfiguration
@@ -35,6 +38,8 @@ final class LabDemoCoordinator {
     private(set) var router: StackRouter?
     // `var` because `showDemo(_:)` makes the navigator demo's model and `releaseDemo()` drops it.
     private(set) var productModel: LabProductModel?
+    // `var` because `showDemo(_:)` makes the Detail push coordinator and `releaseDemo()` drops it.
+    private(set) var detailPush: DetailPushCoordinator?
     // `var` because `recordLateOutcome(_:)` keeps the newest result a closed demo's model reported.
     private(set) var lateOutcome: String?
 
@@ -50,30 +55,30 @@ final class LabDemoCoordinator {
         presentedDemo = nil
         router = nil
         productModel = nil
+        detailPush = nil
         lateOutcome = nil
     }
 
     @ViewBuilder
     func makeDemoFlow(for demo: LabDemo) -> some View {
-        if demo == .noRouter {
+        switch demo {
+        case .noRouter:
             makeNoRouterFlow()
-        } else if let router {
-            WaypointStack(flow: LabShopFlow.self, router: router) {
-                makeRootFlow(for: demo)
-                    .destination(LabCartRoute.self) { _ in LabCartView() }
-                    .destination(LabReviewsRoute.self) { _ in LabReviewsView() }
-                    .toolbar { closeItem }
-            }
+        case .detailPush:
+            makeDetailPushFlow()
+        case .style, .lateResult:
+            makeShopFlow(for: demo)
         }
     }
 
     func showDemo(_ demo: LabDemo) {
         let router = StackRouter(
-            flow: Self.flowID,
+            flow: Self.flowID(for: demo),
             configuration: navigation
         )
         lateOutcome = nil
-        productModel = makeProductModel(router)
+        detailPush = demo == .detailPush ? DetailPushCoordinator(router: router) : nil
+        productModel = detailPush == nil ? makeProductModel(router) : nil
         self.router = router
         presentedDemo = demo
     }
@@ -90,12 +95,54 @@ final class LabDemoCoordinator {
     func releaseDemo() {
         router = nil
         productModel = nil
+        detailPush = nil
     }
 
     func recordLateOutcome(_ outcome: NavigationOutcome) {
         lateOutcome = outcome.description
     }
 
+    private static func flowID(for demo: LabDemo) -> FlowID {
+        demo == .detailPush ? detailPushFlowID : shopFlowID
+    }
+
+    @ViewBuilder
+    private func makeShopFlow(for demo: LabDemo) -> some View {
+        if let router {
+            WaypointStack(flow: LabShopFlow.self, router: router) {
+                makeRootFlow(for: demo)
+                    .destination(LabCartRoute.self) { _ in LabCartView() }
+                    .destination(LabReviewsRoute.self) { _ in LabReviewsView() }
+                    .toolbar { closeItem }
+            }
+        }
+    }
+
+    // The shop list on the flow's own stack, with the recovered toast over it.
+    @ViewBuilder
+    private func makeDetailPushFlow() -> some View {
+        if let detailPush {
+            WaypointStack(flow: DetailPushFlow.self, router: detailPush.router) {
+                detailPush.makeListFlow()
+                    .destination(DetailProductRoute.self) { detailPush.makeProductFlow($0) }
+                    .destination(DetailCartRoute.self) { detailPush.makeCartFlow($0) }
+                    .toolbar { closeItem }
+            }
+            .overlay(alignment: .bottom) { makeToast(for: detailPush.toast) }
+            .animation(.default, value: detailPush.toast)
+        }
+    }
+
+    @ViewBuilder
+    private func makeToast(for content: RecoveredToastContent?) -> some View {
+        if let content {
+            RecoveredToast(content: content)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    // Only the shop demos reach here: the no-router demo and Detail push draw their own stacks in
+    // `makeDemoFlow(for:)`.
     @ViewBuilder
     private func makeRootFlow(for demo: LabDemo) -> some View {
         switch demo {
@@ -103,8 +150,8 @@ final class LabDemoCoordinator {
             makeStyleFlow(style)
         case .lateResult:
             makeNavigatorFlow()
-        case .noRouter:
-            makeNoRouterFlow()
+        case .noRouter, .detailPush:
+            EmptyView()
         }
     }
 
@@ -165,7 +212,7 @@ final class LabDemoCoordinator {
 }
 
 // A demo the Lab presents: the product in one navigation style, the product whose reviews arrive
-// late, or a view whose navigation wrapper has no router above it.
+// late, a view whose navigation wrapper has no router above it, or the Detail push flow.
 //
 // Conformances:
 // - `Hashable`, so `.fullScreenCover(item:)` can tell one demo from another.
@@ -174,6 +221,7 @@ enum LabDemo: Hashable, Identifiable {
     case style(NavigationStyle)
     case lateResult
     case noRouter
+    case detailPush
 
     var id: Self {
         self

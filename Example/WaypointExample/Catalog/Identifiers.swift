@@ -82,6 +82,12 @@ enum Identifiers {
     static let labDemoReviewsScreen = "lab.demo.reviewsScreen"
     static let labDemoCart = "lab.demo.cart"
     static let labDemoClose = "lab.demo.close"
+    static let detailList = "lab.detail.list"
+    static let detailProduct = "lab.detail.product"
+    static let detailAddToCart = "lab.detail.addToCart"
+    static let detailBackToCart = "lab.detail.backToCart"
+    static let detailCart = "lab.detail.cart"
+    static let recoveredToast = "lab.toast.recovered"
 
     static func product(id: Int) -> String {
         "product.\(id)"
