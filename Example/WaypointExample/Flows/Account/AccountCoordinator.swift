@@ -8,13 +8,13 @@
 
 import SwiftUI
 import WaypointCore
-
-// The account tab: the profile at the root (or Sign in for a guest), orders, addresses and settings
-// pushed above it, and the Navigation Lab under settings with the twenty demo entries. Orders and
-// Addresses need an account, so the account gate asks a guest to sign in first. Add a new address
-// pushes the form; saving keeps the address in the address book, which checkout shares, and goes
-// back to the list. Sign out ends the session and leaves
-// the reader where they are, as a guest. Clear all data reports to the app coordinator, which
+//  The account tab: the profile at the root (or Sign in for a guest), orders, addresses and
+// settings pushed above it, and the Navigation Lab under settings with the twenty demo entries and
+// its tools: the whole tree as `describeTree` prints it, and the event log from `events`. Orders
+// and Addresses need an account, so the account gate asks a guest to sign in first. Add a new
+// address pushes the form; saving keeps the address in the address book, which checkout shares, and
+// goes back to the list. Sign out ends the session and leaves the reader where they are, as a
+// guest. Clear all data reports to the app coordinator, which
 // clears the store and starts the window over.
 //
 // The stack runs on Waypoint: `router` is the account tab's stack router from the main tab router,
@@ -31,6 +31,8 @@ final class AccountCoordinator {
     private let addressBook: AddressBook
     private let gate: AccountGate
     private let onClearAllData: () -> Void
+    private let events: EventLog
+    private let describeTree: @MainActor () -> String
     // Runs the Lab's view and view-model demos, each full screen on a Waypoint stack of its own.
     let labDemos: LabDemoCoordinator
 
@@ -41,12 +43,16 @@ final class AccountCoordinator {
         addressBook: AddressBook,
         gate: AccountGate,
         navigation: NavigationConfiguration,
+        events: EventLog,
+        describeTree: @escaping @MainActor () -> String,
         onClearAllData: @escaping () -> Void
     ) {
         self.session = session
         self.addressBook = addressBook
         self.gate = gate
         self.onClearAllData = onClearAllData
+        self.events = events
+        self.describeTree = describeTree
         self.router = router
         labDemos = LabDemoCoordinator(navigation: navigation)
         router.setRootName(MainTab.account.title)
@@ -168,6 +174,10 @@ final class AccountCoordinator {
         router.push(AccountRoute.labStory(story))
     }
 
+    func showLabTool(_ tool: LabTool) {
+        router.push(AccountRoute.labTool(tool))
+    }
+
     func showLabDemo(_ demo: LabDemo) {
         labDemos.showDemo(demo)
     }
@@ -201,6 +211,8 @@ final class AccountCoordinator {
             makeLabPlaceholderFlow(entry)
         case .labStory(let story):
             makeLabStoryFlow(story)
+        case .labTool(let tool):
+            makeLabToolFlow(tool)
         }
     }
 
@@ -236,7 +248,9 @@ final class AccountCoordinator {
     private func makeLabFlow() -> some View {
         LabView(
             onSelectBranch: { self.showLabBranch($0) },
-            onSelectStory: { self.showLabStory($0) }
+            onSelectStory: { self.showLabStory($0) },
+            eventCount: events.entries.count,
+            onSelectTool: { self.showLabTool($0) }
         )
     }
 
@@ -280,6 +294,24 @@ final class AccountCoordinator {
         case .preview:
             makePreviewHelpFlow()
         }
+    }
+
+    @ViewBuilder
+    private func makeLabToolFlow(_ tool: LabTool) -> some View {
+        switch tool {
+        case .navigationTree:
+            makeNavigationTreeFlow()
+        case .eventLog:
+            makeEventLogFlow()
+        }
+    }
+
+    private func makeNavigationTreeFlow() -> some View {
+        NavigationTreeView(tree: describeTree())
+    }
+
+    private func makeEventLogFlow() -> some View {
+        EventLogView(entries: events.entries)
     }
 
     private func makeNavigationStyleFlow() -> some View {

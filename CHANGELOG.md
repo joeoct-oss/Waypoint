@@ -4,6 +4,10 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ## Unreleased
 
+### Added
+
+- The example app's Navigation Lab has a Lab tools section (#254). The event log lists every navigation call the routers logged, newest first, with its outcome (applied, recovered, queued, ignored, alreadyThere or failed), level, time, line and call site, filters by outcome and shares the shown lines as text. The navigation tree shows the whole app's tree from `debugTree()`, with Copy as text. In debug builds the routers now log from `.debug`, so the event log gets each call's own line; the unified log still starts at `.info`.
+
 ### Changed
 
 - `scripts/test-mac.sh` runs in tiers so it loads the Mac far less (#247). `quick`, the default while working, runs the guard rail, the compile fixtures, the host tests and the simulator package tests, each built once with warnings as errors, and the example app's UI tests only when the branch changes `Example/` or a renderer; it skips what the branch can't affect (`--ui`, `--all` and `--only <test>` override). `full`, before every merge, runs every check whatever changed. `release`, before a tag, adds the iOS device build and the package and example tests on the iOS 17 simulator (`WAYPOINT_IOS17_SIMULATOR`, default `waypoint-02`). Builds use at most `WAYPOINT_JOBS` jobs (default half the performance cores), Xcode never clones the simulator, one run holds a simulator at a time, the script shuts down each simulator it booted, and it ends with the time of each step. `scripts/check-compile-failures.sh` builds with `WAYPOINT_SWIFT_BUILD_FLAGS`, so the Mac script's core build is reused.
