@@ -10,11 +10,13 @@ import SwiftUI
 import Waypoint
 import WaypointCore
 
-// Runs the Lab's view and view-model demos. Each demo is the small `LabShopFlow` on a Waypoint
-// stack of its own, presented full screen over the Lab, because stacks don't nest and the account
-// stack above the Lab is plain SwiftUI. Every demo gets a fresh router, which this coordinator owns
-// while the demo is up and drops once it has closed, so a navigator that outlives the demo has no
-// router left. The cover stays plain SwiftUI until Waypoint's presentations are built.
+// Runs the Lab's view and view-model demos, presented full screen over the Lab. Each product demo
+// is the small `LabShopFlow` on a Waypoint stack of its own, because stacks don't nest. Every
+// product demo gets a fresh router, which this coordinator owns while the demo is up and drops once
+// it has closed, so a navigator that outlives the demo has no router left. The no-router demo runs
+// in a plain SwiftUI stack instead: the account stack above the Lab is a Waypoint stack, so only a
+// cover, which sits outside it, has no router above its view. The cover stays plain SwiftUI until
+// Waypoint's presentations are built.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so the Lab redraws when a demo opens or closes, and when a
@@ -53,7 +55,9 @@ final class LabDemoCoordinator {
 
     @ViewBuilder
     func makeDemoFlow(for demo: LabDemo) -> some View {
-        if let router {
+        if demo == .noRouter {
+            makeNoRouterFlow()
+        } else if let router {
             WaypointStack(flow: LabShopFlow.self, router: router) {
                 makeRootFlow(for: demo)
                     .destination(LabCartRoute.self) { _ in LabCartView() }
@@ -99,6 +103,18 @@ final class LabDemoCoordinator {
             makeStyleFlow(style)
         case .lateResult:
             makeNavigatorFlow()
+        case .noRouter:
+            makeNoRouterFlow()
+        }
+    }
+
+    // A plain SwiftUI stack, so the view's `@StackNavigation` finds no Waypoint stack above it.
+    private func makeNoRouterFlow() -> some View {
+        NavigationStack {
+            NoRouterView()
+                .navigationTitle(ViewModelStory.noRouter.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { closeItem }
         }
     }
 
@@ -148,8 +164,8 @@ final class LabDemoCoordinator {
     }
 }
 
-// A demo the Lab presents: the product in one navigation style, or the product whose reviews
-// arrive late.
+// A demo the Lab presents: the product in one navigation style, the product whose reviews arrive
+// late, or a view whose navigation wrapper has no router above it.
 //
 // Conformances:
 // - `Hashable`, so `.fullScreenCover(item:)` can tell one demo from another.
@@ -157,6 +173,7 @@ final class LabDemoCoordinator {
 enum LabDemo: Hashable, Identifiable {
     case style(NavigationStyle)
     case lateResult
+    case noRouter
 
     var id: Self {
         self

@@ -6,7 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-/import WaypointCore
+import WaypointCore
 
 // Sign in, the root of the accounts flow the main tab router presents as a sheet.
 //
@@ -57,7 +57,7 @@ struct TermsRoute: TrackableScreen {
     static let screenName = "Terms"
 }
 
-/ The three pushed steps of creating an account.
+// The three pushed steps of creating an account.
 //
 // Conformances:
 // - `CaseIterable`, so each step knows the one after it and the trail can name the steps before it.

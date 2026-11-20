@@ -10,10 +10,11 @@ import SwiftUI
 import Waypoint
 import WaypointCore
 
-// VM-03: a view that uses `@StackNavigation`, shown where no Waypoint stack is above it (the
-// account stack above the Lab is plain SwiftUI). The view still draws. Its push does nothing and
-// returns `.failed` with a `noRouterInScope` issue, which names the wrapper, its file and line, and
-// the fix, and is logged as a fault. In debug builds the screen shows that issue under the view.
+// VM-03: a view that uses `@StackNavigation`, shown where no Waypoint stack is above it (full
+// screen in a plain SwiftUI stack, over the account stack). The view still draws. Its push does
+// nothing and returns `.failed` with a `noRouterInScope` issue, which names the wrapper, its file
+// and line, and the fix, and is logged as a fault. In debug builds the screen shows that issue
+// under the view.
 struct NoRouterView: View {
     // `var` because a tap on Open reviews keeps what the push returned, to show it.
     @State private var failure: NavigationFailure?

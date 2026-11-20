@@ -158,7 +158,13 @@ final class AccountCoordinator {
         router.push(AccountRoute.labFlow(entry))
     }
 
+    // A wrapper with no router above it can't be shown on the account stack, which is a Waypoint
+    // stack, so that story opens full screen in a plain SwiftUI stack instead of being pushed.
     func showLabStory(_ story: ViewModelStory) {
+        guard story != .noRouter else {
+            showLabDemo(.noRouter)
+            return
+        }
         router.push(AccountRoute.labStory(story))
     }
 
@@ -287,6 +293,8 @@ final class AccountCoordinator {
         )
     }
 
+    // Not reached from the Lab, which opens this story full screen (see `showLabStory(_:)`). Here
+    // the account stack is above the view, so its push finds that router.
     private func makeNoRouterFlow() -> some View {
         NoRouterView()
     }
