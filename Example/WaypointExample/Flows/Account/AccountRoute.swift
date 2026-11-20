@@ -23,6 +23,7 @@ enum AccountRoute: TrackableScreen {
     case labBranch(Branch)
     case labFlow(FlowEntry)
     case labStory(ViewModelStory)
+    case labTool(LabTool)
 
     static let rootTrail = [
         "account",
@@ -48,6 +49,8 @@ enum AccountRoute: TrackableScreen {
             return entry.flow.title
         case .labStory(let story):
             return story.title
+        case .labTool(let tool):
+            return tool.title
         }
     }
 
@@ -57,7 +60,7 @@ enum AccountRoute: TrackableScreen {
 
     var kind: FlowKind? {
         switch self {
-        case .orders, .order, .addresses, .addAddress, .settings, .lab, .labStory:
+        case .orders, .order, .addresses, .addAddress, .settings, .lab, .labStory, .labTool:
             return nil
         case .labBranch(let branch):
             return branch.hostKind
@@ -86,6 +89,8 @@ enum AccountRoute: TrackableScreen {
             return Self.labTrail(to: entry)
         case .labStory(let story):
             return AccountRoute.lab.trail + [story.code]
+        case .labTool(let tool):
+            return AccountRoute.lab.trail + [tool.title.lowercased()]
         }
     }
 

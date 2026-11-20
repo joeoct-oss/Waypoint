@@ -89,6 +89,8 @@ final class MainCoordinator {
             addressBook: services.addresses,
             gate: gate,
             navigation: services.navigation,
+            events: services.events,
+            describeTree: { [tabs] in tabs.debugTree() },
             onClearAllData: onClearAllData
         )
         // The journey box names each router by the coordinator that owns it; each tab's

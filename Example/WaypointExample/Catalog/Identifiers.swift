@@ -88,6 +88,10 @@ enum Identifiers {
     static let detailBackToCart = "lab.detail.backToCart"
     static let detailCart = "lab.detail.cart"
     static let recoveredToast = "lab.toast.recovered"
+    static let eventLog = "lab.eventLog"
+    static let eventLogFilter = "lab.eventLog.filter"
+    static let navigationTree = "lab.tree"
+    static let copyTree = "lab.tree.copy"
 
     static func product(id: Int) -> String {
         "product.\(id)"
@@ -115,6 +119,14 @@ enum Identifiers {
 
     static func labStory(_ story: ViewModelStory) -> String {
         "lab.story.\(story.rawValue)"
+    }
+
+    static func labTool(_ tool: LabTool) -> String {
+        "lab.tool.\(tool.rawValue)"
+    }
+
+    static func eventLogEntry(_ outcome: String) -> String {
+        "lab.eventLog.\(outcome)"
     }
 
     static func placeholder(_ entry: FlowEntry) -> String {
