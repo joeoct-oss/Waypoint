@@ -31,4 +31,8 @@ enum Palette {
     static let error = ColorToken(light: 0xB8203A, dark: 0xFF7A8C)
     static let errorSubtle = ColorToken(light: 0xFDECEE, dark: 0x3E1A26)
     static let onBrand = ColorToken(light: 0xFFFFFF, dark: 0x0B0F2A)
+    // The recovered toast is dark in both appearances, with amber for the outcome.
+    static let toast = ColorToken(light: 0x151A3D, dark: 0x232A5E)
+    static let onToast = ColorToken(light: 0xEEF0FF, dark: 0xEEF0FF)
+    static let toastAmber = ColorToken(light: 0xF2B451, dark: 0xF2B451)
 }

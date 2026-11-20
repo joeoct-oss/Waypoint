@@ -37,7 +37,7 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 | `Flows/Products/` | Shop and Search: the collection banner, the cart card, product cards and rows, a collection, a product, the cart pushed by Go to cart, the filter and wish list sheets |
 | `Flows/Cart/` | The cart and the full-screen checkout |
 | `Flows/Account/` | Account, orders, settings, and the Navigation Lab's place in the account stack |
-| `Flows/Lab/` | The Navigation Lab: both branches, the placeholder each demo flow shows until it is built, the Views and view models demos (`ViewModels/`), and the Lab tools (`Tools/`): the event log and the navigation tree |
+| `Flows/Lab/` | The Navigation Lab: both branches, the Detail push flow (`DetailPush/`), the placeholder each other demo flow shows until it is built, the Views and view models demos (`ViewModels/`), and the Lab tools (`Tools/`): the event log and the navigation tree |
 | `Resources/` | The asset catalog with the app icon |
 | `Catalog/` | The Lab's branches, flows, kinds and entries, accessibility identifiers and launch argument names. The UI tests compile these too |
 | `DesignSystem/` | Color, type and spacing tokens, and the few components the app adds to system controls |
@@ -46,5 +46,5 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 
 - Each window has its own app coordinator; the `App` holds no navigation state, only the shared services.
 - Screens report through callbacks; only coordinators navigate, with `make…Flow()` to build and `show…()` to navigate.
-- Accessibility identifiers follow one pattern: `<flow>.<screen>` for journeys, and `root.<branch>`, `<branch>.<flow>.<kind>`, `placeholder.<flow>.<kind>` and `lab.story.<story>` in the Lab.
+- Accessibility identifiers follow one pattern: `<flow>.<screen>` for journeys, and `root.<branch>`, `<branch>.<flow>.<kind>`, `placeholder.<flow>.<kind>`, `lab.story.<story>` and `lab.detail.<screen>` in the Lab.
 - The code follows the package's code style in [`CODE_STYLE.md`](../CODE_STYLE.md).

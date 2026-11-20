@@ -73,6 +73,9 @@ final class AccountCoordinator {
                 route
             }
         }
+        if launch.entry?.isRunnable == true {
+            showLabDemo(.detailPush)
+        }
     }
 
     private static func makePath(for launch: LaunchOptions) -> [AccountRoute] {
@@ -83,7 +86,7 @@ final class AccountCoordinator {
         guard let branch = launch.branch else {
             return lab
         }
-        guard let entry = launch.entry else {
+        guard let entry = launch.entry, !entry.isRunnable else {
             return lab + [.labBranch(branch)]
         }
         return lab + [.labBranch(branch), .labFlow(entry)]
@@ -160,7 +163,13 @@ final class AccountCoordinator {
         router.push(AccountRoute.labBranch(branch))
     }
 
+    // An entry that runs for real opens full screen on a stack of its own, because stacks don't
+    // nest. The others push their placeholder.
     func showLabFlow(_ entry: FlowEntry) {
+        guard !entry.isRunnable else {
+            showLabDemo(.detailPush)
+            return
+        }
         router.push(AccountRoute.labFlow(entry))
     }
 
