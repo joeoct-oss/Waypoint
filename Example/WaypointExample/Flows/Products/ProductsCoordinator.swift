@@ -163,7 +163,7 @@ final class ProductsCoordinator {
                 isPresented: Binding(reading: gate.isShowingAuth(over: sheetRouter), writing: gate.syncAuth),
                 onDismiss: { self.gate.finishAuth(over: sheetRouter) }
             ) {
-                makeAuthFlow(over: sheetRouter)
+                self.makeAuthFlow(over: sheetRouter)
             }
         }
     }
