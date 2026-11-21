@@ -16,7 +16,11 @@ import WaypointCore
 // shows "Your cart is waiting", whose Go to cart the main tabs run as one transaction that leaves
 // the cart pushed above its first product here (`ShopCartRoute`). Save needs an account, so the
 // account gate asks a guest to sign in first; then the product joins the wish list, which the local
-// store keeps, and a small "Saved to your wish list" sheet offers View wish list.
+// store keeps, and a small "Saved to your wish list" sheet offers View wish list. Shop's Wish list
+// button opens the wish list as a sheet for anyone; its "You may also like" Save asks a guest to
+// sign in over the wish list, two sheets deep, and Done on Signed in closes both in one change
+// (`dismissAll`). The wish list's Done closes its own flow (`dismissFlow`), and the saved sheet's
+// Close does the same from the view (`@DismissFlow`).
 //
 // The stack runs on Waypoint: `router`, the tab's stack router from the main tab router, owns the
 // path, `ProductsFlowView` draws it with `WaypointStack`, and a swipe back comes back to the router
@@ -33,6 +37,7 @@ import WaypointCore
 final class ProductsCoordinator {
     private static let followUpDelay = Duration.milliseconds(150)
     private static let linkedProductID = 4
+    private static let suggestionCount = 3
 
     let router: StackRouter
     private let start: ProductsStart
@@ -50,6 +55,9 @@ final class ProductsCoordinator {
     private(set) var sheetRouter: StackRouter?
     // `var` for the same reason as `presentedSheet`: the sizes the router gives the sheet.
     private(set) var sheetOptions: SheetOptions?
+    // `var` because the wish list sheet and Save change it; it copies the local store, which
+    // nothing observes, so the open sheet redraws.
+    private(set) var wishlistProductIDs: [Int]
     // `var` because `playLaunchSteps()` plays them once, and the shop appears again on every tab
     // switch.
     private var hasPlayedLaunchSteps: Bool
@@ -88,6 +96,7 @@ final class ProductsCoordinator {
         presentedSheet = nil
         sheetRouter = nil
         sheetOptions = nil
+        wishlistProductIDs = store.wishlistProductIDs
         hasPlayedLaunchSteps = false
         router.setCoordinator(self)
     }
@@ -141,6 +150,8 @@ final class ProductsCoordinator {
         )
     }
 
+    // The presented sheet, with the accounts flow over it when the wish list asked a guest to sign
+    // in.
     @ViewBuilder
     func makeSheetFlow() -> some View {
         if let sheetRouter, let presentedSheet {
@@ -148,6 +159,12 @@ final class ProductsCoordinator {
                 makeSheetScreen(for: presentedSheet)
             }
             .sheetOptions(sheetOptions)
+            .sheet(
+                isPresented: Binding(reading: gate.isShowingAuth(over: sheetRouter), writing: gate.syncAuth),
+                onDismiss: { self.gate.finishAuth(over: sheetRouter) }
+            ) {
+                makeAuthFlow(over: sheetRouter)
+            }
         }
     }
 
@@ -195,10 +212,21 @@ final class ProductsCoordinator {
         )
     }
 
+    // Shop's Wish list button.
+    func openWishlist() {
+        wishlistProductIDs = store.wishlistProductIDs
+        showSheet(
+            .wishlist,
+            route: WishlistRoute(),
+            style: AppSheets.large
+        )
+    }
+
     // The saved sheet's View wish list: one transaction dismisses the saved sheet's flow and
     // presents the wish list, since a stack shows one presentation at a time. The router changes
     // once, so the open sheet swaps its content and grows instead of closing and opening again.
     func showWishlist() {
+        wishlistProductIDs = store.wishlistProductIDs
         router.transaction {
             $0.dismiss()
             $0.present(WishlistRoute(), style: AppSheets.large)
@@ -222,8 +250,32 @@ final class ProductsCoordinator {
         gate.requireAccount(for: .save) { self.addToWishlist(product) }
     }
 
+    // Save under "You may also like": a guest signs in over the wish list first.
+    func saveFromWishlist(_ product: Product) {
+        guard let sheetRouter else {
+            return
+        }
+        gate.requireAccount(
+            for: .save,
+            over: sheetRouter,
+            then: { self.keep(product) },
+            done: { self.dismissAllSheets() }
+        )
+    }
+
     func dismissSheet() {
         router.dismiss()
+    }
+
+    // Done on Signed in: the wish list and the accounts flow over it close in one change.
+    func dismissAllSheets() {
+        router.dismissAll()
+    }
+
+    // The wish list's Done: the wish list's own router asks the stack that presented it to close
+    // it.
+    func closeWishlist() {
+        sheetRouter?.dismissFlow()
     }
 
     // Takes the system's own dismissal of the sheet, a swipe down.
@@ -236,6 +288,9 @@ final class ProductsCoordinator {
 
     // Drops the sheet's router once the sheet has gone.
     func releaseSheet() {
+        if let sheetRouter {
+            gate.finishAuth(over: sheetRouter)
+        }
         presentedSheet = nil
         sheetRouter = nil
         sheetOptions = nil
@@ -261,10 +316,15 @@ final class ProductsCoordinator {
     }
 
     private func addToWishlist(_ product: Product) {
+        keep(product)
+        showSaved()
+    }
+
+    private func keep(_ product: Product) {
         if !store.wishlistProductIDs.contains(product.id) {
             store.wishlistProductIDs.append(product.id)
         }
-        showSaved()
+        wishlistProductIDs = store.wishlistProductIDs
     }
 
     // Pushes the launch products in one change, then makes the follow-up change while that push
@@ -310,7 +370,8 @@ final class ProductsCoordinator {
             onGoToCart: { self.goToCart() },
             onSelect: { self.showProduct($0) },
             onSelectCollection: { self.showCollection($0) },
-            onFilter: { self.showFilters() }
+            onFilter: { self.showFilters() },
+            onWishlist: { self.openWishlist() }
         )
         .screenChrome(
             title: MainTab.shop.title,
@@ -351,17 +412,27 @@ final class ProductsCoordinator {
     }
 
     private func makeSavedFlow() -> some View {
-        SavedView(
-            onViewWishlist: { self.showWishlist() },
-            onClose: { self.dismissSheet() }
-        )
+        SavedView(onViewWishlist: { self.showWishlist() })
     }
 
     private func makeWishlistFlow() -> some View {
-        WishlistView(
-            products: Product.products(withIDs: store.wishlistProductIDs),
-            onDone: { self.dismissSheet() }
+        let suggestions = Product.all
+            .filter { !wishlistProductIDs.contains($0.id) }
+            .prefix(Self.suggestionCount)
+        return WishlistView(
+            products: Product.products(withIDs: wishlistProductIDs),
+            suggestions: Array(suggestions),
+            onSave: { self.saveFromWishlist($0) },
+            onDone: { self.closeWishlist() }
         )
+    }
+
+    @ViewBuilder
+    private func makeAuthFlow(over sheetRouter: StackRouter) -> some View {
+        if let auth = gate.auth(over: sheetRouter) {
+            AuthFlowView(auth: auth)
+                .sheetOptions(gate.authSheetOptions)
+        }
     }
 
     private func makeProductFlow(

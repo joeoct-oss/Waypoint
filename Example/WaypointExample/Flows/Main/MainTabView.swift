@@ -27,7 +27,7 @@ struct MainTabView: View {
             isPresented: Binding(reading: main.gate.isShowingAuth, writing: main.gate.syncAuth),
             onDismiss: main.gate.finishAuth
         ) {
-            if let auth = main.gate.presentedAuth {
+            if let auth = main.gate.tabsAuth {
                 main.makeAuthFlow(auth)
                     .sheetOptions(main.gate.authSheetOptions)
             }

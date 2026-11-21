@@ -9,7 +9,7 @@
 import SwiftUI
 
 // Shop: the "Nebula nights" banner, two products picked as cards, then the rest of the shop as
-// rows, with Filter in the navigation bar. The screen reports each choice.
+// rows, with Filter and Wish list in the navigation bar. The screen reports each choice.
 struct ProductListView: View {
     private static let pickedCount = 2
 
@@ -18,6 +18,7 @@ struct ProductListView: View {
     let onSelect: (Product) -> Void
     let onSelectCollection: (ProductCollection) -> Void
     let onFilter: () -> Void
+    let onWishlist: () -> Void
 
     private var picked: [Product] {
         Array(Product.all.prefix(Self.pickedCount))
@@ -76,7 +77,12 @@ struct ProductListView: View {
         }
     }
 
+    @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button("Wish list", systemImage: "heart", action: onWishlist)
+                .accessibilityIdentifier(Identifiers.shopWishlist)
+        }
         ToolbarItem(placement: .topBarTrailing) {
             Button("Filter", systemImage: "line.3.horizontal.decrease", action: onFilter)
                 .accessibilityIdentifier(Identifiers.filterButton)

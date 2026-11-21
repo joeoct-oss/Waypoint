@@ -16,6 +16,7 @@ struct AuthFlowView: View {
         WaypointStack(auth.router) {
             auth.makeSignInFlow()
                 .destination(CreateAccountRoute.self) { auth.makeDestination(for: $0) }
+                .destination(SignedInRoute.self) { _ in auth.makeSignedInFlow() }
         }
         .sheet(
             isPresented: Binding(reading: auth.isShowingSheet, writing: auth.syncSheet),
