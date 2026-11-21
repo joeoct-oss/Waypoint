@@ -216,7 +216,7 @@ final class JourneyTests: XCTestCase {
         let app = ExampleApp.launch()
         app.openTab(Self.accountTitle)
         let wishlist = app.buttons[Identifiers.accountWishlist]
-        XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout), "Account has no Wish list row")
         XCTAssertTrue(wishlist.label.contains(Self.needsAccount), wishlist.label)
         wishlist.tap()
 
@@ -224,10 +224,15 @@ final class JourneyTests: XCTestCase {
             password: Self.password,
             in: app
         )
-        XCTAssertTrue(app.navigationBars[Self.wishlistTitle].waitForExistence(timeout: UITestSteps.timeout))
+        // The gate pushes the wish list only once the sheet has slid away, so wait for that first.
+        let sheet = app.buttons[Identifiers.signInButton]
+        XCTAssertTrue(sheet.waitForNonExistence(timeout: UITestSteps.timeout), "the sign-in sheet stayed")
+        let wishlistBar = app.navigationBars[Self.wishlistTitle]
+        XCTAssertTrue(wishlistBar.waitForExistence(timeout: UITestSteps.timeout), "the wish list didn't push")
         app.goBack()
 
-        XCTAssertTrue(app.navigationBars[Self.accountTitle].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(wishlistBar.waitForNonExistence(timeout: UITestSteps.timeout), "Back stayed on the wish list")
+        XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout), "Account lost its Wish list row")
         XCTAssertTrue(wishlist.label.contains(Self.savedCount), wishlist.label)
     }
 
