@@ -32,6 +32,8 @@ final class JourneyTests: XCTestCase {
     private static let cartProductID = 1
     private static let cartProductTitle = "Orbit Lamp"
     private static let savedProductID = 2
+    private static let savedSearch = "mug"
+    private static let savedSearchResultCount = "1 result"
     private static let orderID = 1042
     private static let ordersTitle = "Orders"
     private static let newAddressLabel = "Studio"
@@ -96,8 +98,7 @@ final class JourneyTests: XCTestCase {
 
     func testSaveAsksGuestToCreateAccount() {
         let app = ExampleApp.launch()
-        app.openTab(Self.searchTitle)
-        app.buttons[Identifiers.product(id: Self.savedProductID)].tapWhenReady()
+        openSavedProduct(in: app)
         app.buttons[Identifiers.productSave].tapWhenReady()
         app.buttons[Identifiers.signInCreateAccount].tapWhenReady()
 
@@ -112,8 +113,8 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.signUpContinue].tapWhenReady()
         app.buttons[Identifiers.signUpContinue].tapWhenReady()
 
-        let wishlist = app.descendants(matching: .any)[Identifiers.wishlist]
-        XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout))
+        let saved = app.descendants(matching: .any)[Identifiers.savedSheet]
+        XCTAssertTrue(saved.waitForExistence(timeout: UITestSteps.timeout))
     }
 
     func testResetPasswordSheet() {
@@ -131,15 +132,29 @@ final class JourneyTests: XCTestCase {
         XCTAssertFalse(sent.exists)
     }
 
+    // MA-01: a recent search fills the field and lists its results under a count, a result opens
+    // the product, Save shows the small saved sheet, and View wish list swaps it for the wish list.
     func testSearchOpenAndSave() {
         let app = ExampleApp.launch(signedIn: true)
 
-        app.openTab(Self.searchTitle)
-        app.buttons[Identifiers.product(id: Self.savedProductID)].tapWhenReady()
+        openSavedProduct(in: app)
         app.buttons[Identifiers.productSave].tapWhenReady()
+        app.buttons[Identifiers.viewWishlist].tapWhenReady()
 
         let wishlist = app.descendants(matching: .any)[Identifiers.wishlist]
         XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertFalse(app.descendants(matching: .any)[Identifiers.savedSheet].exists)
+    }
+
+    // MA-02: an empty cart says so, and Browse the shop opens Shop.
+    func testEmptyCartBrowsesShop() {
+        let app = ExampleApp.launch(signedIn: true)
+
+        app.openTab(Self.cartTitle)
+        app.buttons[Identifiers.browseShop].tapWhenReady()
+
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertFalse(app.buttons[Identifiers.checkout].exists)
     }
 
     func testCheckoutFromCartTab() {
@@ -266,6 +281,16 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(app.navigationBars[Self.cartProductTitle].waitForExistence(timeout: UITestSteps.timeout))
         app.goBack()
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    // Opens Search, taps the recent search for the mug, waits for its one result, then opens it.
+    private func openSavedProduct(in app: XCUIApplication) {
+        app.openTab(Self.searchTitle)
+        app.buttons[Identifiers.recentSearch(Self.savedSearch)].tapWhenReady()
+        let count = app.staticTexts[Identifiers.searchResultCount]
+        XCTAssertTrue(count.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertEqual(count.label, Self.savedSearchResultCount)
+        app.buttons[Identifiers.product(id: Self.savedProductID)].tapWhenReady()
     }
 
     private func addProductToCart(in app: XCUIApplication) {

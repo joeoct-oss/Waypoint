@@ -98,9 +98,19 @@ struct WishlistRoute: TrackableScreen {
     static let screenName = "Wish list"
 }
 
-// A sheet a products stack can present: the filters over the shop, or the wish list over a
-// product. The sheet's router draws one of these until the sheet has slid away.
+// The small "Saved to your wish list" sheet, presented over a product by Save.
+//
+// Conformances:
+// - `TrackableScreen`, a `Route` the journey log names "Saved".
+struct SavedRoute: TrackableScreen {
+    static let screenName = "Saved"
+}
+
+// A sheet a products stack can present: the filters over the shop, or, over a product, the saved
+// sheet and the wish list that replaces it. The sheet's router draws one of these until the sheet
+// has slid away.
 enum ProductSheet {
     case filters
+    case saved
     case wishlist
 }
