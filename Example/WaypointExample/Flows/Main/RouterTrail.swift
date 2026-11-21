@@ -116,6 +116,7 @@ extension TrailStep where Self: TrackableScreen {
 }
 
 // Every route the example app's trail names. A route left out reads by its type name.
+@MainActor
 enum TrailStepTypes {
     static let all: [any TrailStep.Type] = [
         ProductRoute.self,
