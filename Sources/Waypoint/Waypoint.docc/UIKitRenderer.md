@@ -77,7 +77,7 @@ A presented flow is drawn by `UIKitFlowRenderer` when the flow chooses it (C4, #
 
 ### Tabs and roots
 
-`UIKitTabRenderer` draws a tab coordinator with a `UITabBarController` (C4, #50), and `UIKitRootRenderer` draws the app coordinator's roots, with a cross-fade when it switches (C4, #220). Each tab hosts its stack coordinator's `view`, drawn by whichever renderer that coordinator uses.
+`UIKitTabRenderer` draws a tab coordinator with a `UITabBarController` (C4, #50), and `UIKitRootRenderer` draws the app coordinator's roots, with a cross-fade when it switches (C4, #220). Each tab hosts its stack coordinator's `view`, drawn by whichever renderer that coordinator uses. Tab labels written with SwiftUI's `.tabItem` work only in the SwiftUI tab renderer. How a tab coordinator gives its labels to the UIKit one is designed in #50.
 
 ### A UIKit app
 

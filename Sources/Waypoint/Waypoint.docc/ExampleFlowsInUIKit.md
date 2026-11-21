@@ -63,7 +63,7 @@ final class LoginCoordinator: StackCoordinator {
 
 ### 2. Tabs, one stack each
 
-`MainTabsCoordinator` is the same as in the SwiftUI example. Its tabs are drawn by the default tab renderer, which is SwiftUI's until the UIKit tab renderer lands (C4, #50). Each tab shows its stack coordinator's `view`, drawn by whichever renderer that coordinator uses.
+`MainTabsCoordinator` is the same as in the SwiftUI example. Its tabs are drawn by the default tab renderer, which is SwiftUI's until the UIKit tab renderer lands (C4, #50). Each tab shows its stack coordinator's `view`, drawn by whichever renderer that coordinator uses. Its tab labels are SwiftUI's `.tabItem`, so they need the SwiftUI tab renderer: how a tab coordinator gives its labels to a `UITabBarController` is designed with the UIKit tab renderer in #50.
 
 ### 3. A detail push
 
