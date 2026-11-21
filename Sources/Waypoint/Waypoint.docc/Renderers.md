@@ -45,7 +45,7 @@ final class ShopCoordinator: StackCoordinator {
 
 `ProductView` is a SwiftUI view and `ScannerViewController` is a `UIViewController`. Both work in either renderer: the SwiftUI renderer shows a controller through a representable, and the UIKit renderer shows a SwiftUI view in a `UIHostingController`.
 
-A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: the router (made the first time it is read, and released when the flow ends), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer.
+A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made the first time it is read, and released when the flow ends; the app coordinator and a tab coordinator declare theirs, because only the app knows its first root or tab), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer.
 
 ```swift
 /// App code that owns one stack flow, with its screens.
@@ -78,6 +78,22 @@ public protocol StackCoordinator: AnyObject {
 
 /// A screen: any SwiftUI `View` or any `UIViewController`, through two builder overloads.
 public protocol Screen { }
+
+/// Builds a coordinator's `root` from a SwiftUI view or a view controller.
+@resultBuilder
+public enum ScreenBuilder {
+    public static func buildBlock<V: View>(_ view: V) -> some Screen
+    public static func buildBlock<C: UIViewController>(_ controller: C) -> some Screen
+}
+
+/// A group of destinations, built with `@DestinationsBuilder`.
+public protocol Destinations { }
+
+/// Builds a coordinator's `destinations` from `Destination` and `Flow` entries.
+@resultBuilder
+public enum DestinationsBuilder {
+    /* blocks, conditions and loops */
+}
 
 /// Registers one route type's screen inside a coordinator.
 ///
@@ -119,10 +135,29 @@ public protocol TabCoordinator: AnyObject {
     associatedtype Renderer: TabRenderer = DefaultTabRenderer
 
     /// The screen for one tab, usually one of the coordinator's stack coordinators' `view`.
-    /// Waypoint infers `Tab` from it.
     @ViewBuilder func makeTabFlow(for tab: Tab) -> TabContent
     /// The tabs, drawn by `Renderer`. Default: filled in by Waypoint.
     var view: Renderer { get }
+}
+```
+
+A flow that stands for a route is a `Flow` entry in `destinations`. Its factory builds the flow's coordinator, and its handler receives the result (#60):
+
+```swift
+/// Registers a route that opens a child flow, and the handler for the flow's result.
+///
+/// Conformances:
+/// - `Destinations`, so it can be listed in a coordinator's destinations.
+/// - `R: Route`: the route that stands for the flow.
+/// - `C: FlowCoordinator`: the flow's coordinator.
+public struct Flow<R: Route, C: FlowCoordinator>: Destinations {
+    /// `presentation` is how `router.show(_:)` shows the flow. Default: `nil`, a push.
+    public init(
+        _ type: R.Type,
+        presentation: PresentationStyle? = nil,
+        _ make: @escaping @MainActor (R) -> C,
+        onResult: @escaping @MainActor (FlowResult<C.Output>) -> Void
+    )
 }
 ```
 

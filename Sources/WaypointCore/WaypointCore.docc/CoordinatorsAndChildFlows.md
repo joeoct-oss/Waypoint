@@ -26,7 +26,7 @@ final class ShopCoordinator: StackCoordinator {
 }
 ```
 
-The coordinator doesn't declare its router. Waypoint makes it the first time it is read, names it after the coordinator, and releases it when the flow ends. A coordinator that declares `let router = StackRouter()` uses its own, as tests do.
+A stack or flow coordinator doesn't declare its router. Waypoint makes it the first time it is read, names it after the coordinator, and releases it when the flow ends. A coordinator that declares `let router = StackRouter()` uses its own, as tests do.
 
 There is one coordinator protocol for each kind, and it is the same in SwiftUI and UIKit apps. The `Waypoint` product adds the screens: `root` and `destinations`, which take SwiftUI views or UIKit view controllers, and `view`, the whole flow drawn by a renderer you can choose. See "Coordinators and renderers" in the `Waypoint` catalog. The parts below have no UI, so a coordinator's logic is tested on Linux.
 
@@ -53,7 +53,8 @@ public protocol TabCoordinator: AnyObject {
     /// - `NavigationTab`, the app's tab type.
     associatedtype Tab: NavigationTab
 
-    /// The router this coordinator owns. Default: made the first time it is read.
+    /// The router this coordinator owns. No default, because only the app knows which tab
+    /// is selected first, such as `let router = TabRouter(selection: MainTab.home)`.
     var router: TabRouter<Tab> { get }
 }
 
@@ -91,7 +92,8 @@ public protocol RootCoordinator: AnyObject {
     /// - `Hashable`, `Codable` and `Sendable`, required by `RootRouter`.
     associatedtype Root: NavigationRoot
 
-    /// The router this coordinator owns. Default: made the first time it is read.
+    /// The router this coordinator owns. No default, because only the app knows its first
+    /// root, such as `let router = RootRouter(AppRoot.login)`.
     var router: RootRouter<Root> { get }
 
     /// Where incoming links go, or `nil` if the app takes no links.
