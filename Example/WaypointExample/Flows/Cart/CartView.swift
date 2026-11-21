@@ -59,6 +59,8 @@ struct CartView: View {
                 .accessibilityIdentifier(Identifiers.browseShop)
         }
         .background(Palette.background.color)
+        // Contains its children, so Browse the shop keeps its own identifier.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(Identifiers.cartEmpty)
     }
 
