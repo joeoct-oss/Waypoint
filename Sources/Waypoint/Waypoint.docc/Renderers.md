@@ -168,7 +168,7 @@ public struct Flow<R: Route, C: FlowCoordinator>: Destinations {
 
 Every coordinator has a `view`: the whole flow, drawn by its renderer. `ShopCoordinator().view` is the shop's stack with all its screens. A parent shows a child's `view` wherever the child's flow goes, and an existing app shows a Waypoint flow anywhere the same way (#151).
 
-`viewController` is a `UIHostingController` around `view`, for any UIKit place that needs a controller. With the UIKit renderer inside, the screens are still drawn by a real `UINavigationController`.
+`viewController` is a `UIHostingController` around `view`, for any UIKit place that needs a controller. `viewController`, view controller screens and the UIKit renderers exist only where UIKit does: their code sits behind `#if canImport(UIKit)`, so the package still builds on macOS and Linux. With the UIKit renderer inside, the screens are still drawn by a real `UINavigationController`.
 
 SwiftUI reads `view` again on every update. The renderer's state is kept for each coordinator, like its router, so every read draws the same stack and the user never loses their place. Drawing the same coordinator in two places at once reports it in debug and draws only the first.
 

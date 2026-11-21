@@ -109,7 +109,7 @@ A child coordinator's router joins its parent's tree before any call or link rea
 
 Create child coordinators once and keep them in their parent coordinator, not inside a view's `body`, so a flow keeps its state while the screen redraws.
 
-A coordinator's closures, such as a screen's output or a `Flow(...)` entry's `onResult:` handler, may capture `self`. Waypoint keeps them with the flow's router and drops them when the flow ends, so no cycle outlives the flow. `[weak self]`, as UIKit code often writes, works too. A leak test for each kind of flow is part of #59.
+A coordinator's closures, such as a screen's output or a `Flow(...)` entry's `onResult:` handler, may capture `self`. Waypoint keeps them with the flow's router and drops them when the flow ends, and for the window's own flows when the window's scene goes away, so no cycle outlives the flow. `[weak self]`, as UIKit code often writes, works too. A leak test for each kind of flow is part of #59.
 
 ### A coordinator as its own flow type
 
