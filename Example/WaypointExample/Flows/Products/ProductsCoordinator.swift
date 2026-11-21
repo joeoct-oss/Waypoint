@@ -62,10 +62,6 @@ final class ProductsCoordinator {
     // switch.
     private var hasPlayedLaunchSteps: Bool
 
-    var issues: IssueLog {
-        navigation.issues
-    }
-
     // Whether the filters or the wish list is presented over the stack.
     var isShowingSheet: Bool {
         router.presented != nil

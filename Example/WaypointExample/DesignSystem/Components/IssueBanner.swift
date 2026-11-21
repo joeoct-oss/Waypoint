@@ -27,6 +27,8 @@ struct IssueBanner: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier(Identifiers.navigationIssue)
                 .accessibilityValue(BuildConfiguration.name)
+                // Only shows, so a tap reaches the screen under it.
+                .allowsHitTesting(false)
         }
     }
 }

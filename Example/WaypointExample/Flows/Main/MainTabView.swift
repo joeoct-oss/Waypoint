@@ -34,8 +34,10 @@ struct MainTabView: View {
         }
     }
 
+    // The newest navigation issue shows over every tab, above the tab bar.
     private func tabContent(for tab: MainTab) -> some View {
         main.makeTabFlow(for: tab)
+            .overlay(alignment: .bottom) { IssueBanner(issues: main.issues) }
             .tabItem { Label(tab.title, systemImage: tab.symbolName) }
             .badge(main.badge(for: tab))
             .tag(tab)

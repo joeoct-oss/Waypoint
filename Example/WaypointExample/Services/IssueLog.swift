@@ -10,8 +10,9 @@ import Observation
 import WaypointCore
 
 // The newest navigation issue Waypoint logged at `.error` or above, such as a system link pushing
-// inside a Waypoint stack. Every window's routers log to it, and the products stacks show it in a
-// banner, so a reader, or a UI test, sees it in debug and release builds alike.
+// inside a Waypoint stack, or a call a fallback recovered. Every window's routers log to it, and
+// every tab shows it in a banner, so a reader, or a UI test, sees it in debug and release builds
+// alike. It also counts the calls no fallback recovered.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so the banner appears when an issue arrives.
@@ -20,13 +21,21 @@ import WaypointCore
 final class IssueLog {
     // `var` because each issue logged replaces it. Only `record(_:)` changes it.
     private(set) var latest: String?
+    // `var` because the configuration's `onNavigationFailure` counts each call no fallback
+    // recovered. Only `recordFailure(_:)` changes it.
+    private(set) var failureCount: Int
 
     init() {
         latest = nil
+        failureCount = 0
     }
 
     func record(_ text: String) {
         latest = text
+    }
+
+    func recordFailure(_ failure: NavigationFailure) {
+        failureCount += 1
     }
 }
 

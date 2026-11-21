@@ -9,8 +9,8 @@
 import SwiftUI
 import Waypoint
 
-// Draws a products stack and its sheets from their coordinator, with the newest navigation issue
-// over the stack when there is one. The stack hides the tab bar on every screen pushed above the
+// Draws a products stack and its sheets from their coordinator; the main tabs show the newest
+// navigation issue over it. The stack hides the tab bar on every screen pushed above the
 // tab's root.
 struct ProductsFlowView: View {
     let products: ProductsCoordinator
@@ -24,7 +24,6 @@ struct ProductsFlowView: View {
                 .task { await products.playLaunchSteps() }
         }
         .tabBarOnPushedScreens(.hidden)
-        .overlay(alignment: .bottom) { IssueBanner(issues: products.issues) }
         .sheet(
             isPresented: Binding(reading: products.isShowingSheet, writing: products.syncSheet),
             onDismiss: products.releaseSheet

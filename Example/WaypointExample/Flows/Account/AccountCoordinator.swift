@@ -15,7 +15,9 @@ import WaypointCore
 // `events`. Orders, the wish list and Addresses need an account, so the account gate asks a guest
 // to sign in first. Add a new address pushes the form; saving keeps the address in the address
 // book, which checkout shares, and goes back to the list. Sign out, in Settings, ends the session
-// and goes back to Account, which then shows the guest prompt; the reader stays in the app. Clear
+// and goes back to Account, which then shows the guest prompt; the reader stays in the app.
+// Settings also shows the app's navigation rules, and tries the two calls their fallbacks recover:
+// going back to a screen that isn't in the stack, and opening sign in while it is up. Clear
 // all data reports to the app coordinator, which clears the store and starts the window over.
 //
 // The stack runs on Waypoint: `router` is the account tab's stack router from the main tab router,
@@ -37,6 +39,8 @@ final class AccountCoordinator {
     private let gate: AccountGate
     private let onClearAllData: () -> Void
     private let events: EventLog
+    private let rules: NavigationRules
+    private let issues: IssueLog
     private let describeTree: @MainActor () -> String
     // Runs the Lab's view and view-model demos, each full screen on a Waypoint stack of its own.
     let labDemos: LabDemoCoordinator
@@ -49,6 +53,8 @@ final class AccountCoordinator {
         addressBook: AddressBook,
         gate: AccountGate,
         navigation: NavigationConfiguration,
+        rules: NavigationRules,
+        issues: IssueLog,
         events: EventLog,
         describeTree: @escaping @MainActor () -> String,
         onClearAllData: @escaping () -> Void
@@ -59,6 +65,8 @@ final class AccountCoordinator {
         self.gate = gate
         self.onClearAllData = onClearAllData
         self.events = events
+        self.rules = rules
+        self.issues = issues
         self.describeTree = describeTree
         self.router = router
         labDemos = LabDemoCoordinator(navigation: navigation)
@@ -215,6 +223,19 @@ final class AccountCoordinator {
         router.popToRoot()
     }
 
+    // Settings' "Go back to Orders": Orders isn't in the stack, so the call fails and the app's
+    // fallback pops to Account instead, which the issue banner and the event log show.
+    func tryMissingPop() {
+        router.popTo(AccountRoute.orders)
+    }
+
+    // Settings' "Open sign in twice": the second present fails because sign in is already up, and
+    // the app's fallback replaces the first sheet with the second in one change.
+    func tryPresentTwice() {
+        gate.showSignIn()
+        gate.showSignIn()
+    }
+
     func clearAllData() {
         onClearAllData()
     }
@@ -283,7 +304,15 @@ final class AccountCoordinator {
             isSignedIn: session.account != nil,
             onShowLab: { self.showLab() },
             onClearAllData: { self.clearAllData() },
-            onSignOut: { self.signOut() }
+            onSignOut: { self.signOut() },
+            rules: SettingsRules(
+                pushesTwice: rules.duplicatePushRule == .allow,
+                queueLimit: rules.queueLimit,
+                failureCount: issues.failureCount,
+                onSetPushesTwice: { self.rules.setPushesTwice($0) },
+                onTryMissingPop: { self.tryMissingPop() },
+                onTryPresentTwice: { self.tryPresentTwice() }
+            )
         )
     }
 

@@ -11,7 +11,8 @@ import WaypointCore
 
 // The services every window shares: the local store, the session, the saved addresses, the auth
 // service, and the navigation configuration each stack router gets, which logs to the unified log,
-// logs navigation issues to `issues` and every call to `events`. When a UI test links to a route
+// logs navigation issues to `issues` and every call to `events`, and counts in `issues` each call
+// that failed with no fallback to recover it (`onNavigationFailure`). When a UI test links to a route
 // with no destination, the configuration's registry lists that route, so the router lets the push
 // through and the stack shows its missing-destination screen. The `App` makes them once and hands
 // them to each window's app coordinator. `clearAll()` removes everything the app keeps, signs the
@@ -46,7 +47,8 @@ final class AppServices {
         self.events = events
         navigation = NavigationConfiguration(
             logging: logging,
-            registry: Self.makeRegistry(for: launch)
+            registry: Self.makeRegistry(for: launch),
+            onNavigationFailure: { issues.recordFailure($0) }
         )
     }
 

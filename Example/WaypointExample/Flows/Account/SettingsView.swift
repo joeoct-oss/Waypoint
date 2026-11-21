@@ -10,13 +10,21 @@ import SwiftUI
 
 // Settings (AU-05, AU-06): App (Appearance and Notifications), Developer (the Navigation Lab for
 // trying every demo flow, and Clear all data, which asks to confirm next to the button), About (the
-// version) and, for a signed-in reader, Sign out. The screen reports each choice to the account
-// coordinator.
+// version) and, for a signed-in reader, Sign out. Navigation rules (#280) shows the duplicate push
+// rule, which it can change for testing, the queued-call limit and how many calls failed with no
+// fallback, and tries the two calls the app's fallbacks recover. The screen reports each choice to
+// the account coordinator.
 struct SettingsView: View {
+    private static let rulesTitle = "Navigation rules"
+    private static let pushesTwiceTitle = "Double tap pushes twice"
+    private static let rulesFooter = "A double tap pushes once by default. The two calls below fail, "
+        + "and the app's fallbacks recover them: the issue banner and the Lab's event log show it."
+
     let isSignedIn: Bool
     let onShowLab: () -> Void
     let onClearAllData: () -> Void
     let onSignOut: () -> Void
+    let rules: SettingsRules
 
     // `var` because the toggle changes it; the sample app keeps it for this screen only.
     @State private var notifies = true
@@ -45,12 +53,32 @@ struct SettingsView: View {
             } footer: {
                 Text("Try every navigation flow in SwiftUI and UIKit, or start over as a fresh install.")
             }
+            rulesSection
             Section("About") {
                 LabeledContent("Version", value: version)
             }
             signOutSection
         }
         .exampleList()
+    }
+
+    private var rulesSection: some View {
+        Section {
+            Toggle(Self.pushesTwiceTitle, isOn: Binding(reading: rules.pushesTwice, writing: rules.onSetPushesTwice))
+                .accessibilityIdentifier(Identifiers.duplicatePushRule)
+            LabeledContent("Queued calls limit", value: rules.queueLimit, format: .number)
+                .accessibilityIdentifier(Identifiers.queueLimit)
+            LabeledContent("Calls not recovered", value: rules.failureCount, format: .number)
+                .accessibilityIdentifier(Identifiers.failureCount)
+            Button("Go back to Orders", action: rules.onTryMissingPop)
+                .accessibilityIdentifier(Identifiers.tryMissingPop)
+            Button("Open sign in twice", action: rules.onTryPresentTwice)
+                .accessibilityIdentifier(Identifiers.tryPresentTwice)
+        } header: {
+            Text(Self.rulesTitle)
+        } footer: {
+            Text(Self.rulesFooter)
+        }
     }
 
     private var labButton: some View {
@@ -102,4 +130,15 @@ struct SettingsView: View {
     private func confirmClear() {
         isConfirmingClear = true
     }
+}
+
+// What Settings shows of the app's navigation rules, and what it reports.
+struct SettingsRules {
+    // Whether the duplicate push rule is `.allow`, so a second push of the same route goes ahead.
+    let pushesTwice: Bool
+    let queueLimit: Int
+    let failureCount: Int
+    let onSetPushesTwice: (Bool) -> Void
+    let onTryMissingPop: () -> Void
+    let onTryPresentTwice: () -> Void
 }

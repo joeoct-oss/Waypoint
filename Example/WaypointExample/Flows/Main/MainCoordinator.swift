@@ -27,6 +27,8 @@ final class MainCoordinator {
     let search: ProductsCoordinator
     let cart: CartCoordinator
     let account: AccountCoordinator
+    // The navigation issues every tab shows in its banner.
+    let issues: IssueLog
 
     // The account gate's notice over the tabs. While checkout is up, its cover shows the notice
     // instead, so the reader sees one toast, not two.
@@ -46,6 +48,7 @@ final class MainCoordinator {
             configuration: services.navigation
         )
         tabs.setPresentationDefaults(AppSheets.defaults)
+        let rules = NavigationRules(tabs: tabs)
         let gate = AccountGate(
             session: services.session,
             service: services.auth,
@@ -69,12 +72,12 @@ final class MainCoordinator {
         )
         let navigation = ProductsNavigation(
             configuration: services.navigation,
-            issues: services.issues,
             usesSystemLinks: launch.usesSystemLinks,
             linksToMissingDestination: launch.linksToMissingDestination
         )
         self.gate = gate
         self.tabs = tabs
+        issues = services.issues
         self.cart = cart
         shop = ProductsCoordinator(
             start: .browse,
@@ -104,6 +107,8 @@ final class MainCoordinator {
             addressBook: services.addresses,
             gate: gate,
             navigation: services.navigation,
+            rules: rules,
+            issues: services.issues,
             events: services.events,
             describeTree: { [tabs] in tabs.debugTree() },
             onClearAllData: onClearAllData
