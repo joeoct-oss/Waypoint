@@ -304,7 +304,7 @@ final class MainTabsCoordinator: TabCoordinator {
 }
 ```
 
-No router is passed by hand: each tab's stack coordinator joins the tab router when the tab coordinator first draws it, and a router read earlier, such as in a test, joins with the screens it already has (built in #59). `makeTabFlow(for:)` has a `switch` over your tab enum, one `make…Flow()` call per case. That is fine here: it lists the tabs once, in one place, not every screen. Apps draw their own tab labels. See <doc:ExampleFlows>.
+No router is passed by hand: each tab's stack coordinator joins the tab router as soon as the tab coordinator joins the tree, before any call or link reaches it, so `router(for:)` returns that same router from the start. A router read earlier, such as in a test, works on its own and keeps its screens when it joins (built in #59). `makeTabFlow(for:)` has a `switch` over your tab enum, one `make…Flow()` call per case. That is fine here: it lists the tabs once, in one place, not every screen. Apps draw their own tab labels. See <doc:ExampleFlows>.
 
 The lower-level view draws a `TabRouter` with a closure, for tabs that no coordinator runs:
 

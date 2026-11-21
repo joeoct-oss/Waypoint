@@ -6,7 +6,7 @@ Keep one stack per tab, and switch tabs from code or a deep link.
 
 `TabRouter` owns a tab container. Each tab has its own child router, so every tab keeps its own stack when the user switches away and back.
 
-> Note: Draft until #59 (2026-11-21). In a tab coordinator, each tab's stack coordinator has its own router, which joins the tab router as that tab's child router when the tab coordinator first draws it. `router(for:)` then returns that same router, so code that reaches a tab through the tab router and code that goes through the tab's coordinator move the same stack. See <doc:CoordinatorsAndChildFlows>.
+> Note: Draft until #59 (2026-11-21). In a tab coordinator, each tab's stack coordinator has its own router, which joins the tab router as soon as the tab coordinator joins the tree, before any call or link reaches it, so `router(for:)` returns that same router from the start. A router read earlier, such as in a test, works on its own and keeps its screens when it joins. So code that reaches a tab through the tab router and code that goes through the tab's coordinator move the same stack. See <doc:CoordinatorsAndChildFlows>.
 
 ```swift
 // Conformances:

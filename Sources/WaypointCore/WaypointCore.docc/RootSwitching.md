@@ -132,15 +132,15 @@ The app coordinator's `makeFlow(for:)` decides which flow each root shows:
 public protocol RootCoordinator: AnyObject {
     /// Conformances:
     /// - `RootFlow`: a coordinator that can fill the window, such as a stack or tab coordinator.
-    associatedtype Flow: RootFlow
+    associatedtype RootFlowCoordinator: RootFlow
 
     /// Returns the coordinator of the flow that `root` shows. Waypoint calls it once each time
     /// the root switches, and draws the coordinator's `view`.
-    @RootFlowBuilder func makeFlow(for root: Root) -> Flow
+    @RootFlowBuilder func makeFlow(for root: Root) -> RootFlowCoordinator
 }
 ```
 
-`makeFlow(for:)` has a `switch` with one `make…Flow()` call per root, and each case can return a different kind of coordinator, as `@ViewBuilder` allows different views. The names `RootFlow` and `RootFlowBuilder` are drafts, settled in #37. See "Coordinators and renderers" in the `Waypoint` catalog for the window entries. `RootRouter` can also be used on its own, as a lower-level building block, but the app coordinator is the place to start.
+`makeFlow(for:)` has a `switch` with one `make…Flow()` call per root, and each case can return a different kind of coordinator, as `@ViewBuilder` allows different views. The names `RootFlow`, `RootFlowCoordinator` and `RootFlowBuilder` are drafts, settled in #37. See "Coordinators and renderers" in the `Waypoint` catalog for the window entries. `RootRouter` can also be used on its own, as a lower-level building block, but the app coordinator is the place to start.
 
 ### Resuming a link after login
 
