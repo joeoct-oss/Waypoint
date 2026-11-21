@@ -160,6 +160,13 @@ public struct Flow<R: Route, C: FlowCoordinator>: Destinations {
         _ make: @escaping @MainActor (R) -> C,
         onResult: @escaping @MainActor (FlowResult<C.Output>) -> Void
     )
+
+    /// The same with no handler: the result goes to the call that awaits it.
+    public init(
+        _ type: R.Type,
+        presentation: PresentationStyle? = nil,
+        _ make: @escaping @MainActor (R) -> C
+    )
 }
 ```
 
@@ -220,7 +227,7 @@ public protocol StackRenderer: View {
 
 Both renderers of a kind read the same router and follow the same contract with it. Switching renderers never changes how navigation behaves, only how it is drawn. `SwiftUIStackRenderer` draws with `WaypointStack`, so everything <doc:SwiftUIRenderer> says about stacks holds for it.
 
-**Defaults.** Each kind's default renderer (`DefaultStackRenderer` and the others) picks the best renderer for the system the app runs on, once, when the coordinator is first drawn, so the choice never changes while the app runs. "Best" comes from evidence: a scorecard of known problems for each renderer, kind and system. Today every default is the SwiftUI renderer, on every system. A default changes only in a minor release, with a changelog line and the scorecard row behind it. In 0.x any release may change one, so an app that wants no change sets its renderers itself.
+**Defaults.** Each kind's default renderer (`DefaultStackRenderer` and the others) picks the best renderer for the system the app runs on, once, when the coordinator is first drawn, so the choice never changes while the app runs. "Best" comes from evidence: the problems each renderer is known to have for each kind and system, measured on real devices and simulators. Today every default is the SwiftUI renderer, on every system. A default changes only in a minor release, with a changelog line that names the problems behind it. In 0.x any release may change one, so an app that wants no change sets its renderers itself.
 
 ### Choosing a renderer
 
@@ -270,7 +277,7 @@ Renderers of different kinds work in one tree: a UIKit tab bar can hold SwiftUI 
 
 **The environment.** Screens hosted by the UIKit renderer receive the app's SwiftUI environment where the renderer sits, and redraw when it changes. Waypoint adds its own values for each screen (its router, flow and settings), so the property wrappers in <doc:NavigatingFromViewsAndViewModels> work in both renderers.
 
-**Screen chrome.** Titles, toolbars, the back button, search and `tabBarOnPushedScreens(_:motion:)` follow a contract that both renderers are tested against (#253). Inside a `UINavigationController`, iOS doesn't show every SwiftUI modifier on its own: today the UIKit stack renderer doesn't show a SwiftUI screen's `navigationTitle`, and on iOS 27 its `toolbar` and `searchable` either. Until #253 closes that gap, a row a renderer can't support counts against it on the scorecard and reports an issue in debug, never a silent difference. The defaults stay SwiftUI meanwhile.
+**Screen chrome.** Titles, toolbars, the back button, search and `tabBarOnPushedScreens(_:motion:)` follow a contract that both renderers are tested against (#253). Inside a `UINavigationController`, iOS doesn't show every SwiftUI modifier on its own: today the UIKit stack renderer doesn't show a SwiftUI screen's `navigationTitle`, and on iOS 27 its `toolbar` and `searchable` either. Until #253 closes that gap, a row a renderer can't support counts against it when defaults are chosen, and reports an issue in debug, never a silent difference. The defaults stay SwiftUI meanwhile.
 
 The journey log names each screen in both renderers: a SwiftUI screen by its view, a controller screen by its type name. A route with no destination shows the same missing-destination screen in both.
 
