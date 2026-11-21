@@ -100,7 +100,7 @@ final class LoginCoordinator: StackCoordinator {
 }
 ```
 
-`makeFlow(for:)` returns the coordinator of each root's flow, and Waypoint draws its `view`. It runs once each time the root switches, so each flow is made fresh and released when the root switches away. The app coordinator keeps the router and the inbox, which live as long as the window.
+`makeFlow(for:)` returns the coordinator of each root's flow, and Waypoint draws its `view`. It runs for the first root when `WaypointRoot` attaches the root router, then once each time the root switches, inside `switch(to:)`, before any held link is applied, so each flow is made fresh and released when the root switches away. The app coordinator keeps the router and the inbox, which live as long as the window.
 
 `LoginView` doesn't import Waypoint. It calls `onLoggedIn`, and the rule for what happens next lives in one place you can test.
 
