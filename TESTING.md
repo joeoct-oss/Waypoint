@@ -77,7 +77,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
 | `waypoint-02` | iPhone | 17.5 | `release` (the default `WAYPOINT_IOS17_SIMULATOR`), and iOS 17 checks |
 | `waypoint-03` | iPad | 27.2 | iPad checks only |
 
-- **One run per simulator.** A run holds its simulator alone, from preflight to teardown. Runs are queued: before a Mac run, get a slot for every simulator it uses (`release` uses `waypoint-01` and `waypoint-02`) from whoever keeps the queue, and give the slot back after teardown. The script also refuses a simulator another run holds, with a lock in `${TMPDIR:-/tmp}/waypoint-test-<name>.lock`.
+- **Mac runs are queued, one at a time.** Runs go in the order they ask. The first run takes the simulators it needs (`release` uses `waypoint-01` and `waypoint-02`). Every later run waits until that run has finished its teardown. Then it checks out its own commit, and the script builds and installs that version on the simulator. There is only one clone on the Mac, so a second run at the same time would change the first run's checkout under it, even on another simulator. Ask whoever keeps the queue for your turn before preflight, and say when your teardown is done. The script also refuses a simulator another run holds, with a lock in `${TMPDIR:-/tmp}/waypoint-test-<name>.lock`.
 - **Never create a simulator.** `scripts/test-mac.sh` creates `WAYPOINT_SIMULATOR` when it is missing, so preflight step 4 checks it exists first and the script never gets the chance.
 - **Never delete, erase or rename a simulator**, and never shut down one you don't hold. Shut down only your own, by name: `xcrun simctl shutdown waypoint-01`. Never `xcrun simctl shutdown all`.
 
@@ -128,7 +128,7 @@ Every step runs on the Mac, from the root of the Waypoint package clone, which t
 
 ### Preflight
 
-1. **Hold the slots.** You hold a queue slot for every simulator the tier uses ([The simulators](#3-the-simulators)). Without one, stop and wait for it.
+1. **Have your turn.** The queue has given this run its turn, and the run before it has finished its teardown ([The simulators](#3-the-simulators)). Without your turn, stop and wait for it.
 
 2. **Check the tools.**
 
@@ -139,19 +139,18 @@ Every step runs on the Mac, from the root of the Waypoint package clone, which t
 
    Pass: Xcode 16 or later, and a Tuist version. When Tuist is missing, run `scripts/bootstrap.sh` once and check again; if it still fails, stop and report it.
 
-3. **Make a worktree for the exact commit.** Other runs may use the same clone on another simulator, so a run never checks out a branch in `<clone>` itself. It gets its own worktree next to the clone:
+3. **Check out the exact commit.**
 
    ```sh
    cd <clone>
+   git status --porcelain
    git fetch origin main <branch>
-   SHA=$(git rev-parse origin/<branch>)
-   WORKTREE="$(dirname "$PWD")/worktrees/$SHA"
-   git worktree add --detach "$WORKTREE" "$SHA"
-   cd "$WORKTREE"
+   git checkout --detach origin/<branch>
+   git rev-parse HEAD
    git merge-base --is-ancestor origin/main HEAD && echo "contains main"
    ```
 
-   Pass: the worktree is made and the last command prints `contains main` (for a merge gate; while working, write down that it doesn't). Every later step runs inside `$WORKTREE`.
+   Pass: `git status --porcelain` prints nothing before the checkout, and the last command prints `contains main` (for a merge gate; while working, write down that it doesn't). Write down the commit from `git rev-parse HEAD`. When `git status --porcelain` prints anything, the clone has changes that aren't yours: stop and report them. Never stash, reset or delete them.
 
 4. **Check each simulator exists and is free.** For every simulator the tier uses:
 
@@ -161,7 +160,7 @@ Every step runs on the Mac, from the root of the Waypoint package clone, which t
    ```
 
    - The first command must print exactly one line. It ends with `(Shutdown)` or `(Booted)`. When it prints nothing, the simulator is missing: stop and report it. Never create it.
-   - The second command must print nothing. When it prints the lock, check its holder with `kill -0 "$(cat "${TMPDIR:-/tmp}/waypoint-test-waypoint-01.lock/pid")" && echo running`. When that prints `running`, another run holds the simulator: stop, remove your worktree (teardown step 3), and tell whoever keeps the queue. When it prints nothing, the lock is stale and the script clears it itself; carry on.
+   - The second command must print nothing. When it prints the lock, check its holder with `kill -0 "$(cat "${TMPDIR:-/tmp}/waypoint-test-waypoint-01.lock/pid")" && echo running`. When that prints `running`, another run holds the simulator: stop, put the clone back (teardown step 3), and tell whoever keeps the queue. When it prints nothing, the lock is stale and the script clears it itself; carry on.
    - When the simulator is `(Booted)` and there is no lock, an earlier run left it on. Shut it down by name (`xcrun simctl shutdown waypoint-01`), so this run boots it and shuts it down at the end.
 
 ### Run
@@ -201,16 +200,18 @@ Teardown runs after every run, passed or failed, in this order:
 
 2. **Locks.** `ls -d "${TMPDIR:-/tmp}/waypoint-test-waypoint-01.lock" 2>/dev/null` prints nothing for every simulator the run used. When a lock is still there and no `test-mac.sh` of yours is running, remove that one lock directory.
 
-3. **Worktree.** Keep the log, then remove the worktree:
+3. **Clone.** Keep the log under the commit's name, then put the clone back on `main`:
 
    ```sh
-   cp "$WORKTREE/.build/test-mac.log" "<clone>/.build/test-mac-$SHA.log"
    cd <clone>
-   git worktree remove --force "$WORKTREE"
-   git worktree prune
+   cp .build/test-mac.log ".build/test-mac-$(git rev-parse --short HEAD).log"
+   git checkout main
+   git status --porcelain
    ```
 
-4. **Slots.** Give back each simulator's queue slot.
+   Pass: `git status --porcelain` prints nothing. The build products stay in `.build` and Xcode's DerivedData, so the next run builds only what its commit changed.
+
+4. **Turn.** Tell whoever keeps the queue that this run's teardown is done, so the next run can start.
 
 ## 6. When a run fails
 
@@ -246,7 +247,7 @@ Time: <total seconds>
 Failures: none | <test or step>: <first failure line>, one per line
 Retry: none | <what ran again and what it did>
 Step times: <the table from the end of the log, Mac only>
-Teardown: simulators shut down, locks gone, worktree removed | <what is left>
+Teardown: simulators shut down, locks gone, clone back on main | <what is left>
 ```
 
 ## 8. Never do this
@@ -256,4 +257,5 @@ Teardown: simulators shut down, locks gone, worktree removed | <what is left>
 - Never call a run passed when it didn't print its pass line, when only a retry passed, or when it ran on another commit.
 - Never create, delete, erase or rename a simulator, never shut down one you don't hold, and never run `xcrun simctl shutdown all`.
 - Never remove another run's lock, and never `kill -9` a test run (stop a hung one with `TERM`, as in [Run](#run-1)).
-- Never check out a branch in the shared clone on the Mac; use a worktree.
+- Never start a Mac run before the run ahead of it in the queue has finished its teardown.
+- Never stash, reset or delete changes in the Mac clone that aren't yours.
