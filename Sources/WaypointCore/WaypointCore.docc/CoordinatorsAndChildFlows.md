@@ -105,7 +105,9 @@ public protocol RootCoordinator: AnyObject {
 
 The `Waypoint` product adds `makeFlow(for:)`, which returns the coordinator of each root's flow, and the window entries: `WaypointRoot { … }` in a SwiftUI app and `makeWindow(for:options:)` in a UIKit scene delegate. See <doc:RootSwitching> for a whole app coordinator.
 
-A child coordinator's router joins its parent's tree before any call or link reaches the parent: a tab's stack coordinator joins the tab router as soon as the tab coordinator joins the tree, and a presented or pushed child joins when it starts. A router read earlier, such as in a test, works on its own and keeps its screens when it joins. Waypoint has to know which stack coordinator belongs to which tab before the tabs are drawn. How the tab coordinator tells it, a requirement that maps each tab to its coordinator or a rule over `makeTabFlow(for:)`, is designed in #59.
+### Joining the tree
+
+A child coordinator's router joins its parent's tree before any call or link reaches the parent: a tab's stack coordinator joins the tab router as soon as the tab coordinator joins the tree, so the tab router's `router(for:)` returns that same router from the start, and a presented or pushed child joins when it starts. A router read earlier, such as in a test, works on its own and keeps its screens when it joins. Waypoint has to know which stack coordinator belongs to which tab before the tabs are drawn. How the tab coordinator tells it, a requirement that maps each tab to its coordinator or a rule over `makeTabFlow(for:)`, is designed in #59.
 
 Create child coordinators once and keep them in their parent coordinator, not inside a view's `body`, so a flow keeps its state while the screen redraws.
 

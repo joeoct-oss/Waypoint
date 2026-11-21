@@ -6,7 +6,7 @@ Keep one stack per tab, and switch tabs from code or a deep link.
 
 `TabRouter` owns a tab container. Each tab has its own child router, so every tab keeps its own stack when the user switches away and back.
 
-> Note: Draft until #59. In a tab coordinator, each tab's stack coordinator has its own router, which joins the tab router as soon as the tab coordinator joins the tree, before any call or link reaches it, so `router(for:)` returns that same router from the start. A router read earlier, such as in a test, works on its own and keeps its screens when it joins. So code that reaches a tab through the tab router and code that goes through the tab's coordinator move the same stack. Waypoint has to know which stack coordinator belongs to which tab before the tabs are drawn. How the tab coordinator tells it, a requirement that maps each tab to its coordinator or a rule over `makeTabFlow(for:)`, is designed in #59.
+> Note: Draft until #59. In a tab coordinator, each tab's stack coordinator has its own router, and `router(for:)` returns that same router. See "Joining the tree" in <doc:CoordinatorsAndChildFlows>.
 
 ```swift
 // Conformances:
