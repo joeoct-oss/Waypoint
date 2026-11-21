@@ -141,7 +141,9 @@ public protocol RootCoordinator: AnyObject {
     var view: Renderer { get }
 
     /// Returns the coordinator of the flow that `root` shows. Waypoint calls it once each time
-    /// the root switches, and draws the coordinator's `view`.
+    /// the root switches, inside `switch(to:)`, so the new flow and its routers are in the
+    /// tree before `switch(to:)` returns and before the inbox applies a held link. Waypoint
+    /// then draws the coordinator's `view`.
     @RootFlowBuilder func makeFlow(for root: Root) -> RootFlowCoordinator
 }
 ```
