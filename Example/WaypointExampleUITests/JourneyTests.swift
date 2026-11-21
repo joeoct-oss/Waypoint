@@ -36,6 +36,7 @@ final class JourneyTests: XCTestCase {
     private static let savedSearchResultCount = "1 result"
     private static let orderID = 1042
     private static let ordersTitle = "Orders"
+    private static let needsAccount = "Needs an account"
     private static let newAddressLabel = "Studio"
     private static let newAddressStreet = "9 Nova Lane"
     private static let newAddressCity = "Springfield"
@@ -217,6 +218,8 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.order(id: Self.orderID)].tapWhenReady()
 
         XCTAssertTrue(app.navigationBars["Order \(Self.orderID)"].waitForExistence(timeout: UITestSteps.timeout))
+        let timeline = app.descendants(matching: .any)[Identifiers.orderTimeline]
+        XCTAssertTrue(timeline.exists, "the order shows no timeline")
         XCTAssertTrue(app.waitForTabBar(shown: false), "a pushed account screen showed the tab bar")
         app.goBack()
         XCTAssertTrue(app.navigationBars[Self.ordersTitle].waitForExistence(timeout: UITestSteps.timeout))
@@ -226,13 +229,21 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(app.waitForTabBar(shown: true), "the account tab hid the tab bar")
     }
 
-    func testSignOutKeepsTheApp() {
+    // AU-05: Sign out, in Settings, goes back to Account as a guest: the sign-in prompt, Orders
+    // saying it needs an account, and the tabs still there.
+    func testSignOutStaysAsGuest() {
         let app = ExampleApp.launch(signedIn: true)
         app.openTab(Self.accountTitle)
+        app.buttons[Identifiers.settingsButton].tapWhenReady()
 
-        app.buttons[Identifiers.signOut].tapWhenReady()
+        let signOut = app.buttons[Identifiers.signOut]
+        XCTAssertTrue(app.reveal(signOut))
+        signOut.tap()
 
         XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.navigationBars[Self.accountTitle].exists)
+        let orders = app.buttons[Identifiers.ordersButton]
+        XCTAssertTrue(orders.label.contains(Self.needsAccount), orders.label)
         XCTAssertTrue(app.tabBars.buttons[Self.shopTitle].exists)
     }
 

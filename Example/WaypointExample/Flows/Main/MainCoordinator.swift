@@ -93,6 +93,7 @@ final class MainCoordinator {
             router: tabs.router(for: .account),
             launch: launch,
             session: services.session,
+            store: services.store,
             addressBook: services.addresses,
             gate: gate,
             navigation: services.navigation,

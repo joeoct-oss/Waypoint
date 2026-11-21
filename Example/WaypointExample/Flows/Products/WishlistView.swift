@@ -8,10 +8,11 @@
 
 import SwiftUI
 
-// The wish list, as a small sheet that can grow: the products the reader saved, closed with Done.
+// The wish list: the products the reader saved. As a sheet over a product it can grow and closes
+// with Done; pushed from Account it has no Done.
 struct WishlistView: View {
     let products: [Product]
-    let onDone: () -> Void
+    let onDone: (() -> Void)?
 
     var body: some View {
         list
@@ -30,7 +31,9 @@ struct WishlistView: View {
 
     private var doneItem: some ToolbarContent {
         ToolbarItem(placement: .confirmationAction) {
-            Button("Done", action: onDone)
+            if let onDone {
+                Button("Done", action: onDone)
+            }
         }
     }
 

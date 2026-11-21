@@ -66,6 +66,8 @@ enum Identifiers {
     static let addressesButton = "account.addresses"
     static let accountSignIn = "account.signIn"
     static let accountName = "account.name"
+    static let accountWishlist = "account.wishlist"
+    static let orderTimeline = "order.timeline"
     static let signOut = "account.signOut"
     static let clearData = "settings.clearData"
     static let confirmClearData = "settings.clearData.confirm"

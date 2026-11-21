@@ -8,14 +8,15 @@
 
 import SwiftUI
 import WaypointCore
-//  The account tab: the profile at the root (or Sign in for a guest), orders, addresses and
-// settings pushed above it, and the Navigation Lab under settings with the twenty demo entries and
-// its tools: the whole tree as `describeTree` prints it, and the event log from `events`. Orders
-// and Addresses need an account, so the account gate asks a guest to sign in first. Add a new
-// address pushes the form; saving keeps the address in the address book, which checkout shares, and
-// goes back to the list. Sign out ends the session and leaves the reader where they are, as a
-// guest. Clear all data reports to the app coordinator, which
-// clears the store and starts the window over.
+
+// The account tab: the profile at the root (or Sign in for a guest), orders, the wish list,
+// addresses and settings pushed above it, and the Navigation Lab under settings with the twenty
+// demo entries and its tools: the whole tree as `describeTree` prints it, and the event log from
+// `events`. Orders, the wish list and Addresses need an account, so the account gate asks a guest
+// to sign in first. Add a new address pushes the form; saving keeps the address in the address
+// book, which checkout shares, and goes back to the list. Sign out, in Settings, ends the session
+// and goes back to Account, which then shows the guest prompt; the reader stays in the app. Clear
+// all data reports to the app coordinator, which clears the store and starts the window over.
 //
 // The stack runs on Waypoint: `router` is the account tab's stack router from the main tab router,
 // `AccountFlowView` draws it with `WaypointStack`, and each screen above the root is an
@@ -28,6 +29,7 @@ import WaypointCore
 final class AccountCoordinator {
     let router: StackRouter
     private let session: Session
+    private let store: LocalStore
     private let addressBook: AddressBook
     private let gate: AccountGate
     private let onClearAllData: () -> Void
@@ -40,6 +42,7 @@ final class AccountCoordinator {
         router: StackRouter,
         launch: LaunchOptions,
         session: Session,
+        store: LocalStore,
         addressBook: AddressBook,
         gate: AccountGate,
         navigation: NavigationConfiguration,
@@ -48,6 +51,7 @@ final class AccountCoordinator {
         onClearAllData: @escaping () -> Void
     ) {
         self.session = session
+        self.store = store
         self.addressBook = addressBook
         self.gate = gate
         self.onClearAllData = onClearAllData
@@ -95,11 +99,12 @@ final class AccountCoordinator {
     func makeAccountFlow() -> some View {
         AccountView(
             account: session.account,
+            wishlistCount: { self.store.wishlistProductIDs.count },
             onSignIn: { self.showSignIn() },
             onShowOrders: { self.openOrders() },
+            onShowWishlist: { self.openWishlist() },
             onShowAddresses: { self.openAddresses() },
-            onShowSettings: { self.showSettings() },
-            onSignOut: { self.signOut() }
+            onShowSettings: { self.showSettings() }
         )
         .screenChrome(
             title: MainTab.account.title,
@@ -131,6 +136,14 @@ final class AccountCoordinator {
 
     func showOrder(_ order: Order) {
         router.push(AccountRoute.order(order))
+    }
+
+    func openWishlist() {
+        gate.requireAccount { self.showWishlist() }
+    }
+
+    func showWishlist() {
+        router.push(AccountRoute.wishlist)
     }
 
     func openAddresses() {
@@ -191,8 +204,10 @@ final class AccountCoordinator {
         labDemos.showDemo(demo)
     }
 
+    // Ends the session and goes back to Account, which then shows the guest prompt.
     func signOut() {
         session.signOut()
+        router.popToRoot()
     }
 
     func clearAllData() {
@@ -206,6 +221,8 @@ final class AccountCoordinator {
             makeOrdersFlow()
         case .order(let order):
             makeOrderFlow(order)
+        case .wishlist:
+            makeWishlistFlow()
         case .addresses:
             makeAddressesFlow()
         case .addAddress:
@@ -233,6 +250,13 @@ final class AccountCoordinator {
         OrderDetailView(order: order)
     }
 
+    private func makeWishlistFlow() -> some View {
+        WishlistView(
+            products: Product.products(withIDs: store.wishlistProductIDs),
+            onDone: nil
+        )
+    }
+
     private func makeAddressesFlow() -> some View {
         AddressesView(
             addresses: addressBook.addresses,
@@ -249,8 +273,10 @@ final class AccountCoordinator {
 
     private func makeSettingsFlow() -> some View {
         SettingsView(
+            isSignedIn: session.account != nil,
             onShowLab: { self.showLab() },
-            onClearAllData: { self.clearAllData() }
+            onClearAllData: { self.clearAllData() },
+            onSignOut: { self.signOut() }
         )
     }
 
