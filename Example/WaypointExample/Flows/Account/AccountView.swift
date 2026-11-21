@@ -8,16 +8,32 @@
 
 import SwiftUI
 
-// Account: the reader's profile with Sign out, or Sign in for a guest, and Orders, Addresses and
-// Settings for everyone. The screen reports each choice; the account coordinator decides what needs
-// an account.
+// Account (MA-03, AU-05): the reader's profile, or for a guest the "Sign in or create account"
+// prompt, then Orders and Wish list with their counts, Addresses for a signed-in reader, and
+// Settings. For a guest, Orders and Wish list say "Needs an account". The screen reports each
+// choice; the account coordinator decides what needs an account. Sign out lives in Settings.
 struct AccountView: View {
+    private static let needsAccount = "Needs an account"
+
     let account: Account?
+    let wishlistCount: () -> Int
     let onSignIn: () -> Void
     let onShowOrders: () -> Void
+    let onShowWishlist: () -> Void
     let onShowAddresses: () -> Void
     let onShowSettings: () -> Void
-    let onSignOut: () -> Void
+
+    // `var` because the wish list changes in other tabs, so the screen reads its count each time it
+    // appears.
+    @State private var savedCount = 0
+
+    private var ordersDetail: String {
+        account == nil ? Self.needsAccount : "\(Order.onTheirWayCount) on its way"
+    }
+
+    private var wishlistDetail: String {
+        account == nil ? Self.needsAccount : "\(savedCount) saved"
+    }
 
     var body: some View {
         List {
@@ -25,16 +41,32 @@ struct AccountView: View {
                 header
             }
             Section {
-                Button("Orders", systemImage: "shippingbox", action: onShowOrders)
-                    .accessibilityIdentifier(Identifiers.ordersButton)
-                Button("Addresses", systemImage: "mappin.and.ellipse", action: onShowAddresses)
-                    .accessibilityIdentifier(Identifiers.addressesButton)
-                Button("Settings", systemImage: "gearshape", action: onShowSettings)
-                    .accessibilityIdentifier(Identifiers.settingsButton)
+                makeRow(
+                    "Orders",
+                    symbolName: "shippingbox",
+                    detail: ordersDetail,
+                    action: onShowOrders
+                )
+                .accessibilityIdentifier(Identifiers.ordersButton)
+                makeRow(
+                    "Wish list",
+                    symbolName: "heart",
+                    detail: wishlistDetail,
+                    action: onShowWishlist
+                )
+                .accessibilityIdentifier(Identifiers.accountWishlist)
+                addressesRow
+                makeRow(
+                    "Settings",
+                    symbolName: "gearshape",
+                    detail: nil,
+                    action: onShowSettings
+                )
+                .accessibilityIdentifier(Identifiers.settingsButton)
             }
-            signOutSection
         }
         .exampleList()
+        .onAppear { savedCount = wishlistCount() }
     }
 
     @ViewBuilder
@@ -47,22 +79,28 @@ struct AccountView: View {
     }
 
     @ViewBuilder
-    private var signOutSection: some View {
+    private var addressesRow: some View {
         if account != nil {
-            Section {
-                Button("Sign out", role: .destructive, action: onSignOut)
-                    .accessibilityIdentifier(Identifiers.signOut)
-            }
+            makeRow(
+                "Addresses",
+                symbolName: "mappin.and.ellipse",
+                detail: nil,
+                action: onShowAddresses
+            )
+            .accessibilityIdentifier(Identifiers.addressesButton)
         }
     }
 
     private var signInPrompt: some View {
         VStack(alignment: .leading, spacing: Spacing.medium) {
-            Text("Sign in to see your orders and save products.")
+            Text("Sign in or create account")
+                .font(Typography.headline)
+                .foregroundStyle(Palette.text.color)
+            Text("Keep your cart on every device, save products and track orders.")
                 .font(Typography.callout)
                 .foregroundStyle(Palette.textSecondary.color)
             PrimaryActionButton(
-                title: "Sign in or create account",
+                title: "Sign in",
                 identifier: Identifiers.accountSignIn,
                 action: onSignIn
             )
@@ -73,7 +111,7 @@ struct AccountView: View {
     private func makeProfile(_ account: Account) -> some View {
         HStack(spacing: Spacing.medium) {
             Image(systemName: "person.crop.circle.fill")
-                .font(.system(size: 48))
+                .font(Typography.display)
                 .foregroundStyle(Palette.brand.color)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
@@ -86,5 +124,23 @@ struct AccountView: View {
             }
         }
         .padding(.vertical, Spacing.extraSmall)
+    }
+
+    private func makeRow(
+        _ title: String,
+        symbolName: String,
+        detail: String?,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            LabeledContent {
+                if let detail {
+                    Text(detail)
+                }
+            } label: {
+                Label(title, systemImage: symbolName)
+            }
+        }
+        .foregroundStyle(Palette.text.color)
     }
 }

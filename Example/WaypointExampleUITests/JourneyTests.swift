@@ -36,6 +36,9 @@ final class JourneyTests: XCTestCase {
     private static let savedSearchResultCount = "1 result"
     private static let orderID = 1042
     private static let ordersTitle = "Orders"
+    private static let needsAccount = "Needs an account"
+    private static let wishlistTitle = "Wish list"
+    private static let savedCount = "0 saved"
     private static let newAddressLabel = "Studio"
     private static let newAddressStreet = "9 Nova Lane"
     private static let newAddressCity = "Springfield"
@@ -207,6 +210,32 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(saved.waitForExistence(timeout: UITestSteps.timeout))
     }
 
+    // MA-03: a guest's Wish list on Account asks to sign in through the account gate, then the wish
+    // list pushes, and back on Account the row shows its count.
+    func testAccountWishlistAsksToSignIn() {
+        let app = ExampleApp.launch()
+        app.openTab(Self.accountTitle)
+        let wishlist = app.buttons[Identifiers.accountWishlist]
+        XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout), "Account has no Wish list row")
+        XCTAssertTrue(wishlist.label.contains(Self.needsAccount), wishlist.label)
+        wishlist.tap()
+
+        signIn(
+            password: Self.password,
+            in: app
+        )
+        // The gate pushes the wish list only once the sheet has slid away, so wait for that first.
+        let sheet = app.buttons[Identifiers.signInButton]
+        XCTAssertTrue(sheet.waitForNonExistence(timeout: UITestSteps.timeout), "the sign-in sheet stayed")
+        let wishlistBar = app.navigationBars[Self.wishlistTitle]
+        XCTAssertTrue(wishlistBar.waitForExistence(timeout: UITestSteps.timeout), "the wish list didn't push")
+        app.goBack()
+
+        XCTAssertTrue(wishlistBar.waitForNonExistence(timeout: UITestSteps.timeout), "Back stayed on the wish list")
+        XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout), "Account lost its Wish list row")
+        XCTAssertTrue(wishlist.label.contains(Self.savedCount), wishlist.label)
+    }
+
     // Orders and an order push on the Account tab's plain stack, which hides the tab bar on them,
     // and Back to the tab's root shows it again.
     func testOrdersPushDetail() {
@@ -217,6 +246,8 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.order(id: Self.orderID)].tapWhenReady()
 
         XCTAssertTrue(app.navigationBars["Order \(Self.orderID)"].waitForExistence(timeout: UITestSteps.timeout))
+        let timeline = app.descendants(matching: .any)[Identifiers.orderTimeline]
+        XCTAssertTrue(timeline.exists, "the order shows no timeline")
         XCTAssertTrue(app.waitForTabBar(shown: false), "a pushed account screen showed the tab bar")
         app.goBack()
         XCTAssertTrue(app.navigationBars[Self.ordersTitle].waitForExistence(timeout: UITestSteps.timeout))
@@ -226,13 +257,21 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(app.waitForTabBar(shown: true), "the account tab hid the tab bar")
     }
 
-    func testSignOutKeepsTheApp() {
+    // AU-05: Sign out, in Settings, goes back to Account as a guest: the sign-in prompt, Orders
+    // saying it needs an account, and the tabs still there.
+    func testSignOutStaysAsGuest() {
         let app = ExampleApp.launch(signedIn: true)
         app.openTab(Self.accountTitle)
+        app.buttons[Identifiers.settingsButton].tapWhenReady()
 
-        app.buttons[Identifiers.signOut].tapWhenReady()
+        let signOut = app.buttons[Identifiers.signOut]
+        XCTAssertTrue(app.reveal(signOut))
+        signOut.tap()
 
         XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.navigationBars[Self.accountTitle].exists)
+        let orders = app.buttons[Identifiers.ordersButton]
+        XCTAssertTrue(orders.label.contains(Self.needsAccount), orders.label)
         XCTAssertTrue(app.tabBars.buttons[Self.shopTitle].exists)
     }
 

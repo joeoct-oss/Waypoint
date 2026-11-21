@@ -8,14 +8,15 @@
 
 import WaypointCore
 
-// A screen the account tab's router can push: orders, addresses and their form, settings, and the
-// Navigation Lab under settings.
+// A screen the account tab's router can push: orders, the wish list, addresses and their form,
+// settings, and the Navigation Lab under settings.
 //
 // Conformances:
 // - `TrackableScreen`, a `Route` the journey log names by its title.
 enum AccountRoute: TrackableScreen {
     case orders
     case order(Order)
+    case wishlist
     case addresses
     case addAddress
     case settings
@@ -35,6 +36,8 @@ enum AccountRoute: TrackableScreen {
             return "Orders"
         case .order(let order):
             return "Order \(order.id)"
+        case .wishlist:
+            return "Wish list"
         case .addresses:
             return "Addresses"
         case .addAddress:
@@ -60,7 +63,7 @@ enum AccountRoute: TrackableScreen {
 
     var kind: FlowKind? {
         switch self {
-        case .orders, .order, .addresses, .addAddress, .settings, .lab, .labStory, .labTool:
+        case .orders, .order, .wishlist, .addresses, .addAddress, .settings, .lab, .labStory, .labTool:
             return nil
         case .labBranch(let branch):
             return branch.hostKind
@@ -75,6 +78,8 @@ enum AccountRoute: TrackableScreen {
             return Self.rootTrail + ["orders"]
         case .order(let order):
             return Self.rootTrail + ["orders", "\(order.id)"]
+        case .wishlist:
+            return Self.rootTrail + ["wish list"]
         case .addresses:
             return Self.rootTrail + ["addresses"]
         case .addAddress:
