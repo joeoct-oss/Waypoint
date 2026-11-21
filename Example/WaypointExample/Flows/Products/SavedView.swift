@@ -9,10 +9,10 @@
 import SwiftUI
 import Waypoint
 
-// The small sheet Save shows over a product (MA-01): "Saved to your wish list", with View wish list,
-// which the sheet reports, and Close. Close needs no coordinator: `@DismissFlow` closes the flow the
-// view is in, the saved sheet, through the router that presented it. The router sizes the sheet to
-// its content (`AppSheets.saved`).
+// The small sheet Save shows over a product (MA-01): "Saved to your wish list", with View wish
+// list, which the sheet reports, and Close. Close needs no coordinator: `@DismissFlow` closes the
+// flow the view is in, the saved sheet, through the router that presented it. The router sizes the
+// sheet to its content (`AppSheets.saved`).
 struct SavedView: View {
     let onViewWishlist: () -> Void
 
