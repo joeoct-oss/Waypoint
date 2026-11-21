@@ -9,7 +9,8 @@
 // WaypointCore is the UI-agnostic navigation state engine behind Waypoint.
 //
 // It imports only Foundation and Observation, so it builds and runs its tests on Linux.
-// `Waypoint`, which holds the SwiftUI and UIKit renderers, builds on top of it.
+// `Waypoint`, which holds the SwiftUI renderer and is where the UIKit renderers are designed to
+// go, builds on top of it.
 
 import Foundation
 import Observation
