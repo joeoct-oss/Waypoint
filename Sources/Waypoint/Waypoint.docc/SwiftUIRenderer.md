@@ -333,7 +333,9 @@ extension WaypointRoot {
     /// share a stack, a link inbox or saved state. If the coordinator has a
     /// link inbox, URL opens, universal links and user activities go to it,
     /// and its root router is attached.
-    public init<C: RootCoordinator>(_ makeCoordinator: @escaping @MainActor () -> C)
+    public init<C: RootCoordinator>(
+        _ makeCoordinator: @escaping @MainActor () -> C
+    ) where Root == C.Root, Content == C.Renderer
 }
 ```
 

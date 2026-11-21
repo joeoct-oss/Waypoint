@@ -133,6 +133,12 @@ public protocol RootCoordinator: AnyObject {
     /// Conformances:
     /// - `RootFlow`: a coordinator that can fill the window, such as a stack or tab coordinator.
     associatedtype RootFlowCoordinator: RootFlow
+    /// Conformances:
+    /// - `RootRenderer`: what draws this coordinator. Default: `DefaultRootRenderer`.
+    associatedtype Renderer: RootRenderer = DefaultRootRenderer
+
+    /// The window's content, drawn by `Renderer`. Default: filled in by Waypoint.
+    var view: Renderer { get }
 
     /// Returns the coordinator of the flow that `root` shows. Waypoint calls it once each time
     /// the root switches, and draws the coordinator's `view`.
