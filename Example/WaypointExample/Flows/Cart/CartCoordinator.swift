@@ -20,9 +20,10 @@ import WaypointCore
 // starts at the address step with a saved address chosen; Continue pushes Payment, then Review,
 // and Add a new address pushes the form. Saving the
 // form pops back to the address step and chooses the new address; with Save for next time on, the
-// address book keeps it for Account too. Placing the order empties the cart and shows Order placed
-// in place of checkout; Continue shopping there closes checkout and reports to the main tabs, which
-// open Shop, as Keep shopping in the cart does. The local store keeps the cart between launches.
+// address book keeps it for Account too. Placing the order empties the cart and replaces
+// checkout's steps with Order placed in one change (`setPath`), so Back can't return to Review;
+// Continue shopping there closes checkout, pops the cart to its root and reports to the main tabs,
+// which open Shop, as Keep shopping in the cart does. The local store keeps the cart between launches.
 // The full-screen cover itself is still SwiftUI's, bound to the router's presented flow, until
 // Waypoint draws presentations itself.
 //
@@ -32,8 +33,6 @@ import WaypointCore
 @MainActor
 @Observable
 final class CartCoordinator {
-    private static let orderPlacedStep = "order placed"
-
     let router: StackRouter
     private let store: LocalStore
     private let addressBook: AddressBook
@@ -41,8 +40,6 @@ final class CartCoordinator {
     private let onShopMore: () -> Void
     // `var` because `add(_:)` adds to it and `placeOrder()` empties it.
     private(set) var products: [Product]
-    // `var` because `placeOrder()` sets it, and `showCheckout()` clears it for the next order.
-    private(set) var hasPlacedOrder: Bool
     // `var` because `showCheckout()` keeps the checkout flow's router that the cart's router
     // presents, and `releaseCheckout()` drops it once the cover has gone, so the cover still draws
     // checkout while it slides down.
@@ -101,7 +98,6 @@ final class CartCoordinator {
         router.setRootName(MainTab.cart.title)
         router.register(CheckoutRoute.self)
         products = Product.products(withIDs: store.cartProductIDs)
-        hasPlacedOrder = false
         checkoutRouter = nil
         selectedAddressID = nil
         oneOffAddress = nil
@@ -125,15 +121,12 @@ final class CartCoordinator {
 
     @ViewBuilder
     func makeCheckoutFlow() -> some View {
-        if hasPlacedOrder {
-            NavigationStack {
-                makeOrderPlacedFlow()
-            }
-        } else if let checkoutRouter {
+        if let checkoutRouter {
             WaypointStack(flow: CheckoutFlow.self, router: checkoutRouter) {
                 makeAddressStepFlow()
                     .destination(CheckoutStep.self) { self.makeStepFlow(for: $0) }
                     .destination(AddAddressRoute.self) { _ in self.makeAddAddressFlow() }
+                    .destination(OrderPlacedRoute.self) { _ in self.makeOrderPlacedFlow() }
             }
         }
     }
@@ -156,7 +149,6 @@ final class CartCoordinator {
         oneOffAddress = nil
         savedNotice = nil
         selectedAddressID = addressBook.addresses.first?.id
-        hasPlacedOrder = false
         router.present(CheckoutRoute(), style: .fullScreenCover, trigger: "checkout_button")
         checkoutRouter = router.presented
     }
@@ -205,14 +197,18 @@ final class CartCoordinator {
         saveCart()
     }
 
+    // Payment and Review leave the path in the same change that shows Order placed.
     func placeOrder() {
         products = []
         saveCart()
-        hasPlacedOrder = true
+        checkoutRouter?.setPath {
+            OrderPlacedRoute()
+        }
     }
 
     func continueShopping() {
         dismissCheckout()
+        router.popToRoot()
         showShop()
     }
 
@@ -294,7 +290,7 @@ final class CartCoordinator {
                 title: "Order placed",
                 kind: nil,
                 router: checkoutStack,
-                step: Self.orderPlacedStep
+                route: AnyRoute(OrderPlacedRoute())
             )
     }
 

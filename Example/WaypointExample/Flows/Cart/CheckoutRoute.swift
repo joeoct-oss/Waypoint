@@ -39,6 +39,19 @@ enum CheckoutStep: Route {
     typealias Flow = CheckoutFlow
 }
 
+// Order placed, which replaces checkout's steps once the order goes through, so Back can't return
+// to Review. It ends the flow rather than counting as a step.
+//
+// Conformances:
+// - `TrackableScreen`, so checkout's stack router can set it as its path and the journey names it
+//   `Order placed`, outside the steps.
+struct OrderPlacedRoute: TrackableScreen {
+    typealias Flow = CheckoutFlow
+
+    static let screenName = "Order placed"
+    static let isFlowStep = false
+}
+
 // The new-address form, pushed inside checkout from Add a new address. It sits beside the steps,
 // so the journey doesn't count it as one.
 //
