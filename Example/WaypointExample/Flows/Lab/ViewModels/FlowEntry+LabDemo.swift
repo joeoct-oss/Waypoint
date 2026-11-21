@@ -15,6 +15,8 @@ extension FlowEntry {
             return .detailPush
         case Self.tabs:
             return .tabs
+        case Self.sheet:
+            return .sheet
         default:
             return nil
         }

@@ -110,6 +110,15 @@ enum Identifiers {
     static let detailBackToCart = "lab.detail.backToCart"
     static let detailCart = "lab.detail.cart"
     static let tabsDemo = "lab.tabs"
+    static let sheetDemoSize = "lab.sheet.size"
+    static let sheetDemoSwipe = "lab.sheet.swipe"
+    static let sheetDemoPresent = "lab.sheet.present"
+    static let sheetDemoCover = "lab.sheet.cover"
+    static let sheetDemoTree = "lab.sheet.tree"
+    static let sheetDemoPresentOnTop = "lab.sheet.presentOnTop"
+    static let sheetDemoDismiss = "lab.sheet.dismiss"
+    static let sheetDemoDismissFlow = "lab.sheet.dismissFlow"
+    static let sheetDemoDismissAll = "lab.sheet.dismissAll"
     static let tabsDemoSelection = "lab.tabs.selection"
     static let tabsDemoChange = "lab.tabs.change"
     static let recoveredToast = "lab.toast.recovered"
@@ -120,6 +129,10 @@ enum Identifiers {
 
     static func product(id: Int) -> String {
         "product.\(id)"
+    }
+
+    static func sheetDemoLevel(_ level: Int) -> String {
+        "lab.sheet.level.\(level)"
     }
 
     static func wishlistSave(id: Int) -> String {
