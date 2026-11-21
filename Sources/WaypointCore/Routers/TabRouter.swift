@@ -10,8 +10,9 @@ import Observation
 
 /// The owner of a tab container.
 ///
-/// Each tab has its own stack router, so every tab keeps its own stack when the user switches
-/// away and back.
+/// By default each tab has its own stack router, so every tab keeps its own stack when the user
+/// switches away and back. With ``TabStacks/shared``, the tabs share one stack above the tab bar
+/// instead.
 ///
 /// ```swift
 /// let tabs = TabRouter(selection: MainTab.home)
@@ -60,6 +61,9 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
 
     /// Whether tapping the selected tab pops its stack to the root. Default: `true`.
     @ObservationIgnored public let popsToRootOnReselect: Bool
+
+    /// Where the tabs' pushed screens go. Default: ``TabStacks/perTab``.
+    @ObservationIgnored public let stacks: TabStacks
 
     /// The flow this router drives.
     @ObservationIgnored public let flowID: FlowID
@@ -197,6 +201,8 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     ///   - tabs: The tabs, in the order they are shown.
     ///   - selection: The tab selected at the start.
     ///   - flow: The container's name in logs, events and saved state. Default: `tabs`.
+    ///   - stacks: Where the tabs' pushed screens go: one stack per tab, or one stack shared
+    ///     above the tab bar. Default: ``TabStacks/perTab``.
     ///   - popsToRootOnReselect: Whether tapping the selected tab pops its stack to the root.
     ///     Default: `true`.
     ///   - configuration: The settings of the whole tree. Default:
@@ -209,6 +215,7 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         tabs: [Tab],
         selection: Tab,
         flow: FlowID = FlowID("tabs"),
+        stacks: TabStacks = .perTab,
         popsToRootOnReselect: Bool = true,
         configuration: NavigationConfiguration = .default,
         file: StaticString = #fileID,
@@ -220,11 +227,13 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         self.flowID = tree.claimFlowName(flow.name)
         self.parentNode = nil
         self.popsToRootOnReselect = popsToRootOnReselect
+        self.stacks = stacks
         let noTabRouters: [Tab: StackRouter] = [:]
         self.committed = Snapshot(state: state, presented: nil, tabRouters: noTabRouters)
         // The tab routers need `self` as their parent, so they are added once `self` exists.
+        let shared = stacks == .shared ? makeSharedRouter() : nil
         let routers = state.tabs.map { tab in
-            (tab, makeTabRouter(for: tab, attached: true))
+            (tab, shared ?? makeTabRouter(for: tab, attached: true))
         }
         self.committed = Snapshot(state: state, presented: nil, tabRouters: Dictionary(uniqueKeysWithValues: routers))
         if let problem = tree.configurationProblem {
@@ -232,7 +241,8 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         }
     }
 
-    /// The stack router of one tab.
+    /// The stack router of one tab. With ``TabStacks/shared`` it is the same router for every
+    /// tab.
     ///
     /// A tab that isn't one of `tabs` gets a router that is not in the tree, so its calls return
     /// `.ignored`.
@@ -421,6 +431,11 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         tree.register(type)
     }
 
+    /// Creates the one stack the tabs share with ``TabStacks/shared``.
+    private func makeSharedRouter() -> StackRouter {
+        StackRouter(tabOf: self, flow: tree.claimFlowName("stack"), isAttached: true)
+    }
+
     /// Creates the stack router of one tab.
     private func makeTabRouter(for tab: Tab, attached: Bool) -> StackRouter {
         let name = DescriptionFormat.name(of: tab)
@@ -517,9 +532,10 @@ extension TabRouter: TransactionParticipant {
         isAttached = false
     }
 
-    /// Detaches removed tab routers and attaches new ones.
+    /// Detaches tab routers that no tab uses any more, and attaches new ones. A shared stack stays
+    /// while any tab uses it.
     private func commitTabRouters(from previous: [Tab: StackRouter], to next: [Tab: StackRouter]) {
-        for (tab, router) in previous where next[tab] !== router {
+        for router in previous.values where !next.values.contains(where: { $0 === router }) {
             router.detachSubtree()
         }
         for router in next.values {

@@ -16,7 +16,7 @@ extension TabRouter: TreeNode {
 
     /// Each tab's router in tab order, then the presented flow.
     var childNodes: [any TreeNode] {
-        let tabs: [any TreeNode] = state.tabs.compactMap { tabRouters[$0] }
+        let tabs: [any TreeNode] = Self.distinct(state.tabs.compactMap { tabRouters[$0] })
         return tabs + (presented.map { [$0] } ?? [])
     }
 
@@ -47,13 +47,22 @@ extension TabRouter: TreeNode {
             Self.tabLabel(tab, selected: tab == snapshot.state.selection)
         }
         let detail = names.joined(separator: naming.usesSymbols ? " · " : " | ")
-        let tabTrees = snapshot.state.tabs.compactMap { tab in
-            snapshot.tabRouters[tab]?.readableTree(naming)
+        let tabTrees = Self.distinct(snapshot.state.tabs.compactMap { snapshot.tabRouters[$0] }).map { router in
+            router.readableTree(naming)
         }
         let presentedTree = snapshot.presented.map { child in
             [child.readableTree(naming).presented(as: snapshot.state.presentation?.style)]
         }
         return ReadableTree(name: flowID.name, detail: detail, children: tabTrees + (presentedTree ?? []))
+    }
+
+    /// Each router once, in order: with ``TabStacks/shared`` every tab has the same one.
+    static func distinct(_ routers: [StackRouter]) -> [StackRouter] {
+        routers.reduce(into: []) { kept, router in
+            if !kept.contains(where: { $0 === router }) {
+                kept.append(router)
+            }
+        }
     }
 
     /// A tab's name, in brackets when it is selected.
@@ -84,7 +93,7 @@ extension TabRouter: PresentingRouter {
     /// Each tab's router, which is inside this flow.
     var workingInFlowChildren: [any PresentingRouter] {
         let snapshot = current
-        return snapshot.state.tabs.compactMap { snapshot.tabRouters[$0] }
+        return Self.distinct(snapshot.state.tabs.compactMap { snapshot.tabRouters[$0] })
     }
 
     /// Presents a flow in the working copy, or clears it with `nil`.
@@ -101,14 +110,32 @@ extension TabRouter {
         current.tabRouters[tab]
     }
 
-    /// Selects a tab, or pops the selected tab's stack when it is selected again.
+    /// Selects a tab, or pops the selected tab's stack when it is selected again. With
+    /// ``TabStacks/shared``, selecting another tab also pops the shared stack, so no pushed
+    /// screen stays over a tab the reader can't see.
     func selectStep(_ tab: Tab, in store: TransactionStore) -> StepResult {
         store.enlist(self)
         let snapshot = current
-        guard tab == snapshot.state.selection, popsToRootOnReselect, let stack = snapshot.tabRouters[tab] else {
+        guard tab == snapshot.state.selection else {
+            return selectOtherStep(tab, in: store)
+        }
+        guard popsToRootOnReselect, let stack = snapshot.tabRouters[tab] else {
             return tabStep(.select(tab), in: store)
         }
         return stack.stackStep(.popToRoot, in: store)
+    }
+
+    /// Selects a tab that isn't selected, popping the shared stack first with
+    /// ``TabStacks/shared``.
+    private func selectOtherStep(_ tab: Tab, in store: TransactionStore) -> StepResult {
+        let selected = tabStep(.select(tab), in: store)
+        guard case .changed = selected, stacks == .shared, let shared = current.tabRouters[tab] else {
+            return selected
+        }
+        guard case .failed(let failure) = shared.stackStep(.popToRoot, in: store) else {
+            return selected
+        }
+        return .failed(failure)
     }
 
     /// Replaces the tabs, creating routers for new tabs and dropping removed ones.
@@ -137,11 +164,13 @@ extension TabRouter {
         }
     }
 
-    /// The existing router of each kept tab, and a new one for each new tab.
+    /// The existing router of each kept tab, and a new one for each new tab. With
+    /// ``TabStacks/shared`` every tab keeps the shared stack.
     private func routers(for tabs: [Tab]) -> [Tab: StackRouter] {
         let existing = current.tabRouters
+        let shared = stacks == .shared ? existing.values.first : nil
         let pairs = tabs.map { tab in
-            (tab, existing[tab] ?? newTabRouter(for: tab))
+            (tab, shared ?? existing[tab] ?? newTabRouter(for: tab))
         }
         return Dictionary(pairs) { first, _ in
             first
