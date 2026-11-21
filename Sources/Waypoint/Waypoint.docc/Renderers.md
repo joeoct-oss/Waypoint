@@ -219,7 +219,7 @@ public protocol StackRenderer: View {
 
 Both renderers of a kind read the same router and follow the same contract with it. Switching renderers never changes how navigation behaves, only how it is drawn. `SwiftUIStackRenderer` draws with `WaypointStack`, so everything <doc:SwiftUIRenderer> says about stacks holds for it.
 
-**Defaults.** Each kind's default renderer (`DefaultStackRenderer` and the others) picks the best renderer for the system the app runs on, once, when the coordinator is first drawn, so the choice never changes while the app runs. "Best" comes from evidence: a scorecard of known problems for each renderer, kind and system. Today every default is the SwiftUI renderer, on every system. The stack renderers were measured side by side on iOS 17.5 and 27.2 (#250). They behave the same on iOS 27.2, and the UIKit stack renderer is the candidate default for iOS 17 once it shows a SwiftUI screen's title and toolbar (#253). A default changes only in a minor release, with a changelog line and the scorecard row behind it. In 0.x any release may change one, so an app that wants no change sets its renderers itself.
+**Defaults.** Each kind's default renderer (`DefaultStackRenderer` and the others) picks the best renderer for the system the app runs on, once, when the coordinator is first drawn, so the choice never changes while the app runs. "Best" comes from evidence: a scorecard of known problems for each renderer, kind and system. Today every default is the SwiftUI renderer, on every system. A default changes only in a minor release, with a changelog line and the scorecard row behind it. In 0.x any release may change one, so an app that wants no change sets its renderers itself.
 
 ### Choosing a renderer
 
@@ -261,7 +261,7 @@ The choice for a place is made in this order:
 
 A pushed child flow shares its parent's stack, so its parent's renderer draws it. A pushed child that declares a renderer has it ignored, and that is reported in debug.
 
-These reports are `rendererMismatch` issues today. Whether they get kinds of their own, such as `coordinatorDrawnTwice`, `rendererNotSupportedHere` and `rendererIgnoredForPushedFlow`, is settled in #59.
+The issue kinds for these reports, such as `coordinatorDrawnTwice`, `rendererNotSupportedHere` and `rendererIgnoredForPushedFlow`, are added to `NavigationIssue.Kind` when #59 builds them.
 
 ### Mixing SwiftUI and UIKit
 
