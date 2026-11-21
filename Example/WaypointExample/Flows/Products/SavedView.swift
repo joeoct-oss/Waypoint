@@ -7,12 +7,17 @@
 //
 
 import SwiftUI
+import Waypoint
 
-// The small sheet Save shows over a product (MA-01): "Saved to your wish list", with View wish list
-// and Close, which the sheet only reports. It is only as tall as its content.
+// The small sheet Save shows over a product (MA-01): "Saved to your wish list", with View wish
+// list, which the sheet reports, and Close. Close needs no coordinator: `@DismissFlow` closes the
+// flow the view is in, the saved sheet, through the router that presented it. The router sizes the
+// sheet to its content (`AppSheets.saved`).
 struct SavedView: View {
     let onViewWishlist: () -> Void
-    let onClose: () -> Void
+
+    // `var` because a property wrapper needs one; it reads the sheet's router from the stack.
+    @DismissFlow private var dismissFlow
 
     var body: some View {
         VStack(spacing: Spacing.medium) {
@@ -37,23 +42,12 @@ struct SavedView: View {
         // Contains its children, so View wish list keeps its own identifier.
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(Identifiers.savedSheet)
-        .presentationDetents(SavedDetents.all)
     }
 
     private var closeItem: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            Button("Close", systemImage: "xmark", action: onClose)
+            Button("Close", systemImage: "xmark") { dismissFlow() }
+                .accessibilityIdentifier(Identifiers.savedClose)
         }
-    }
-}
-
-// The one size the saved sheet takes: just its content.
-enum SavedDetents {
-    private static let height: CGFloat = 240
-
-    static var all: Set<PresentationDetent> {
-        [
-            .height(height),
-        ]
     }
 }

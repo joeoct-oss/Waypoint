@@ -14,7 +14,9 @@ import WaypointCore
 // Sign in at the root, the three steps of Create account pushed above it, Reset password as a sheet
 // over Sign in, and the terms as a sheet over Choose a password. The steps share one draft, so
 // going back keeps what the reader typed. Signing in and creating an account go through the auth
-// service; the flow reports the account, or Cancel, to the account gate that presented it.
+// service; the flow reports the account, or Cancel, to the account gate that presented it. When
+// the gate opened the flow over another sheet, it then pushes Signed in, whose Done the gate passes
+// on to whoever opened the sheets, so they close together.
 //
 // The flow runs on Waypoint: `router` is the flow the main tab router presents, the steps are
 // `CreateAccountRoute` pushes, and Reset password and the terms are flows this router presents.
@@ -40,6 +42,12 @@ final class AuthCoordinator {
     private(set) var presentedSheet: AuthSheet?
     // `var` for the same reason as `presentedSheet`: the presented sheet's router.
     private(set) var sheetRouter: StackRouter?
+    // `var` for the same reason as `presentedSheet`: the sizes the router gives the sheet.
+    private(set) var sheetOptions: SheetOptions?
+    // `var` because `showSignedIn(as:onDone:)` sets it with the account Signed in names.
+    private var signedInAccount: Account?
+    // `var` because `showSignedIn(as:onDone:)` sets it with what Done on Signed in runs.
+    private var onSignedInDone: (() -> Void)?
     // `var` because a call to the auth service sets it while the call runs.
     private(set) var isWorking: Bool
     // `var` because a failed call to the auth service sets it, and the next call clears it.
@@ -66,6 +74,9 @@ final class AuthCoordinator {
         newAccount = nil
         presentedSheet = nil
         sheetRouter = nil
+        sheetOptions = nil
+        signedInAccount = nil
+        onSignedInDone = nil
         isWorking = false
         errorMessage = nil
         router.setRootName("Sign in")
@@ -102,12 +113,27 @@ final class AuthCoordinator {
             )
     }
 
+    func makeSignedInFlow() -> some View {
+        SignedInView(
+            name: signedInAccount?.name ?? Account.sample.name,
+            resumedAction: reason.resumedAction,
+            onDone: { self.finishSignedIn() }
+        )
+        .screenChrome(
+            title: SignedInRoute.screenName,
+            kind: nil,
+            router: router,
+            route: AnyRoute(SignedInRoute())
+        )
+    }
+
     @ViewBuilder
     func makeSheetFlow() -> some View {
         if let sheetRouter, let presentedSheet {
             WaypointStack(sheetRouter) {
                 makeSheetScreen(for: presentedSheet)
             }
+            .sheetOptions(sheetOptions)
         }
     }
 
@@ -117,11 +143,19 @@ final class AuthCoordinator {
     }
 
     func showResetPassword() {
-        showSheet(.resetPassword, route: ResetPasswordRoute())
+        showSheet(
+            .resetPassword,
+            route: ResetPasswordRoute(),
+            style: .sheet
+        )
     }
 
     func showTerms() {
-        showSheet(.terms, route: TermsRoute())
+        showSheet(
+            .terms,
+            route: TermsRoute(),
+            style: AppSheets.terms
+        )
     }
 
     func signIn(
@@ -140,6 +174,16 @@ final class AuthCoordinator {
         onCancel()
     }
 
+    // Shows who signed in, over the step they signed in from, with Done running `onDone`.
+    func showSignedIn(
+        as account: Account,
+        onDone: @escaping () -> Void
+    ) {
+        signedInAccount = account
+        onSignedInDone = onDone
+        router.push(SignedInRoute())
+    }
+
     func dismissSheet() {
         router.dismiss()
     }
@@ -156,18 +200,21 @@ final class AuthCoordinator {
     func releaseSheet() {
         presentedSheet = nil
         sheetRouter = nil
+        sheetOptions = nil
     }
 
     private func showSheet<R: Route>(
         _ sheet: AuthSheet,
-        route: R
+        route: R,
+        style: PresentationStyle
     ) {
-        router.present(route, style: .sheet)
+        router.present(route, style: style)
         guard let presented = router.presented else {
             return
         }
         presentedSheet = sheet
         sheetRouter = presented
+        sheetOptions = router.state.presentation.map { router.sheetOptions(for: $0) }
     }
 
     @ViewBuilder
@@ -230,6 +277,10 @@ final class AuthCoordinator {
             return
         }
         onSignedIn(newAccount)
+    }
+
+    private func finishSignedIn() {
+        onSignedInDone?()
     }
 
     private func sendResetLink(to email: String) {

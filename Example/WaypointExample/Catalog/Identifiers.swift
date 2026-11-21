@@ -24,6 +24,9 @@ enum Identifiers {
     static let signUpCodeSent = "auth.signUp.codeSent"
     static let notice = "notice"
     static let forgotPassword = "auth.signIn.forgotPassword"
+    static let filterButton = "shop.filter"
+    static let filterApply = "shop.filter.apply"
+    static let shopWishlist = "shop.wishlist"
     static let resetSend = "auth.reset.send"
     static let resetSent = "auth.reset.sent"
     static let resetDone = "auth.reset.done"
@@ -45,6 +48,10 @@ enum Identifiers {
     static let wishlist = "product.wishlist"
     static let savedSheet = "product.saved"
     static let viewWishlist = "product.saved.viewWishlist"
+    static let savedClose = "product.saved.close"
+    static let wishlistDone = "product.wishlist.done"
+    static let signedIn = "auth.signedIn"
+    static let signedInDone = "auth.signedIn.done"
     static let productReviews = "product.reviews"
     static let productShare = "product.share"
     static let searchResultCount = "search.resultCount"
@@ -103,6 +110,15 @@ enum Identifiers {
     static let detailBackToCart = "lab.detail.backToCart"
     static let detailCart = "lab.detail.cart"
     static let tabsDemo = "lab.tabs"
+    static let sheetDemoSize = "lab.sheet.size"
+    static let sheetDemoSwipe = "lab.sheet.swipe"
+    static let sheetDemoPresent = "lab.sheet.present"
+    static let sheetDemoCover = "lab.sheet.cover"
+    static let sheetDemoTree = "lab.sheet.tree"
+    static let sheetDemoPresentOnTop = "lab.sheet.presentOnTop"
+    static let sheetDemoDismiss = "lab.sheet.dismiss"
+    static let sheetDemoDismissFlow = "lab.sheet.dismissFlow"
+    static let sheetDemoDismissAll = "lab.sheet.dismissAll"
     static let tabsDemoSelection = "lab.tabs.selection"
     static let tabsDemoChange = "lab.tabs.change"
     static let recoveredToast = "lab.toast.recovered"
@@ -113,6 +129,14 @@ enum Identifiers {
 
     static func product(id: Int) -> String {
         "product.\(id)"
+    }
+
+    static func sheetDemoLevel(_ level: Int) -> String {
+        "lab.sheet.level.\(level)"
+    }
+
+    static func wishlistSave(id: Int) -> String {
+        "product.wishlist.save.\(id)"
     }
 
     static func recentSearch(_ term: String) -> String {

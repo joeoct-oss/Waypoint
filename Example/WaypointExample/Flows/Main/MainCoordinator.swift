@@ -45,6 +45,7 @@ final class MainCoordinator {
             popsToRootOnReselect: false,
             configuration: services.navigation
         )
+        tabs.setPresentationDefaults(AppSheets.defaults)
         let gate = AccountGate(
             session: services.session,
             service: services.auth,

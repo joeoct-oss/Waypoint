@@ -37,6 +37,15 @@ struct CreateAccountRoute: TrackableScreen {
     }
 }
 
+// Signed in, pushed on the accounts flow's router above Sign in when the flow opened over another
+// sheet, so its Done can close both sheets.
+//
+// Conformances:
+// - `TrackableScreen`, a `Route` the journey log names "Signed in".
+struct SignedInRoute: TrackableScreen {
+    static let screenName = "Signed in"
+}
+
 // Reset password, presented as a sheet over Sign in by the accounts flow's router.
 //
 // Conformances:
