@@ -27,7 +27,8 @@ enum RouterTrail {
         at route: AnyRoute?
     ) -> [String] {
         let path = router.state.path
-        let end = route.flatMap { path.firstIndex(of: $0) }.map { $0 + 1 } ?? 0
+        // The last copy, so the screen on top reads its whole path when a route is on it twice.
+        let end = route.flatMap { path.lastIndex(of: $0) }.map { $0 + 1 } ?? 0
         return rootSteps(of: router) + path.prefix(end).map(name(of:))
     }
 
