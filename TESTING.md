@@ -177,7 +177,7 @@ wait "$(cat .build/test-mac.pid)"; echo "exit=$?"
 ```
 
 - Run these lines as one background command that is allowed to run past the tier's **Stop it after** time, and wait for it to end. Never start a second run on the same simulator while it runs.
-- When it is still running at the **Stop it after** time, it is hung. Stop the step it is stuck in with `pkill -INT -P "$(cat .build/test-mac.pid)"`. The script then fails that step and its exit step shuts down its simulators and removes its locks. When the script is still running a minute later, run `kill -INT "$(cat .build/test-mac.pid)"`. Never `kill -9`. Then go to [When a run fails](#6-when-a-run-fails).
+- When it is still running at the **Stop it after** time, it is hung. Stop the step it is stuck in with `pkill -TERM -P "$(cat .build/test-mac.pid)"`. The script then fails that step, and its exit step shuts down its simulators and removes its locks. When the script is still running a minute later, run `kill -TERM "$(cat .build/test-mac.pid)"`. Use `TERM`, not `INT`: a script started in the background ignores `INT`. Never `kill -9`. Then go to [When a run fails](#6-when-a-run-fails).
 - `WAYPOINT_JOBS` and `WAYPOINT_BASE` stay unset unless the person who asked for the run names a value.
 
 ### Pass or fail
@@ -255,5 +255,5 @@ Teardown: simulators shut down, locks gone, worktree removed | <what is left>
 - Never edit code, tests or scripts during a run. A run reports; the fix is separate work.
 - Never call a run passed when it didn't print its pass line, when only a retry passed, or when it ran on another commit.
 - Never create, delete, erase or rename a simulator, never shut down one you don't hold, and never run `xcrun simctl shutdown all`.
-- Never remove another run's lock, and never `kill -9` a test run.
+- Never remove another run's lock, and never `kill -9` a test run (stop a hung one with `TERM`, as in [Run](#run-1)).
 - Never check out a branch in the shared clone on the Mac; use a worktree.
