@@ -18,10 +18,6 @@ struct SearchView: View {
         "star print",
     ]
 
-    let onSelect: (Product) -> Void
-
-    @State private var query = ""
-
     // Every category in the shop, once each, in the shop's order.
     private static var categories: [String] {
         Product.all.reduce(into: [String]()) { categories, product in
@@ -30,6 +26,10 @@ struct SearchView: View {
             }
         }
     }
+
+    let onSelect: (Product) -> Void
+
+    @State private var query = ""
 
     private var results: [Product] {
         let words = query.split(separator: " ").map(String.init)
