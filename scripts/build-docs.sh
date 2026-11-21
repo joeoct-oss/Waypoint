@@ -6,9 +6,9 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Builds the documentation site: the WaypointCore, Waypoint and WaypointUIKit
-# catalogs, built for iOS so the renderer pages have their symbols, merged into
-# one archive and made ready for static hosting.
+# Builds the documentation site: the WaypointCore and Waypoint catalogs, built
+# for iOS so the renderer pages have their symbols, merged into one archive and
+# made ready for static hosting.
 #
 # The Waypoint theme (colors, fonts, mark, favicon and landing page) comes from docs-theme.
 #
@@ -21,7 +21,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-MODULES=(WaypointCore Waypoint WaypointUIKit)
+MODULES=(WaypointCore Waypoint)
 WORK_DIR=.build/docs-work
 SITE_DIR=.build/docs-site
 
