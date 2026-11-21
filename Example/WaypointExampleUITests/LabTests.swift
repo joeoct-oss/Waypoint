@@ -20,6 +20,11 @@ final class LabTests: XCTestCase {
     private static let currentRouteName = "Account: labTool"
     private static let applied = "applied"
     private static let failed = "failed"
+    private static let shopTab = "Shop"
+    private static let searchTab = "Search"
+    private static let accountTab = "Account"
+    private static let fewTabs = 2
+    private static let allTabs = 4
 
     func testLabShowsBothBranches() {
         let app = ExampleApp.launch(lab: true)
@@ -113,6 +118,26 @@ final class LabTests: XCTestCase {
         XCTAssertTrue(product.exists, "back should pop the cart only")
     }
 
+    // TX-04: the Tabs story's tabs change at run time. Search stays selected when it stays, and
+    // removing the selected Account tab falls back to Shop.
+    func testTabsChangeAtRunTime() {
+        let app = openEntry(.tabs)
+        let change = app.buttons[Identifiers.tabsDemoChange]
+        assertTabs(count: Self.fewTabs, selected: Self.shopTab, in: app)
+
+        change.tapWhenReady()
+        assertTabs(count: Self.allTabs, selected: Self.shopTab, in: app)
+        app.tabBars.buttons[Self.searchTab].tap()
+        change.tapWhenReady()
+        assertTabs(count: Self.fewTabs, selected: Self.searchTab, in: app)
+
+        change.tapWhenReady()
+        app.tabBars.buttons[Self.accountTab].tap()
+        assertTabs(count: Self.allTabs, selected: Self.accountTab, in: app)
+        change.tapWhenReady()
+        assertTabs(count: Self.fewTabs, selected: Self.shopTab, in: app)
+    }
+
     // TB-03: Back to cart on a product with no cart under it recovers with `.popToRoot`, lands on
     // the shop list and says so in the toast.
     func testPopToMissingRouteRecovers() {
@@ -137,14 +162,32 @@ final class LabTests: XCTestCase {
 
     // Opens the SwiftUI branch's Detail push entry and waits for its shop list.
     private func openDetailPush() -> XCUIApplication {
-        let app = ExampleApp.launch(lab: true)
-        open(.swiftUI, in: app)
-        let button = app.buttons[Identifiers.entry(.detailPush)]
-        XCTAssertTrue(app.reveal(button), "missing \(Identifiers.entry(.detailPush))")
-        button.tap()
+        let app = openEntry(.detailPush)
         let firstProduct = app.buttons[Identifiers.product(id: 1)]
         XCTAssertTrue(firstProduct.waitForExistence(timeout: UITestSteps.timeout))
         return app
+    }
+
+    private func openEntry(_ entry: FlowEntry) -> XCUIApplication {
+        let app = ExampleApp.launch(lab: true)
+        open(entry.branch, in: app)
+        let button = app.buttons[Identifiers.entry(entry)]
+        XCTAssertTrue(app.reveal(button), "missing \(Identifiers.entry(entry))")
+        button.tap()
+        return app
+    }
+
+    private func assertTabs(
+        count: Int,
+        selected tab: String,
+        in app: XCUIApplication,
+        line: UInt = #line
+    ) {
+        let selection = app.descendants(matching: .any)[Identifiers.tabsDemoSelection]
+        XCTAssertTrue(selection.waitForExistence(timeout: UITestSteps.timeout), line: line)
+        XCTAssertEqual(app.tabBars.buttons.count, count, line: line)
+        let text = selection.label + " " + (selection.value as? String ?? "")
+        XCTAssertTrue(text.contains(tab), text, line: line)
     }
 
     private func assertEntryOpensPlaceholder(

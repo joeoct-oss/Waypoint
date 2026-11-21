@@ -6,18 +6,23 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// One of the twenty entry points: a flow of one kind, launched from one branch. Only
-// `detailPush` runs for real so far; the others open a placeholder.
+// One of the twenty entry points: a flow of one kind, launched from one branch. Only `detailPush`
+// and `tabs` run for real so far; the others open a placeholder.
 //
 // Conformances:
 // - `Hashable`, so the app coordinator can keep an entry in its navigation path.
 // - `Codable`, so an entry can sit in an account route, which Waypoint can save and restore.
 struct FlowEntry: Hashable, Codable {
-    // The one entry that runs for real so far: Detail push of the SwiftUI kind, from the SwiftUI
-    // branch. The others open a placeholder until the APIs they need are built.
+    // The entries that run for real so far, both of the SwiftUI kind from the SwiftUI branch:
+    // Detail push, and Tabs. The others open a placeholder until the APIs they need are built.
     static let detailPush = FlowEntry(
         branch: .swiftUI,
         flow: .detailPush,
+        kind: .swiftUI
+    )
+    static let tabs = FlowEntry(
+        branch: .swiftUI,
+        flow: .tabs,
         kind: .swiftUI
     )
 
@@ -30,7 +35,7 @@ struct FlowEntry: Hashable, Codable {
     let kind: FlowKind
 
     var isRunnable: Bool {
-        self == Self.detailPush
+        self == Self.detailPush || self == Self.tabs
     }
 
     static func entries(in branch: Branch) -> [FlowEntry] {
