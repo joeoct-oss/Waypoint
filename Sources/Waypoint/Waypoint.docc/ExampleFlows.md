@@ -112,7 +112,7 @@ The tab coordinator owns the tab router and one stack coordinator for each tab. 
 
 ```swift
 // Conformances:
-// - `TabCoordinator`, so Waypoint can draw its tabs and make its router.
+// - `TabCoordinator`, so Waypoint can draw its tabs.
 final class MainTabsCoordinator: TabCoordinator {
     let router = TabRouter(selection: MainTab.home)
     let home = HomeCoordinator()
