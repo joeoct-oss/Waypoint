@@ -17,9 +17,9 @@ let package = Package(
         // UI-agnostic state engine. Foundation and Observation only, so it builds and tests on
         // Linux.
         .target(name: "WaypointCore"),
-        // The unified log and signpost handler (decision 0008). Internal: both renderers depend on
-        // it and re-export it. Its files are wrapped in `#if canImport(os)`, so it compiles empty
-        // on Linux.
+        // The unified log and signpost handler. Internal: `Waypoint` and the `WaypointUIKit`
+        // placeholder depend on it and re-export it. Its files are wrapped in `#if canImport(os)`,
+        // so it compiles empty on Linux.
         .target(name: "WaypointOSLog", dependencies: ["WaypointCore"]),
         // Coordinators with screens and the SwiftUI renderers; the UIKit renderers join it. Its
         // SwiftUI files are wrapped in `#if canImport(SwiftUI)` and its UIKit files in
