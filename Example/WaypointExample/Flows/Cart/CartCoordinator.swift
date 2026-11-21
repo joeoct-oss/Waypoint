@@ -22,8 +22,8 @@ import WaypointCore
 // form pops back to the address step and chooses the new address; with Save for next time on, the
 // address book keeps it for Account too. Placing the order empties the cart and replaces
 // checkout's steps with Order placed in one change (`setPath`), so Back can't return to Review;
-// Continue shopping there closes checkout, pops the cart to its root and reports to the main tabs,
-// which open Shop, as Keep shopping in the cart does. The local store keeps the cart between launches.
+// Continue shopping there closes checkout and reports to the main tabs, which open Shop, as Keep
+// shopping in the cart does. The local store keeps the cart between launches.
 // The full-screen cover itself is still SwiftUI's, bound to the router's presented flow, until
 // Waypoint draws presentations itself.
 //
@@ -208,7 +208,6 @@ final class CartCoordinator {
 
     func continueShopping() {
         dismissCheckout()
-        router.popToRoot()
         showShop()
     }
 
