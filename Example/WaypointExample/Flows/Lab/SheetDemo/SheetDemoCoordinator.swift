@@ -30,10 +30,11 @@ final class SheetDemoCoordinator {
 
     let router: StackRouter
     private let onClose: () -> Void
-    // `var` because the size picker sets it before the next sheet is presented.
-    var size: SheetDemoSize
-    // `var` because the swipe-to-close toggle sets it before the next sheet is presented.
-    var allowsSwipe: Bool
+    // `var` because the size picker sets it with `setSize(_:)` before the next sheet is presented.
+    private(set) var size: SheetDemoSize
+    // `var` because the swipe-to-close toggle sets it with `setAllowsSwipe(_:)` before the next
+    // sheet is presented.
+    private(set) var allowsSwipe: Bool
     // `var` because each present keeps its level here, keyed by the presenting router, and
     // `release(over:)` drops it once the sheet or cover has gone, so it still draws meanwhile.
     private var levels: [ObjectIdentifier: SheetDemoLevel]
@@ -83,6 +84,14 @@ final class SheetDemoCoordinator {
         levels[ObjectIdentifier(presenter)]
     }
 
+    func setSize(_ size: SheetDemoSize) {
+        self.size = size
+    }
+
+    func setAllowsSwipe(_ allowsSwipe: Bool) {
+        self.allowsSwipe = allowsSwipe
+    }
+
     func presentSheet(from level: SheetDemoLevel?) {
         present(
             from: level,
@@ -123,9 +132,14 @@ final class SheetDemoCoordinator {
         presenter.dismiss()
     }
 
-    // Drops the level over `presenter` once its sheet or cover has gone.
+    // Drops the level over `presenter` once its sheet or cover has gone, unless `presenter` has
+    // presented a new level while the old one slid away.
     func release(over presenter: StackRouter) {
-        levels[ObjectIdentifier(presenter)] = nil
+        let key = ObjectIdentifier(presenter)
+        guard presenter.presented !== levels[key]?.router else {
+            return
+        }
+        levels[key] = nil
     }
 
     func close() {

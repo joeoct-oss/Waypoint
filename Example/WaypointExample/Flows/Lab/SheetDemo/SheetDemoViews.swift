@@ -78,8 +78,7 @@ struct SheetDemoRootView: View {
     private static let coverTitle = "Present cover"
     private static let treeTitle = "Navigation tree"
 
-    // `var` because `@Bindable` needs one, so the picker and the toggle write to the story.
-    @Bindable var demo: SheetDemoCoordinator
+    let demo: SheetDemoCoordinator
 
     private var closeItem: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
@@ -91,14 +90,14 @@ struct SheetDemoRootView: View {
     var body: some View {
         List {
             Section {
-                Picker(Self.sizeTitle, selection: $demo.size) {
+                Picker(Self.sizeTitle, selection: Binding(reading: demo.size, writing: demo.setSize)) {
                     ForEach(SheetDemoSize.allCases, id: \.self) { size in
                         Text(size.title)
                     }
                 }
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier(Identifiers.sheetDemoSize)
-                Toggle(Self.swipeTitle, isOn: $demo.allowsSwipe)
+                Toggle(Self.swipeTitle, isOn: Binding(reading: demo.allowsSwipe, writing: demo.setAllowsSwipe))
                     .accessibilityIdentifier(Identifiers.sheetDemoSwipe)
             }
             Section {

@@ -72,6 +72,19 @@ final class LabSheetTests: XCTestCase {
         assertTreeShowsNothingPresented(in: app)
     }
 
+    // Present right after Dismiss, while the old sheet still slides away, draws the new level, not
+    // a blank sheet.
+    func testLabSheetPresentsRightAfterDismiss() {
+        let app = openSheetStory()
+        app.buttons[Identifiers.sheetDemoPresent].tapWhenReady()
+        let first = level(1, in: app)
+        first.buttons[Identifiers.sheetDemoDismiss].tapWhenReady()
+
+        app.buttons[Identifiers.sheetDemoPresent].tapWhenReady()
+        let presentOnTop = level(1, in: app).buttons[Identifiers.sheetDemoPresentOnTop]
+        XCTAssertTrue(presentOnTop.waitForExistence(timeout: UITestSteps.timeout), "the new sheet is blank")
+    }
+
     private func openSheetStory() -> XCUIApplication {
         let app = ExampleApp.launch(lab: true)
         let entry = FlowEntry.sheet
