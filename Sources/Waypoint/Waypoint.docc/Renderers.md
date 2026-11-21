@@ -102,7 +102,28 @@ public struct Destination<R: Route, Content: Screen>: Destinations {
 }
 ```
 
-`RootCoordinator`, `TabCoordinator` and `FlowCoordinator` follow the same shape, each with its own router and renderer. Which requirements live in `WaypointCore`, which has no UI, and which in `Waypoint`, which adds the screens, is settled in #59. The core part stays testable on Linux. The `presentation:` parameter declares how `router.show(_:)` shows the route, built in #12: see "Declared presentation" in the core's presentation article.
+A tab coordinator adds the screen for each tab:
+
+```swift
+// What `Waypoint` adds to `TabCoordinator`. The tab type and the router are in the core.
+@MainActor
+public protocol TabCoordinator: AnyObject {
+    /// Conformances:
+    /// - `View`: a tab's stack coordinator's `view`, with its label.
+    associatedtype TabContent: View
+    /// Conformances:
+    /// - `TabRenderer`: what draws this coordinator. Default: `DefaultTabRenderer`.
+    associatedtype Renderer: TabRenderer = DefaultTabRenderer
+
+    /// The screen for one tab, usually one of the coordinator's stack coordinators' `view`.
+    /// Waypoint infers `Tab` from it.
+    @ViewBuilder func makeTabFlow(for tab: Tab) -> TabContent
+    /// The tabs, drawn by `Renderer`. Default: filled in by Waypoint.
+    var view: Renderer { get }
+}
+```
+
+`RootCoordinator` and `FlowCoordinator` follow the same shape, each with its own router and renderer. Which requirements live in `WaypointCore`, which has no UI, and which in `Waypoint`, which adds the screens, is settled in #59. The core part stays testable on Linux. The `presentation:` parameter declares how `router.show(_:)` shows the route, built in #12: see "Declared presentation" in the core's presentation article.
 
 ### A coordinator's view
 
