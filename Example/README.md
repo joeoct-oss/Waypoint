@@ -22,7 +22,7 @@ tuist generate --path Example --no-open
 open Example/WaypointExample.xcworkspace
 ```
 
-`scripts/test-mac.sh full` generates the project and runs the UI tests on the project simulator, then runs `SystemLinkTests` and `MissingDestinationTests` again in the release configuration. `scripts/test-mac.sh --only WaypointExampleUITests/StackTests` runs one class or test; see [Run a Mac tier](../TESTING.md#5-run-a-mac-tier) for the steps and [Where each test runs](../TESTING.md#1-where-each-test-runs) for the tiers.
+`scripts/test-mac.sh full` generates the project and runs the unit tests (`WaypointExampleTests`, Swift Testing, for the view models) and the UI tests on the project simulator, then runs `SystemLinkTests` and `MissingDestinationTests` again in the release configuration. `scripts/test-mac.sh --only WaypointExampleUITests/StackTests` runs one class or test; see [Run a Mac tier](../TESTING.md#5-run-a-mac-tier) for the steps and [Where each test runs](../TESTING.md#1-where-each-test-runs) for the tiers.
 
 ## Launch arguments
 
@@ -38,7 +38,7 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 | `Flows/Splash/` | The splash screen |
 | `Flows/Auth/` | The account gate, and the accounts sheet: sign in, the create account steps and the reset password sheet, with their coordinator |
 | `Flows/Main/` | The main tabs and their coordinator |
-| `Flows/Products/` | Shop and Search: the collection banner, the cart card, product cards and rows, a collection, a product, the cart pushed by Go to cart, the filter and wish list sheets |
+| `Flows/Products/` | Shop and Search: the collection banner, the cart card, product cards and rows, a collection, a product, the cart pushed by Go to cart, the filter and wish list sheets, and Search's view model (`SearchModel`), which pushes through a navigator scoped to `ShopFlow` |
 | `Flows/Cart/` | The cart and the full-screen checkout |
 | `Flows/Account/` | Account, orders, settings, and the Navigation Lab's place in the account stack |
 | `Flows/Lab/` | The Navigation Lab: both branches, the Detail push flow (`DetailPush/`), the Tabs and Sheet stories (`TabsDemo/`, `SheetDemo/`), the placeholder each other demo flow shows until it is built, the Views and view models demos (`ViewModels/`), and the Lab tools (`Tools/`): the event log and the navigation tree |

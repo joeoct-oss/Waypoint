@@ -62,6 +62,15 @@ let uiTestDependencies: [TargetDependency] = [
     .target(name: "WaypointExample"),
 ]
 
+// The unit tests run inside the app, so they reach its view models with `@testable import`.
+let unitTestSources: SourceFilesList = [
+    "WaypointExampleTests/**",
+]
+
+let unitTestDependencies: [TargetDependency] = [
+    .target(name: "WaypointExample"),
+]
+
 let app = Target.target(
     name: "WaypointExample",
     destinations: destinations,
@@ -86,11 +95,23 @@ let uiTests = Target.target(
     dependencies: uiTestDependencies
 )
 
+let unitTests = Target.target(
+    name: "WaypointExampleTests",
+    destinations: destinations,
+    product: .unitTests,
+    bundleId: "dev.waypoint.example.tests",
+    deploymentTargets: deploymentTargets,
+    infoPlist: .default,
+    sources: unitTestSources,
+    dependencies: unitTestDependencies
+)
+
 let schemeBuildTargets: [TargetReference] = [
     "WaypointExample",
 ]
 
 let schemeTestTargets: [TestableTarget] = [
+    "WaypointExampleTests",
     "WaypointExampleUITests",
 ]
 
@@ -108,6 +129,7 @@ let packages: [Package] = [
 
 let targets: [Target] = [
     app,
+    unitTests,
     uiTests,
 ]
 
