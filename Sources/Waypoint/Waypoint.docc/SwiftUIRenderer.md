@@ -56,6 +56,13 @@ extension View {
         presentation: PresentationStyle,
         @ViewBuilder _ content: @escaping (R) -> Content
     ) -> some View
+
+    /// The same, with the stack's navigator. Draft until #12.
+    public func destination<R: Route, Content: View>(
+        _ type: R.Type,
+        presentation: PresentationStyle,
+        @ViewBuilder _ content: @escaping (R, StackNavigator) -> Content
+    ) -> some View
 }
 ```
 

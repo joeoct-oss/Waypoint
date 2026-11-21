@@ -179,14 +179,6 @@ extension StackRouter {
         onFinish: @escaping @MainActor (FlowResult<C.Output>) -> Void
     ) -> NavigationOutcome
 
-    /// Presents a child flow without waiting for its result.
-    @discardableResult
-    public func present<C: FlowCoordinator>(
-        _ child: C,
-        style: PresentationStyle = .sheet,
-        else fallback: NavigationFallback? = nil
-    ) -> NavigationOutcome
-
     /// Pushes a child flow's first screen onto this stack. The child shares
     /// this stack but has its own router for its own routes.
     @discardableResult
@@ -197,7 +189,7 @@ extension StackRouter {
 }
 ```
 
-Like every navigation method, these take an optional fallback, file and line, left out here.
+Like every navigation method, these take an optional fallback, file and line, left out here. To start a flow without waiting for its result, give it a `Flow(...)` entry and call `router.show(_:)`, or use the `onFinish:` form.
 
 ### A flow that stands for a route
 

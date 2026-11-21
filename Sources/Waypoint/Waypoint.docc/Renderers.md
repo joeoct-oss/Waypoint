@@ -72,9 +72,14 @@ public protocol StackCoordinator: AnyObject {
     @DestinationsBuilder var destinations: Body { get }
     /// The whole flow, drawn by `Renderer`. Default: filled in by Waypoint.
     var view: Renderer { get }
-    /// `view` in a `UIHostingController`, for UIKit code that needs a controller.
-    var viewController: UIViewController { get }
 }
+
+#if canImport(UIKit)
+extension StackCoordinator {
+    /// `view` in a `UIHostingController`, for UIKit code that needs a controller.
+    public var viewController: UIViewController { get }
+}
+#endif
 
 /// A screen: any SwiftUI `View` or any `UIViewController`, through two builder overloads.
 public protocol Screen { }
@@ -83,7 +88,10 @@ public protocol Screen { }
 @resultBuilder
 public enum ScreenBuilder {
     public static func buildBlock<V: View>(_ view: V) -> some Screen
+
+    #if canImport(UIKit)
     public static func buildBlock<C: UIViewController>(_ controller: C) -> some Screen
+    #endif
 }
 
 /// A group of destinations, built with `@DestinationsBuilder`.
