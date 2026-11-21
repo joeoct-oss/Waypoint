@@ -92,6 +92,8 @@ public enum ScreenBuilder {
     #if canImport(UIKit)
     public static func buildBlock<C: UIViewController>(_ controller: C) -> some Screen
     #endif
+
+    /* `buildEither` and `buildOptional` for views, so `if` and `switch` work as in `@ViewBuilder` */
 }
 
 /// A group of destinations, built with `@DestinationsBuilder`.
