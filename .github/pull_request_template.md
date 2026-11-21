@@ -8,7 +8,7 @@ Closes #
 
 - [ ] Unit tests were written first and failed before the change
 - [ ] UI tests added or updated for visible behaviour (or not needed, because ...)
-- [ ] All tests pass locally (`scripts/test-mac.sh full` for a `runs:mac` change)
+- [ ] The merge gate in [TESTING.md](../TESTING.md#2-which-run-is-needed) passed on the head commit, with its report below
 - [ ] `scripts/check-concurrency.sh` and `scripts/check-compile-failures.sh` pass (until CI runs them, #5)
 
 ## Checklist
