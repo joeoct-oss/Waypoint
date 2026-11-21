@@ -27,6 +27,9 @@ import WaypointCore
 @MainActor
 @Observable
 final class AccountCoordinator {
+    // The pushed wish list suggests nothing; only the wish list sheet on Shop does.
+    private static let noSuggestions: [Product] = []
+
     let router: StackRouter
     private let session: Session
     private let store: LocalStore
@@ -255,6 +258,8 @@ final class AccountCoordinator {
     private func makeWishlistFlow() -> some View {
         WishlistView(
             products: Product.products(withIDs: store.wishlistProductIDs),
+            suggestions: Self.noSuggestions,
+            onSave: nil,
             onDone: nil
         )
     }

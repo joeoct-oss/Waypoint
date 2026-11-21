@@ -26,6 +26,7 @@ enum Identifiers {
     static let forgotPassword = "auth.signIn.forgotPassword"
     static let filterButton = "shop.filter"
     static let filterApply = "shop.filter.apply"
+    static let shopWishlist = "shop.wishlist"
     static let resetSend = "auth.reset.send"
     static let resetSent = "auth.reset.sent"
     static let resetDone = "auth.reset.done"
@@ -47,6 +48,10 @@ enum Identifiers {
     static let wishlist = "product.wishlist"
     static let savedSheet = "product.saved"
     static let viewWishlist = "product.saved.viewWishlist"
+    static let savedClose = "product.saved.close"
+    static let wishlistDone = "product.wishlist.done"
+    static let signedIn = "auth.signedIn"
+    static let signedInDone = "auth.signedIn.done"
     static let productReviews = "product.reviews"
     static let productShare = "product.share"
     static let searchResultCount = "search.resultCount"
@@ -115,6 +120,10 @@ enum Identifiers {
 
     static func product(id: Int) -> String {
         "product.\(id)"
+    }
+
+    static func wishlistSave(id: Int) -> String {
+        "product.wishlist.save.\(id)"
     }
 
     static func recentSearch(_ term: String) -> String {

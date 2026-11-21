@@ -14,7 +14,9 @@ import WaypointCore
 // Sign in at the root, the three steps of Create account pushed above it, Reset password as a sheet
 // over Sign in, and the terms as a sheet over Choose a password. The steps share one draft, so
 // going back keeps what the reader typed. Signing in and creating an account go through the auth
-// service; the flow reports the account, or Cancel, to the account gate that presented it.
+// service; the flow reports the account, or Cancel, to the account gate that presented it. When
+// the gate opened the flow over another sheet, it then pushes Signed in, whose Done the gate passes
+// on to whoever opened the sheets, so they close together.
 //
 // The flow runs on Waypoint: `router` is the flow the main tab router presents, the steps are
 // `CreateAccountRoute` pushes, and Reset password and the terms are flows this router presents.
@@ -42,6 +44,10 @@ final class AuthCoordinator {
     private(set) var sheetRouter: StackRouter?
     // `var` for the same reason as `presentedSheet`: the sizes the router gives the sheet.
     private(set) var sheetOptions: SheetOptions?
+    // `var` because `showSignedIn(as:onDone:)` sets it with the account Signed in names.
+    private var signedInAccount: Account?
+    // `var` because `showSignedIn(as:onDone:)` sets it with what Done on Signed in runs.
+    private var onSignedInDone: (() -> Void)?
     // `var` because a call to the auth service sets it while the call runs.
     private(set) var isWorking: Bool
     // `var` because a failed call to the auth service sets it, and the next call clears it.
@@ -69,6 +75,8 @@ final class AuthCoordinator {
         presentedSheet = nil
         sheetRouter = nil
         sheetOptions = nil
+        signedInAccount = nil
+        onSignedInDone = nil
         isWorking = false
         errorMessage = nil
         router.setRootName("Sign in")
@@ -103,6 +111,20 @@ final class AuthCoordinator {
                 router: router,
                 route: AnyRoute(route)
             )
+    }
+
+    func makeSignedInFlow() -> some View {
+        SignedInView(
+            name: signedInAccount?.name ?? Account.sample.name,
+            resumedAction: reason.resumedAction,
+            onDone: { self.finishSignedIn() }
+        )
+        .screenChrome(
+            title: SignedInRoute.screenName,
+            kind: nil,
+            router: router,
+            route: AnyRoute(SignedInRoute())
+        )
     }
 
     @ViewBuilder
@@ -150,6 +172,16 @@ final class AuthCoordinator {
 
     func cancel() {
         onCancel()
+    }
+
+    // Shows who signed in, over the step they signed in from, with Done running `onDone`.
+    func showSignedIn(
+        as account: Account,
+        onDone: @escaping () -> Void
+    ) {
+        signedInAccount = account
+        onSignedInDone = onDone
+        router.push(SignedInRoute())
     }
 
     func dismissSheet() {
@@ -245,6 +277,10 @@ final class AuthCoordinator {
             return
         }
         onSignedIn(newAccount)
+    }
+
+    private func finishSignedIn() {
+        onSignedInDone?()
     }
 
     private func sendResetLink(to email: String) {
