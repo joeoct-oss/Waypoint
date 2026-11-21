@@ -15,7 +15,10 @@ import SwiftUI
 // Conformances:
 // - `Related: View`: the link to the related product, which the coordinator draws.
 struct ProductDetailView<Related: View>: View {
-    private static let rating = "4.8 out of 5"
+    // Computed, because a generic type can't keep a static stored property.
+    private static var rating: String {
+        "4.8 out of 5"
+    }
 
     let product: Product
     let onAddToCart: () -> Void
