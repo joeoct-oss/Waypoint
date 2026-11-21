@@ -29,6 +29,7 @@ struct MainTabView: View {
         ) {
             if let auth = main.gate.presentedAuth {
                 main.makeAuthFlow(auth)
+                    .sheetOptions(main.gate.authSheetOptions)
             }
         }
     }

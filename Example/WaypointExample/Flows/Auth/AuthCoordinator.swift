@@ -40,6 +40,8 @@ final class AuthCoordinator {
     private(set) var presentedSheet: AuthSheet?
     // `var` for the same reason as `presentedSheet`: the presented sheet's router.
     private(set) var sheetRouter: StackRouter?
+    // `var` for the same reason as `presentedSheet`: the sizes the router gives the sheet.
+    private(set) var sheetOptions: SheetOptions?
     // `var` because a call to the auth service sets it while the call runs.
     private(set) var isWorking: Bool
     // `var` because a failed call to the auth service sets it, and the next call clears it.
@@ -66,6 +68,7 @@ final class AuthCoordinator {
         newAccount = nil
         presentedSheet = nil
         sheetRouter = nil
+        sheetOptions = nil
         isWorking = false
         errorMessage = nil
         router.setRootName("Sign in")
@@ -108,6 +111,7 @@ final class AuthCoordinator {
             WaypointStack(sheetRouter) {
                 makeSheetScreen(for: presentedSheet)
             }
+            .sheetOptions(sheetOptions)
         }
     }
 
@@ -117,11 +121,19 @@ final class AuthCoordinator {
     }
 
     func showResetPassword() {
-        showSheet(.resetPassword, route: ResetPasswordRoute())
+        showSheet(
+            .resetPassword,
+            route: ResetPasswordRoute(),
+            style: .sheet
+        )
     }
 
     func showTerms() {
-        showSheet(.terms, route: TermsRoute())
+        showSheet(
+            .terms,
+            route: TermsRoute(),
+            style: AppSheets.terms
+        )
     }
 
     func signIn(
@@ -156,18 +168,21 @@ final class AuthCoordinator {
     func releaseSheet() {
         presentedSheet = nil
         sheetRouter = nil
+        sheetOptions = nil
     }
 
     private func showSheet<R: Route>(
         _ sheet: AuthSheet,
-        route: R
+        route: R,
+        style: PresentationStyle
     ) {
-        router.present(route, style: .sheet)
+        router.present(route, style: style)
         guard let presented = router.presented else {
             return
         }
         presentedSheet = sheet
         sheetRouter = presented
+        sheetOptions = router.state.presentation.map { router.sheetOptions(for: $0) }
     }
 
     @ViewBuilder

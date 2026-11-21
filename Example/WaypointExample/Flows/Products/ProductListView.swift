@@ -79,6 +79,7 @@ struct ProductListView: View {
     private var toolbarItems: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Button("Filter", systemImage: "line.3.horizontal.decrease", action: onFilter)
+                .accessibilityIdentifier(Identifiers.filterButton)
         }
     }
 }

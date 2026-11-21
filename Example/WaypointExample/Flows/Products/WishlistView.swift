@@ -20,7 +20,6 @@ struct WishlistView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { doneItem }
             .accessibilityIdentifier(Identifiers.wishlist)
-        .presentationDetents(WishlistDetents.all)
     }
 
     private var list: some View {
@@ -46,15 +45,5 @@ struct WishlistView: View {
                 Text(product.price, format: .currency(code: "USD").precision(.fractionLength(0)))
             }
         }
-    }
-}
-
-// The sizes the wish list sheet can take.
-enum WishlistDetents {
-    static var all: Set<PresentationDetent> {
-        [
-            .medium,
-            .large,
-        ]
     }
 }

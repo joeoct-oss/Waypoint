@@ -48,6 +48,8 @@ final class ProductsCoordinator {
     private(set) var presentedSheet: ProductSheet?
     // `var` for the same reason as `presentedSheet`: the presented sheet's router.
     private(set) var sheetRouter: StackRouter?
+    // `var` for the same reason as `presentedSheet`: the sizes the router gives the sheet.
+    private(set) var sheetOptions: SheetOptions?
     // `var` because `playLaunchSteps()` plays them once, and the shop appears again on every tab
     // switch.
     private var hasPlayedLaunchSteps: Bool
@@ -85,6 +87,7 @@ final class ProductsCoordinator {
         router.register(WishlistRoute.self)
         presentedSheet = nil
         sheetRouter = nil
+        sheetOptions = nil
         hasPlayedLaunchSteps = false
         router.setCoordinator(self)
     }
@@ -144,6 +147,7 @@ final class ProductsCoordinator {
             WaypointStack(sheetRouter) {
                 makeSheetScreen(for: presentedSheet)
             }
+            .sheetOptions(sheetOptions)
         }
     }
 
@@ -176,11 +180,19 @@ final class ProductsCoordinator {
     }
 
     func showFilters() {
-        showSheet(.filters, route: FilterRoute())
+        showSheet(
+            .filters,
+            route: FilterRoute(),
+            style: AppSheets.filters
+        )
     }
 
     func showSaved() {
-        showSheet(.saved, route: SavedRoute())
+        showSheet(
+            .saved,
+            route: SavedRoute(),
+            style: AppSheets.saved
+        )
     }
 
     // The saved sheet's View wish list: one transaction dismisses the saved sheet's flow and
@@ -189,7 +201,7 @@ final class ProductsCoordinator {
     func showWishlist() {
         router.transaction {
             $0.dismiss()
-            $0.present(WishlistRoute(), style: .sheet)
+            $0.present(WishlistRoute(), style: AppSheets.large)
         }
         takePresentedSheet(.wishlist)
     }
@@ -226,13 +238,15 @@ final class ProductsCoordinator {
     func releaseSheet() {
         presentedSheet = nil
         sheetRouter = nil
+        sheetOptions = nil
     }
 
     private func showSheet<R: Route>(
         _ sheet: ProductSheet,
-        route: R
+        route: R,
+        style: PresentationStyle
     ) {
-        router.present(route, style: .sheet)
+        router.present(route, style: style)
         takePresentedSheet(sheet)
     }
 
@@ -243,6 +257,7 @@ final class ProductsCoordinator {
         }
         presentedSheet = sheet
         sheetRouter = presented
+        sheetOptions = router.state.presentation.map { router.sheetOptions(for: $0) }
     }
 
     private func addToWishlist(_ product: Product) {
