@@ -156,8 +156,8 @@ extension XCUIApplication {
         return tabBar.exists && !tabBar.frame.isEmpty && tabBar.isHittable
     }
 
-    // Waits for the tab bar to show or hide, since it slides with the push or pop, and says whether
-    // it did in time.
+    // Waits for the tab bar to show or hide, since SwiftUI hides it as a push starts and shows it
+    // once a pop ends, and says whether it did in time.
     @MainActor
     func waitForTabBar(shown: Bool) -> Bool {
         let deadline = Date().addingTimeInterval(UITestSteps.timeout)
