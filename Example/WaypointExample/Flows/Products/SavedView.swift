@@ -34,6 +34,8 @@ struct SavedView: View {
         .navigationTitle("Wish list")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { closeItem }
+        // Contains its children, so View wish list keeps its own identifier.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(Identifiers.savedSheet)
         .presentationDetents(SavedDetents.all)
     }
