@@ -37,6 +37,8 @@ final class JourneyTests: XCTestCase {
     private static let orderID = 1042
     private static let ordersTitle = "Orders"
     private static let needsAccount = "Needs an account"
+    private static let wishlistTitle = "Wish list"
+    private static let savedCount = "0 saved"
     private static let newAddressLabel = "Studio"
     private static let newAddressStreet = "9 Nova Lane"
     private static let newAddressCity = "Springfield"
@@ -206,6 +208,27 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.addressesButton].tapWhenReady()
         let saved = app.descendants(matching: .any)[Identifiers.address(label: Self.newAddressLabel)]
         XCTAssertTrue(saved.waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    // MA-03: a guest's Wish list on Account asks to sign in through the account gate, then the wish
+    // list pushes, and back on Account the row shows its count.
+    func testAccountWishlistAsksToSignIn() {
+        let app = ExampleApp.launch()
+        app.openTab(Self.accountTitle)
+        let wishlist = app.buttons[Identifiers.accountWishlist]
+        XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(wishlist.label.contains(Self.needsAccount), wishlist.label)
+        wishlist.tap()
+
+        signIn(
+            password: Self.password,
+            in: app
+        )
+        XCTAssertTrue(app.navigationBars[Self.wishlistTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+
+        XCTAssertTrue(app.navigationBars[Self.accountTitle].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(wishlist.label.contains(Self.savedCount), wishlist.label)
     }
 
     // Orders and an order push on the Account tab's plain stack, which hides the tab bar on them,
