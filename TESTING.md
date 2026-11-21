@@ -77,8 +77,8 @@ The Mac has a fixed pool of three simulators. Use them by name only.
 | `waypoint-02` | iPhone | 17.5 | `release` (the default `WAYPOINT_IOS17_SIMULATOR`), and iOS 17 checks |
 | `waypoint-03` | iPad | 27.2 | iPad checks only |
 
-- **Mac runs are queued, one at a time.** Runs go in the order they ask. The first run takes the simulators it needs (`release` uses `waypoint-01` and `waypoint-02`). Every later run waits until that run has finished its teardown. Then it checks out its own commit, and the script builds and installs that version on the simulator. There is only one clone on the Mac, so a second run at the same time would change the first run's checkout under it, even on another simulator. Ask whoever keeps the queue for your turn before preflight, and say when your teardown is done. The script also refuses a simulator another run holds, with a lock in `${TMPDIR:-/tmp}/waypoint-test-<name>.lock`.
-- **Never create a simulator.** `scripts/test-mac.sh` creates `WAYPOINT_SIMULATOR` when it is missing, so preflight step 4 checks it exists first and the script never gets the chance.
+- **Mac runs are queued, one at a time.** Runs go in the order they ask. The first run takes the simulators it needs (`release` uses `waypoint-01` and `waypoint-02`). Every later run waits until that run has finished its teardown. Then it checks out its own commit, and the script builds and installs that version on the simulator. There is only one clone on the Mac, so a second run at the same time would change the first run's checkout under it, even on another simulator. Ask whoever keeps the queue for your turn before preflight, and say when your teardown is done. The script also locks each simulator it uses (`${TMPDIR:-/tmp}/waypoint-test-<name>.lock`), but only from the moment it reaches the simulator, and the lock never protects the clone: the queue does.
+- **Never create a simulator.** `scripts/test-mac.sh` creates `WAYPOINT_SIMULATOR` when it is missing, so preflight step 3 checks it exists first and the script never gets the chance.
 - **Never delete, erase or rename a simulator**, and never shut down one you don't hold. Shut down only your own, by name: `xcrun simctl shutdown waypoint-01`. Never `xcrun simctl shutdown all`.
 
 ## 4. Run the Linux suite
@@ -108,10 +108,11 @@ The Mac has a fixed pool of three simulators. Use them by name only.
 ### Run
 
 ```sh
+mkdir -p .build
 scripts/test-linux.sh > .build/test-linux.log 2>&1; echo "exit=$?"
 ```
 
-Create `.build` first if it doesn't exist (`mkdir -p .build`). Run it as one command that is allowed to take 15 minutes; don't let a shorter tool timeout end it.
+Run it as one command that is allowed to take 15 minutes; don't let a shorter tool timeout end it.
 
 ### Pass or fail
 
@@ -139,7 +140,24 @@ Every step runs on the Mac, from the root of the Waypoint package clone, which t
 
    Pass: Xcode 16 or later, and a Tuist version. When Tuist is missing, run `scripts/bootstrap.sh` once and check again; if it still fails, stop and report it.
 
-3. **Check out the exact commit.**
+3. **Check nothing else is running, and each simulator exists and is free.** First, no other Mac run may be going:
+
+   ```sh
+   pgrep -fl "scripts/test-mac.sh"
+   ```
+
+   It must print nothing. When it prints a line, another run is going: stop, don't touch the clone, and tell whoever keeps the queue. Then, for every simulator the tier uses:
+
+   ```sh
+   xcrun simctl list devices available | grep -E "^ +waypoint-01 \("
+   ls -d "${TMPDIR:-/tmp}/waypoint-test-waypoint-01.lock" 2>/dev/null
+   ```
+
+   - The first command must print exactly one line. It ends with `(Shutdown)` or `(Booted)`. When it prints nothing, the simulator is missing: stop and report it. Never create it.
+   - The second command must print nothing. When it prints the lock, check its holder with `kill -0 "$(cat "${TMPDIR:-/tmp}/waypoint-test-waypoint-01.lock/pid")" && echo running`. When that prints `running`, another run holds the simulator: stop, don't touch the clone, and tell whoever keeps the queue. When it prints nothing, the lock is stale and the script clears it itself; carry on.
+   - When the simulator is `(Booted)` and there is no lock, an earlier run left it on. Shut it down by name (`xcrun simctl shutdown waypoint-01`), so this run boots it and shuts it down at the end.
+
+4. **Check out the exact commit.**
 
    ```sh
    cd <clone>
@@ -151,17 +169,6 @@ Every step runs on the Mac, from the root of the Waypoint package clone, which t
    ```
 
    Pass: `git status --porcelain` prints nothing before the checkout, and the last command prints `contains main` (for a merge gate; while working, write down that it doesn't). Write down the commit from `git rev-parse HEAD`. When `git status --porcelain` prints anything, the clone has changes that aren't yours: stop and report them. Never stash, reset or delete them.
-
-4. **Check each simulator exists and is free.** For every simulator the tier uses:
-
-   ```sh
-   xcrun simctl list devices available | grep -E "^ +waypoint-01 \("
-   ls -d "${TMPDIR:-/tmp}/waypoint-test-waypoint-01.lock" 2>/dev/null
-   ```
-
-   - The first command must print exactly one line. It ends with `(Shutdown)` or `(Booted)`. When it prints nothing, the simulator is missing: stop and report it. Never create it.
-   - The second command must print nothing. When it prints the lock, check its holder with `kill -0 "$(cat "${TMPDIR:-/tmp}/waypoint-test-waypoint-01.lock/pid")" && echo running`. When that prints `running`, another run holds the simulator: stop, put the clone back (teardown step 3), and tell whoever keeps the queue. When it prints nothing, the lock is stale and the script clears it itself; carry on.
-   - When the simulator is `(Booted)` and there is no lock, an earlier run left it on. Shut it down by name (`xcrun simctl shutdown waypoint-01`), so this run boots it and shuts it down at the end.
 
 ### Run
 
@@ -175,7 +182,7 @@ echo $! > .build/test-mac.pid
 wait "$(cat .build/test-mac.pid)"; echo "exit=$?"
 ```
 
-- Run these lines as one background command that is allowed to run past the tier's **Stop it after** time, and wait for it to end. Never start a second run on the same simulator while it runs.
+- Run these lines as one background command that is allowed to run past the tier's **Stop it after** time, and wait for it to end. Never start a second Mac run while it runs.
 - When it is still running at the **Stop it after** time, it is hung. Stop the step it is stuck in with `pkill -TERM -P "$(cat .build/test-mac.pid)"`. The script then fails that step, and its exit step shuts down its simulators and removes its locks. When the script is still running a minute later, run `kill -TERM "$(cat .build/test-mac.pid)"`. Use `TERM`, not `INT`: a script started in the background ignores `INT`. Never `kill -9`. Then go to [When a run fails](#6-when-a-run-fails).
 - `WAYPOINT_JOBS` and `WAYPOINT_BASE` stay unset unless the person who asked for the run names a value.
 
@@ -226,7 +233,7 @@ Find the first row that matches what the log says. Do what it says, once. A retr
 | A line from `scripts/check-compile-failures.sh` that names a fixture and isn't `ok:` | A real failure: a compile promise broke | No retry. Report the fixture and the line. |
 | `✘` from Swift Testing, `XCTAssert…failed`, or `** TEST FAILED **` | A real failure: a test failed | Report each failing test's name and its first failure line. To tell a flaky test from a broken one, you may run that one test again once: `swift test --filter '<test function name>'` (Linux or the Mac host), or `scripts/test-mac.sh quick --only WaypointExampleUITests/<Class>/<test>` (UI). Report what the second run did. The gate still failed. |
 | `ThreadSanitizer: data race` | A real failure: a data race | No retry. Report the first 20 lines of the report. |
-| `error: another test run (pid N) is using <name>` | Not a test result: the simulator is taken | Don't remove the lock. Run teardown step 3, and tell whoever keeps the queue. |
+| `error: another test run (pid N) is using <name>` | Not a test result: two runs overlapped | Don't remove the lock and don't touch the clone. Report it to whoever keeps the queue, who decides which run starts again. |
 | `error: no simulator named <name>`, or `Creating simulator` | Not a test result: a simulator is missing | Stop the run if it is still going. Don't delete what was created. Report the name. |
 | `error: no iOS simulator runtime installed` | Not a test result: Xcode lacks a runtime | Stop. Report it. |
 | `Unable to boot`, `Failed to install`, `Failed to launch`, `Test runner never began executing`, `Lost connection to the test runner` | Not a test result: the simulator misbehaved | Shut your simulator down by name, then run the same command once more. A second failure: report it as a simulator failure. |
