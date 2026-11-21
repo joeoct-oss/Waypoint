@@ -77,8 +77,8 @@ final class AccountCoordinator {
                 route
             }
         }
-        if launch.entry?.isRunnable == true {
-            showLabDemo(.detailPush)
+        if let demo = launch.entry?.demo {
+            showLabDemo(demo)
         }
     }
 
@@ -181,8 +181,8 @@ final class AccountCoordinator {
     // An entry that runs for real opens full screen on a stack of its own, because stacks don't
     // nest. The others push their placeholder.
     func showLabFlow(_ entry: FlowEntry) {
-        guard !entry.isRunnable else {
-            showLabDemo(.detailPush)
+        if let demo = entry.demo {
+            showLabDemo(demo)
             return
         }
         router.push(AccountRoute.labFlow(entry))
