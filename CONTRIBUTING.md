@@ -14,7 +14,7 @@ Every change starts from an issue. Name the branch after it:
 <type>/<issue-number>-<short-kebab-description>
 ```
 
-The types are `feature`, `fix`, `docs`, `test`, `refactor` and `chore`, for example `feature/12-typed-routes` or `fix/31-sheet-dismiss-crash`.
+The types are `feature`, `fix`, `docs`, `test`, `refactor` and `chore`, for example `feature/12-typed-routes` or `fix/31-sheet-dismiss-crash`. After the number comes a short plain-English phrase, two to five words, that a person understands at a glance. Leave out decision, plan and issue numbers and code ids: `docs/251-explain-coordinators-and-renderers`, not `docs/251-align-docs-with-decisions-0017-and-0018`.
 
 ## Test first
 
