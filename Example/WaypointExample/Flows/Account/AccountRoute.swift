@@ -26,10 +26,6 @@ enum AccountRoute: TrackableScreen {
     case labStory(ViewModelStory)
     case labTool(LabTool)
 
-    static let rootTrail = [
-        "account",
-    ]
-
     var title: String {
         switch self {
         case .orders:
@@ -70,40 +66,5 @@ enum AccountRoute: TrackableScreen {
         case .labFlow(let entry):
             return entry.kind
         }
-    }
-
-    var trail: [String] {
-        switch self {
-        case .orders:
-            return Self.rootTrail + ["orders"]
-        case .order(let order):
-            return Self.rootTrail + ["orders", "\(order.id)"]
-        case .wishlist:
-            return Self.rootTrail + ["wish list"]
-        case .addresses:
-            return Self.rootTrail + ["addresses"]
-        case .addAddress:
-            return Self.rootTrail + ["addresses", "new address"]
-        case .settings:
-            return Self.rootTrail + ["settings"]
-        case .lab:
-            return Self.rootTrail + ["settings", "lab"]
-        case .labBranch(let branch):
-            return Self.labTrail(to: branch)
-        case .labFlow(let entry):
-            return Self.labTrail(to: entry)
-        case .labStory(let story):
-            return AccountRoute.lab.trail + [story.code]
-        case .labTool(let tool):
-            return AccountRoute.lab.trail + [tool.title.lowercased()]
-        }
-    }
-
-    private static func labTrail(to branch: Branch) -> [String] {
-        AccountRoute.lab.trail + ["\(branch.rawValue) branch"]
-    }
-
-    private static func labTrail(to entry: FlowEntry) -> [String] {
-        labTrail(to: entry.branch) + ["\(entry.flow.rawValue) \(entry.kind.rawValue)"]
     }
 }

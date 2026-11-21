@@ -7,11 +7,12 @@
 //
 
 import SwiftUI
+import WaypointCore
 
 // What every screen shows around its content: the title, the kind when the screen belongs to one
-// kind, and the route trail. A screen whose trail has one step is a root: it shows a large title
-// and no trail, since the trail would only repeat the title. A pushed screen shows its title
-// inline, with the trail.
+// kind, and the route trail, which `RouterTrail` reads from the screen's stack router. The root of
+// a tab, or of a flow with only the tabs above it, shows a large title and no trail, since the
+// trail would only repeat the title. Any other screen shows its title inline, with the trail.
 //
 // From iOS 26 the system bars are Liquid Glass, so the chrome stays inside them: the trail is the
 // navigation bar's subtitle, the kind is a plain toolbar item that the bar draws in glass, and
@@ -31,10 +32,7 @@ struct ScreenChrome: ViewModifier {
     let title: String
     let kind: FlowKind?
     let trail: [String]
-
-    private var isRoot: Bool {
-        trail.count <= 1
-    }
+    let isRoot: Bool
 
     private var titleDisplayMode: NavigationBarItem.TitleDisplayMode {
         isRoot ? .large : .inline
@@ -97,15 +95,37 @@ struct ScreenChrome: ViewModifier {
 }
 
 extension View {
+    // The chrome of the screen that shows `route` on `router`, or of the stack's root screen when
+    // `route` is `nil`.
     func screenChrome(
         title: String,
         kind: FlowKind?,
-        trail: [String]
+        router: StackRouter,
+        route: AnyRoute?
     ) -> some View {
         let chrome = ScreenChrome(
             title: title,
             kind: kind,
-            trail: trail
+            trail: RouterTrail.steps(on: router, at: route),
+            isRoot: RouterTrail.isRoot(on: router, at: route)
+        )
+        return modifier(chrome)
+    }
+
+    // The chrome of a screen that no route shows, such as Order placed, one `step` above the top of
+    // `router`.
+    func screenChrome(
+        title: String,
+        kind: FlowKind?,
+        router: StackRouter,
+        step: String
+    ) -> some View {
+        let top = RouterTrail.steps(on: router, at: router.state.path.last)
+        let chrome = ScreenChrome(
+            title: title,
+            kind: kind,
+            trail: top + CollectionOfOne(step),
+            isRoot: false
         )
         return modifier(chrome)
     }

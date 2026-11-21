@@ -109,7 +109,8 @@ final class AccountCoordinator {
         .screenChrome(
             title: MainTab.account.title,
             kind: nil,
-            trail: AccountRoute.rootTrail
+            router: router,
+            route: nil
         )
     }
 
@@ -118,7 +119,8 @@ final class AccountCoordinator {
             .screenChrome(
                 title: screen.title,
                 kind: screen.kind,
-                trail: screen.trail
+                router: router,
+                route: AnyRoute(screen)
             )
     }
 

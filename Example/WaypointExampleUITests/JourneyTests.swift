@@ -35,6 +35,11 @@ final class JourneyTests: XCTestCase {
     private static let signedOut = "Signed out"
     private static let cartProductID = 1
     private static let cartProductTitle = "Orbit Lamp"
+    // The trail of product 1 on Shop, in either form: `main › shop › orbit lamp` on the bar, or
+    // `Route trail: main, shop, orbit lamp` on the strip.
+    private static let productTrail = NSPredicate(
+        format: "label CONTAINS 'main' AND label CONTAINS 'shop' AND label CONTAINS 'orbit lamp'"
+    )
     private static let savedProductID = 2
     private static let savedSearch = "mug"
     private static let savedSearchResultCount = "1 result"
@@ -221,6 +226,17 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.addressesButton].tapWhenReady()
         let saved = app.descendants(matching: .any)[Identifiers.address(label: Self.newAddressLabel)]
         XCTAssertTrue(saved.waitForExistence(timeout: UITestSteps.timeout))
+    }
+
+    // The trail comes from the stack router: a product pushed on Shop reads main, shop, then the
+    // product, on the bar's subtitle from iOS 26 and on the strip below the bar before that.
+    func testTrailFollowsRouter() {
+        let app = ExampleApp.launch()
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.buttons[Identifiers.product(id: Self.cartProductID)].tapWhenReady()
+
+        let trail = app.descendants(matching: .any).matching(Self.productTrail).firstMatch
+        XCTAssertTrue(trail.waitForExistence(timeout: UITestSteps.timeout))
     }
 
     // Orders and an order push on the Account tab's plain stack, which hides the tab bar on them,

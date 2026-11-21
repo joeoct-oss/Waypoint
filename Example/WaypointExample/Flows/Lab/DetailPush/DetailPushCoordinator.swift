@@ -23,10 +23,6 @@ final class DetailPushCoordinator {
     private static let toastDuration = Duration.seconds(4)
     private static let missingCartTitle = "Cart wasn't in the stack"
 
-    private static var listTrail: [String] {
-        ["shop"]
-    }
-
     let router: StackRouter
     // `var` because `backToCart()` shows a toast for a recovered pop, and the toast's timer hides
     // it.
@@ -36,6 +32,7 @@ final class DetailPushCoordinator {
 
     init(router: StackRouter) {
         self.router = router
+        router.setRootName(MainTab.shop.title)
         toast = nil
         toastTimer = nil
     }
@@ -45,7 +42,8 @@ final class DetailPushCoordinator {
             .screenChrome(
                 title: "Shop",
                 kind: .swiftUI,
-                trail: Self.listTrail
+                router: router,
+                route: nil
             )
     }
 
@@ -60,7 +58,8 @@ final class DetailPushCoordinator {
             .screenChrome(
                 title: product.name,
                 kind: .swiftUI,
-                trail: Self.productTrail(for: product)
+                router: router,
+                route: AnyRoute(route)
             )
         }
     }
@@ -72,7 +71,8 @@ final class DetailPushCoordinator {
                 .screenChrome(
                     title: "Cart",
                     kind: .swiftUI,
-                    trail: Self.cartTrail(for: product)
+                    router: router,
+                    route: AnyRoute(route)
                 )
         }
     }
@@ -89,14 +89,6 @@ final class DetailPushCoordinator {
     func backToCart() {
         let outcome = router.popTo(DetailCartRoute.self, else: .popToRoot)
         showToast(for: outcome, title: Self.missingCartTitle)
-    }
-
-    private static func productTrail(for product: Product) -> [String] {
-        listTrail + ["Product(\(product.id))"]
-    }
-
-    private static func cartTrail(for product: Product) -> [String] {
-        productTrail(for: product) + ["Cart"]
     }
 
     // Debug builds only: a recovered call shows its one-line description for a few seconds.

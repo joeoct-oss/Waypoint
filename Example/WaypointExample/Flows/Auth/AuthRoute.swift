@@ -32,10 +32,6 @@ struct CreateAccountRoute: TrackableScreen {
         "Create account"
     }
 
-    var trail: [String] {
-        AuthTrail.signIn + step.trail
-    }
-
     var screenDisplayName: String? {
         step.title
     }
@@ -94,22 +90,6 @@ enum CreateAccountStep: CaseIterable, Hashable, Codable {
         }
         return steps[index + 1]
     }
-
-    var trail: [String] {
-        let steps = Self.allCases.prefix { $0 != self }
-        return steps.map(\.trailName) + [trailName]
-    }
-
-    private var trailName: String {
-        switch self {
-        case .details:
-            return "details"
-        case .password:
-            return "password"
-        case .checkEmail:
-            return "check email"
-        }
-    }
 }
 
 // A sheet the accounts flow can present: Reset password over Sign in, or the terms over Choose a
@@ -119,11 +99,4 @@ enum CreateAccountStep: CaseIterable, Hashable, Codable {
 enum AuthSheet {
     case resetPassword
     case terms
-}
-
-// The route trail at the root of the accounts flow.
-enum AuthTrail {
-    static let signIn = [
-        "sign in",
-    ]
 }
