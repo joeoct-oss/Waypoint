@@ -35,19 +35,7 @@ struct FlowEntry: Hashable, Codable {
     let kind: FlowKind
 
     var isRunnable: Bool {
-        demo != nil
-    }
-
-    // The Lab demo that runs the entry for real, or `nil` for a placeholder.
-    var demo: LabDemo? {
-        switch self {
-        case Self.detailPush:
-            return .detailPush
-        case Self.tabs:
-            return .tabs
-        default:
-            return nil
-        }
+        self == Self.detailPush || self == Self.tabs
     }
 
     static func entries(in branch: Branch) -> [FlowEntry] {
