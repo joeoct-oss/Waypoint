@@ -428,7 +428,7 @@ Presenting checkout grows a branch under the screen that presented it:
 
 Boxes are at least 76 columns wide inside, so boxes one after another line up. The unified log cuts a message at about 1 KB, so `OSLogHandler` writes a long message, such as a box, as consecutive messages of whole lines.
 
-In the structured format, the journey writes `key=value` lines instead of the box, one per entry (see the table below). `usesSymbols: false` draws the box with `+`, `-`, `|` and `` `- ``.
+In the structured format, the journey writes `key=value` lines instead of the box, one per entry (see the table below). `usesSymbols: false` draws the box with `+`, `-` and `|`, with a backquote and a dash for the last corner.
 
 Each visit is also a value: ``StackRouter/screenVisit`` and ``TabRouter/screenVisit`` hold the latest ``ScreenVisit``, with its screen, previous screen, source, journey, transition, origin, call site, trigger, step and time on the previous screen. A presented flow is a ``FlowJourney``. Analytics handlers that receive them come later; until then, tests and apps can read the latest visit. The stack's renderer tells the tree when it first appears, so the first screen at launch is written too, without code in the screen. 
 
