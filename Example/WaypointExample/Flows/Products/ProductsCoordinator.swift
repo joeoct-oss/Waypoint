@@ -94,10 +94,7 @@ final class ProductsCoordinator {
         self.cart = cart
         self.router = router
         router.setRootName(start.rootName)
-        router.declareFlow(ShopFlow.self)
-        // Taken before anything is pushed, so the navigator belongs to the root screen and lives as
-        // long as the stack.
-        searchModel = SearchModel(navigation: router.navigator.scoped(to: ShopFlow.self))
+        searchModel = SearchModel.onShopStack(router)
         router.register(FilterRoute.self)
         router.register(SavedRoute.self)
         router.register(WishlistRoute.self)
