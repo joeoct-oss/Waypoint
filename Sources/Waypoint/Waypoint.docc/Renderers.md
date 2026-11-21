@@ -110,7 +110,7 @@ Every coordinator has a `view`: the whole flow, drawn by its renderer. `ShopCoor
 
 `viewController` is a `UIHostingController` around `view`, for any UIKit place that needs a controller. With the UIKit renderer inside, the screens are still drawn by a real `UINavigationController`.
 
-SwiftUI reads `view` again on every update. The renderer's state is kept for each coordinator, like its router, so every read draws the same stack and the user never loses their place. Drawing the same coordinator in two places at once reports `coordinatorDrawnTwice` and draws only the first.
+SwiftUI reads `view` again on every update. The renderer's state is kept for each coordinator, like its router, so every read draws the same stack and the user never loses their place. Drawing the same coordinator in two places at once reports it in debug and draws only the first.
 
 ### The window
 
@@ -170,6 +170,8 @@ let configuration = NavigationConfiguration(renderers: .init(stack: .uiKit, tab:
 let router = RootRouter(AppRoot.login, configuration: configuration)
 ```
 
+`NavigationConfiguration` lives in `WaypointCore`, which has no UI, so the core keeps the choice as plain values: `.default`, `.swiftUI` and `.uiKit`. `.custom(MyStackRenderer.self)`, which names a renderer type, comes from `Waypoint`. How the core stores it without knowing the type is settled in #59.
+
 Or choose for one coordinator, by declaring its `Renderer`:
 
 ```swift
@@ -192,12 +194,14 @@ final class ScannerCoordinator: StackCoordinator {
 
 The choice for a place is made in this order:
 
-1. Waypoint's own rule for the place, where it has one. In 0.x, a Waypoint stack inside the app's own `NavigationStack` is always drawn by the UIKit stack renderer, and a different choice there reports `rendererNotSupportedHere` in debug.
+1. Waypoint's own rule for the place, where it has one. In 0.x, a Waypoint stack inside the app's own `NavigationStack` is always drawn by the UIKit stack renderer, and a different choice there is reported in debug.
 2. The coordinator's own `Renderer`.
 3. The app-wide choice.
 4. Waypoint's default.
 
-A pushed child flow shares its parent's stack, so its parent's renderer draws it. A pushed child that declares a renderer reports `rendererIgnoredForPushedFlow` in debug.
+A pushed child flow shares its parent's stack, so its parent's renderer draws it. A pushed child that declares a renderer has it ignored, and that is reported in debug.
+
+These reports are `rendererMismatch` issues today. Whether they get kinds of their own, such as `coordinatorDrawnTwice`, `rendererNotSupportedHere` and `rendererIgnoredForPushedFlow`, is settled in #59.
 
 ### Mixing SwiftUI and UIKit
 

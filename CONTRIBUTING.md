@@ -25,7 +25,7 @@ The types are `feature`, `fix`, `docs`, `test`, `refactor` and `chore`, for exam
 ## Running tests on Linux
 
 
-`WaypointCore` is pure Swift (Foundation, Observation and Synchronization only), so it builds and runs its unit tests on Linux. The `Waypoint` (SwiftUI) and `WaypointUIKit` targets compile empty there, so renderer code and UI tests still need a Mac.
+`WaypointCore` is pure Swift (Foundation, Observation and Synchronization only), so it builds and runs its unit tests on Linux. The `Waypoint` target, which holds the SwiftUI and UIKit renderers, and the empty `WaypointUIKit` placeholder compile empty there, so renderer code and UI tests still need a Mac.
 
 You need a Swift 6 toolchain (6.0 or newer). From the repository root:
 
