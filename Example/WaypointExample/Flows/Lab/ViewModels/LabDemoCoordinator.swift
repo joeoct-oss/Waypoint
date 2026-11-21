@@ -13,7 +13,8 @@ import WaypointCore
 // Runs the Lab's demos, presented full screen over the Lab: the view and view-model demos, and the
 // Detail push flow, which `DetailPushCoordinator` runs. Each product demo is the small
 // `LabShopFlow` on a Waypoint stack of its own, because stacks don't nest, and Detail push is
-// `DetailPushFlow` on another, and Tabs is `TabsDemoCoordinator`'s tab container. Every
+// `DetailPushFlow` on another, Tabs is `TabsDemoCoordinator`'s tab container, and Sheet is
+// `SheetDemoCoordinator`'s stack with the sheets and covers it presents. Every
 // product demo gets a fresh router, which this coordinator owns while the demo is up and drops once
 // it has closed, so a navigator that outlives the demo has no router left. The no-router demo runs
 // in a plain SwiftUI stack instead: the account stack above the Lab is a Waypoint stack, so only a
@@ -42,6 +43,9 @@ final class LabDemoCoordinator {
     private(set) var detailPush: DetailPushCoordinator?
     // `var` because `showDemo(_:)` makes the Tabs story's coordinator and `releaseDemo()` drops it.
     private(set) var tabsDemo: TabsDemoCoordinator?
+    // `var` because `showDemo(_:)` makes the Sheet story's coordinator and `releaseDemo()` drops
+    // it.
+    private(set) var sheetDemo: SheetDemoCoordinator?
     // `var` because `recordLateOutcome(_:)` keeps the newest result a closed demo's model reported.
     private(set) var lateOutcome: String?
 
@@ -59,6 +63,7 @@ final class LabDemoCoordinator {
         productModel = nil
         detailPush = nil
         tabsDemo = nil
+        sheetDemo = nil
         lateOutcome = nil
     }
 
@@ -71,17 +76,21 @@ final class LabDemoCoordinator {
             makeDetailPushFlow()
         case .tabs:
             makeTabsFlow()
+        case .sheet:
+            makeSheetFlow()
         case .style, .lateResult:
             makeShopFlow(for: demo)
         }
     }
 
-    // Tabs runs on its own tab router, so it gets no stack router and no product model.
+    // Tabs and Sheet make their own routers, so they get no stack router here and no product model.
     func showDemo(_ demo: LabDemo) {
-        let router = demo == .tabs ? nil : makeRouter(for: demo)
+        let ownsRouter = demo == .tabs || demo == .sheet
+        let router = ownsRouter ? nil : makeRouter(for: demo)
         lateOutcome = nil
         detailPush = demo == .detailPush ? router.map { DetailPushCoordinator(router: $0) } : nil
         tabsDemo = demo == .tabs ? makeTabsDemo() : nil
+        sheetDemo = demo == .sheet ? makeSheetDemo() : nil
         productModel = detailPush == nil ? router.map { makeProductModel($0) } : nil
         self.router = router
         presentedDemo = demo
@@ -101,6 +110,7 @@ final class LabDemoCoordinator {
         productModel = nil
         detailPush = nil
         tabsDemo = nil
+        sheetDemo = nil
     }
 
     func recordLateOutcome(_ outcome: NavigationOutcome) {
@@ -146,6 +156,25 @@ final class LabDemoCoordinator {
         }
     }
 
+    // The Sheet story's stack, with the sheets and covers it presents.
+    @ViewBuilder
+    private func makeSheetFlow() -> some View {
+        if let sheetDemo {
+            SheetDemoStack(
+                demo: sheetDemo,
+                router: sheetDemo.router,
+                level: nil
+            )
+        }
+    }
+
+    private func makeSheetDemo() -> SheetDemoCoordinator {
+        SheetDemoCoordinator(
+            navigation: navigation,
+            onClose: { self.dismissDemo() }
+        )
+    }
+
     private func makeTabsDemo() -> TabsDemoCoordinator {
         TabsDemoCoordinator(
             navigation: navigation,
@@ -161,8 +190,8 @@ final class LabDemoCoordinator {
         }
     }
 
-    // Only the shop demos reach here: the no-router demo, Detail push and Tabs draw their own
-    // stacks in `makeDemoFlow(for:)`.
+    // Only the shop demos reach here: the no-router demo, Detail push, Tabs and Sheet draw their
+    // own stacks in `makeDemoFlow(for:)`.
     @ViewBuilder
     private func makeRootFlow(for demo: LabDemo) -> some View {
         switch demo {
@@ -170,7 +199,7 @@ final class LabDemoCoordinator {
             makeStyleFlow(style)
         case .lateResult:
             makeNavigatorFlow()
-        case .noRouter, .detailPush, .tabs:
+        case .noRouter, .detailPush, .tabs, .sheet:
             EmptyView()
         }
     }
@@ -251,6 +280,7 @@ enum LabDemo: Hashable, Identifiable {
     case noRouter
     case detailPush
     case tabs
+    case sheet
 
     var id: Self {
         self
