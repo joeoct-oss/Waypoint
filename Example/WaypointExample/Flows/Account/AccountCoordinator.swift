@@ -17,7 +17,8 @@ import WaypointCore
 // book, which checkout shares, and goes back to the list. Sign out, in Settings, ends the session
 // and goes back to Account, which then shows the guest prompt; the reader stays in the app.
 // Settings also shows the app's navigation rules, and tries the two calls their fallbacks recover:
-// going back to a screen that isn't in the stack, and opening sign in while it is up. Clear
+// going back to a screen that isn't in the stack, and opening sign in while it is up, and one no
+// fallback covers, closing the tab's stack, which `onNavigationFailure` counts. Clear
 // all data reports to the app coordinator, which clears the store and starts the window over.
 //
 // The stack runs on Waypoint: `router` is the account tab's stack router from the main tab router,
@@ -236,6 +237,13 @@ final class AccountCoordinator {
         gate.showSignIn()
     }
 
+    // Settings' "Close the Account tab": the tab's stack wasn't presented, so `dismissFlow` has
+    // nothing to dismiss. No fallback covers it, so the configuration's `onNavigationFailure`
+    // counts it.
+    func tryUnrecovered() {
+        router.dismissFlow()
+    }
+
     func clearAllData() {
         onClearAllData()
     }
@@ -311,7 +319,8 @@ final class AccountCoordinator {
                 failureCount: issues.failureCount,
                 onSetPushesTwice: { self.rules.setPushesTwice($0) },
                 onTryMissingPop: { self.tryMissingPop() },
-                onTryPresentTwice: { self.tryPresentTwice() }
+                onTryPresentTwice: { self.tryPresentTwice() },
+                onTryUnrecovered: { self.tryUnrecovered() }
             )
         )
     }

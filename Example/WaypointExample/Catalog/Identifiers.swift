@@ -88,6 +88,7 @@ enum Identifiers {
     static let failureCount = "settings.failureCount"
     static let tryMissingPop = "settings.tryMissingPop"
     static let tryPresentTwice = "settings.tryPresentTwice"
+    static let tryUnrecovered = "settings.tryUnrecovered"
     static let mainTabs = "main.tabs"
     static let productList = "shop.products"
     static let collectionScreen = "shop.collection"

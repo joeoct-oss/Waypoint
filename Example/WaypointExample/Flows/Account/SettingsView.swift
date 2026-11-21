@@ -12,13 +12,14 @@ import SwiftUI
 // trying every demo flow, and Clear all data, which asks to confirm next to the button), About (the
 // version) and, for a signed-in reader, Sign out. Navigation rules (#280) shows the duplicate push
 // rule, which it can change for testing, the queued-call limit and how many calls failed with no
-// fallback, and tries the two calls the app's fallbacks recover. The screen reports each choice to
-// the account coordinator.
+// fallback, and tries the two calls the app's fallbacks recover and one no fallback covers. The
+// screen reports each choice to the account coordinator.
 struct SettingsView: View {
     private static let rulesTitle = "Navigation rules"
     private static let pushesTwiceTitle = "Double tap pushes twice"
-    private static let rulesFooter = "A double tap pushes once by default. The two calls below fail, "
-        + "and the app's fallbacks recover them: the issue banner and the Lab's event log show it."
+    private static let rulesFooter = "A double tap pushes once by default. The first two calls below "
+        + "fail and the app's fallbacks recover them; the last one has no fallback, so it counts as not "
+        + "recovered. The issue banner and the Lab's event log show each one."
 
     let isSignedIn: Bool
     let onShowLab: () -> Void
@@ -74,6 +75,8 @@ struct SettingsView: View {
                 .accessibilityIdentifier(Identifiers.tryMissingPop)
             Button("Open sign in twice", action: rules.onTryPresentTwice)
                 .accessibilityIdentifier(Identifiers.tryPresentTwice)
+            Button("Close the Account tab", action: rules.onTryUnrecovered)
+                .accessibilityIdentifier(Identifiers.tryUnrecovered)
         } header: {
             Text(Self.rulesTitle)
         } footer: {
@@ -141,4 +144,5 @@ struct SettingsRules {
     let onSetPushesTwice: (Bool) -> Void
     let onTryMissingPop: () -> Void
     let onTryPresentTwice: () -> Void
+    let onTryUnrecovered: () -> Void
 }

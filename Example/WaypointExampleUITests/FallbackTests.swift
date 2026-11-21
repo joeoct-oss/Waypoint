@@ -12,7 +12,7 @@ import XCTest
 // fallbacks every flow inherits: a `popTo` of a screen that isn't in the stack pops to the root,
 // and a present while a flow is up replaces it. Each recovery shows in the issue banner over the
 // tabs and as a recovered entry in the Lab's event log. Settings' toggle changes the duplicate
-// push rule, so a fast double tap pushes twice.
+// push rule, so a fast double tap pushes twice, and counts a call no fallback covers.
 @MainActor
 final class FallbackTests: XCTestCase {
     private static let accountTitle = "Account"
@@ -22,6 +22,7 @@ final class FallbackTests: XCTestCase {
     private static let lampID = 1
     private static let recovered = "recovered"
     private static let switchOn = "1"
+    private static let oneFailure = "1"
     // How the log words the two recoveries.
     private static let missingRoute = NSPredicate(format: "label CONTAINS \"isn't in the stack\"")
     private static let alreadyPresenting = NSPredicate(format: "label CONTAINS 'already presents'")
@@ -54,6 +55,22 @@ final class FallbackTests: XCTestCase {
         app.openLabTool(.eventLog)
         let entry = recoveredEntries(in: app).matching(Self.alreadyPresenting).firstMatch
         XCTAssertTrue(app.reveal(entry), "the event log doesn't show the replaced sheet")
+    }
+
+    // A call no fallback covers reaches `onNavigationFailure`, which Settings counts.
+    func testUnrecoveredCallIsCounted() {
+        let app = openSettings()
+        let count = app.descendants(matching: .any)[Identifiers.failureCount]
+        XCTAssertTrue(app.reveal(count))
+        XCTAssertFalse(count.label.contains(Self.oneFailure), count.label)
+
+        app.buttons[Identifiers.tryUnrecovered].tapWhenReady()
+        let banner = app.descendants(matching: .any)[Identifiers.navigationIssue]
+        XCTAssertTrue(banner.waitForExistence(timeout: UITestSteps.timeout), "the banner didn't show the failure")
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].exists, "a failed call moved the screen")
+        let counted = NSPredicate(format: "label CONTAINS %@", Self.oneFailure)
+        let wait = expectation(for: counted, evaluatedWith: count)
+        XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: UITestSteps.timeout), .completed, count.label)
     }
 
     func testDuplicatePushRuleFromSettings() {
