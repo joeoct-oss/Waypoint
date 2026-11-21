@@ -38,7 +38,9 @@ extension View {
     func noticeOverlay(_ notice: Notice?) -> some View {
         overlay(alignment: .top) {
             if let notice {
+                // Taps pass through, so the toast never blocks Back or the bar's buttons under it.
                 NoticeToast(notice: notice)
+                    .allowsHitTesting(false)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
