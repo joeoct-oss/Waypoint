@@ -14,7 +14,6 @@ Follow the steps in order and word for word. Each step says what to run, what a 
 6. [When a run fails](#6-when-a-run-fails)
 7. [Report the result](#7-report-the-result)
 8. [Never do this](#8-never-do-this)
-9. [Not part of any run yet](#9-not-part-of-any-run-yet)
 
 ## 1. Where each test runs
 
@@ -79,7 +78,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
 | `waypoint-03` | iPad | 27.2 | iPad checks only |
 
 - **One run per simulator.** A run holds its simulator alone, from preflight to teardown. Runs are queued: before a Mac run, get a slot for every simulator it uses (`release` uses `waypoint-01` and `waypoint-02`) from whoever keeps the queue, and give the slot back after teardown. The script also refuses a simulator another run holds, with a lock in `${TMPDIR:-/tmp}/waypoint-test-<name>.lock`.
-- **Never create a simulator.** Until #265 lands, `scripts/test-mac.sh` creates `WAYPOINT_SIMULATOR` when it is missing. Preflight step 4 checks it exists first, so the script never gets the chance.
+- **Never create a simulator.** `scripts/test-mac.sh` creates `WAYPOINT_SIMULATOR` when it is missing, so preflight step 4 checks it exists first and the script never gets the chance.
 - **Never delete, erase or rename a simulator**, and never shut down one you don't hold. Shut down only your own, by name: `xcrun simctl shutdown waypoint-01`. Never `xcrun simctl shutdown all`.
 
 ## 4. Run the Linux suite
@@ -258,13 +257,3 @@ Teardown: simulators shut down, locks gone, worktree removed | <what is left>
 - Never create, delete, erase or rename a simulator, never shut down one you don't hold, and never run `xcrun simctl shutdown all`.
 - Never remove another run's lock, and never `kill -9` a test run.
 - Never check out a branch in the shared clone on the Mac; use a worktree.
-
-## 9. Not part of any run yet
-
-These checks don't exist yet. A run never waits for them.
-
-| What | Issue | When it lands |
-|---|---|---|
-| CI on pull requests | #5, #69 | The Linux suite runs on every pull request, and the Mac tier on pull requests labelled `runs:mac`. This runbook stays the definition of what they run. |
-| `scripts/lint.sh` (strict SwiftLint and swift-format) | #70 | It joins both places and the merge gate. |
-| `scripts/test-mac.sh` stops on a missing simulator | #265 | Preflight step 4 stays, as a check before the slot is used. |
