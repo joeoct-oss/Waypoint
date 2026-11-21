@@ -108,7 +108,7 @@ Two naming rules keep a coordinator readable. Each `case` body is one call to a 
 
 ### 2. Tabs, one stack each
 
-The tab coordinator owns the tab router and one stack coordinator for each tab. Each is created once and kept, so a tab keeps its state while the screen redraws. Each tab's stack coordinator joins the tab router as soon as the tab coordinator joins the tree, before any call or link reaches it, so `router(for:)` returns that same router from the start. A router read earlier, such as in a test, works on its own and keeps its screens when it joins. A link that arrives before the tabs are drawn, as in section 5, reaches the same shop router. The exact joining rule is built in #59.
+The tab coordinator owns the tab router and one stack coordinator for each tab. Each is created once and kept, so a tab keeps its state while the screen redraws. Each tab's stack coordinator joins the tab router as soon as the tab coordinator joins the tree, before any call or link reaches it, so `router(for:)` returns that same router from the start. A router read earlier, such as in a test, works on its own and keeps its screens when it joins. A link that arrives before the tabs are drawn, as in section 5, reaches the same shop router. Waypoint has to know which stack coordinator belongs to which tab before the tabs are drawn. How the tab coordinator tells it, a requirement that maps each tab to its coordinator or a rule over `makeTabFlow(for:)`, is designed in #59. The exact joining rule is built in #59.
 
 ```swift
 // Conformances:
@@ -217,7 +217,7 @@ final class ShopCoordinator: StackCoordinator, NavigationFlow {
 }
 ```
 
-The shop coordinator declares no router. Its router becomes the shop tab's stack once the tab coordinator draws it, as section 2 explains.
+The shop coordinator declares no router. Its router is the shop tab's stack, as section 2 explains.
 
 ### 4. A sheet that returns a result
 

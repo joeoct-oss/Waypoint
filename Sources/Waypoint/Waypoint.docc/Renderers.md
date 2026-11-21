@@ -135,6 +135,7 @@ public protocol TabCoordinator: AnyObject {
     associatedtype Renderer: TabRenderer = DefaultTabRenderer
 
     /// The screen for one tab, usually one of the coordinator's stack coordinators' `view`.
+    /// How Waypoint learns each tab's coordinator before drawing is designed in #59.
     @ViewBuilder func makeTabFlow(for tab: Tab) -> TabContent
     /// The tabs, drawn by `Renderer`. Default: filled in by Waypoint.
     var view: Renderer { get }
