@@ -256,6 +256,8 @@ public struct NavigationConfiguration: Sendable {
 }
 ```
 
+> Note: Draft until #59. A `renderers:` setting joins the configuration: which renderer draws each kind of coordinator in the whole tree, such as `.init(stack: .uiKit, tab: .swiftUI)`. The core has no UI, so it keeps the choice as plain values (`.default`, `.swiftUI`, `.uiKit`). `.custom(_:)`, which names a renderer type of your own, comes from the `Waypoint` product. See "Coordinators and renderers" in the `Waypoint` catalog.
+
 `TabRouter` and `RootRouter` take the same `configuration:` argument when they are the root. Routers inside the tree, such as a tab's stack or a presented flow, are made by their parent and share its configuration.
 
 ### Building paths

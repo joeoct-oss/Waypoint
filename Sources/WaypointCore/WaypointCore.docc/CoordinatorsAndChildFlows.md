@@ -4,7 +4,7 @@ Group screens into flows, nest them, and get a result back when a flow ends.
 
 ## Overview
 
-> Note: Draft until #36. The API in this article is planned, not built, and can still change when #36 lands.
+> Note: Draft until #59. The API in this article is planned, not built, and can still change: coordinators (#59), flow results (#60) and flow routes (#152).
 
 A coordinator is your own object that owns one router, the flow's dependencies and its logic. Screens report what happened through outputs, closures you pass in, and the coordinator decides where to go next. Screens never import Waypoint.
 
@@ -12,9 +12,8 @@ Coordinators are optional. A plain stack with a few `.destination` lines needs n
 
 ```swift
 // Conformances:
-// - `StackCoordinator`: it adds screen building to a stack coordinator.
+// - `StackCoordinator`, so Waypoint can draw its stack and make its router.
 final class ShopCoordinator: StackCoordinator {
-    let router = StackRouter()
     let catalog: CatalogService
 
     init(catalog: CatalogService) {
@@ -27,7 +26,9 @@ final class ShopCoordinator: StackCoordinator {
 }
 ```
 
-The renderer products add the parts that build screens: SwiftUI views or UIKit view controllers. See the renderer articles.
+A stack or flow coordinator doesn't declare its router. Waypoint makes it the first time it is read, names it after the coordinator, and releases it when the flow ends. A coordinator that declares `let router = StackRouter()` uses its own, as tests do.
+
+There is one coordinator protocol for each kind, and it is the same in SwiftUI and UIKit apps. The `Waypoint` product adds the screens: `root` and `destinations`, which take SwiftUI views or UIKit view controllers, and `view`, the whole flow drawn by a renderer you can choose. See "Coordinators and renderers" in the `Waypoint` catalog. The parts below have no UI, so a coordinator's logic is tested on Linux.
 
 ### Coordinator protocols
 
@@ -38,37 +39,47 @@ The renderer products add the parts that build screens: SwiftUI views or UIKit v
 /// - `AnyObject`, because a coordinator is one shared object that owns its router.
 @MainActor
 public protocol StackCoordinator: AnyObject {
-    /// The router this coordinator owns.
+    /// The router this coordinator owns. Default: made the first time it is read.
     var router: StackRouter { get }
 }
 
-/// App code that owns a tab container.
+/// App code that owns a tab container, with one stack coordinator for each tab.
 ///
 /// Conformances:
 /// - `AnyObject`, because a coordinator is one shared object that owns its router.
 @MainActor
 public protocol TabCoordinator: AnyObject {
+    /// Conformances:
+    /// - `NavigationTab`, the app's tab type.
     associatedtype Tab: NavigationTab
+
+    /// The router this coordinator owns. No default, because only the app knows which tab
+    /// is selected first, such as `let router = TabRouter(selection: MainTab.home)`.
     var router: TabRouter<Tab> { get }
 }
 
-/// A flow that ends with a value for whoever started it.
+/// App code that owns a child flow, presented or pushed, that ends with a value for whoever
+/// started it.
 ///
 /// Conformances:
 /// - `AnyObject`, because the flow is one object that ends once.
 @MainActor
-public protocol FlowFinishing: AnyObject {
+public protocol FlowCoordinator: AnyObject {
     /// What the flow hands back, such as a picked address.
     associatedtype Output: Sendable
 
-    /// Ends the flow with `output`. Its router is removed and released.
+    /// The router this coordinator owns. Default: made the first time it is read.
+    var router: StackRouter { get }
+
+    /// Ends the flow with `output`. Waypoint delivers the result, dismisses the flow, and
+    /// releases its router and coordinator. Default: filled in by Waypoint.
     func finish(with output: Output)
 }
 ```
 
 ### The app coordinator
 
-An app with more than one root flow, such as login and the main tabs, keeps its navigation in an app coordinator: your own type at the top of the coordinator tree. It owns the root router, the tab router, the child coordinators that live as long as the app, and the link inbox. It also decides what happens between flows. The `App` or scene delegate only creates it and hands it to the renderer, and screens report what happened instead of switching roots themselves.
+An app with more than one root flow, such as login and the main tabs, keeps its navigation in an app coordinator: your own type at the top of the coordinator tree. It owns the root router and the link inbox, which live as long as the window, and makes the flow for each root when the root switches, such as a tab coordinator with its own tab router. It also decides what happens between flows. The `App` or scene delegate only creates it and hands it to the renderer, and screens report what happened instead of switching roots themselves.
 
 ```swift
 /// App code that owns the app's top-level flow: which root shows, and where links go.
@@ -81,7 +92,8 @@ public protocol RootCoordinator: AnyObject {
     /// - `Hashable`, `Codable` and `Sendable`, required by `RootRouter`.
     associatedtype Root: NavigationRoot
 
-    /// The router this coordinator owns.
+    /// The router this coordinator owns. No default, because only the app knows its first
+    /// root, such as `let router = RootRouter(AppRoot.login)`.
     var router: RootRouter<Root> { get }
 
     /// Where incoming links go, or `nil` if the app takes no links.
@@ -91,9 +103,15 @@ public protocol RootCoordinator: AnyObject {
 }
 ```
 
-The renderer products add the screens for each root: `SwiftUIRootCoordinator` and `UIKitRootCoordinator`. See <doc:RootSwitching> for a whole app coordinator.
+The `Waypoint` product adds `makeFlow(for:)`, which returns the coordinator of each root's flow, and the window entries: `WaypointRoot { … }` in a SwiftUI app and `makeWindow(for:options:)` in a UIKit scene delegate. See <doc:RootSwitching> for a whole app coordinator.
+
+### Joining the tree
+
+A child coordinator's router joins its parent's tree before any call or link reaches the parent: a tab's stack coordinator joins the tab router as soon as the tab coordinator joins the tree, so the tab router's `router(for:)` returns that same router from the start, and a presented or pushed child joins when it starts. A router read earlier, such as in a test, works on its own and keeps its screens when it joins. Waypoint has to know which stack coordinator belongs to which tab before the tabs are drawn. How the tab coordinator tells it, a requirement that maps each tab to its coordinator or a rule over `makeTabFlow(for:)`, is designed in #59.
 
 Create child coordinators once and keep them in their parent coordinator, not inside a view's `body`, so a flow keeps its state while the screen redraws.
+
+A coordinator's closures, such as a screen's output or a `Flow(...)` entry's `onResult:` handler, may capture `self`. Waypoint keeps them with the flow's router and drops them when the flow ends, and for the window's own flows when the window's scene goes away, so no cycle outlives the flow. `[weak self]`, as UIKit code often writes, works too. A leak test for each kind of flow is part of #59.
 
 ### A coordinator as its own flow type
 
@@ -101,7 +119,7 @@ A coordinator can be its own `NavigationFlow`. Routes then name it as their flow
 
 ```swift
 // Conformances:
-// - `StackCoordinator`: it adds screen building to a stack coordinator.
+// - `StackCoordinator`, so Waypoint can draw its stack and make its router.
 // - `NavigationFlow`, so routes can name it as their flow.
 final class ShopCoordinator: StackCoordinator, NavigationFlow {
     ...
@@ -121,7 +139,7 @@ extension StackCoordinator where Self: NavigationFlow {
 
 ### Starting a child flow
 
-Presenting or pushing a child coordinator creates a child router in the tree. When the child flow ends, its router is removed and released.
+A child flow is a `FlowCoordinator`. Presenting or pushing one creates a child router in the tree. When the child flow ends, its router is removed and released.
 
 ```swift
 let result = await router.present(AddressPickerCoordinator(), style: .sheet)
@@ -149,41 +167,53 @@ extension StackRouter {
     ///
     /// The result is delivered exactly once: when the flow calls `finish(with:)`,
     /// when it is dismissed in code, or when the user swipes it away.
-    public func present<C: StackCoordinator & FlowFinishing>(
+    public func present<C: FlowCoordinator>(
         _ child: C,
         style: PresentationStyle = .sheet
     ) async -> FlowResult<C.Output>
 
     /// The same, with a callback instead of `await`.
     @discardableResult
-    public func present<C: StackCoordinator & FlowFinishing>(
+    public func present<C: FlowCoordinator>(
         _ child: C,
         style: PresentationStyle = .sheet,
         else fallback: NavigationFallback? = nil,
         onFinish: @escaping @MainActor (FlowResult<C.Output>) -> Void
     ) -> NavigationOutcome
 
-    /// Presents a child flow that returns nothing.
-    @discardableResult
-    public func present<C: StackCoordinator>(
-        _ child: C,
-        style: PresentationStyle = .sheet,
-        else fallback: NavigationFallback? = nil
-    ) -> NavigationOutcome
-
     /// Pushes a child flow's first screen onto this stack. The child shares
     /// this stack but has its own router for its own routes.
     @discardableResult
-    public func push<C: StackCoordinator>(
+    public func push<C: FlowCoordinator>(
         _ child: C,
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
 }
 ```
 
-Like every navigation method, these take an optional fallback, file and line, left out here.
+Like every navigation method, these take an optional fallback, file and line, left out here. To start a flow without waiting for its result, give it a `Flow(...)` entry and call `router.show(_:)`, or use the `onFinish:` form.
 
-> Note: Two changes are coming to child flows. A pushed child coordinator shares its parent's stack and container, and only a coordinator that starts a new stack gets a container of its own. A flow will also be able to stand for a route value, registered with a factory that builds its coordinator, so a link, a held link or a restored state can open it. A parent will then receive a flow's result through a handler registered by flow type, so a result still arrives after the app is relaunched. Tracked in #151 and #152.
+### A flow that stands for a route
+
+A flow can also stand for a route value, so a link, a held link or a restored state can open it. A `Flow(...)` entry in a coordinator's `destinations` registers a factory that builds the flow's coordinator, and its `onResult:` handler receives the flow's result, also after the app is relaunched with the flow restored. The entry can declare how the flow is shown, as any destination can, so `router.show(_:)` opens it without repeating the style:
+
+```swift
+private static let filterDetents: [SheetDetent] = [.medium, .large]
+
+var destinations: some Destinations {
+    Flow(FilterRoute.self, presentation: .sheet(detents: Self.filterDetents)) { _ in
+        FilterCoordinator()
+    } onResult: { result in
+        self.filterEnded(result)
+    }
+}
+
+func showFilters() {
+    router.show(FilterRoute())
+}
+```
+
+Leaving out `presentation:` pushes the flow. A pushed child flow shares its parent's stack and is drawn by its parent's renderer, and only a coordinator that starts a new stack gets one of its own. The `Flow(...)` entry and result delivery are built in #60, its factories in #152, and `show` in #12. See "Declared presentation" in <doc:PresentingFlows>.
 
 ### Finding coordinators in the tree
 

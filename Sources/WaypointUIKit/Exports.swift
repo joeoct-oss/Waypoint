@@ -7,8 +7,9 @@
 //
 
 #if canImport(UIKit)
-    // Apps that import WaypointUIKit get `OSLogHandler` and `LogConfiguration.osLog()` with no
-    // extra import, because the unified log target is not a product of its own (decision 0008).
-    // The UIKit renderer's entry points (#14) call `DefaultLogging.install(on:)` before they draw.
+    // Until this placeholder product is removed, apps that import WaypointUIKit get
+    // `OSLogHandler` and `LogConfiguration.osLog()` with no extra import, because the unified log
+    // target is not a product of its own. The UIKit renderers are designed to
+    // go into `Waypoint`.
     @_exported import WaypointOSLog
 #endif

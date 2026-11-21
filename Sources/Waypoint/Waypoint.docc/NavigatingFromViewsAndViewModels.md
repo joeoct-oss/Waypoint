@@ -4,7 +4,7 @@ Pick the style that suits your team: outputs, injected navigators or property wr
 
 ## Overview
 
-> Note: Built in #25: the navigators, flow scoping, `WaypointStack(flow:)`, the navigator destination, `@StackNavigation`, `@FlowNavigation`, `@DismissFlow` and the preview helper. `@FinishFlow` lands with coordinators (#36) and `@TabSelection` with tabs (#13).
+> Note: Built in #25: the navigators, flow scoping, `WaypointStack(flow:)`, the navigator destination, `@StackNavigation`, `@FlowNavigation`, `@DismissFlow` and the preview helper. `@FinishFlow` lands with coordinators (#59) and `@TabSelection` with tabs (#13).
 
 There is one router and three ways to reach it. All three call the same router methods, so guards, events, outcomes and restoration behave the same whichever you use, and you can mix them in one app.
 
@@ -56,7 +56,7 @@ The view model imports only `WaypointCore` and is tested with a real router, on 
 
 ### Property wrappers
 
-They are thin, read the router from the environment, and hold no state of their own. All are optional. `@FinishFlow` is planned with coordinators (#36), and `@TabSelection` with tabs (#13).
+They are thin, read the router from the environment, and hold no state of their own. All are optional. `@FinishFlow` is planned with coordinators (#59), and `@TabSelection` with tabs (#13).
 
 ```swift
 /// The nearest stack's navigator.
@@ -94,8 +94,8 @@ They are thin, read the router from the environment, and hold no state of their 
 ///
 /// Conformances:
 /// - `DynamicProperty`, so SwiftUI updates the view when the router changes.
-/// - `Flow: FlowFinishing`: the flow that ends with a result.
-@propertyWrapper public struct FinishFlow<Flow: FlowFinishing>: DynamicProperty {
+/// - `Flow: FlowCoordinator`: the flow that ends with a result.
+@propertyWrapper public struct FinishFlow<Flow: FlowCoordinator>: DynamicProperty {
     public var wrappedValue: FinishFlowAction<Flow.Output> { get }
 
     public init(_ flow: Flow.Type)
