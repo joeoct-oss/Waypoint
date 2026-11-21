@@ -200,7 +200,7 @@ final class ProductsCoordinator {
     }
 
     func save(_ product: Product) {
-        gate.requireAccount { self.addToWishlist(product) }
+        gate.requireAccount(for: .save) { self.addToWishlist(product) }
     }
 
     func dismissSheet() {

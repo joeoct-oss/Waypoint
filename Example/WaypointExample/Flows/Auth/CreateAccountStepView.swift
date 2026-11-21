@@ -9,10 +9,11 @@
 import SwiftUI
 
 // One step of creating an account under the bar's Create account title: the step's own title, its
-// fields, and Continue (or Start shopping on the last step). The fields write the coordinator's
-// draft, so going back keeps what the reader typed. Continue closes the keyboard first, so going
-// back never brings it up over Continue. The screen reports Continue and Read the terms, and the
-// accounts coordinator decides what comes next.
+// fields, and Continue (or Verify and continue on the last step, once the reader has typed the
+// 6-digit code from the email; Send a new code says a new one is on its way). The fields write the
+// coordinator's draft, so going back keeps what the reader typed. Continue closes the keyboard
+// first, so going back never brings it up over Continue. The screen reports Continue and Read the
+// terms, and the accounts coordinator decides what comes next.
 struct CreateAccountStepView: View {
     let step: CreateAccountStep
     @Bindable var draft: SignUpDraft
@@ -23,6 +24,8 @@ struct CreateAccountStepView: View {
 
     // `var` because SwiftUI moves focus between the fields, and Continue clears it.
     @FocusState private var focusedField: Field?
+    // `var` because Send a new code sets it, to say the code is on its way.
+    @State private var hasSentNewCode = false
 
     private var canContinue: Bool {
         switch step {
@@ -31,7 +34,7 @@ struct CreateAccountStepView: View {
         case .password:
             return draft.canContinueFromPassword
         case .checkEmail:
-            return true
+            return draft.hasFullCode
         }
     }
 
@@ -91,9 +94,22 @@ struct CreateAccountStepView: View {
     private var checkEmailMessage: some View {
         Section {
             Label {
-                Text("We sent a link to \(draft.email). Open it any time to confirm your account.")
+                Text("We sent a 6-digit code to \(draft.email).")
             } icon: {
                 Image(systemName: "envelope.badge")
+            }
+            TextField("6-digit code", text: $draft.code)
+                .textContentType(.oneTimeCode)
+                .keyboardType(.numberPad)
+                .focused($focusedField, equals: .code)
+                .accessibilityIdentifier(Identifiers.signUpCode)
+            Button("Send a new code", action: sendNewCode)
+                .accessibilityIdentifier(Identifiers.signUpNewCode)
+            if hasSentNewCode {
+                Text("A new code is on its way.")
+                    .font(Typography.footnote)
+                    .foregroundStyle(Palette.textSecondary.color)
+                    .accessibilityIdentifier(Identifiers.signUpCodeSent)
             }
         } header: {
             stepHeader
@@ -118,6 +134,11 @@ struct CreateAccountStepView: View {
         .padding(Spacing.large)
     }
 
+    private func sendNewCode() {
+        draft.code = ""
+        hasSentNewCode = true
+    }
+
     private func continueToNextStep() {
         focusedField = nil
         onContinue()
@@ -133,5 +154,6 @@ extension CreateAccountStepView {
         case name
         case email
         case password
+        case code
     }
 }

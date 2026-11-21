@@ -9,7 +9,8 @@
 import SwiftUI
 import Waypoint
 
-// Draws the cart's stack and its full-screen checkout from their coordinator.
+// Draws the cart's stack and its full-screen checkout from their coordinator. Checkout shows the
+// account gate's notice too, since its cover hides the one over the tabs.
 struct CartFlowView: View {
     let cart: CartCoordinator
 
@@ -22,6 +23,7 @@ struct CartFlowView: View {
             onDismiss: cart.releaseCheckout
         ) {
             cart.makeCheckoutFlow()
+                .noticeOverlay(cart.accountNotice)
         }
     }
 }

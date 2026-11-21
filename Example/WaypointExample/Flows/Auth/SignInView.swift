@@ -13,6 +13,7 @@ import SwiftUI
 // decides where it goes. Cancel closes the sheet and drops the action that asked for an account.
 // Sign in closes the keyboard first, so an error and the other ways in stay in view.
 struct SignInView: View {
+    let reason: SignInReason
     let isWorking: Bool
     let errorMessage: String?
     let onSignIn: (String, String) -> Void
@@ -68,12 +69,19 @@ struct SignInView: View {
         }
     }
 
+    // The sheet's title, then why it opened.
     private var header: some View {
-        Text("Sign in to continue")
-            .font(Typography.display)
-            .foregroundStyle(Palette.text.color)
-            .textCase(nil)
-            .padding(.bottom, Spacing.small)
+        VStack(alignment: .leading, spacing: Spacing.small) {
+            Text("Sign in to continue")
+                .font(Typography.display)
+                .foregroundStyle(Palette.text.color)
+            Text(reason.line)
+                .font(Typography.callout)
+                .foregroundStyle(Palette.textSecondary.color)
+                .accessibilityIdentifier(Identifiers.signInReason)
+        }
+        .textCase(nil)
+        .padding(.bottom, Spacing.small)
     }
 
     private var cancelItem: some ToolbarContent {

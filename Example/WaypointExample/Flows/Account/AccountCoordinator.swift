@@ -127,7 +127,7 @@ final class AccountCoordinator {
     }
 
     func openOrders() {
-        gate.requireAccount { self.showOrders() }
+        gate.requireAccount(for: .orders) { self.showOrders() }
     }
 
     func showOrders() {
@@ -139,7 +139,7 @@ final class AccountCoordinator {
     }
 
     func openWishlist() {
-        gate.requireAccount { self.showWishlist() }
+        gate.requireAccount(for: .wishlist) { self.showWishlist() }
     }
 
     func showWishlist() {
@@ -147,7 +147,7 @@ final class AccountCoordinator {
     }
 
     func openAddresses() {
-        gate.requireAccount { self.showAddresses() }
+        gate.requireAccount(for: .addresses) { self.showAddresses() }
     }
 
     func showAddresses() {
@@ -206,7 +206,7 @@ final class AccountCoordinator {
 
     // Ends the session and goes back to Account, which then shows the guest prompt.
     func signOut() {
-        session.signOut()
+        gate.signOut()
         router.popToRoot()
     }
 

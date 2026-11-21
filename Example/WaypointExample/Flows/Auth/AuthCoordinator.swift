@@ -27,11 +27,13 @@ import WaypointCore
 @Observable
 final class AuthCoordinator {
     let router: StackRouter
+    private let reason: SignInReason
     private let service: any AuthService
     private let onSignedIn: (Account) -> Void
     private let onCancel: () -> Void
     private let draft: SignUpDraft
-    // `var` because creating an account keeps it until Check your email reports Start shopping.
+    // `var` because creating an account keeps it until Check your email reports Verify and
+    // continue.
     private var newAccount: Account?
     // `var` because `showResetPassword()` and `showTerms()` set it with the router they present,
     // and `releaseSheet()` clears both once the sheet has slid away, so it still draws meanwhile.
@@ -50,11 +52,13 @@ final class AuthCoordinator {
 
     init(
         router: StackRouter,
+        reason: SignInReason,
         service: any AuthService,
         onSignedIn: @escaping (Account) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.router = router
+        self.reason = reason
         self.service = service
         self.onSignedIn = onSignedIn
         self.onCancel = onCancel
@@ -72,6 +76,7 @@ final class AuthCoordinator {
 
     func makeSignInFlow() -> some View {
         SignInView(
+            reason: reason,
             isWorking: isWorking,
             errorMessage: errorMessage,
             onSignIn: { self.signIn(email: $0, password: $1) },
