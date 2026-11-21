@@ -8,7 +8,7 @@ Closes #
 
 - [ ] Unit tests were written first and failed before the change
 - [ ] UI tests added or updated for visible behaviour (or not needed, because ...)
-- [ ] The merge gate in [TESTING.md](../TESTING.md#2-which-run-is-needed) passed on the head commit, with its report below
+- [ ] The merge gate in [TESTING.md](https://github.com/JoeOCT91/Waypoint/blob/main/TESTING.md#2-which-run-is-needed) passed on the head commit, with its report below
 
 ## Checklist
 
