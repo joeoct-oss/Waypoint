@@ -83,7 +83,7 @@ enum CreateAccountStep: CaseIterable, Hashable, Codable {
         case .details, .password:
             return "Continue"
         case .checkEmail:
-            return "Start shopping"
+            return "Verify and continue"
         }
     }
 

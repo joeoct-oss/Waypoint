@@ -29,6 +29,10 @@ final class JourneyTests: XCTestCase {
     private static let password = "orbit-2026"
     private static let wrongPassword = "wrong"
     private static let signUpName = "Nova Reader"
+    private static let signUpCode = "204816"
+    private static let checkoutReason = "Sign in to check out"
+    private static let signedInAs = "Signed in as"
+    private static let signedOut = "Signed out"
     private static let cartProductID = 1
     private static let cartProductTitle = "Orbit Lamp"
     private static let savedProductID = 2
@@ -67,16 +71,24 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
     }
 
-    func testCheckoutAsksGuestToSignIn() {
+    // AU-02 and AU-03: a guest's Check out opens sign in, which says why; after signing in, a toast
+    // names the account and checkout carries on at the address step.
+    func testCheckoutAsksToSignIn() {
         let app = ExampleApp.launch()
         addProductToCart(in: app)
 
         app.buttons[Identifiers.checkout].tapWhenReady()
+        let reason = app.staticTexts[Identifiers.signInReason]
+        XCTAssertTrue(reason.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(reason.label.hasPrefix(Self.checkoutReason), reason.label)
         signIn(
             password: Self.password,
             in: app
         )
 
+        let notice = app.descendants(matching: .any)[Identifiers.notice]
+        XCTAssertTrue(notice.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(notice.label.contains(Self.signedInAs), notice.label)
         let addressStep = app.descendants(matching: .any)[Identifiers.checkoutAddress]
         XCTAssertTrue(addressStep.waitForExistence(timeout: UITestSteps.timeout))
     }
@@ -97,7 +109,9 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
     }
 
-    func testSaveAsksGuestToCreateAccount() {
+    // A guest's Save opens sign in; the three Create account steps keep the typed name on the way
+    // back, the third takes the 6-digit code from the email, and the save carries on.
+    func testSignUpInSheet() {
         let app = ExampleApp.launch()
         openSavedProduct(in: app)
         app.buttons[Identifiers.productSave].tapWhenReady()
@@ -112,6 +126,7 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.signUpContinue].tapWhenReady()
         choosePassword(in: app)
         app.buttons[Identifiers.signUpContinue].tapWhenReady()
+        enterCode(in: app)
         app.buttons[Identifiers.signUpContinue].tapWhenReady()
 
         let saved = app.descendants(matching: .any)[Identifiers.savedSheet]
@@ -241,6 +256,9 @@ final class JourneyTests: XCTestCase {
         signOut.tap()
 
         XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
+        let notice = app.descendants(matching: .any)[Identifiers.notice]
+        XCTAssertTrue(notice.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(notice.label.contains(Self.signedOut), notice.label)
         XCTAssertTrue(app.navigationBars[Self.accountTitle].exists)
         let orders = app.buttons[Identifiers.ordersButton]
         XCTAssertTrue(orders.label.contains(Self.needsAccount), orders.label)

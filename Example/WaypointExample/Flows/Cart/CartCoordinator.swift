@@ -80,6 +80,12 @@ final class CartCoordinator {
         router.presented != nil
     }
 
+    // The account gate's notice, such as "Signed in as" after a guest's Check out, which the
+    // checkout cover would otherwise hide.
+    var accountNotice: Notice? {
+        gate.notice
+    }
+
     init(
         router: StackRouter,
         store: LocalStore,
@@ -142,7 +148,7 @@ final class CartCoordinator {
     }
 
     func checkOut() {
-        gate.requireAccount { self.showCheckout() }
+        gate.requireAccount(for: .checkout) { self.showCheckout() }
     }
 
     func showCheckout() {

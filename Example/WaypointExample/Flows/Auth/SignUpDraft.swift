@@ -16,6 +16,8 @@ import Observation
 @MainActor
 @Observable
 final class SignUpDraft {
+    static let codeLength = 6
+
     // `var` because the details step's fields write it.
     var name: String
     // `var` because the details step's fields write it.
@@ -24,9 +26,16 @@ final class SignUpDraft {
     var password: String
     // `var` because the password step's toggle writes it.
     var acceptsTerms: Bool
+    // `var` because the check-your-email step's field writes it.
+    var code: String
 
     var canContinueFromPassword: Bool {
         acceptsTerms && !password.isEmpty
+    }
+
+    // The code from the email is six digits.
+    var hasFullCode: Bool {
+        code.count == Self.codeLength && code.allSatisfy(\.isNumber)
     }
 
     init() {
@@ -34,5 +43,6 @@ final class SignUpDraft {
         email = ""
         password = ""
         acceptsTerms = false
+        code = ""
     }
 }

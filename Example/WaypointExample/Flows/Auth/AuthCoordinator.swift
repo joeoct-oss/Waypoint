@@ -27,6 +27,7 @@ import WaypointCore
 @Observable
 final class AuthCoordinator {
     let router: StackRouter
+    private let reason: SignInReason
     private let service: any AuthService
     private let onSignedIn: (Account) -> Void
     private let onCancel: () -> Void
@@ -50,11 +51,13 @@ final class AuthCoordinator {
 
     init(
         router: StackRouter,
+        reason: SignInReason,
         service: any AuthService,
         onSignedIn: @escaping (Account) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.router = router
+        self.reason = reason
         self.service = service
         self.onSignedIn = onSignedIn
         self.onCancel = onCancel
@@ -72,6 +75,7 @@ final class AuthCoordinator {
 
     func makeSignInFlow() -> some View {
         SignInView(
+            reason: reason,
             isWorking: isWorking,
             errorMessage: errorMessage,
             onSignIn: { self.signIn(email: $0, password: $1) },

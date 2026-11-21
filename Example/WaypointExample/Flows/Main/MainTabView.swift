@@ -11,7 +11,7 @@ import WaypointCore
 
 // Draws the main tabs with the system tab bar, which is Liquid Glass from iOS 26, and the accounts
 // sheet the account gate presents over them. Each tab hosts its own stack. The gate runs the action
-// it held once the sheet has closed.
+// it held once the sheet has closed, and its notices show over the tabs.
 struct MainTabView: View {
     let main: MainCoordinator
 
@@ -22,6 +22,7 @@ struct MainTabView: View {
             }
         }
         .accessibilityIdentifier(Identifiers.mainTabs)
+        .noticeOverlay(main.gate.notice)
         .sheet(
             isPresented: Binding(reading: main.gate.isShowingAuth, writing: main.gate.syncAuth),
             onDismiss: main.gate.finishAuth
