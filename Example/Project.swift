@@ -39,8 +39,8 @@ let appResources: ResourceFileElements = [
 ]
 
 // The app has no accent color asset, so the empty name stops the catalog warning about a missing
-// one. Testability stays on in Release too, because the Release UI test run builds the whole scheme,
-// and the unit tests reach the app's view models with `@testable import`.
+// one. Testability stays on in Release too, because the Release UI test run builds the whole
+// scheme, and the unit tests reach the app's view models with `@testable import`.
 let appSettings: SettingsDictionary = [
     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
     "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "",
