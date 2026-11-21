@@ -77,7 +77,8 @@ final class FallbackTests: XCTestCase {
         let app = openSettings(signedIn: true)
         let toggle = app.switches[Identifiers.duplicatePushRule]
         XCTAssertTrue(app.reveal(toggle))
-        // The row's own switch, since a tap in the middle of a SwiftUI toggle's row may not flip it.
+        // The row's own switch, since a tap in the middle of a SwiftUI toggle's row may not
+        // flip it.
         toggle.switches.firstMatch.tap()
         XCTAssertEqual(toggle.value as? String, Self.switchOn, "the toggle stayed off")
         app.goBack()
