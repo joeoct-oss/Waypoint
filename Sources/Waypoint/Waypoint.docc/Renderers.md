@@ -4,7 +4,7 @@ Write one coordinator for each flow, in SwiftUI views or UIKit view controllers,
 
 ## Overview
 
-> Note: Draft until #59. The coordinator protocols with screens are built in #59, the SwiftUI renderer for every kind in C3 (#12, #13, #37), and the UIKit stack renderer in C3 (#14). UIKit tabs and presented flows follow in C4 (#49, #50). Names and signatures in this article can still change until then. Today a stack is drawn by `WaypointStack`, which is built: see <doc:SwiftUIRenderer>.
+> Note: Draft until #59. The coordinator protocols with screens are built in #59, the SwiftUI renderer for every kind in #12, #13 and #37, and the UIKit stack renderer in #14. UIKit tabs and presented flows follow in #50 and #49. Names and signatures in this article can still change until then. Today a stack is drawn by `WaypointStack`, which is built: see <doc:SwiftUIRenderer>.
 
 An app writes one coordinator for each flow, whichever kind of app it is. The coordinator says what its screens are, and a renderer draws them. Waypoint has two renderers for each kind of coordinator, one in SwiftUI and one in UIKit, and picks the best one by default. An app can choose another one for the whole app or for one coordinator, or bring its own.
 
@@ -152,10 +152,10 @@ public protocol StackRenderer: View {
 
 | Kind | SwiftUI renderer | UIKit renderer |
 |---|---|---|
-| Root | `SwiftUIRootRenderer` | `UIKitRootRenderer` (C4, #220) |
-| Tabs | `SwiftUITabRenderer`, a `TabView` | `UIKitTabRenderer`, a `UITabBarController` (C4, #50) |
-| Stack | `SwiftUIStackRenderer`, a `NavigationStack` | `UIKitStackRenderer`, a `UINavigationController` (C3, #14) |
-| Presented flow | `SwiftUIFlowRenderer` | `UIKitFlowRenderer` (C4, #49) |
+| Root | `SwiftUIRootRenderer` | `UIKitRootRenderer` (#220) |
+| Tabs | `SwiftUITabRenderer`, a `TabView` | `UIKitTabRenderer`, a `UITabBarController` (#50) |
+| Stack | `SwiftUIStackRenderer`, a `NavigationStack` | `UIKitStackRenderer`, a `UINavigationController` (#14) |
+| Presented flow | `SwiftUIFlowRenderer` | `UIKitFlowRenderer` (#49) |
 
 Both renderers of a kind read the same router and follow the same contract with it. Switching renderers never changes how navigation behaves, only how it is drawn. `SwiftUIStackRenderer` draws with `WaypointStack`, so everything <doc:SwiftUIRenderer> says about stacks holds for it.
 

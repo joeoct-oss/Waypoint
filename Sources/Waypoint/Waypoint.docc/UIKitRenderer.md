@@ -4,7 +4,7 @@ Draw stacks, sheets, tabs and roots with UIKit view controllers.
 
 ## Overview
 
-> Note: Draft until #59 and #14. The API in this article is planned, not built, and can still change. The UIKit stack renderer is built in C3 (#14). UIKit tabs, presented flows and roots follow in C4 (#50, #49, #220).
+> Note: Draft until #59 and #14. The API in this article is planned, not built, and can still change. The UIKit stack renderer is built in #14. UIKit tabs, presented flows and roots follow in #50, #49 and #220.
 
 The UIKit renderers draw the same coordinators as the SwiftUI ones, with UIKit's own containers: a `UINavigationController`, sheets presented by a `UISheetPresentationController`, and a `UITabBarController`. An app chooses them app-wide or for one coordinator, and the coordinator's code doesn't change. See <doc:Renderers> for how a renderer is chosen.
 
@@ -60,7 +60,8 @@ public struct UIKitStackRenderer: StackRenderer {
 
 extension View {
     /// Defines an app-specific sheet size for the UIKit renderers, used by
-    /// `SheetDetent.custom(name)`.
+    /// `SheetDetent.custom(name)`. Register a name for both renderers to keep
+    /// its size when the renderer changes.
     public func sheetDetent(_ name: String, _ detent: UISheetPresentationController.Detent) -> some View
 }
 ```
@@ -71,13 +72,13 @@ A route with no destination never crashes. The renderer shows the same missing-d
 
 ### Sheets and full-screen covers
 
-Sheet sizes come from the presentation's `SheetOptions` and map to `UISheetPresentationController.Detent`: `.medium` and `.large` directly, `.fraction` and `.height` as custom detents, and `.custom(name)` as the detent registered for that name. `.fitsContent` is a custom detent sized to the content: its `preferredContentSize` when it sets one, or else its Auto Layout height at the sheet's width, capped at `fitsContentLimit`. When the height changes, the sheet animates to it. Taller content scrolls in its own scroll view, such as a table, or in one the renderer adds. When the user drags a sheet to another size, the selected detent is reported back to the router.
+Sheet sizes come from the presentation's `SheetOptions` and map to `UISheetPresentationController.Detent`: `.medium` and `.large` directly, `.fraction` and `.height` as custom detents, and `.custom(name)` as the detent registered for that name. Each renderer has its own rules for custom sizes, because SwiftUI and UIKit describe a detent differently. A name the drawing renderer has no rule for is shown at `.large` and reported in debug, so changing a renderer never silently changes a sheet. One registration for both renderers is designed in #49. `.fitsContent` is a custom detent sized to the content: its `preferredContentSize` when it sets one, or else its Auto Layout height at the sheet's width, capped at `fitsContentLimit`. When the height changes, the sheet animates to it. Taller content scrolls in its own scroll view, such as a table, or in one the renderer adds. When the user drags a sheet to another size, the selected detent is reported back to the router.
 
-A presented flow is drawn by `UIKitFlowRenderer` when the flow chooses it (C4, #49). Until then a presented flow's default is the SwiftUI renderer, and a UIKit stack presented inside it is still drawn by `UIKitStackRenderer`.
+A presented flow is drawn by `UIKitFlowRenderer` when the flow chooses it (#49). Until then a presented flow's default is the SwiftUI renderer, and a UIKit stack presented inside it is still drawn by `UIKitStackRenderer`.
 
 ### Tabs and roots
 
-`UIKitTabRenderer` draws a tab coordinator with a `UITabBarController` (C4, #50), and `UIKitRootRenderer` draws the app coordinator's roots, with a cross-fade when it switches (C4, #220). Each tab hosts its stack coordinator's `view`, drawn by whichever renderer that coordinator uses. Tab labels written with SwiftUI's `.tabItem` work only in the SwiftUI tab renderer. How a tab coordinator gives its labels to the UIKit one is designed in #50.
+`UIKitTabRenderer` draws a tab coordinator with a `UITabBarController` (#50), and `UIKitRootRenderer` draws the app coordinator's roots, with a cross-fade when it switches (#220). Each tab hosts its stack coordinator's `view`, drawn by whichever renderer that coordinator uses. Tab labels written with SwiftUI's `.tabItem` work only in the SwiftUI tab renderer. How a tab coordinator gives its labels to the UIKit one is designed in #50.
 
 ### A UIKit app
 
