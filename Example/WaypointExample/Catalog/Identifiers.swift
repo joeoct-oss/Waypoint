@@ -25,6 +25,7 @@ enum Identifiers {
     static let notice = "notice"
     static let forgotPassword = "auth.signIn.forgotPassword"
     static let filterButton = "shop.filter"
+    static let filterApply = "shop.filter.apply"
     static let resetSend = "auth.reset.send"
     static let resetSent = "auth.reset.sent"
     static let resetDone = "auth.reset.done"

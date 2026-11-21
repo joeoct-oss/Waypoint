@@ -44,13 +44,6 @@ struct SheetOptionsModifier: ViewModifier {
         _selection = State(initialValue: Self.presentationDetent(for: opening))
     }
 
-    func body(content: Content) -> some View {
-        content
-            .presentationDetents(detents, selection: $selection)
-            .presentationDragIndicator(dragIndicator)
-            .interactiveDismissDisabled(!options.allowsInteractiveDismiss)
-    }
-
     private static func presentationDetent(for detent: SheetDetent) -> PresentationDetent {
         switch detent {
         case .medium:
@@ -62,6 +55,13 @@ struct SheetOptionsModifier: ViewModifier {
         case .height(let height):
             return .height(height)
         }
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .presentationDetents(detents, selection: $selection)
+            .presentationDragIndicator(dragIndicator)
+            .interactiveDismissDisabled(!options.allowsInteractiveDismiss)
     }
 }
 

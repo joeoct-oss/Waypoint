@@ -9,8 +9,9 @@
 import XCTest
 
 // The app's sheets take their sizes and swipe-to-close from Waypoint's `SheetOptions` (#277): the
-// filters open at medium and grow to large, a bare `.sheet` takes the app's defaults, and the terms
-// can't be swiped away. A sheet's size is read from where its navigation bar sits on the screen.
+// filters are presented with their own sizes, which the event log shows, a bare `.sheet` takes the
+// app's defaults and can grow to large, and the terms can't be swiped away. A sheet's size is read
+// from where its navigation bar sits on the screen.
 @MainActor
 final class SheetTests: XCTestCase {
     private static let accountTitle = "Account"
@@ -23,6 +24,8 @@ final class SheetTests: XCTestCase {
     private static let mediumTopShare: CGFloat = 0.35
     private static let largeTopShare: CGFloat = 0.25
     private static let pollInterval: TimeInterval = 0.25
+    // How the event log writes the filters' presentation, with the sizes the router gave it.
+    private static let filterPresentation = NSPredicate(format: "label CONTAINS 'detents: [medium, large]'")
 
     func testFiltersSheetUsesItsDetents() {
         let app = ExampleApp.launch()
@@ -34,6 +37,12 @@ final class SheetTests: XCTestCase {
 
         bar.swipeUp()
         XCTAssertTrue(waitForTop(of: bar, above: Self.largeTopShare, in: app), "the filters didn't grow to large")
+        app.buttons[Identifiers.filterApply].tapWhenReady()
+        XCTAssertTrue(bar.waitForNonExistence(timeout: UITestSteps.timeout))
+
+        app.openLabTool(.eventLog)
+        let entry = app.descendants(matching: .any).matching(Self.filterPresentation).firstMatch
+        XCTAssertTrue(app.reveal(entry), "the event log doesn't show the filters' own sizes")
     }
 
     func testBareSheetUsesAppDefaults() {
@@ -45,7 +54,10 @@ final class SheetTests: XCTestCase {
         let bar = app.navigationBars[Self.resetTitle]
         XCTAssertTrue(bar.waitForExistence(timeout: UITestSteps.timeout))
         let isMedium = waitForTop(of: bar, below: Self.mediumTopShare, in: app)
-        XCTAssertTrue(isMedium, "Reset password didn't take the app's defaults")
+        XCTAssertTrue(isMedium, "Reset password didn't open at the app's default medium")
+        bar.swipeUp()
+        let isLarge = waitForTop(of: bar, above: Self.largeTopShare, in: app)
+        XCTAssertTrue(isLarge, "Reset password can't grow to the app's default large")
     }
 
     func testLockedSheetIgnoresSwipe() {

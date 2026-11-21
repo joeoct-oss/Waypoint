@@ -34,6 +34,7 @@ struct FilterView: View {
     private var applyItem: some ToolbarContent {
         ToolbarItem(placement: .confirmationAction) {
             Button("Apply", action: onApply)
+                .accessibilityIdentifier(Identifiers.filterApply)
         }
     }
 }
