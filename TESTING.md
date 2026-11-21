@@ -44,9 +44,9 @@ Two scripts run every layer. Nothing else counts as a test run:
 
 | Tier | Runs | Simulators | Time on the Mac (2026-11-20) | Stop it after |
 |---|---|---|---|---|
-| `quick` (default) | The guard rail, the compile fixtures, the host and simulator package tests (each built once with warnings as errors), and the UI tests when the branch changes `Example/` or a renderer. It skips parts the branch can't affect: a branch with only docs changes runs the guard rail alone. `--ui` adds the UI tests, `--all` runs every part, `--only <Target/Class[/test]>` runs the guard rail and that one UI test. | `WAYPOINT_SIMULATOR` | about 12 min with the UI tests | 30 min |
-| `full` | Every part, whatever changed: the guard rail, the compile fixtures, host and simulator package tests, the unified log tests under the thread sanitizer, all UI tests, then the system link and missing destination UI tests again in the Release configuration. | `WAYPOINT_SIMULATOR` | about 14 min | 35 min |
-| `release` | `full`, then the iOS device build, then the package tests and all UI tests again on the iOS 17 simulator. | `WAYPOINT_SIMULATOR` and `WAYPOINT_IOS17_SIMULATOR` | about 23 min | 50 min |
+| `quick` (default) | The guard rail, the compile fixtures, the host and simulator package tests (each built once with warnings as errors), and the example app's unit and UI tests when the branch changes `Example/` or a renderer. It skips parts the branch can't affect: a branch with only docs changes runs the guard rail alone. `--ui` adds the example app's tests, `--all` runs every part, `--only <Target/Class[/test]>` runs the guard rail and that one UI test. | `WAYPOINT_SIMULATOR` | about 12 min with the UI tests | 30 min |
+| `full` | Every part, whatever changed: the guard rail, the compile fixtures, host and simulator package tests, the unified log tests under the thread sanitizer, the example app's unit tests and all UI tests, then the system link and missing destination UI tests again in the Release configuration. | `WAYPOINT_SIMULATOR` | about 14 min | 35 min |
+| `release` | `full`, then the iOS device build, then the package tests and the example app's unit and UI tests again on the iOS 17 simulator. | `WAYPOINT_SIMULATOR` and `WAYPOINT_IOS17_SIMULATOR` | about 23 min | 50 min |
 
 `scripts/test-linux.sh` takes about 3 minutes in a cloud container from a clean checkout (2026-11-21); stop it after 15 minutes.
 
