@@ -106,6 +106,9 @@ A tab coordinator adds the screen for each tab:
 
 ```swift
 // What `Waypoint` adds to `TabCoordinator`. The tab type and the router are in the core.
+//
+// Conformances:
+// - `AnyObject`, because a coordinator is one shared object that owns its router.
 @MainActor
 public protocol TabCoordinator: AnyObject {
     /// Conformances:

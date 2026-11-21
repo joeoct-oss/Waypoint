@@ -177,7 +177,7 @@ func selectingAProductPushesIt() {
 }
 ```
 
-A route with no destination never crashes either. Debug builds show a screen that names the route and the fix, and release builds refuse the push.
+A route with no destination never crashes either. Debug builds show a screen that names the route and the fix, and release builds show a blank screen. A route type the tree doesn't know at all is refused.
 
 ## Products
 

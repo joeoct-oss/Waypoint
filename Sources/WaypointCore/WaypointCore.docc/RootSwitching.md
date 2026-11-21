@@ -125,6 +125,9 @@ The app coordinator's `makeFlow(for:)` decides which flow each root shows:
 
 ```swift
 // What the `Waypoint` product adds to `RootCoordinator`. The router and the inbox are above.
+//
+// Conformances:
+// - `AnyObject`, because a coordinator is one shared object that owns its router.
 @MainActor
 public protocol RootCoordinator: AnyObject {
     /// Conformances:
