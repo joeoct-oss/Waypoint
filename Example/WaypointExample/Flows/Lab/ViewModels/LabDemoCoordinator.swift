@@ -76,15 +76,13 @@ final class LabDemoCoordinator {
         }
     }
 
+    // Tabs runs on its own tab router, so it gets no stack router and no product model.
     func showDemo(_ demo: LabDemo) {
-        let router = StackRouter(
-            flow: Self.flowID(for: demo),
-            configuration: navigation
-        )
+        let router = demo == .tabs ? nil : makeRouter(for: demo)
         lateOutcome = nil
-        detailPush = demo == .detailPush ? DetailPushCoordinator(router: router) : nil
+        detailPush = demo == .detailPush ? router.map { DetailPushCoordinator(router: $0) } : nil
         tabsDemo = demo == .tabs ? makeTabsDemo() : nil
-        productModel = detailPush == nil ? makeProductModel(router) : nil
+        productModel = detailPush == nil ? router.map { makeProductModel($0) } : nil
         self.router = router
         presentedDemo = demo
     }
@@ -218,6 +216,13 @@ final class LabDemoCoordinator {
         WrapperProductView()
             .navigationTitle(LabProductContent.product.name)
             .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func makeRouter(for demo: LabDemo) -> StackRouter {
+        StackRouter(
+            flow: Self.flowID(for: demo),
+            configuration: navigation
+        )
     }
 
     private func makeProductModel(_ router: StackRouter) -> LabProductModel {
