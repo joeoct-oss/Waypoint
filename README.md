@@ -26,7 +26,7 @@ Waypoint is a navigation library for iOS apps. Every screen is named by a small 
 | SwiftUI stacks: `WaypointStack`, `destination(_:_:)`, swipe-back sync | ✅ Built in `Waypoint` |
 | `WaypointLink`, navigators and property wrappers for views and view models | ✅ Built in `Waypoint` |
 | SwiftUI sheets, tabs and the app coordinator | 🛰️ Next |
-| Child flows, root switching, UIKit renderer, deep links | 📐 Designed in DocC |
+| One coordinator per kind for SwiftUI and UIKit, swappable renderers, child flows, root switching, deep links | 📐 Designed in DocC |
 | Events, guards, restoration, `WaypointTesting` | 📐 Designed in DocC |
 
 Built parts have unit tests that run on a Mac and on Linux. Designed parts are written as signatures in the DocC articles below and follow the same rules.
@@ -39,7 +39,7 @@ Built parts have unit tests that run on a Mac and on Linux. Designed parts are w
 - **Safe by construction.** Mistakes are caught by the compiler where possible. Values are immutable, and every change goes through a function that checks it, so an invalid state can't be made. Anything only known at run time never crashes: every call returns an outcome, can name a fallback, and reports the issue with your file and line.
 - **Logs you can search.** Routes, state, outcomes and issues print one stable line each, and route values stay private unless you list them.
 - **Testable without a simulator.** `WaypointCore` is plain Swift, so navigation tests run as fast unit tests, on a Mac or on Linux.
-- **SwiftUI and UIKit.** Both renderers draw the same core state, so a flow can mix SwiftUI and UIKit screens.
+- **One coordinator for SwiftUI and UIKit.** A coordinator's screens can be SwiftUI views or UIKit view controllers, and a renderer you can swap draws it: SwiftUI's or UIKit's, picked per kind of coordinator by default, or your own. A SwiftUI app and a UIKit app use the same coordinators.
 
 ## A first look
 
@@ -81,15 +81,13 @@ The cart was never pushed, so the call recovers with its fallback instead of cra
 
 ### A flow
 
-Give a flow its root screen and its destinations in a coordinator. Functions that navigate are named `show…()`:
+Give a flow its root screen and its destinations in a coordinator. Screens can be SwiftUI views or UIKit view controllers. Functions that navigate are named `show…()`:
 
 ```swift
 // Conformances:
-// - `SwiftUIStackCoordinator`, so `WaypointStack` can draw it.
-final class ShopCoordinator: SwiftUIStackCoordinator {
-    let router = StackRouter()
-
-    var root: some View {
+// - `StackCoordinator`, so Waypoint can draw its stack and make its router.
+final class ShopCoordinator: StackCoordinator {
+    var root: some Screen {
         ProductListView(onSelect: { self.showProduct(id: $0) })
     }
 
@@ -105,6 +103,8 @@ final class ShopCoordinator: SwiftUIStackCoordinator {
 }
 ```
 
+The router comes from the conformance, and `ShopCoordinator().view` is the whole flow, drawn by the default renderer. Choose another with `typealias Renderer = UIKitStackRenderer`, or for the whole app in the root's configuration.
+
 ### The app
 
 The app coordinator owns the app's navigation. Each `case` makes one named call, and functions that build a flow are named `make…Flow()`:
@@ -119,12 +119,12 @@ enum AppRoot: NavigationRoot {
 }
 
 // Conformances:
-// - `SwiftUIRootCoordinator`, so `WaypointRoot` can draw it.
-final class AppCoordinator: SwiftUIRootCoordinator {
+// - `RootCoordinator`, so `WaypointRoot` can draw it and send it incoming links.
+final class AppCoordinator: RootCoordinator {
     let router = RootRouter(AppRoot.login)
-    let shop = ShopCoordinator()
+    let links: LinkInbox? = nil
 
-    func makeFlow(for root: AppRoot) -> some View {
+    func makeFlow(for root: AppRoot) -> some RootFlow {
         switch root {
         case .login:
             makeLoginFlow()
@@ -133,12 +133,12 @@ final class AppCoordinator: SwiftUIRootCoordinator {
         }
     }
 
-    func makeLoginFlow() -> some View {
-        LoginView(onLoggedIn: { self.showMainFlow() })
+    func makeLoginFlow() -> LoginCoordinator {
+        LoginCoordinator(onLoggedIn: { self.showMainFlow() })
     }
 
-    func makeShopFlow() -> some View {
-        WaypointStack(shop)
+    func makeShopFlow() -> ShopCoordinator {
+        ShopCoordinator()
     }
 
     func showMainFlow() {
@@ -158,7 +158,7 @@ struct ShopApp: App {
 }
 ```
 
-`LoginView` doesn't import Waypoint. It calls `onLoggedIn`, and the rule for what happens next lives in one place you can test. The SwiftUI example flows add tabs, a sheet that returns a result, and deep links.
+`makeFlow(for:)` returns the coordinator of each root's flow, and Waypoint draws it. The login screen doesn't import Waypoint. It calls `onLoggedIn`, and the rule for what happens next lives in one place you can test. A UIKit app uses the same coordinators and makes its window with `app.makeWindow(for: scene, options: options)` in its scene delegate. The example flows add tabs, a sheet that returns a result, and deep links.
 
 ### A test
 
@@ -184,8 +184,9 @@ A route with no destination never crashes either. Debug builds show a screen tha
 | Product | What it is | Runs on |
 |---|---|---|
 | `WaypointCore` | The navigation state engine: routes, routers, outcomes, fallbacks, transactions and logging, with coordinators, guards, deep links, restoration and events to come. No UI framework. | iOS, macOS, Linux |
-| `Waypoint` | The SwiftUI renderer: `WaypointRoot`, `WaypointStack`, sheets, tabs, `WaypointLink` and coordinators, logging to the unified log by default. Built on `WaypointCore`. | iOS 17+ |
-| `WaypointUIKit` | The UIKit renderer: navigation controllers, presentations and tab bar controllers driven by the same core, logging to the unified log by default. | iOS 17+ |
+| `Waypoint` | Coordinators with screens, and the renderers that draw them: SwiftUI and UIKit renderers for roots, tabs, stacks and presented flows, `WaypointRoot`, `WaypointStack`, `WaypointLink`, logging to the unified log by default. Built on `WaypointCore`. | iOS 17+ |
+
+`WaypointUIKit` is an empty placeholder today. The UIKit renderers are designed into `Waypoint`, and the placeholder will be removed.
 
 ## Requirements
 
@@ -211,7 +212,7 @@ targets: [
 ]
 ```
 
-Use `WaypointUIKit` for UIKit screens, and `WaypointCore` alone in a module that only decides where to go.
+`Waypoint` serves SwiftUI and UIKit apps alike. Use `WaypointCore` alone in a module that only decides where to go.
 
 ## Documentation
 
@@ -237,20 +238,16 @@ The API is written in DocC articles, one per topic. Articles for built parts mat
 | [Concurrency](Sources/WaypointCore/WaypointCore.docc/Concurrency.md) | The main actor, queued calls and navigators whose flow is gone |
 | [Why these conformances](Sources/WaypointCore/WaypointCore.docc/WhyTheseConformances.md) | What each protocol on a route is for |
 
-**SwiftUI** (`Waypoint`)
+**Drawing** (`Waypoint`)
 
 | Article | What it covers |
 |---|---|
-| [The SwiftUI renderer](Sources/Waypoint/Waypoint.docc/SwiftUIRenderer.md) | Stacks, links, coordinators, sheets and tabs |
+| [Coordinators and renderers](Sources/Waypoint/Waypoint.docc/Renderers.md) | One coordinator for each kind, its `view` and `viewController`, the window, and choosing or writing a renderer |
 | [Navigating from views and view models](Sources/Waypoint/Waypoint.docc/NavigatingFromViewsAndViewModels.md) | Outputs, injected navigators or property wrappers |
-| [Example flows](Sources/Waypoint/Waypoint.docc/ExampleFlows.md) | Login, tabs, a push, a sheet and a deep link |
-
-**UIKit** (`WaypointUIKit`)
-
-| Article | What it covers |
-|---|---|
-| [The UIKit renderer](Sources/WaypointUIKit/WaypointUIKit.docc/UIKitRenderer.md) | Navigation controllers, presentations and tabs |
-| [Example flows in UIKit](Sources/WaypointUIKit/WaypointUIKit.docc/ExampleFlowsInUIKit.md) | The same flows with view controllers |
+| [The SwiftUI renderer](Sources/Waypoint/Waypoint.docc/SwiftUIRenderer.md) | Stacks, links, coordinators, sheets and tabs in SwiftUI |
+| [The UIKit renderer](Sources/Waypoint/Waypoint.docc/UIKitRenderer.md) | Navigation controllers, presentations and tabs, and a UIKit app's window |
+| [Example flows](Sources/Waypoint/Waypoint.docc/ExampleFlows.md) | Login, tabs, a push, a sheet and a deep link in a SwiftUI app |
+| [Example flows in UIKit](Sources/Waypoint/Waypoint.docc/ExampleFlowsInUIKit.md) | The same flows and coordinators in a UIKit app |
 
 ## Contributing
 

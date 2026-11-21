@@ -240,7 +240,7 @@ public struct LinkPolicy: Sendable {
 }
 ```
 
-The renderer products connect the platform entry points (URL opens, universal links, user activities, home screen quick actions) to the inbox in one line each. Push notification taps send the URL or route they carry with `source: .notification`.
+The `Waypoint` product connects the platform entry points (URL opens, universal links, user activities, home screen quick actions) to the inbox in one line each. Push notification taps send the URL or route they carry with `source: .notification`.
 
 ### When a link can't be applied yet
 
