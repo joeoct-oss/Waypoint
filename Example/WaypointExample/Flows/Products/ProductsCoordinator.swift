@@ -16,15 +16,15 @@ import WaypointCore
 // shows "Your cart is waiting", whose Go to cart the main tabs run as one transaction that leaves
 // the cart pushed above its first product here (`ShopCartRoute`). Save needs an account, so the
 // account gate asks a guest to sign in first; then the product joins the wish list, which the local
-// store keeps.
+// store keeps, and a small "Saved to your wish list" sheet offers View wish list.
 //
 // The stack runs on Waypoint: `router`, the tab's stack router from the main tab router, owns the
 // path, `ProductsFlowView` draws it with `WaypointStack`, and a swipe back comes back to the router
 // by itself. The journey names the stack's first screen `Product list` or `Search`. A product page
 // links to a related product with `WaypointLink`, which pushes through the same router. The router
-// also presents the filters and the wish list (`FilterRoute`, `WishlistRoute`), each drawn on the
-// presented router with `WaypointStack`; the sheet itself is still SwiftUI's, bound to the router,
-// until Waypoint draws sheets.
+// also presents the filters, the saved sheet and the wish list (`FilterRoute`, `SavedRoute`,
+// `WishlistRoute`), each drawn on the presented router with `WaypointStack`; the sheet itself is
+// still SwiftUI's, bound to the router, until Waypoint draws sheets.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the sheet changes.
@@ -42,8 +42,9 @@ final class ProductsCoordinator {
     private let navigation: ProductsNavigation
     private let onAddToCart: (Product) -> Void
     private let cart: ProductsCart
-    // `var` because `showFilters()` and `showWishlist()` set it with the router they present, and
-    // `releaseSheet()` clears both once the sheet has slid away, so it still draws meanwhile.
+    // `var` because `showFilters()`, `showSaved()` and `showWishlist()` set it with the router they
+    // present, and `releaseSheet()` clears both once the sheet has slid away, so it still draws
+    // meanwhile.
     private(set) var presentedSheet: ProductSheet?
     // `var` for the same reason as `presentedSheet`: the presented sheet's router.
     private(set) var sheetRouter: StackRouter?
@@ -80,6 +81,7 @@ final class ProductsCoordinator {
         self.router = router
         router.setRootName(start.rootName)
         router.register(FilterRoute.self)
+        router.register(SavedRoute.self)
         router.register(WishlistRoute.self)
         presentedSheet = nil
         sheetRouter = nil
@@ -143,6 +145,8 @@ final class ProductsCoordinator {
         switch sheet {
         case .filters:
             makeFiltersFlow()
+        case .saved:
+            makeSavedFlow()
         case .wishlist:
             makeWishlistFlow()
         }
@@ -168,8 +172,19 @@ final class ProductsCoordinator {
         showSheet(.filters, route: FilterRoute())
     }
 
+    func showSaved() {
+        showSheet(.saved, route: SavedRoute())
+    }
+
+    // The saved sheet's View wish list: one transaction dismisses the saved sheet's flow and
+    // presents the wish list, since a stack shows one presentation at a time. The router changes
+    // once, so the open sheet swaps its content and grows instead of closing and opening again.
     func showWishlist() {
-        showSheet(.wishlist, route: WishlistRoute())
+        router.transaction {
+            $0.dismiss()
+            $0.present(WishlistRoute(), style: .sheet)
+        }
+        takePresentedSheet(.wishlist)
     }
 
     func addToCart(_ product: Product) {
@@ -211,6 +226,11 @@ final class ProductsCoordinator {
         route: R
     ) {
         router.present(route, style: .sheet)
+        takePresentedSheet(sheet)
+    }
+
+    // Keeps the router the stack now presents, so the sheet draws it.
+    private func takePresentedSheet(_ sheet: ProductSheet) {
         guard let presented = router.presented else {
             return
         }
@@ -222,7 +242,7 @@ final class ProductsCoordinator {
         if !store.wishlistProductIDs.contains(product.id) {
             store.wishlistProductIDs.append(product.id)
         }
-        showWishlist()
+        showSaved()
     }
 
     // Pushes the launch products in one change, then makes the follow-up change while that push
@@ -300,6 +320,13 @@ final class ProductsCoordinator {
 
     private func makeFiltersFlow() -> some View {
         FilterView(onApply: { self.dismissSheet() })
+    }
+
+    private func makeSavedFlow() -> some View {
+        SavedView(
+            onViewWishlist: { self.showWishlist() },
+            onClose: { self.dismissSheet() }
+        )
     }
 
     private func makeWishlistFlow() -> some View {

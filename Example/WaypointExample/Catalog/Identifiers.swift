@@ -38,6 +38,13 @@ enum Identifiers {
     // this way.
     static let missingDestinationTitle = "waypoint.missingDestination.title"
     static let wishlist = "product.wishlist"
+    static let savedSheet = "product.saved"
+    static let viewWishlist = "product.saved.viewWishlist"
+    static let productReviews = "product.reviews"
+    static let productShare = "product.share"
+    static let searchResultCount = "search.resultCount"
+    static let cartEmpty = "cart.empty"
+    static let browseShop = "cart.browseShop"
     static let checkout = "cart.checkout"
     static let checkoutAddress = "checkout.address"
     static let closeCheckout = "checkout.close"
@@ -96,6 +103,10 @@ enum Identifiers {
 
     static func product(id: Int) -> String {
         "product.\(id)"
+    }
+
+    static func recentSearch(_ term: String) -> String {
+        "search.recent.\(term)"
     }
 
     static func collection(id: String) -> String {
