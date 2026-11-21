@@ -14,7 +14,7 @@ Follow the steps in order and word for word. Each step says what to run, what a 
 6. [When a run fails](#6-when-a-run-fails)
 7. [Report the result](#7-report-the-result)
 8. [Never do this](#8-never-do-this)
-9. [Not available yet](#9-not-available-yet)
+9. [Not part of any run yet](#9-not-part-of-any-run-yet)
 
 ## 1. Where each test runs
 
@@ -92,7 +92,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
    swift --version
    ```
 
-   Pass: it prints `Swift version 6.` followed by a minor version. When `swift` is missing in a cloud container, install it with the planning repo's `tools/install-swift.sh`, then check again. Any other answer: stop and report it.
+   Pass: it prints `Swift version 6.` followed by a minor version. When `swift` is missing, install a Swift 6 toolchain (<https://www.swift.org/install/linux/>, or the machine's own setup script), then check again. Any other answer: stop and report it.
 
 2. Get the exact commit to test, in a clean clone:
 
@@ -259,12 +259,12 @@ Teardown: simulators shut down, locks gone, worktree removed | <what is left>
 - Never remove another run's lock, and never `kill -9` a test run.
 - Never check out a branch in the shared clone on the Mac; use a worktree.
 
-## 9. Not available yet
+## 9. Not part of any run yet
 
-These are planned. Until they land, they are not part of any run, and a run never waits for them.
+These checks don't exist yet. A run never waits for them.
 
-| What | Until | Then |
+| What | Issue | When it lands |
 |---|---|---|
-| CI on pull requests | #5 and #69 (not before Dec 1) | The Linux suite runs on every pull request, and the Mac tier on pull requests labelled `runs:mac`. This runbook stays the definition of what they run. |
+| CI on pull requests | #5, #69 | The Linux suite runs on every pull request, and the Mac tier on pull requests labelled `runs:mac`. This runbook stays the definition of what they run. |
 | `scripts/lint.sh` (strict SwiftLint and swift-format) | #70 | It joins both places and the merge gate. |
 | `scripts/test-mac.sh` stops on a missing simulator | #265 | Preflight step 4 stays, as a check before the slot is used. |

@@ -20,7 +20,7 @@ tuist generate --path Example --no-open
 open Example/WaypointExample.xcworkspace
 ```
 
-`scripts/test-mac.sh full` generates the project and runs the UI tests on the project simulator, then runs `SystemLinkTests` and `MissingDestinationTests` again in the release configuration. `scripts/test-mac.sh --only WaypointExampleUITests/StackTests` runs one class or test; see [Running tests on a Mac](../CONTRIBUTING.md#running-tests-on-a-mac) for the tiers.
+`scripts/test-mac.sh full` generates the project and runs the UI tests on the project simulator, then runs `SystemLinkTests` and `MissingDestinationTests` again in the release configuration. `scripts/test-mac.sh --only WaypointExampleUITests/StackTests` runs one class or test; see [Run a Mac tier](../TESTING.md#5-run-a-mac-tier) for the steps and [Where each test runs](../TESTING.md#1-where-each-test-runs) for the tiers.
 
 ## Launch arguments
 
