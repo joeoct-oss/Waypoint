@@ -21,11 +21,11 @@ let package = Package(
         // it and re-export it. Its files are wrapped in `#if canImport(os)`, so it compiles empty
         // on Linux.
         .target(name: "WaypointOSLog", dependencies: ["WaypointCore"]),
-        // SwiftUI renderer. Its files are wrapped in `#if canImport(SwiftUI)`, so it compiles empty
-        // on Linux.
+        // Coordinators with screens and the SwiftUI renderers; the UIKit renderers join it. Its files
+        // are wrapped in `#if canImport(SwiftUI)`, so it compiles empty on Linux.
         .target(name: "Waypoint", dependencies: ["WaypointCore", "WaypointOSLog"]),
-        // UIKit renderer. Its files are wrapped in `#if canImport(UIKit)`, so it compiles empty on
-        // Linux.
+        // Empty placeholder, to be removed: the UIKit renderers are designed into `Waypoint`. Its
+        // files are wrapped in `#if canImport(UIKit)`, so it compiles empty on Linux.
         .target(name: "WaypointUIKit", dependencies: ["WaypointCore", "WaypointOSLog"]),
         // Shared fixtures for the test targets. Internal test code, not a product.
         .target(name: "WaypointTestSupport", dependencies: ["WaypointCore"], path: "Tests/WaypointTestSupport"),

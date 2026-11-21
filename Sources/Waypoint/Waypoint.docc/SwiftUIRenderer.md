@@ -303,7 +303,7 @@ final class MainTabsCoordinator: TabCoordinator {
 }
 ```
 
-The tab coordinator hands each tab's coordinator its stack router, so no router is passed by hand. `makeTabFlow(for:)` has a `switch` over your tab enum, one `make…Flow()` call per case. That is fine here: it lists the tabs once, in one place, not every screen. Apps draw their own tab labels. See <doc:ExampleFlows>.
+No router is passed by hand: each tab's stack coordinator joins the tab router when the tab coordinator first draws it, and a router read earlier, such as in a test, joins with the screens it already has (built in #59). `makeTabFlow(for:)` has a `switch` over your tab enum, one `make…Flow()` call per case. That is fine here: it lists the tabs once, in one place, not every screen. Apps draw their own tab labels. See <doc:ExampleFlows>.
 
 The lower-level view draws a `TabRouter` with a closure, for tabs that no coordinator runs:
 

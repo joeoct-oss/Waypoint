@@ -108,7 +108,7 @@ Two naming rules keep a coordinator readable. Each `case` body is one call to a 
 
 ### 2. Tabs, one stack each
 
-The tab coordinator owns the tab router and one stack coordinator for each tab. Each is created once and kept, so a tab keeps its state while the screen redraws. The tab coordinator hands each one its tab's stack router.
+The tab coordinator owns the tab router and one stack coordinator for each tab. Each is created once and kept, so a tab keeps its state while the screen redraws. A child coordinator's router joins its parent's tree when the parent first draws or starts it: the tab coordinator's tab router takes each tab's stack coordinator, and a router read before that, such as in a test, works on its own and joins with the screens it already has. The exact joining rule is built in #59.
 
 ```swift
 // Conformances:
@@ -216,7 +216,7 @@ final class ShopCoordinator: StackCoordinator, NavigationFlow {
 }
 ```
 
-The shop coordinator declares no router: the tab coordinator gives it the shop tab's stack router.
+The shop coordinator declares no router. Its router becomes the shop tab's stack once the tab coordinator draws it, as section 2 explains.
 
 ### 4. A sheet that returns a result
 

@@ -78,7 +78,7 @@ public protocol FlowCoordinator: AnyObject {
 
 ### The app coordinator
 
-An app with more than one root flow, such as login and the main tabs, keeps its navigation in an app coordinator: your own type at the top of the coordinator tree. It owns the root router, the tab router, the child coordinators that live as long as the app, and the link inbox. It also decides what happens between flows. The `App` or scene delegate only creates it and hands it to the renderer, and screens report what happened instead of switching roots themselves.
+An app with more than one root flow, such as login and the main tabs, keeps its navigation in an app coordinator: your own type at the top of the coordinator tree. It owns the root router and the link inbox, which live as long as the window, and makes the flow for each root when the root switches, such as a tab coordinator with its own tab router. It also decides what happens between flows. The `App` or scene delegate only creates it and hands it to the renderer, and screens report what happened instead of switching roots themselves.
 
 ```swift
 /// App code that owns the app's top-level flow: which root shows, and where links go.
