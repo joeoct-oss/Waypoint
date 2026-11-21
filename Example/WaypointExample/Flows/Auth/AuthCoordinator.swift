@@ -87,7 +87,8 @@ final class AuthCoordinator {
         .screenChrome(
             title: "Sign in",
             kind: nil,
-            trail: AuthTrail.signIn
+            router: router,
+            route: nil
         )
     }
 
@@ -96,7 +97,8 @@ final class AuthCoordinator {
             .screenChrome(
                 title: route.title,
                 kind: nil,
-                trail: route.trail
+                router: router,
+                route: AnyRoute(route)
             )
     }
 

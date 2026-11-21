@@ -32,13 +32,7 @@ import WaypointCore
 @MainActor
 @Observable
 final class CartCoordinator {
-    private static let trail = [
-        "cart",
-    ]
-    private static let checkoutTrail = [
-        "cart",
-        "checkout",
-    ]
+    private static let orderPlacedStep = "order placed"
 
     let router: StackRouter
     private let store: LocalStore
@@ -80,6 +74,12 @@ final class CartCoordinator {
         router.presented != nil
     }
 
+    // Checkout's router while checkout shows, else the cart's own, so a screen still drawing as the
+    // cover slides down keeps a trail.
+    private var checkoutStack: StackRouter {
+        checkoutRouter ?? router
+    }
+
     // The account gate's notice, such as "Signed in as" after a guest's Check out, which the
     // checkout cover would otherwise hide.
     var accountNotice: Notice? {
@@ -118,7 +118,8 @@ final class CartCoordinator {
         .screenChrome(
             title: MainTab.cart.title,
             kind: nil,
-            trail: Self.trail
+            router: router,
+            route: nil
         )
     }
 
@@ -245,7 +246,8 @@ final class CartCoordinator {
         .screenChrome(
             title: "Checkout",
             kind: nil,
-            trail: Self.checkoutTrail + ["address"]
+            router: checkoutStack,
+            route: nil
         )
     }
 
@@ -254,7 +256,8 @@ final class CartCoordinator {
             .screenChrome(
                 title: "Payment",
                 kind: nil,
-                trail: Self.checkoutTrail + ["payment"]
+                router: checkoutStack,
+                route: AnyRoute(CheckoutStep.payment)
             )
     }
 
@@ -267,7 +270,8 @@ final class CartCoordinator {
         .screenChrome(
             title: "Review",
             kind: nil,
-            trail: Self.checkoutTrail + ["review"]
+            router: checkoutStack,
+            route: AnyRoute(CheckoutStep.review)
         )
     }
 
@@ -279,7 +283,8 @@ final class CartCoordinator {
         .screenChrome(
             title: "New address",
             kind: nil,
-            trail: Self.checkoutTrail + ["address", "new address"]
+            router: checkoutStack,
+            route: AnyRoute(AddAddressRoute())
         )
     }
 
@@ -288,7 +293,8 @@ final class CartCoordinator {
             .screenChrome(
                 title: "Order placed",
                 kind: nil,
-                trail: Self.checkoutTrail + ["order placed"]
+                router: checkoutStack,
+                step: Self.orderPlacedStep
             )
     }
 

@@ -104,7 +104,10 @@ final class ProductsCoordinator {
     @ViewBuilder
     func makeProductFlow(for route: ProductRoute) -> some View {
         if let product = route.preview ?? Product.find(id: route.id) {
-            makeProductFlow(product)
+            makeProductFlow(
+                product,
+                route: route
+            )
         }
     }
 
@@ -112,7 +115,10 @@ final class ProductsCoordinator {
     @ViewBuilder
     func makeCollectionFlow(for route: CollectionRoute) -> some View {
         if let collection = route.preview ?? ProductCollection.find(id: route.id) {
-            makeCollectionFlow(collection)
+            makeCollectionFlow(
+                collection,
+                route: route
+            )
         }
     }
 
@@ -127,7 +133,8 @@ final class ProductsCoordinator {
         .screenChrome(
             title: ShopCartRoute.screenName,
             kind: nil,
-            trail: ProductsTrail.cart(under: cart.products().first)
+            router: router,
+            route: AnyRoute(ShopCartRoute())
         )
     }
 
@@ -293,7 +300,8 @@ final class ProductsCoordinator {
         .screenChrome(
             title: MainTab.shop.title,
             kind: nil,
-            trail: ProductsTrail.shop
+            router: router,
+            route: nil
         )
     }
 
@@ -302,11 +310,15 @@ final class ProductsCoordinator {
             .screenChrome(
                 title: MainTab.search.title,
                 kind: nil,
-                trail: ProductsTrail.search
+                router: router,
+                route: nil
             )
     }
 
-    private func makeCollectionFlow(_ collection: ProductCollection) -> some View {
+    private func makeCollectionFlow(
+        _ collection: ProductCollection,
+        route: CollectionRoute
+    ) -> some View {
         CollectionView(
             collection: collection,
             onSelect: { self.showProduct($0) }
@@ -314,7 +326,8 @@ final class ProductsCoordinator {
         .screenChrome(
             title: collection.name,
             kind: nil,
-            trail: ProductsTrail.collection(collection)
+            router: router,
+            route: AnyRoute(route)
         )
     }
 
@@ -336,7 +349,10 @@ final class ProductsCoordinator {
         )
     }
 
-    private func makeProductFlow(_ product: Product) -> some View {
+    private func makeProductFlow(
+        _ product: Product,
+        route: ProductRoute
+    ) -> some View {
         ProductDetailView(
             product: product,
             onAddToCart: { self.addToCart(product) },
@@ -346,7 +362,8 @@ final class ProductsCoordinator {
         .screenChrome(
             title: product.name,
             kind: nil,
-            trail: ProductsTrail.product(product, from: start)
+            router: router,
+            route: AnyRoute(route)
         )
     }
 
@@ -385,34 +402,5 @@ extension ProductsStart {
         case .search:
             return "Search"
         }
-    }
-}
-
-// The route trail for each products screen.
-enum ProductsTrail {
-    static let shop = [
-        "shop",
-    ]
-    static let search = [
-        "search",
-    ]
-
-    static func collection(_ collection: ProductCollection) -> [String] {
-        shop + [collection.name.lowercased()]
-    }
-
-    static func product(
-        _ product: Product,
-        from start: ProductsStart
-    ) -> [String] {
-        let root = start == .browse ? shop : search
-        let step = product.name.lowercased()
-        return root + [step]
-    }
-
-    // The cart Go to cart pushes on Shop, above the cart's first product.
-    static func cart(under product: Product?) -> [String] {
-        let root = product.map { self.product($0, from: .browse) } ?? shop
-        return root + [ShopCartRoute.screenName.lowercased()]
     }
 }
