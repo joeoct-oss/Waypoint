@@ -318,10 +318,10 @@ A configuration made without a handler uses the platform's default (`usesDefault
 
 #### The unified log and signposts
 
-`OSLogHandler` writes each line to Apple's unified log, one `Logger` category per `LogCategory`, built once, under one subsystem. The subsystem defaults to the app's bundle identifier plus `.waypoint`, such as `com.example.shop.waypoint`. Levels map one to one, with `.notice` written as the log's default level. Each line is one public string, because Waypoint already redacted it, so Console's "show private data" profile can't reveal more: turn on `revealsPrivateValues` in debug builds instead. The handler and `LogConfiguration.osLog` come with `import Waypoint` and `import WaypointUIKit`; there is no separate product to add.
+`OSLogHandler` writes each line to Apple's unified log, one `Logger` category per `LogCategory`, built once, under one subsystem. The subsystem defaults to the app's bundle identifier plus `.waypoint`, such as `com.example.shop.waypoint`. Levels map one to one, with `.notice` written as the log's default level. Each line is one public string, because Waypoint already redacted it, so Console's "show private data" profile can't reveal more: turn on `revealsPrivateValues` in debug builds instead. The handler and `LogConfiguration.osLog` come with `import Waypoint`; there is no separate product to add.
 
 ```swift
-// WaypointOSLog, re-exported by Waypoint and WaypointUIKit. Apple platforms only.
+// WaypointOSLog, re-exported by Waypoint. Apple platforms only.
 
 /// Conformances:
 /// - `LogHandler`, so a router tree can write to it.
@@ -420,7 +420,7 @@ Presenting checkout grows a branch under the screen that presented it:
 ```
 
 - **Title.** How the screen came: `PUSH`, `BACK`, `SET`, `TAB`, `SHEET`, `FULL SCREEN`, `DISMISS`, or `SHOWN` for the first screen. A presented flow adds `NEW COORDINATOR`, or `NEW FLOW` when the coordinator that presented it runs it; a dismissed one adds `COORDINATOR ENDED`, or `FLOW ENDED` when its coordinator lives on. A presentation's box waits until the presented stack is drawn, so it names the stack's view; the next change writes it if the stack never draws.
-- **Views.** A screen is named by the SwiftUI view that draws it, read from `.destination(_:_:)` and from the `WaypointStack`'s root, also through modifiers: `ProductDetailView`, not the product's name. The route's public fields follow, such as `(id: 4)`. A screen with no view name, such as in UIKit until its renderer names them, reads as its route in words: `Product 4`. A stack's first screen with no root route takes the name given with `setRootName(_:)` or `WaypointStack(rootName:)`, else its tab's name, else its flow's.
+- **Views.** A screen is named by the SwiftUI view that draws it, read from `.destination(_:_:)` and from the `WaypointStack`'s root, also through modifiers: `ProductDetailView`, not the product's name. The route's public fields follow, such as `(id: 4)`. A view controller screen is named by its type, such as `ScannerViewController`, in either renderer (#14). A screen with no name reads as its route in words: `Product 4`. A stack's first screen with no root route takes the name given with `setRootName(_:)` or `WaypointStack(rootName:)`, else its tab's name, else its flow's.
 - **Coordinators.** A router is named by the coordinator that owns it: `router.setCoordinator(self)` keeps the coordinator's type name, never the coordinator, and `setCoordinatorName(_:)` gives any name. A presented flow that isn't named takes its presenter's coordinator. Unnamed, the box says the flow, such as `Shop (no coordinator named)`. `same coordinator (sub view)` means the screen was pushed in the same coordinator's stack.
 - **Rows.** `tab` is the tab the screen is in or under, with `(from Shop)` after a switch. `source` shows only when a screen in the stack that `startsJourney`, such as search, started this part of the journey. `previous` is the screen before and how long it was on display. `by` is `app` with the call site, `user` for a change made on the screen, such as a swipe back, or `fallback`. `trigger` is the `trigger:` given to `push`, `present` or `select`. `step 2 of 3` shows when the flow's first screen gives `stepsInFlow`; a screen beside the steps says `isFlowStep: false`. `ended` names the coordinator that closed, or `checkout flow` when the coordinator that ran it lives on, `finished` or `cancelled by the user`, and how long it ran.
 - **App.** Every tab with its coordinator, the selected one marked `▶` and drawn one screen per line, the others on one line, and every presented flow as a `⧉` branch with its style. The screen on display is marked `◀ NEW` when it came forward, else `◀ HERE`.
@@ -428,7 +428,7 @@ Presenting checkout grows a branch under the screen that presented it:
 
 Boxes are at least 76 columns wide inside, so boxes one after another line up. The unified log cuts a message at about 1 KB, so `OSLogHandler` writes a long message, such as a box, as consecutive messages of whole lines.
 
-In the structured format, the journey writes `key=value` lines instead of the box, one per entry (see the table below). `usesSymbols: false` draws the box with `+`, `-`, `|` and `` `- ``.
+In the structured format, the journey writes `key=value` lines instead of the box, one per entry (see the table below). `usesSymbols: false` draws the box with `+`, `-` and `|`, with a backquote and a dash for the last corner.
 
 Each visit is also a value: ``StackRouter/screenVisit`` and ``TabRouter/screenVisit`` hold the latest ``ScreenVisit``, with its screen, previous screen, source, journey, transition, origin, call site, trigger, step and time on the previous screen. A presented flow is a ``FlowJourney``. Analytics handlers that receive them come later; until then, tests and apps can read the latest visit. The stack's renderer tells the tree when it first appears, so the first screen at launch is written too, without code in the screen. 
 

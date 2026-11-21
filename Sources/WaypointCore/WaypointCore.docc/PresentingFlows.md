@@ -18,7 +18,7 @@ let detents: [SheetDetent] = [.medium, .large]
 router.present(FilterRoute(), style: .sheet(detents: detents))
 ```
 
-Presenting a coordinator's flow, and getting a result back when it ends, is covered in the coordinators article.
+Presenting a coordinator's flow, and getting a result back when it ends, is covered in <doc:CoordinatorsAndChildFlows>. A destination can also declare how its route is shown, so the call site writes only `router.show(_:)`: see "Declared presentation" below.
 
 ### Presenting and dismissing
 
@@ -70,6 +70,52 @@ extension StackRouter {
 > Note: Two kinds of presentation are coming. Alerts and confirmation dialogs become presentations in the navigation state, shown by both renderers, with the tapped button returned as a typed result. And when something Waypoint didn't present is on screen, such as a share sheet or a payment sheet from another SDK, Waypoint will wait until it closes before presenting, or dismiss it first if the app chooses, and report it in the log. Tracked in #154 and #153.
 
 > Note: Two more changes are coming. A popover style anchored to a view, which becomes a sheet in compact width (#156). And a leave confirmation set at run time with `router.setLeaveConfirmation(_:)`, which asks before swipe back, a sheet drag or Back, next to the fixed `allowsInteractiveDismiss` below (#155).
+
+### Declared presentation
+
+> Note: Draft until #12. `show(_:)` and the `presentation:` parameter are planned, not built, and can still change when #12 lands.
+
+A route that is always shown the same way can say so once, next to its screen, instead of at every call site. Its destination declares a default presentation, and `show(_:)` uses it:
+
+```swift
+private static let filterDetents: [SheetDetent] = [.medium, .large]
+
+var destinations: some Destinations {
+    Destination(ProductRoute.self) { route in
+        ProductView(id: route.id)
+    }
+    Destination(FilterRoute.self, presentation: .sheet(detents: Self.filterDetents)) { _ in
+        FilterView()
+    }
+}
+```
+
+```swift
+router.show(FilterRoute())                         // the destination's default: a sheet
+router.present(FilterRoute(), style: .sheet)       // the call's own choice still wins
+router.push(FilterRoute())                         // and so does an explicit push
+```
+
+- **Order:** the call's explicit verb, then the destination's declared presentation, then a push. A destination with no `presentation:` is pushed.
+- The same parameter is on `.destination(_:presentation:_:)` for a `WaypointStack` with no coordinator, and on a coordinator's `Flow(...)` entry (see <doc:CoordinatorsAndChildFlows>).
+- A declared `.sheet` with no options takes the router's sheet defaults, as `present(_:style: .sheet)` does.
+- The default belongs to the router whose coordinator or stack declared it. Two coordinators can show the same route differently, and a pushed child flow's `show` reads its own declarations.
+- Routes stay plain values: a route never carries its presentation, so links and restored state hold no UI choices.
+
+Everything after `show` picks a verb is the same as calling that verb. The state, the log and restoration record the style it chose, so the log reads "sheet", never "show". A route with no destination takes the missing-destination path, and a second presentation follows the rules below, such as `.replacePresentation`.
+
+```swift
+extension StackRouter {
+    /// Pushes or presents `route` as its destination declares, or pushes it
+    /// when the destination declares nothing.
+    @discardableResult
+    public func show<R: Route>(
+        _ route: R,
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil
+    ) -> NavigationOutcome
+}
+```
 
 ### Replacing what is presented
 

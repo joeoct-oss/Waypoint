@@ -4,7 +4,7 @@ Swap whole flows, such as login and the main tabs.
 
 ## Overview
 
-> Note: Draft until #37. The API in this article is planned, not built, and can still change when #37 lands.
+> Note: Draft until #37. The API in this article is planned, not built, and can still change when #37 and #59 land.
 
 Apps replace their whole screen at a few moments: from launch to login, from login to the main tabs, and back to login on logout. `RootRouter` holds which root is showing and replaces the whole subtree when it switches. The old flow and every router inside it are released.
 
@@ -26,7 +26,7 @@ The root router belongs to your app coordinator (see <doc:CoordinatorsAndChildFl
 
 ```swift
 // Conformances:
-// - `RootCoordinator`, so it owns the app's root router and link inbox.
+// - `RootCoordinator`, so it owns the app's root router and link inbox, and Waypoint can draw it.
 final class AppCoordinator: RootCoordinator {
     let router = RootRouter(AppRoot.login)
     let links: LinkInbox?
@@ -49,7 +49,7 @@ final class AppCoordinator: RootCoordinator {
 }
 ```
 
-The renderer protocols, `SwiftUIRootCoordinator` and `UIKitRootCoordinator`, add the screens for each root. The rules stay in plain Swift, so you test them without drawing anything:
+The `Waypoint` product adds the flow for each root: `makeFlow(for:)` returns the coordinator of the root's flow, and Waypoint draws its `view` with the renderer chosen for it. There is one `RootCoordinator` for SwiftUI and UIKit apps. The rules stay in plain Swift, so you test them without drawing anything:
 
 ```swift
 @Test @MainActor
@@ -121,7 +121,34 @@ public final class RootRouter<Root: NavigationRoot>: NavigationRouter {
 }
 ```
 
-The app coordinator's renderer protocol decides which screen or flow each root shows. See the renderer articles. `RootRouter` can also be used on its own, as a lower-level building block, but the app coordinator is the place to start.
+The app coordinator's `makeFlow(for:)` decides which flow each root shows:
+
+```swift
+// What the `Waypoint` product adds to `RootCoordinator`. The router and the inbox are above.
+//
+// Conformances:
+// - `AnyObject`, because a coordinator is one shared object that owns its router.
+@MainActor
+public protocol RootCoordinator: AnyObject {
+    /// Conformances:
+    /// - `RootFlow`: a coordinator that can fill the window, such as a stack or tab coordinator.
+    associatedtype RootFlowCoordinator: RootFlow
+    /// Conformances:
+    /// - `RootRenderer`: what draws this coordinator. Default: `DefaultRootRenderer`.
+    associatedtype Renderer: RootRenderer = DefaultRootRenderer
+
+    /// The window's content, drawn by `Renderer`. Default: filled in by Waypoint.
+    var view: Renderer { get }
+
+    /// Returns the coordinator of the flow that `root` shows. Waypoint calls it for the first
+    /// root when the window entry attaches the root router, and then once each time the root
+    /// switches, inside `switch(to:)`. Either way the flow and its routers are in the tree
+    /// before any call or held link reaches them. Waypoint then draws the coordinator's `view`.
+    @RootFlowBuilder func makeFlow(for root: Root) -> RootFlowCoordinator
+}
+```
+
+`makeFlow(for:)` has a `switch` with one `make…Flow()` call per root, and each case can return a different kind of coordinator, as `@ViewBuilder` allows different views. The names `RootFlow`, `RootFlowCoordinator` and `RootFlowBuilder` are drafts, settled in #37. See "Coordinators and renderers" in the `Waypoint` catalog for the window entries. `RootRouter` can also be used on its own, as a lower-level building block, but the app coordinator is the place to start.
 
 ### Resuming a link after login
 
