@@ -351,4 +351,12 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.termsDone].tapWhenReady()
         app.switches[Identifiers.signUpAcceptTerms].turnOn()
     }
+
+    // Sends a new code first, so the step's Send a new code is covered too.
+    private func enterCode(in app: XCUIApplication) {
+        app.buttons[Identifiers.signUpNewCode].tapWhenReady()
+        let sent = app.staticTexts[Identifiers.signUpCodeSent]
+        XCTAssertTrue(sent.waitForExistence(timeout: UITestSteps.timeout))
+        app.textFields[Identifiers.signUpCode].type(Self.signUpCode)
+    }
 }
