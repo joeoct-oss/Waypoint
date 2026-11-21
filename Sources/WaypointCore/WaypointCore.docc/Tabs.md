@@ -1,10 +1,10 @@
 # Tabs
 
-Keep one stack per tab, and switch tabs from code or a deep link.
+Keep one stack per tab or one stack above the tabs, and switch tabs from code or a deep link.
 
 ## Overview
 
-`TabRouter` owns a tab container. Each tab has its own child router, so every tab keeps its own stack when the user switches away and back.
+`TabRouter` owns a tab container. By default each tab has its own child router, so every tab keeps its own stack when the user switches away and back. With `stacks: .shared`, the tabs share one stack above the tab bar instead (see [One stack above the tabs](#One-stack-above-the-tabs)).
 
 > Note: Draft until #59. In a tab coordinator, each tab's stack coordinator has its own router, and `router(for:)` returns that same router. See "Joining the tree" in <doc:CoordinatorsAndChildFlows>.
 
@@ -83,6 +83,7 @@ public final class TabRouter<Tab: NavigationTab> {
         tabs: [Tab],
         selection: Tab,
         flow: FlowID = FlowID("tabs"),
+        stacks: TabStacks = .perTab,
         popsToRootOnReselect: Bool = true
     )
 
@@ -91,6 +92,7 @@ public final class TabRouter<Tab: NavigationTab> {
     public convenience init(
         selection: Tab,
         flow: FlowID = FlowID("tabs"),
+        stacks: TabStacks = .perTab,
         popsToRootOnReselect: Bool = true
     ) where Tab: CaseIterable
 
@@ -115,9 +117,10 @@ public final class TabRouter<Tab: NavigationTab> {
         else fallback: NavigationFallback? = nil
     ) -> NavigationOutcome
 
-    /// The stack router of one tab. Its flow is named after the tab. A tab
-    /// that isn't one of `tabs` gets a router outside the tree, whose calls
-    /// return `.ignored`.
+    /// The stack router of one tab. Its flow is named after the tab. With
+    /// `stacks: .shared` it is the same router, named `stack`, for every
+    /// tab. A tab that isn't one of `tabs` gets a router outside the tree,
+    /// whose calls return `.ignored`.
     public func router(for tab: Tab) -> StackRouter
 
     /// Replaces the list of tabs.
@@ -133,6 +136,33 @@ public final class TabRouter<Tab: NavigationTab> {
     // `dismissAll` and `presentationDefaults`, as on StackRouter.
 }
 ```
+
+### One stack above the tabs
+
+With one stack per tab, the tab bar stays under every pushed screen unless the stack hides it, and SwiftUI then hides and shows it without moving it. To have pushed screens slide in over the tab bar, as system apps that put the stack around the tabs do, share one stack above the tabs:
+
+```swift
+/// Where a tab container's pushed screens go.
+public enum TabStacks: Sendable, Hashable {
+    /// Each tab has its own stack and keeps it. The default.
+    case perTab
+    /// The tabs share one stack above the tab bar.
+    case shared
+}
+```
+
+```swift
+let tabs = TabRouter(selection: MainTab.home, stacks: .shared)
+tabs.router(for: .shop).push(ProductRoute(id: 42))   // the shared stack
+```
+
+With `.shared`:
+- `router(for:)` returns the same router for every tab, so a tab's coordinator pushes as it would with its own stack.
+- Selecting another tab pops the pushed screens in the same change, so no pushed screen stays over a tab the user can't see. Leaving a tab loses its pushed screens.
+- A transaction that selects a tab and then sets the path keeps that path.
+- The tree shows the shared stack once, as `stack`.
+
+The renderer draws the shared stack around the tab bar, as the SwiftUI renderer article in the `Waypoint` documentation shows.
 
 ### Changing tabs and stacks together
 
