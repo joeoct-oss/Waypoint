@@ -168,17 +168,10 @@ public struct Flow<R: Route, C: FlowCoordinator>: Destinations {
         _ make: @escaping @MainActor (R) -> C,
         onResult: @escaping @MainActor (FlowResult<C.Output>) -> Void
     )
-
-    /// The same with no handler: the result goes to whoever awaits the flow, such as
-    /// `await router.present(_:style:)` with the coordinator. A result nothing receives is
-    /// dropped and reported in debug.
-    public init(
-        _ type: R.Type,
-        presentation: PresentationStyle? = nil,
-        _ make: @escaping @MainActor (R) -> C
-    )
 }
 ```
+
+An entry with no `onResult:`, whose result goes to a call that awaits the route, is designed with #60, together with how that call is written. Until then every `Flow(...)` entry names its handler, so no result is lost.
 
 `RootCoordinator` and `FlowCoordinator` follow the same shape, each with its own router and renderer. Which requirements live in `WaypointCore`, which has no UI, and which in `Waypoint`, which adds the screens, is settled in #59. The core part stays testable on Linux. The `presentation:` parameter declares how `router.show(_:)` shows the route, built in #12: see "Declared presentation" in the core's presentation article.
 
