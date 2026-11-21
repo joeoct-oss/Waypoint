@@ -22,7 +22,7 @@ struct MainTabView: View {
             }
         }
         .accessibilityIdentifier(Identifiers.mainTabs)
-        .noticeOverlay(main.gate.notice)
+        .noticeOverlay(main.tabsNotice)
         .sheet(
             isPresented: Binding(reading: main.gate.isShowingAuth, writing: main.gate.syncAuth),
             onDismiss: main.gate.finishAuth

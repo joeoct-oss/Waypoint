@@ -28,6 +28,12 @@ final class MainCoordinator {
     let cart: CartCoordinator
     let account: AccountCoordinator
 
+    // The account gate's notice over the tabs. While checkout is up, its cover shows the notice
+    // instead, so the reader sees one toast, not two.
+    var tabsNotice: Notice? {
+        cart.isCheckingOut ? nil : gate.notice
+    }
+
     init(
         services: AppServices,
         launch: LaunchOptions,
