@@ -21,8 +21,8 @@ let package = Package(
         // it and re-export it. Its files are wrapped in `#if canImport(os)`, so it compiles empty
         // on Linux.
         .target(name: "WaypointOSLog", dependencies: ["WaypointCore"]),
-        // Coordinators with screens and the SwiftUI renderers; the UIKit renderers join it. Its files
-        // are wrapped in `#if canImport(SwiftUI)`, so it compiles empty on Linux.
+        // Coordinators with screens and the SwiftUI renderers; the UIKit renderers join it. Its
+        // files are wrapped in `#if canImport(SwiftUI)`, so it compiles empty on Linux.
         .target(name: "Waypoint", dependencies: ["WaypointCore", "WaypointOSLog"]),
         // Empty placeholder, to be removed: the UIKit renderers are designed into `Waypoint`. Its
         // files are wrapped in `#if canImport(UIKit)`, so it compiles empty on Linux.
