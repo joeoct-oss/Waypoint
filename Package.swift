@@ -25,7 +25,7 @@ let package = Package(
         // SwiftUI files are wrapped in `#if canImport(SwiftUI)` and its UIKit files in
         // `#if canImport(UIKit)`, so it compiles empty on Linux and without UIKit on macOS.
         .target(name: "Waypoint", dependencies: ["WaypointCore", "WaypointOSLog"]),
-        // Empty placeholder, to be removed: the UIKit renderers are designed into `Waypoint`. Its
+        // Placeholder, to be removed: the UIKit renderers are designed into `Waypoint`. Its
         // files are wrapped in `#if canImport(UIKit)`, so it compiles empty on Linux.
         .target(name: "WaypointUIKit", dependencies: ["WaypointCore", "WaypointOSLog"]),
         // Shared fixtures for the test targets. Internal test code, not a product.

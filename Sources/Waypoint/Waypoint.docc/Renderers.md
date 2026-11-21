@@ -254,7 +254,7 @@ final class ScannerCoordinator: StackCoordinator {
 
 The choice for a place is made in this order:
 
-1. Waypoint's own rule for the place, where it has one. In 0.x, a Waypoint stack inside the app's own `NavigationStack` is always drawn by the UIKit stack renderer, and a different choice there is reported in debug.
+1. Waypoint's own rule for the place, where it has one. In 0.x, a Waypoint stack inside the app's own `NavigationStack` is always drawn by the UIKit stack renderer. A coordinator that declares another renderer there is still drawn that way, and the choice is reported in debug. Because `view` keeps the declared type, the declared renderer hands its drawing to the UIKit stack renderer in that place; how is designed in #151.
 2. The coordinator's own `Renderer`.
 3. The app-wide choice.
 4. Waypoint's default.

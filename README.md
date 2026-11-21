@@ -186,7 +186,7 @@ A route with no destination never crashes either. Debug builds show a screen tha
 | `WaypointCore` | The navigation state engine: routes, routers, outcomes, fallbacks, transactions and logging, with coordinators, guards, deep links, restoration and events to come. No UI framework. | iOS, macOS, Linux |
 | `Waypoint` | Coordinators with screens, and the renderers that draw them: SwiftUI and UIKit renderers for roots, tabs, stacks and presented flows, `WaypointRoot`, `WaypointStack`, `WaypointLink`, logging to the unified log by default. Built on `WaypointCore`. | iOS 17+ |
 
-`WaypointUIKit` is an empty placeholder today. The UIKit renderers are designed into `Waypoint`, and the placeholder will be removed.
+`WaypointUIKit` is a placeholder today: it holds no renderer and only re-exports the unified log handler. The UIKit renderers are designed into `Waypoint`, and the placeholder will be removed.
 
 ## Requirements
 
