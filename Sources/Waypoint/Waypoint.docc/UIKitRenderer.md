@@ -68,7 +68,7 @@ extension View {
 
 A route with no destination never crashes. The renderer shows the same missing-destination screen as the SwiftUI renderer: debug builds name the route and the fix, and release builds show a blank screen.
 
-**Titles and toolbars.** Today the UIKit stack renderer doesn't show a SwiftUI screen's `navigationTitle`, and on iOS 27 its `toolbar` and `searchable` either. A view controller screen sets its own `navigationItem` as usual. Closing that gap is #253. Until then the default stack renderer stays SwiftUI.
+**Titles and toolbars.** A prototype of this renderer (#250) didn't show a SwiftUI screen's `navigationTitle`, and on iOS 27 its `toolbar` and `searchable` either, and the built renderer is expected to share the gap until #253. A view controller screen sets its own `navigationItem` as usual. Closing that gap is #253. Until then the default stack renderer stays SwiftUI.
 
 ### Sheets and full-screen covers
 

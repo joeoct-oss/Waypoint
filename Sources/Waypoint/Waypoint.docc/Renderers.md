@@ -169,7 +169,9 @@ public struct Flow<R: Route, C: FlowCoordinator>: Destinations {
         onResult: @escaping @MainActor (FlowResult<C.Output>) -> Void
     )
 
-    /// The same with no handler: the result goes to the call that awaits it.
+    /// The same with no handler: the result goes to whoever awaits the flow, such as
+    /// `await router.present(_:style:)` with the coordinator. A result nothing receives is
+    /// dropped and reported in debug.
     public init(
         _ type: R.Type,
         presentation: PresentationStyle? = nil,
@@ -285,7 +287,7 @@ Renderers of different kinds work in one tree: a UIKit tab bar can hold SwiftUI 
 
 **The environment.** Screens hosted by the UIKit renderer receive the app's SwiftUI environment where the renderer sits, and redraw when it changes. Waypoint adds its own values for each screen (its router, flow and settings), so the property wrappers in <doc:NavigatingFromViewsAndViewModels> work in both renderers.
 
-**Screen chrome.** Titles, toolbars, the back button, search and `tabBarOnPushedScreens(_:motion:)` follow a contract that both renderers are tested against (#253). Inside a `UINavigationController`, iOS doesn't show every SwiftUI modifier on its own: today the UIKit stack renderer doesn't show a SwiftUI screen's `navigationTitle`, and on iOS 27 its `toolbar` and `searchable` either. Until #253 closes that gap, a row a renderer can't support counts against it when defaults are chosen, and reports an issue in debug, never a silent difference. The defaults stay SwiftUI meanwhile.
+**Screen chrome.** Titles, toolbars, the back button, search and `tabBarOnPushedScreens(_:motion:)` follow a contract that both renderers are tested against (#253). Inside a `UINavigationController`, iOS doesn't show every SwiftUI modifier on its own: a prototype of the UIKit stack renderer (#250) didn't show a SwiftUI screen's `navigationTitle`, and on iOS 27 its `toolbar` and `searchable` either. Until #253 closes that gap, a row a renderer can't support counts against it when defaults are chosen, and reports an issue in debug, never a silent difference. The defaults stay SwiftUI meanwhile.
 
 The journey log names each screen in both renderers: a SwiftUI screen by its view, a controller screen by its type name. A route with no destination shows the same missing-destination screen in both.
 
