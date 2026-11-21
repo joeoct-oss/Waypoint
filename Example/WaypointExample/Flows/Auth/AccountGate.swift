@@ -40,6 +40,8 @@ final class AccountGate {
     // `var` because `showSignIn(for:then:)` sets it with the flow the tab router presents, and
     // `finishAuth()` clears it once the sheet has slid away, so the sheet still draws meanwhile.
     private(set) var presentedAuth: AuthCoordinator?
+    // `var` for the same reason as `presentedAuth`: the sizes the tab router gives the sheet.
+    private(set) var authSheetOptions: SheetOptions?
     // `var` because `showSignIn(for:then:)` keeps why the sheet opened until the reader signs in.
     private var reason: SignInReason
     // `var` because signing in and out set it, and its timer clears it.
@@ -64,6 +66,7 @@ final class AccountGate {
         heldAction = nil
         didSignIn = false
         presentedAuth = nil
+        authSheetOptions = nil
         reason = .account
         notice = nil
         noticeTimer = nil
@@ -87,10 +90,11 @@ final class AccountGate {
         heldAction = action
         didSignIn = false
         self.reason = reason
-        tabs.present(SignInRoute(), style: .sheet, trigger: "sign_in")
+        tabs.present(SignInRoute(), style: AppSheets.large, trigger: "sign_in")
         guard let router = tabs.presented else {
             return
         }
+        authSheetOptions = tabs.state.presentation.map { tabs.sheetOptions(for: $0) }
         presentedAuth = AuthCoordinator(
             router: router,
             reason: reason,
@@ -121,6 +125,7 @@ final class AccountGate {
     // Once the sheet has gone: drops the flow, then runs the held action if the reader signed in.
     func finishAuth() {
         presentedAuth = nil
+        authSheetOptions = nil
         runHeldAction()
     }
 

@@ -25,7 +25,6 @@ struct ForgotPasswordView: View {
             .navigationTitle(isSent ? "Link sent" : "Reset password")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarItems }
-            .presentationDetents(ForgotPasswordDetents.all)
     }
 
     @ViewBuilder
@@ -88,14 +87,5 @@ struct ForgotPasswordView: View {
     private func send() {
         onSend(email)
         isSent = true
-    }
-}
-
-// The sizes the Reset password sheet can take: one small size, since both states fit in it.
-enum ForgotPasswordDetents {
-    static var all: Set<PresentationDetent> {
-        [
-            .medium,
-        ]
     }
 }

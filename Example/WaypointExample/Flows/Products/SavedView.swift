@@ -9,7 +9,7 @@
 import SwiftUI
 
 // The small sheet Save shows over a product (MA-01): "Saved to your wish list", with View wish list
-// and Close, which the sheet only reports. It is only as tall as its content.
+// and Close, which the sheet only reports. The router sizes it to its content (`AppSheets.saved`).
 struct SavedView: View {
     let onViewWishlist: () -> Void
     let onClose: () -> Void
@@ -37,23 +37,11 @@ struct SavedView: View {
         // Contains its children, so View wish list keeps its own identifier.
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(Identifiers.savedSheet)
-        .presentationDetents(SavedDetents.all)
     }
 
     private var closeItem: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
             Button("Close", systemImage: "xmark", action: onClose)
         }
-    }
-}
-
-// The one size the saved sheet takes: just its content.
-enum SavedDetents {
-    private static let height: CGFloat = 240
-
-    static var all: Set<PresentationDetent> {
-        [
-            .height(height),
-        ]
     }
 }

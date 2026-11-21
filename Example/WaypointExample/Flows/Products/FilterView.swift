@@ -8,8 +8,8 @@
 
 import SwiftUI
 
-// The filter sheet: a price range and a sort order, applied with one button. It fits a medium
-// detent.
+// The filter sheet: a price range and a sort order, applied with one button. Its sizes come from
+// the router (`AppSheets.filters`): it opens at medium and grows to large.
 struct FilterView: View {
     let onApply: () -> Void
 
@@ -29,22 +29,11 @@ struct FilterView: View {
         .navigationTitle("Filter")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { applyItem }
-        .presentationDetents(FilterDetents.all)
     }
 
     private var applyItem: some ToolbarContent {
         ToolbarItem(placement: .confirmationAction) {
             Button("Apply", action: onApply)
         }
-    }
-}
-
-// The sizes the filter sheet can take.
-enum FilterDetents {
-    static var all: Set<PresentationDetent> {
-        [
-            .medium,
-            .large,
-        ]
     }
 }
