@@ -11,10 +11,10 @@
 #
 # - quick (the default, while working on a branch): the concurrency guard rail, the compile
 #   fixtures, the host build and unit tests with warnings as errors, and the package tests on the
-#   project simulator with warnings as errors. The example app's UI tests join when the branch
-#   changes `Example/` or a renderer, or with --ui. Parts the branch can't affect are skipped.
-# - full (before every merge): every check, whatever changed. Adds the example app's UI tests, the
-#   unified log tests under the thread sanitizer, and the system link and missing destination UI
+#   project simulator with warnings as errors. The example app's unit and UI tests join when the
+#   branch changes `Example/` or a renderer, or with --ui. Parts the branch can't affect are skipped.
+# - full (before every merge): every check, whatever changed. Adds the example app's unit and UI
+#   tests, the unified log tests under the thread sanitizer, and the system link and missing destination UI
 #   tests again in the release configuration.
 # - release (before a tag): full, plus a build for an iOS device with warnings as errors, and the
 #   package and example app tests again on the iOS 17 simulator.
@@ -25,7 +25,7 @@
 # and the script shuts down each simulator it booted. It ends with the time each step took.
 #
 # Usage: scripts/test-mac.sh [quick|full|release] [--ui] [--all] [--only <Target/Class[/test]>]
-#   --ui    quick also runs the example app's UI tests.
+#   --ui    quick also runs the example app's unit and UI tests.
 #   --all   quick runs every part, whatever the branch changed.
 #   --only  quick runs only the guard rail and this example UI test (passed to -only-testing),
 #           for example `--only WaypointExampleUITests/StackTests/testPushAndBack`.
@@ -248,7 +248,7 @@ package_tests_on() {
         SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
 }
 
-# The example app's UI tests on a simulator. Extra arguments go to xcodebuild.
+# The example app's unit and UI tests on a simulator. Extra arguments go to xcodebuild.
 example_tests_on() {
     local udid="$1"
     shift

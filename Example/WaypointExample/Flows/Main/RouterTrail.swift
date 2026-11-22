@@ -135,11 +135,14 @@ enum TrailStepTypes {
         CheckoutRoute.self,
         CheckoutStep.self,
         AddAddressRoute.self,
+        OrderPlacedRoute.self,
         AccountRoute.self,
         SignInRoute.self,
         CreateAccountRoute.self,
         ResetPasswordRoute.self,
         TermsRoute.self,
+        SignedInRoute.self,
+        SheetDemoRoute.self,
         DetailProductRoute.self,
         DetailCartRoute.self,
     ]
@@ -155,11 +158,14 @@ extension SavedRoute: TrailStep { }
 extension WishlistRoute: TrailStep { }
 extension CheckoutRoute: TrailStep { }
 extension AddAddressRoute: TrailStep { }
+extension OrderPlacedRoute: TrailStep { }
 extension AccountRoute: TrailStep { }
 extension SignInRoute: TrailStep { }
 extension CreateAccountRoute: TrailStep { }
 extension ResetPasswordRoute: TrailStep { }
 extension TermsRoute: TrailStep { }
+extension SignedInRoute: TrailStep { }
+extension SheetDemoRoute: TrailStep { }
 
 // Conformances:
 // - `TrailStep`, so the trail names the step: `payment` or `review`.

@@ -12,7 +12,7 @@ import SwiftUI
 // shows no field for a screen inside the `TabView` that the one stack around the tabs holds. Before
 // the reader types, it offers recent searches and the shop's categories, and a tap on either fills
 // the field. Once there is a query, it lists the products whose name or category holds every word
-// of it, under a count.
+// of it, under a count. A tapped result goes to the view model, which pushes the product.
 struct SearchView: View {
     private static let recentSearches = [
         "lamp",
@@ -29,7 +29,7 @@ struct SearchView: View {
         }
     }
 
-    let onSelect: (Product) -> Void
+    let model: SearchModel
 
     @State private var query = ""
 
@@ -88,7 +88,7 @@ struct SearchView: View {
     private var resultsSection: some View {
         Section {
             ForEach(results) { product in
-                ProductRow(product: product) { onSelect(product) }
+                ProductRow(product: product) { model.select(product) }
             }
         } header: {
             Text(resultCount)
