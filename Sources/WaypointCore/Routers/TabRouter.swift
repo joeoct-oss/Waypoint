@@ -188,6 +188,12 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     }
 
     /// The working copy during a transaction, or the committed snapshot.
+    /// The selected tab's name with ``TabStacks/shared``, so the journey names the tab the reader
+    /// sees, such as `Shop`, rather than the shared stack.
+    var sharedStackTabName: String? {
+        stacks == .shared ? DescriptionFormat.name(of: current.state.selection) : nil
+    }
+
     var current: Snapshot {
         working ?? committed
     }
@@ -434,12 +440,6 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// Creates the one stack the tabs share with ``TabStacks/shared``.
     private func makeSharedRouter() -> StackRouter {
         StackRouter(tabOf: self, flow: tree.claimFlowName("stack"), isAttached: true)
-    }
-
-    /// The selected tab's name with ``TabStacks/shared``, so the journey names the tab the reader
-    /// sees, such as `Shop`, rather than the shared stack.
-    var sharedStackTabName: String? {
-        stacks == .shared ? DescriptionFormat.name(of: current.state.selection) : nil
     }
 
     /// Creates the stack router of one tab.

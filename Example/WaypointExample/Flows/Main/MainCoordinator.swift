@@ -35,6 +35,18 @@ final class MainCoordinator {
         cart.isCheckingOut ? nil : gate.notice
     }
 
+    // Whether Shop or Search is selected with a screen pushed above its root.
+    var showsPushedProducts: Bool {
+        let isProductsTab = tabs.selection == .shop || tabs.selection == .search
+        return isProductsTab && !shop.router.state.path.isEmpty
+    }
+
+    // The products coordinator of the selected tab: Search's while Search shows, else Shop's,
+    // which Go to cart selects.
+    private var selectedProducts: ProductsCoordinator {
+        tabs.selection == .search ? search : shop
+    }
+
     init(
         services: AppServices,
         launch: LaunchOptions,
@@ -185,18 +197,6 @@ final class MainCoordinator {
 
     func makeAccountFlow(for route: AccountRoute) -> some View {
         account.makeDestination(for: route)
-    }
-
-    // Whether Shop or Search is selected with a screen pushed above its root.
-    var showsPushedProducts: Bool {
-        let isProductsTab = tabs.selection == .shop || tabs.selection == .search
-        return isProductsTab && !shop.router.state.path.isEmpty
-    }
-
-    // The products coordinator of the selected tab: Search's while Search shows, else Shop's,
-    // which Go to cart selects.
-    private var selectedProducts: ProductsCoordinator {
-        tabs.selection == .search ? search : shop
     }
 
     func makeAuthFlow(_ auth: AuthCoordinator) -> some View {

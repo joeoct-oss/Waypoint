@@ -60,9 +60,11 @@ enum RouterTrail {
         of router: StackRouter,
         in tabs: TabRouter<MainTab>
     ) -> String {
-        // The tabs share one stack, so it belongs to the selected tab.
+        // The tabs share one stack, so it belongs to the selected tab. A flow the tabs present
+        // keeps its own name.
         guard tabs.stacks == .perTab else {
-            return tabs.selection.title.lowercased()
+            let isSharedStack = router === tabs.router(for: tabs.selection)
+            return isSharedStack ? tabs.selection.title.lowercased() : rootName(of: router)
         }
         let tab = tabs.state.tabs.first { tabs.router(for: $0) === router }
         return tab?.title.lowercased() ?? rootName(of: router)
