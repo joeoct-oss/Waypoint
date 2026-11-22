@@ -33,6 +33,10 @@ final class StackTests: XCTestCase {
 
     // How long the screen gets to settle after a held change, which waits for the push to end.
     private static let settleTimeout: TimeInterval = 3
+    // How long a mid-transition test waits for its final screen, counted from the launch, so it
+    // covers the app starting, the launch push and the held change on a busy Mac (#293). A lost
+    // change never shows the final screen, so a longer wait can't turn a lost change into a pass.
+    private static let launchSettleTimeout: TimeInterval = 20
 
     func testPushAndBack() {
         let app = ExampleApp.launch(signedIn: true)
@@ -137,8 +141,8 @@ final class StackTests: XCTestCase {
             shopFollowUp: .pop
         )
 
-        XCTAssertTrue(app.navigationBars[Self.mugTitle].waitForExistence(timeout: Self.settleTimeout))
-        XCTAssertFalse(app.navigationBars[Self.throwTitle].exists)
+        XCTAssertTrue(app.navigationBars[Self.mugTitle].waitForExistence(timeout: Self.launchSettleTimeout))
+        XCTAssertTrue(app.staysOn(Self.mugTitle, never: Self.throwTitle), "the pop came undone")
     }
 
     func testPopToRootMidTransition() {
@@ -148,8 +152,8 @@ final class StackTests: XCTestCase {
             shopFollowUp: .popToRoot
         )
 
-        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: Self.settleTimeout))
-        XCTAssertFalse(app.navigationBars[Self.throwTitle].exists)
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: Self.launchSettleTimeout))
+        XCTAssertTrue(app.staysOn(Self.shopTitle, never: Self.throwTitle), "the pop to root came undone")
     }
 
     func testLinkMidTransition() {
@@ -159,9 +163,19 @@ final class StackTests: XCTestCase {
             shopFollowUp: .link
         )
 
-        XCTAssertTrue(app.navigationBars[Self.printTitle].waitForExistence(timeout: Self.settleTimeout))
+        XCTAssertTrue(app.navigationBars[Self.printTitle].waitForExistence(timeout: Self.launchSettleTimeout))
+        XCTAssertTrue(app.staysOn(Self.printTitle, never: Self.throwTitle), "the new path came undone")
         app.goBack()
 
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+    }
+}
+
+private extension XCUIApplication {
+    // Whether the screen titled `title` is still on top, and `other` still gone, once the stack's
+    // transition hold has passed, so a held change that lands and is then undone fails.
+    func staysOn(_ title: String, never other: String) -> Bool {
+        RunLoop.current.run(until: Date().addingTimeInterval(UITestSteps.settleTime))
+        return navigationBars[title].exists && !navigationBars[other].exists
     }
 }
