@@ -158,7 +158,7 @@ tabs.router(for: .shop).push(ProductRoute(id: 42))   // the shared stack
 
 With `.shared`:
 - `router(for:)` returns the same router for every tab, so a tab's coordinator pushes as it would with its own stack.
-- Selecting another tab pops the pushed screens in the same change, so no pushed screen stays over a tab the user can't see. Leaving a tab loses its pushed screens.
+- Selecting another tab pops the pushed screens in the same change, so no pushed screen stays over a tab the user can't see. Leaving a tab loses its pushed screens. A sheet or cover the shared stack presents stays, since it covers the tab bar too: dismiss it first if the new tab shouldn't show under it.
 - A transaction that selects a tab and then sets the path keeps that path. Select first: a path set before the select is popped by it.
 - Removing the selected tab with `setTabs(_:)` pops the shared stack too, since the selection moves to another tab.
 - The tree shows the shared stack once, as `stack`. The journey box names it, and its root screen, after the selected tab, such as `Shop`, so `setRootName(_:)` doesn't apply to it.
