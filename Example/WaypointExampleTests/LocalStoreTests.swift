@@ -15,6 +15,13 @@ import Testing
 struct LocalStoreTests {
     private static let lampID = 1
 
+    // What the app keeps in its own domain, empty when it keeps nothing.
+    private static func appData() -> NSDictionary {
+        let none: [String: Any] = [:]
+        let data = UserDefaults.standard.persistentDomain(forName: LocalStore.appDomain) ?? none
+        return NSDictionary(dictionary: data)
+    }
+
     @Test
     func testsNeverTouchAppData() {
         let appData = Self.appData()
@@ -44,12 +51,5 @@ struct LocalStoreTests {
         #expect(store.cartProductIDs.isEmpty)
         #expect(store.wishlistProductIDs.isEmpty)
         #expect(store.addresses == nil)
-    }
-
-    // What the app keeps in its own domain, empty when it keeps nothing.
-    private static func appData() -> NSDictionary {
-        let none: [String: Any] = [:]
-        let data = UserDefaults.standard.persistentDomain(forName: LocalStore.appDomain) ?? none
-        return NSDictionary(dictionary: data)
     }
 }
