@@ -210,22 +210,24 @@ take_run_lock() {
             echo "  stop it as TESTING.md says (Run a Mac tier). Never remove a live run's lock." >&2
             exit 1
         fi
-        local stale="$holder" moved
+        local stale="$holder"
         # Only for the script's own check: a pause here stands for a run that stalls between
         # finding a stale lock and clearing it.
         sleep "${WAYPOINT_RUN_LOCK_TEST_PAUSE:-0}"
-        # Clearing is one rename, so only one run can take the lock away, and the run that did
-        # checks it took the stale one; a live run's lock that took its place goes back.
-        moved="$RUN_LOCK.cleared.$$"
-        if mv "$RUN_LOCK" "$moved" 2>/dev/null; then
-            if [[ "$(readlink "$moved" 2>/dev/null)" != "$stale" ]]; then
-                ln -s "$(readlink "$moved")" "$RUN_LOCK" 2>/dev/null || true
-                rm -f "$moved"
-                echo "error: another Mac test run took the run lock just now; wait for it" >&2
-                exit 1
+        # Clearing happens under a second lock, a folder only one run can make, so the link
+        # checked is the link removed: a live run can't put its link there meanwhile, since a new
+        # link only lands on an empty path. A clearing lock left by a stopped run goes after a
+        # minute.
+        local clearing="$RUN_LOCK.clearing"
+        if [[ -n "$(find "$clearing" -maxdepth 0 -mmin +1 2>/dev/null)" ]]; then
+            rmdir "$clearing" 2>/dev/null || true
+        fi
+        if mkdir "$clearing" 2>/dev/null; then
+            if [[ "$(readlink "$RUN_LOCK" 2>/dev/null)" == "$stale" ]]; then
+                rm -f "$RUN_LOCK" "$RUN_LOCK.info"
+                echo "note: cleared a run lock left by a run that has ended (pid ${stale:-unknown})" >&2
             fi
-            rm -f "$moved" "$RUN_LOCK.info"
-            echo "note: cleared a run lock left by a run that has ended (pid ${stale:-unknown})" >&2
+            rmdir "$clearing"
         fi
         if ! ln -s "$$" "$RUN_LOCK" 2>/dev/null; then
             echo "error: another Mac test run took the run lock just now; wait for it" >&2
