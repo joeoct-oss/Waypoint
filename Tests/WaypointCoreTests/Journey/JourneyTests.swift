@@ -203,6 +203,17 @@ struct JourneyTests {
     }
 
     @Test
+    func aNamedFlowOverSharedTabsKeepsItsName() throws {
+        let handler = RecordingLogHandler()
+        let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
+        tabs.present(JourneyFixtures.CheckoutRoute())
+        let presented = try #require(tabs.presented)
+        presented.setRootName("Sign in")
+
+        #expect(VisibleScreen.rootName(of: presented) == "Sign in")
+    }
+
+    @Test
     func aSharedStackIsNamedAfterTheSelectedTab() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)

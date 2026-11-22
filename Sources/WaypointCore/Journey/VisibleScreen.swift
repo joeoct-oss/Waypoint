@@ -186,13 +186,13 @@ struct VisibleScreen {
     /// The name given to the stack, else its tab's or its flow's, in words. A stack the tabs
     /// share shows a different root for each tab, so its root takes the selected tab's name.
     private static func rootName(of stack: StackRouter, role: Role) -> String {
-        if let name = stack.rootName, stack.parentNode?.sharedStackTabName == nil {
-            return name
-        }
         guard case .tab(let tab) = role else {
-            return words(stack.flowID.name)
+            return stack.rootName ?? words(stack.flowID.name)
         }
-        return tab
+        guard stack.parentNode?.sharedStackTabName == nil, let name = stack.rootName else {
+            return tab
+        }
+        return name
     }
 
     /// The nearest screen below the top that starts a journey, else the tab, else the stack's
