@@ -114,6 +114,15 @@ OWNS_RUN_LOCK=false
 finish() {
     local status=$?
     local udid lock index
+    # A run stopped with TERM leaves its step's tool running; stop it, so the clone and the
+    # simulators are free before the run lock goes.
+    if pgrep -P $$ >/dev/null 2>&1; then
+        pkill -TERM -P $$ 2>/dev/null || true
+        for _ in $(seq 1 60); do
+            pgrep -P $$ >/dev/null 2>&1 || break
+            sleep 0.5
+        done
+    fi
     if $OWNS_RUN_LOCK && [[ "$(readlink "$RUN_LOCK" 2>/dev/null)" == "$$" ]]; then
         rm -f "$RUN_LOCK" "$RUN_LOCK.info"
     fi

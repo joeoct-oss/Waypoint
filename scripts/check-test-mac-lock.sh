@@ -159,6 +159,10 @@ for how in step script; do
         kill -TERM "$script_pid" || true
     fi
     wait "$run" 2>/dev/null || true
+    if pgrep -f "$STUBS/xcodebuild" >/dev/null; then
+        fail "a run stopped with TERM ($how) stops its step's tool"
+        pkill -f "$STUBS/xcodebuild" || true
+    fi
     if lock_gone; then
         pass "a run stopped with TERM ($how) releases the lock"
     else
@@ -167,6 +171,26 @@ for how in step script; do
     fi
     : >"$CALLS"
 done
+
+# 7. Two runs that find the same stale lock at once: one goes on, the other stops.
+sleep 0 &
+dead=$!
+wait "$dead"
+ln -s "$dead" "$LOCK"
+run_script STUB_SECONDS=3 >"$WORK/7a.log" 2>&1 &
+a=$!
+run_script STUB_SECONDS=3 >"$WORK/7b.log" 2>&1 &
+b=$!
+a_status=0
+b_status=0
+wait "$a" || a_status=$?
+wait "$b" || b_status=$?
+if [[ $((a_status == 0)) -ne $((b_status == 0)) ]] &&
+    grep -q "another Mac test run" "$WORK/7a.log" "$WORK/7b.log" && lock_gone; then
+    pass "two runs that find one stale lock: one goes on, the other stops"
+else
+    fail "two runs that find one stale lock: one goes on, the other stops ($a_status, $b_status)"
+fi
 
 if [[ $FAILURES -gt 0 ]]; then
     echo "$FAILURES run lock check(s) failed" >&2

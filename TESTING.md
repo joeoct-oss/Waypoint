@@ -156,7 +156,7 @@ Every step runs on the Mac, from the root of the Waypoint package clone, which t
    ls -l /tmp/waypoint-test-mac.lock /tmp/waypoint-test-mac.lock.info 2>/dev/null && cat /tmp/waypoint-test-mac.lock.info
    ```
 
-   When it prints nothing, carry on. When it prints the lock, check its holder with `kill -0 "$(readlink /tmp/waypoint-test-mac.lock)" && echo running`. When that prints `running`, another run holds the Mac: stop, don't touch the clone, and tell whoever keeps the queue. When it prints nothing, the lock is stale and the script clears it itself; carry on. Never remove the lock by hand. Then, for every simulator the tier uses:
+   When it prints nothing, carry on. When it prints the lock, check its holder with `ps -p "$(readlink /tmp/waypoint-test-mac.lock)" -o command= | grep -q test-mac.sh && echo running`. When that prints `running`, another run holds the Mac: stop, don't touch the clone, and tell whoever keeps the queue. When it prints nothing, the lock is stale and the script clears it itself; carry on. Never remove the lock by hand. Then, for every simulator the tier uses:
 
    ```sh
    xcrun simctl list devices available | grep -E "^ +waypoint-01 \("
