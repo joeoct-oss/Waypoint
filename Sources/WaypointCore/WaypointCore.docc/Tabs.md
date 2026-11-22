@@ -157,7 +157,7 @@ tabs.router(for: .shop).push(ProductRoute(id: 42))   // the shared stack
 ```
 
 With `.shared`:
-- `router(for:)` returns the same router for every tab, so a tab's coordinator pushes as it would with its own stack.
+- `router(for:)` returns the same router for every tab, so a tab's coordinator pushes as it would with its own stack. A push lands over the selected tab, so push from the tab that shows, or select its tab first in the same transaction.
 - Selecting another tab pops the pushed screens in the same change, so no pushed screen stays over a tab the user can't see. Leaving a tab loses its pushed screens. A sheet or cover the shared stack presents stays, since it covers the tab bar too: dismiss it first if the new tab shouldn't show under it.
 - A transaction that selects a tab and then sets the path keeps that path. Select first: a path set before the select is popped by it.
 - Removing the selected tab with `setTabs(_:)` pops the shared stack too, since the selection moves to another tab.

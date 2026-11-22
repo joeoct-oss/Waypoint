@@ -13,7 +13,7 @@ import WaypointCore
 // stack, whose flow is `stack`.
 //
 // Conformances:
-// - `String` raw value: gives each tab its name in logs, so its stack's flow is `shop`.
+// - `String` raw value: gives each tab its name in logs and the journey, such as `shop`.
 // - `NavigationTab`, so the main tab router selects it, and `TabView` can tag each tab with it.
 // - `CaseIterable`, so the tab bar and the tab router list every tab from this one declaration.
 enum MainTab: String, NavigationTab, CaseIterable {
