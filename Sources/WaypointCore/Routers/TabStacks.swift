@@ -17,6 +17,6 @@ public enum TabStacks: Sendable, Hashable {
 
     /// The tabs share one stack above the tab bar. A pushed screen covers the bar, as a
     /// `NavigationStack` around a `TabView` does, so the system slides the bar away with the tab's
-    /// root. Selecting another tab pops the pushed screens.
+    /// root. Selecting another tab, or removing the selected one, pops the pushed screens.
     case shared
 }

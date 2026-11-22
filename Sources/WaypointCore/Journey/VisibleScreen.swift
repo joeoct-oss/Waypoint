@@ -160,7 +160,7 @@ struct VisibleScreen {
             return .root
         }
         guard parent.presentedNode === stack else {
-            return .tab(words(stack.flowID.name))
+            return .tab(words(stack.tabStackName))
         }
         return .presented
     }

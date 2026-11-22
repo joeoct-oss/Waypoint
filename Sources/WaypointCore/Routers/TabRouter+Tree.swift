@@ -138,8 +138,11 @@ extension TabRouter {
         return .failed(failure)
     }
 
-    /// Replaces the tabs, creating routers for new tabs and dropping removed ones.
+    /// Replaces the tabs, creating routers for new tabs and dropping removed ones. With
+    /// ``TabStacks/shared``, a change of selection pops the shared stack, as selecting another tab
+    /// does.
     func setTabsStep(_ tabs: [Tab], in store: TransactionStore) -> StepResult {
+        let previousSelection = current.state.selection
         let result = tabStep(.setTabs(tabs), in: store)
         guard case .changed = result else {
             return result
@@ -148,7 +151,15 @@ extension TabRouter {
         updateWorkingCopy { snapshot in
             snapshot.withTabRouters(next)
         }
-        return result
+        guard stacks == .shared, current.state.selection != previousSelection,
+            let shared = next.values.first
+        else {
+            return result
+        }
+        guard case .failed(let failure) = shared.stackStep(.popToRoot, in: store) else {
+            return result
+        }
+        return .failed(failure)
     }
 
     /// Applies a tab command to the working copy.

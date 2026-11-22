@@ -111,8 +111,10 @@ final class MainCoordinator {
             onClearAllData: onClearAllData
         )
         // The journey box names each router by the coordinator that owns it. The tabs share one
-        // stack, so it carries the name of the last tab coordinator made, Account's.
+        // stack, which every tab coordinator names in turn, so the main coordinator, which owns
+        // it, names it last. The journey names the selected tab beside it.
         tabs.setCoordinator(self)
+        tabs.router(for: .shop).setCoordinator(self)
     }
 
     // The tab the reader picked in the tab bar.

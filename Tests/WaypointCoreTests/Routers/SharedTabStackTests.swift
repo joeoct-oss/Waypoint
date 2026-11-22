@@ -115,6 +115,18 @@ struct SharedTabStackTests {
     }
 
     @Test
+    func removingTheSelectedTabPopsTheSharedStack() {
+        let tabs = TabRouter(selection: MainTab.profile, stacks: .shared, configuration: .permissive)
+        let shared = tabs.router(for: .profile)
+        shared.push(ProductRoute(id: 1))
+
+        tabs.setTabs(MainTab.homeAndShop)
+
+        #expect(tabs.selection == .home)
+        #expect(shared.state.path.isEmpty)
+    }
+
+    @Test
     func theTreeShowsTheSharedStackOnce() {
         let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
 

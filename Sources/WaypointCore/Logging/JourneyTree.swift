@@ -115,7 +115,7 @@ struct JourneyTree {
 
     /// `Shop · ProductsCoordinator`, or `Shop` when the tab's stack has no coordinator.
     private func tabLabel(_ tab: StackRouter) -> String {
-        let name = VisibleScreen.words(tab.flowID.name)
+        let name = VisibleScreen.words(tab.tabStackName)
         guard let owner = tab.coordinatorName else {
             return name
         }

@@ -175,6 +175,20 @@ struct JourneyTests {
     }
 
     @Test
+    func aSharedStackIsNamedAfterTheSelectedTab() throws {
+        let handler = RecordingLogHandler()
+        let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
+        tabs.select(.shop)
+
+        tabs.router(for: .shop).push(ItemRoute(id: 3, title: nil))
+
+        let visit = try #require(tabs.screenVisit)
+        #expect(visit.source.title == "Shop")
+        #expect(tabs.debugTree().contains("Shop"))
+        #expect(!tabs.debugTree().contains("Stack"))
+    }
+
+    @Test
     func aScreenThatStartsAJourneyIsTheSourceOfWhatItOpens() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock())

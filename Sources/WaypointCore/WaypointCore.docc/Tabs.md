@@ -160,7 +160,9 @@ With `.shared`:
 - `router(for:)` returns the same router for every tab, so a tab's coordinator pushes as it would with its own stack.
 - Selecting another tab pops the pushed screens in the same change, so no pushed screen stays over a tab the user can't see. Leaving a tab loses its pushed screens.
 - A transaction that selects a tab and then sets the path keeps that path.
-- The tree shows the shared stack once, as `stack`.
+- Removing the selected tab with `setTabs(_:)` pops the shared stack too, since the selection moves to another tab.
+- The tree shows the shared stack once, as `stack`. The journey box names it after the selected tab, such as `Shop`.
+- The shared stack has one coordinator name: name it from the coordinator that owns the tabs, after the tabs' own coordinators, since the last `setCoordinator(_:)` wins.
 
 The renderer draws the shared stack around the tab bar, as the SwiftUI renderer article in the `Waypoint` documentation shows.
 
