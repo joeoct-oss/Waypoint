@@ -20,7 +20,7 @@ Follow the steps in order and word for word. Each step says what to run, what a 
 There are two places a test can run:
 
 - **Linux**: a Linux machine with a Swift 6 toolchain, such as a cloud container. `WaypointCore` is pure Swift, so the core builds and tests here. The renderer targets compile empty on Linux, so nothing here touches SwiftUI or UIKit.
-- **The Mac**: a Mac with Xcode 16 or later, and the tools from `scripts/bootstrap.sh` ([setup](CONTRIBUTING.md#setup)). Everything that needs Apple's frameworks, Xcode or a simulator runs here.
+- **The Mac**: a Mac with Xcode 26 or later (the example app needs Swift 6.2), and the tools from `scripts/bootstrap.sh` ([setup](CONTRIBUTING.md#setup)). Everything that needs Apple's frameworks, Xcode or a simulator runs here.
 
 | Layer | Where it lives | Linux | Mac |
 |---|---|---|---|
@@ -140,7 +140,7 @@ Every step runs on the Mac, from the root of the Waypoint package clone, which t
    mise exec -- tuist version || tuist version
    ```
 
-   Pass: Xcode 16 or later, and a Tuist version. When Tuist is missing, run `scripts/bootstrap.sh` once and check again; if it still fails, stop and report it.
+   Pass: Xcode 26 or later, and a Tuist version. When Tuist is missing, run `scripts/bootstrap.sh` once and check again; if it still fails, stop and report it.
 
 3. **Check nothing else is running, and each simulator exists and is free.** First, no other Mac run may be going:
 
