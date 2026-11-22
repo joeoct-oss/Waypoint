@@ -10,10 +10,11 @@ import XCTest
 
 // Order placed runs on checkout's Waypoint stack (#281): placing the order replaces the steps with
 // Order placed in one `setPath`, which the Lab's event log shows as one line with no Review left
-// in the stack.
+// in the stack. Continue shopping closes checkout and opens Shop where the reader left it, here on
+// the lamp they added.
 @MainActor
 final class OrderPlacedTests: XCTestCase {
-    private static let shopTitle = "Shop"
+    private static let lampTitle = "Orbit Lamp"
     private static let productID = 1
     // The setPath line: Order placed in the stack, with the steps it replaced gone.
     private static let replacedPath = NSPredicate(
@@ -23,7 +24,9 @@ final class OrderPlacedTests: XCTestCase {
     func testPlacingOrderReplacesCheckoutPath() {
         let app = placeOrder()
         app.buttons[Identifiers.continueShopping].tapWhenReady()
-        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+        let placed = app.descendants(matching: .any)[Identifiers.orderPlaced]
+        XCTAssertTrue(placed.waitForNonExistence(timeout: UITestSteps.timeout), "checkout stayed open")
+        XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: UITestSteps.timeout))
 
         app.openLabTool(.eventLog)
         let entry = app.descendants(matching: .any).matching(Self.replacedPath).firstMatch
