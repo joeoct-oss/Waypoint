@@ -33,7 +33,7 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 | Folder | What it holds |
 |---|---|
 | `App/` | The `App`, the app coordinator and its roots, and launch arguments |
-| `Dependencies/` | `AppServices`, the one container the `App` makes, and one dependency struct per feature (`ProductsDependencies`, `CartDependencies`, `AccountDependencies`, `AuthDependencies`, `LabDependencies`) listing what that feature uses |
+| `Dependencies/` | `AppServices`, the one container the `App` makes, and one dependency struct per feature (`ProductsDependencies`, `CartDependencies`, `AccountDependencies`, `AuthDependencies`, `LabDependencies`) listing what that feature uses. The coordinators still take their services one by one until they move onto these structs (#59, #301) |
 | `Services/` | The local store, the session, the saved addresses, the auth service protocol and its mock, and the issue and event logs |
 | `Store/` | The product catalog (`ProductCatalog`, with `SampleCatalog` for the fixed sample products), orders, and the account type |
 | `Flows/Splash/` | The splash screen |
@@ -50,7 +50,7 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 ## Rules the app follows
 
 - Each window has its own app coordinator; the `App` holds no navigation state, only the shared services.
-- Services reach a feature through its dependency struct, which `AppServices` gives; nothing reads a service from a static, a singleton or the SwiftUI environment. `AppServices` holds only what lives as long as the app.
+- `AppServices` holds only what lives as long as the app.
 - The app and its unit tests are main actor by default, so they write no `@MainActor` (see [`CODE_STYLE.md`](../CODE_STYLE.md)).
 - Screens report through callbacks; only coordinators navigate, with `make…Flow()` to build and `show…()` to navigate.
 - Accessibility identifiers follow one pattern: `<flow>.<screen>` for journeys, and `root.<branch>`, `<branch>.<flow>.<kind>`, `placeholder.<flow>.<kind>`, `lab.story.<story>` and `lab.detail.<screen>` in the Lab.

@@ -17,10 +17,10 @@ import WaypointCore
 // test links to a route with no destination, the configuration's registry lists that route, so the
 // router lets the push through and the stack shows its missing-destination screen.
 //
-// Each feature gets its services through its own dependency struct, from one method here, so a
-// feature's needs are listed in one place and a test passes fakes the same way. Nothing reads a
-// service from a static, a singleton or the SwiftUI environment. Every service here lives as long
-// as the app; what lives for one flow or one screen never goes in here. `clearAll()` removes
+// Each feature's dependency struct comes from one method here, so a feature's needs are listed in
+// one place and a test passes fakes the same way. The coordinators still take their services one
+// by one until they move onto these structs (#59, #301). Every service here lives as long as the
+// app; what lives for one flow or one screen never goes in here. `clearAll()` removes
 // everything the app keeps, signs the reader out and puts the sample addresses back.
 final class AppServices {
     let catalog: any ProductCatalog
