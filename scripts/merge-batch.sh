@@ -23,7 +23,8 @@
 # Usage: scripts/merge-batch.sh <branch> [<branch>...]
 #        scripts/merge-batch.sh --before-merge <branch> <tested head> <expected main>
 #        scripts/merge-batch.sh --after-merge <batch tree>
-#   WAYPOINT_REMOTE  the remote to fetch from (default origin)
+#   WAYPOINT_REMOTE    the remote to fetch from (default origin)
+#   WAYPOINT_RUN_LOCK  the Mac test run lock (default /tmp/waypoint-test-mac.lock)
 
 set -euo pipefail
 
@@ -69,6 +70,15 @@ if [[ "$1" == --before-merge ]]; then
     fi
     echo "ok: $branch is still ${head:0:7} and main is still ${main:0:7}; merge it"
     exit 0
+fi
+
+# A Mac test run uses this clone while it holds the run lock (scripts/test-mac.sh); a batch
+# built under it would change the commit the run tests.
+RUN_LOCK="${WAYPOINT_RUN_LOCK:-/tmp/waypoint-test-mac.lock}"
+holder=$(readlink "$RUN_LOCK" 2>/dev/null || true)
+if [[ -n "$holder" ]] && ps -p "$holder" -o command= 2>/dev/null | grep -q "test-mac.sh"; then
+    echo "error: a Mac test run (pid $holder) holds the run lock; build the batch after its teardown" >&2
+    exit 1
 fi
 
 if [[ -n "$(git status --porcelain)" ]]; then

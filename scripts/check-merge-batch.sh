@@ -14,7 +14,7 @@
 #   `--after-merge` tells that tree from another;
 # - `--before-merge` stops the batch when a branch or `main` moved;
 # - a branch that conflicts stops the batch, names the branch, and leaves the clone as it was;
-# - a clone with changes is refused;
+# - a clone with changes, or one a Mac test run holds the run lock for, is refused;
 # - the slowest-test list reads a sample `xcresulttool` answer, slowest first, and a bad one is
 #   only a note.
 #
@@ -40,6 +40,8 @@ pass() {
     echo "ok: $1"
 }
 
+# Its own run lock path, so a real Mac run's lock never changes what the check sees.
+export WAYPOINT_RUN_LOCK="$WORK/run.lock"
 export GIT_AUTHOR_NAME="Check" GIT_AUTHOR_EMAIL="check@localhost"
 export GIT_COMMITTER_NAME="Check" GIT_COMMITTER_EMAIL="check@localhost"
 
@@ -156,6 +158,27 @@ elif [[ "$out" == *"clash doesn't merge cleanly"* && "$(git rev-parse HEAD)" == 
 else
     fail "a conflicting branch leaves the clone as it was ($out)"
 fi
+
+# 3b. A batch is refused while a Mac test run holds the run lock.
+cat >"$WORK/test-mac.sh" <<'EOF'
+#!/usr/bin/env bash
+sleep 10
+EOF
+chmod +x "$WORK/test-mac.sh"
+"$WORK/test-mac.sh" &
+run=$!
+ln -s "$run" "$WORK/run.lock"
+before=$(git rev-parse HEAD)
+if out=$(scripts/merge-batch.sh one 2>&1); then
+    fail "a batch is refused while a test run holds the run lock"
+elif [[ "$out" == *"holds the run lock"* && "$(git rev-parse HEAD)" == "$before" ]]; then
+    pass "a batch is refused while a test run holds the run lock, and the clone is untouched"
+else
+    fail "a batch is refused while a test run holds the run lock ($out)"
+fi
+kill "$run" 2>/dev/null || true
+wait "$run" 2>/dev/null || true
+rm -f "$WORK/run.lock"
 
 # 4. A clone with changes is refused.
 printf 'local\n' >>a.txt
