@@ -190,7 +190,10 @@ finish() {
         done
         printf '  %5ss  total\n' "$SECONDS"
     fi
-    report_slowest_tests
+    # A run turned away at the run lock reports nothing of the run that holds it.
+    if $OWNS_RUN_LOCK; then
+        report_slowest_tests
+    fi
     if [[ $status -eq 0 ]]; then
         echo "All Mac tests passed ($TIER)."
     else

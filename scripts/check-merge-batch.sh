@@ -10,7 +10,9 @@
 # it runs on Linux and on the Mac without touching this clone:
 #
 # - two branches that merge cleanly make a batch with both and `main`;
-# - squash-merging the batch's branches one at a time, in its order, gives the batch's tree;
+# - squash-merging the batch's branches one at a time, in its order, gives the batch's tree, and
+#   `--after-merge` tells that tree from another;
+# - `--before-merge` stops the batch when a branch or `main` moved;
 # - a branch that conflicts stops the batch, names the branch, and leaves the clone as it was;
 # - a clone with changes is refused;
 # - the slowest-test list reads a sample `xcresulttool` answer, slowest first, and a bad one is
@@ -91,6 +93,28 @@ else
     fail "squash-merging the batch's branches in order gives the batch's tree"
 fi
 git checkout -q main
+
+# 2a. --after-merge: main with the squashed branches holds the tested tree; main without them
+# doesn't.
+(cd "$WORK/seed" && git checkout -q main && git fetch -q origin &&
+    for branch in one two; do git merge -q --squash "origin/$branch" >/dev/null 2>&1 &&
+        git commit -q -m "squash $branch"; done && git push -q origin main 2>/dev/null)
+if scripts/merge-batch.sh --after-merge "$tree" >/dev/null 2>&1; then
+    pass "--after-merge passes when main holds the tested tree"
+else
+    fail "--after-merge passes when main holds the tested tree"
+fi
+(cd "$WORK/seed" && git reset -q --hard HEAD~2 && git push -q -f origin main 2>/dev/null)
+if out=$(scripts/merge-batch.sh --after-merge "$tree" 2>&1); then
+    fail "--after-merge fails when main doesn't hold the tested tree"
+elif [[ "$out" == *"main holds untested code"* ]]; then
+    pass "--after-merge fails when main doesn't hold the tested tree"
+else
+    fail "--after-merge says main holds untested code ($out)"
+fi
+git fetch -q origin
+git checkout -q main
+git reset -q --hard origin/main
 
 # 2b. --before-merge lets the merge go when nothing moved, and stops the batch when the branch
 # or main moved.

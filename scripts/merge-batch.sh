@@ -17,10 +17,12 @@
 # Before each of the batch's pull requests merges, `--before-merge` checks that nothing moved: the
 # branch's head is still the tested one, and `main` is still the batch's `main` (the first pull
 # request) or the commit the pull request before it merged as. It exits 1 when either moved, and
-# the batch stops there. It changes nothing in the clone.
+# the batch stops there. After the last one merges, `--after-merge` checks that `main` holds the
+# batch's tested tree, and exits 1 when it doesn't. Neither changes anything in the clone.
 #
 # Usage: scripts/merge-batch.sh <branch> [<branch>...]
 #        scripts/merge-batch.sh --before-merge <branch> <tested head> <expected main>
+#        scripts/merge-batch.sh --after-merge <batch tree>
 #   WAYPOINT_REMOTE  the remote to fetch from (default origin)
 
 set -euo pipefail
@@ -32,6 +34,21 @@ if [[ $# -eq 0 ]]; then
     exit 2
 fi
 REMOTE="${WAYPOINT_REMOTE:-origin}"
+
+if [[ "$1" == --after-merge ]]; then
+    if [[ $# -ne 2 ]]; then
+        sed -n 's/^# \{0,1\}//; /^Usage:/,/^$/p' "$0" >&2
+        exit 2
+    fi
+    git fetch -q "$REMOTE" main
+    tree=$(git rev-parse "$REMOTE/main^{tree}")
+    if [[ "$tree" != "$2" ]]; then
+        echo "error: main's tree is ${tree:0:12}, not the tested ${2:0:12}; main holds untested code" >&2
+        exit 1
+    fi
+    echo "ok: main holds the batch's tested tree"
+    exit 0
+fi
 
 if [[ "$1" == --before-merge ]]; then
     if [[ $# -ne 4 ]]; then

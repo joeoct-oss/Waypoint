@@ -69,7 +69,7 @@ Find the row for the moment you are at. Run every command in its row, Linux firs
 
 A pull request is **docs only** when every file it changes matches `*.md`, `*.docc/**` or `docs-theme/**`. Read the changed files from the pull request itself, not from its labels. A pull request labelled `runs:mac` always needs `full`, even when it is docs only.
 
-**Nothing merges without a green `full` run** on a commit that contains the latest `main`, unless the pull request is docs only. A `quick` run, of any kind, is for working on a branch and never counts for a merge.
+**Nothing merges without a green `full` run** on a commit that contains the latest `main`, unless the pull request is docs only. That commit is the pull request's [merge batch](#merge-batches): a green batch run counts for every pull request in it, as long as `--before-merge` passes right before each one merges. A `quick` run, of any kind, is for working on a branch and never counts for a merge.
 
 ### Merge batches
 
@@ -91,9 +91,9 @@ One `full` run covers up to four ready pull requests at once. A pull request is 
    ```
 
    The expected `main` is the batch's `main sha` for the first pull request, and the commit the pull request before it merged as for each later one. Pass: it prints `ok:`. When it prints `error:`, the branch or `main` moved since the run: stop. Nothing more from this batch merges until a new batch with what's left runs `full`.
-5. **After the last merge**, `git fetch origin main && git rev-parse origin/main^{tree}` must print the batch's tree. When it doesn't, stop and report it.
+5. **After the last merge**, `scripts/merge-batch.sh --after-merge <the batch's tree>` must print `ok:`. When it prints `error:`, `main` holds code no `full` run tested: stop merging anything, run `full` on `main` at once (preflight step 4 with `origin/main` in place of the branch), and report it. When that run is red, the batch's pull requests are reverted, newest first, before anything else merges.
 
-A result belongs to one commit. The merge gate holds only for the head commit it ran on, and that commit must contain the current `main`. When the branch gets a new commit after the run (including a merge of `main`), run the gate again. The one exception: when every file changed since the tested commit is docs only, `scripts/test-linux.sh` alone is enough.
+A result belongs to one commit. For a merge, that commit is the batch: the gate holds only while each pull request's head is the one the batch tested and `main` is the batch's `main` or the commits of the batch's earlier pull requests, which `--before-merge` checks. When the branch gets a new commit after the run (including a merge of `main`), run the gate again. The one exception: when every file changed since the tested commit is docs only, `scripts/test-linux.sh` alone is enough.
 
 ## 3. The simulators
 

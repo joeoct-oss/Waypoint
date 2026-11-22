@@ -64,7 +64,7 @@ New source files start with this header:
 - **Title:** one plain English sentence in the imperative that says what the change does for the package, with no prefix and no trailing period. For example: "Refuse a push when the route has no destination".
 - **Body:** fill in the template. Say what changed, why, and how it was tested, and flag any public API change.
 - **Changelog:** add a line to `CHANGELOG.md` under **Unreleased** for anything a package user would notice.
-- **Keep the branch current.** It must contain the latest `main` before it merges.
+- **Keep the branch current.** It must contain the latest `main` when its [merge batch](TESTING.md#merge-batches) is built.
 
 ## Review and merge
 
