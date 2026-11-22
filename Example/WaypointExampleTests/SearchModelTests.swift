@@ -16,7 +16,6 @@ import WaypointCore
 // through `SearchModel.onShopStack(_:)`, as the shop's coordinator does, so a stack that stops
 // declaring `ShopFlow` fails here: the declared flow is checked, and a navigator scoped to another
 // flow is no longer reported.
-@MainActor
 struct SearchModelTests {
     private static let lampID = 1
     private static let shopFlowID = FlowID("search")

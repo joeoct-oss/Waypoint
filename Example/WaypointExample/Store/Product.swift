@@ -14,7 +14,7 @@ import Foundation
 // Conformances:
 // - `Hashable`, so a product can sit in a navigation path and tell itself apart from the others.
 // - `Identifiable`, so lists can show products without naming an id key path.
-struct Product: Hashable, Identifiable {
+nonisolated struct Product: Hashable, Identifiable {
     static let all = [
         Product(
             id: 1,

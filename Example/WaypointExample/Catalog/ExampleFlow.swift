@@ -13,7 +13,7 @@
 //   identifiers use the same word.
 // - `Codable` (from the raw values), so a Lab entry can sit in an account route.
 // - `CaseIterable`, so both branches list every flow from this one declaration.
-enum ExampleFlow: String, CaseIterable, Codable {
+nonisolated enum ExampleFlow: String, CaseIterable, Codable {
     case login
     case tabs
     case detailPush

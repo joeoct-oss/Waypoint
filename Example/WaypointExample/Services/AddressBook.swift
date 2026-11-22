@@ -13,7 +13,6 @@ import Observation
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so checkout and Account redraw when an address is added.
-@MainActor
 @Observable
 final class AddressBook {
     private let store: LocalStore

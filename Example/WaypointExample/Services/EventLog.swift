@@ -13,7 +13,6 @@ import WaypointCore
 // The Lab's event log: every navigation call the routers logged, newest first, with its outcome.
 // `EventLogHandler` fills it from the routers' log, so the screen shows exactly what the console
 // shows, one line per call. It keeps the newest `capacity` entries.
-@MainActor
 @Observable
 final class EventLog {
     private static let capacity = 300
@@ -35,7 +34,7 @@ final class EventLog {
 // Conformances:
 // - `Identifiable`, so the log's list tells its rows apart.
 // - `Hashable`, so SwiftUI can compare rows.
-struct EventLogEntry: Identifiable, Hashable {
+nonisolated struct EventLogEntry: Identifiable, Hashable {
     let id: UUID
     let date: Date
     let level: LogLevel
@@ -49,7 +48,7 @@ struct EventLogEntry: Identifiable, Hashable {
 // Conformances:
 // - `CaseIterable`, so the log's filters list the outcomes.
 // - `Hashable`, so a filter can be picked and compared.
-enum EventOutcome: CaseIterable, Hashable {
+nonisolated enum EventOutcome: CaseIterable, Hashable {
     case applied
     case recovered
     case queued
@@ -81,7 +80,7 @@ enum EventOutcome: CaseIterable, Hashable {
 //
 // Conformances:
 // - `LogHandler`, so `AppLogHandler` can pass it the routers' log.
-struct EventLogHandler: LogHandler {
+nonisolated struct EventLogHandler: LogHandler {
     private static let changeCategories: Set<LogCategory> = [
         .navigation,
         .presentation,
@@ -172,6 +171,6 @@ struct EventLogHandler: LogHandler {
 }
 
 // The name the readable log puts at the start of each line.
-enum ReadableLogName {
+nonisolated enum ReadableLogName {
     static let prefix = "Waypoint"
 }

@@ -23,7 +23,6 @@ import Waypoint
 // Conformances:
 // - `Observable` (from `@Observable`), so the Lab redraws when a demo opens or closes, and when a
 //   late result arrives.
-@MainActor
 @Observable
 final class LabDemoCoordinator {
     private static let shopFlowID = FlowID("labShop")

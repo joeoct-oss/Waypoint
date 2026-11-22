@@ -13,7 +13,7 @@ import UIKit
 // with the reader's text size. The design's families (Inter for the app, Unbounded for brand
 // moments, JetBrains Mono for what Waypoint prints) map to the system's default, rounded and
 // monospaced designs.
-enum Typography {
+nonisolated enum Typography {
     static var largeTitle: Font {
         .largeTitle.weight(.bold)
     }

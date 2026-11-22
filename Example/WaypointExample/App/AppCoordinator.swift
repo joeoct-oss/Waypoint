@@ -23,7 +23,6 @@ import SwiftUI
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so the window redraws when the root switches.
-@MainActor
 @Observable
 final class AppCoordinator {
     static func makeWindow(

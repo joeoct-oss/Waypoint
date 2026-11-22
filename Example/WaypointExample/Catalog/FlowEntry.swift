@@ -12,7 +12,7 @@
 // Conformances:
 // - `Hashable`, so the app coordinator can keep an entry in its navigation path.
 // - `Codable`, so an entry can sit in an account route, which Waypoint can save and restore.
-struct FlowEntry: Hashable, Codable {
+nonisolated struct FlowEntry: Hashable, Codable {
     // The entries that run for real so far, all of the SwiftUI kind from the SwiftUI branch:
     // Detail push, Tabs and Sheet. The others open a placeholder until the APIs they need are
     // built.

@@ -34,7 +34,6 @@ import Waypoint
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `ProductsSheet` redraws when the sheet changes.
-@MainActor
 @Observable
 final class ProductsCoordinator {
     private static let followUpDelay = Duration.milliseconds(150)

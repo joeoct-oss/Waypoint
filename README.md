@@ -191,7 +191,7 @@ A route with no destination never crashes either. Debug builds show a screen tha
 
 - iOS 17 or later
 - Swift 6 (strict concurrency)
-- Xcode 16 or later
+- Xcode 16 or later for the package; Xcode 26 or later for the example app, which uses Swift 6.2's main-actor default isolation
 
 ## Installation
 

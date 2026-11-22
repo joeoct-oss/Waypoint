@@ -13,7 +13,7 @@
 //   accessibility identifiers use the same word.
 // - `Codable` (from the raw values), so a Lab entry can sit in an account route.
 // - `CaseIterable`, so every flow row offers both kinds in one order.
-enum FlowKind: String, CaseIterable, Codable {
+nonisolated enum FlowKind: String, CaseIterable, Codable {
     case swiftUI = "swiftui"
     case uiKit = "uikit"
 

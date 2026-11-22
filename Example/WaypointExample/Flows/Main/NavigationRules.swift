@@ -18,7 +18,6 @@ import WaypointCore
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so Settings redraws when the duplicate push rule changes.
-@MainActor
 @Observable
 final class NavigationRules {
     private let tabs: TabRouter<MainTab>

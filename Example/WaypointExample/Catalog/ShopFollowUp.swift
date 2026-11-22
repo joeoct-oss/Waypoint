@@ -11,7 +11,7 @@
 //
 // Conformances:
 // - `String` raw values, so a launch argument's text can name a case.
-enum ShopFollowUp: String {
+nonisolated enum ShopFollowUp: String {
     case pop
     case popToRoot
     case link

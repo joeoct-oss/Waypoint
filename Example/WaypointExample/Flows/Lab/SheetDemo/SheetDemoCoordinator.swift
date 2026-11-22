@@ -21,7 +21,6 @@ import WaypointCore
 // Conformances:
 // - `Observable` (from `@Observable`), so the story redraws when a level opens or closes, or the
 //   size or swipe choice changes.
-@MainActor
 @Observable
 final class SheetDemoCoordinator {
     private static let flowID = FlowID("labSheet")

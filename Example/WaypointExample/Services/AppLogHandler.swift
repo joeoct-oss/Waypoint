@@ -16,7 +16,7 @@ import Waypoint
 //
 // Conformances:
 // - `LogHandler`, so the app's navigation configuration can log to it.
-struct AppLogHandler: LogHandler {
+nonisolated struct AppLogHandler: LogHandler {
     let system: OSLogHandler
     let systemLevel: LogLevel
     let issues: IssueLogHandler

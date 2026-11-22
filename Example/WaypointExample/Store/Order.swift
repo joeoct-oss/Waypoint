@@ -15,7 +15,7 @@ import Foundation
 // - `Hashable`, so an order can sit in a navigation path.
 // - `Codable`, so an order can sit in an account route, which Waypoint can save and restore.
 // - `Identifiable`, so lists can show orders without naming an id key path.
-struct Order: Hashable, Codable, Identifiable {
+nonisolated struct Order: Hashable, Codable, Identifiable {
     static let all = [
         Order(
             id: 1042,
@@ -73,7 +73,7 @@ struct Order: Hashable, Codable, Identifiable {
 // - `CaseIterable`, so the timeline lists every stage from this one declaration.
 // - `Comparable`, so the timeline can tell a stage the order has reached from one it hasn't.
 // - `Codable` (from the raw values), so an order with its stage can sit in an account route.
-enum OrderStage: Int, CaseIterable, Comparable, Codable {
+nonisolated enum OrderStage: Int, CaseIterable, Comparable, Codable {
     case placed
     case shipped
     case delivered

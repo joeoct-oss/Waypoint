@@ -29,7 +29,6 @@ import Waypoint
 // Conformances:
 // - `Observable` (from `@Observable`), so `CartFlowView` and the tab's badge redraw when the cart
 //   or checkout changes.
-@MainActor
 @Observable
 final class CartCoordinator {
     let router: StackRouter
