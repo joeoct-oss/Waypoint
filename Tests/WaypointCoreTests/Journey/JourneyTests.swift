@@ -175,6 +175,21 @@ struct JourneyTests {
     }
 
     @Test
+    func switchingTabRootsOnASharedStackVisitsTheNewTab() throws {
+        let handler = RecordingLogHandler()
+        let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
+        tabs.router(for: .home).setRootName("Search")
+        tabs.select(.shop)
+        #expect(tabs.screenVisit?.screen.title == "Shop")
+
+        tabs.select(.profile)
+
+        let visit = try #require(tabs.screenVisit)
+        #expect(visit.screen.title == "Profile")
+        #expect(visit.journey.map(\.title) == ["Profile"])
+    }
+
+    @Test
     func aSharedStackIsNamedAfterTheSelectedTab() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)

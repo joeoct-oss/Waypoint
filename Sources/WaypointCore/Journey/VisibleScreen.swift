@@ -24,6 +24,10 @@ struct VisibleScreen {
 
         /// The screen's route, or `nil` for a root screen with no route.
         let route: AnyRoute?
+
+        /// The selected tab when the tabs share one stack, so each tab's root is its own screen,
+        /// else `nil`.
+        let sharedTab: String?
     }
 
     /// How a stack sits in the tree.
@@ -87,7 +91,12 @@ struct VisibleScreen {
         let top = last.stack.shownRoutes.last
         self.levels = levels
         self.screen = screen
-        self.key = Key(flow: last.stack.flowID, index: last.screens.count - 1, route: top)
+        self.key = Key(
+            flow: last.stack.flowID,
+            index: last.screens.count - 1,
+            route: top,
+            sharedTab: last.stack.parentNode?.sharedStackTabName
+        )
         self.isTracked = top?.screenTraits.isTracked ?? true
         self.source = Self.source(of: last)
         self.journey = Self.journey(through: levels)
@@ -165,9 +174,10 @@ struct VisibleScreen {
         return .presented
     }
 
-    /// The name given to the stack, else its tab's or its flow's, in words.
+    /// The name given to the stack, else its tab's or its flow's, in words. A stack the tabs
+    /// share shows a different root for each tab, so its root takes the selected tab's name.
     private static func rootName(of stack: StackRouter, role: Role) -> String {
-        if let name = stack.rootName {
+        if let name = stack.rootName, stack.parentNode?.sharedStackTabName == nil {
             return name
         }
         guard case .tab(let tab) = role else {

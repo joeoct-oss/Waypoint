@@ -60,6 +60,10 @@ enum RouterTrail {
         of router: StackRouter,
         in tabs: TabRouter<MainTab>
     ) -> String {
+        // The tabs share one stack, so it belongs to the selected tab.
+        guard tabs.stacks == .perTab else {
+            return tabs.selection.title.lowercased()
+        }
         let tab = tabs.state.tabs.first { tabs.router(for: $0) === router }
         return tab?.title.lowercased() ?? rootName(of: router)
     }

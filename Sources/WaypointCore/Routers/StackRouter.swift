@@ -530,7 +530,8 @@ public final class StackRouter: NavigationRouter {
     /// router.setRootName("Product list")
     /// ```
     ///
-    /// `WaypointStack(rootName:)` names it for you. A root route's own name wins over this one.
+    /// `WaypointStack(rootName:)` names it for you. A root route's own name wins over this one. A
+    /// stack the tabs share (``TabStacks/shared``) names its root after the selected tab instead.
     public func setRootName(_ name: String) {
         rootScreenName = name
     }
