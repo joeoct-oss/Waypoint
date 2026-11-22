@@ -96,6 +96,8 @@ final class JourneyTests: XCTestCase {
         let notice = app.descendants(matching: .any)[Identifiers.notice]
         XCTAssertTrue(notice.waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(notice.label.contains(Self.signedInAs), notice.label)
+        // The notice goes after a few seconds, so it's checked before the offer is closed.
+        app.closeSavePasswordOffer()
         let addressStep = app.descendants(matching: .any)[Identifiers.checkoutAddress]
         XCTAssertTrue(addressStep.waitForExistence(timeout: UITestSteps.timeout))
     }
@@ -255,6 +257,7 @@ final class JourneyTests: XCTestCase {
             password: Self.password,
             in: app
         )
+        app.closeSavePasswordOffer()
         // The gate pushes the wish list only once the sheet has slid away, so wait for that first.
         let sheet = app.buttons[Identifiers.signInButton]
         XCTAssertTrue(sheet.waitForNonExistence(timeout: UITestSteps.timeout), "the sign-in sheet stayed")
@@ -381,7 +384,6 @@ final class JourneyTests: XCTestCase {
         app.textFields[Identifiers.signInEmail].type(Self.email)
         app.secureTextFields[Identifiers.signInPassword].type(password)
         app.buttons[Identifiers.signInButton].tapWhenReady()
-        app.closeSavePasswordOffer()
     }
 
     private func fillDetails(in app: XCUIApplication) {
