@@ -187,13 +187,13 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         committed.tabRouters
     }
 
-    /// The working copy during a transaction, or the committed snapshot.
     /// The selected tab's name with ``TabStacks/shared``, so the journey names the tab the reader
     /// sees, such as `Shop`, rather than the shared stack.
     var sharedStackTabName: String? {
         stacks == .shared ? DescriptionFormat.name(of: current.state.selection) : nil
     }
 
+    /// The working copy during a transaction, or the committed snapshot.
     var current: Snapshot {
         working ?? committed
     }
