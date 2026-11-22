@@ -18,8 +18,14 @@ enum UITestSteps {
     static let maxTaps = 3
     static let accountTabTitle = "Account"
     // How long a step waits for iOS's offer to save a password after a sign in. iOS 27.2 offers
-    // it; iOS 17.5 doesn't, so there the step waits this long for nothing.
-    static let savePasswordOfferTimeout: TimeInterval = 2
+    // it about 4.5 seconds after the tap, and the step goes on as soon as it shows. iOS 17.5
+    // never offers it, so there the step doesn't wait.
+    static let savePasswordOfferTimeout: TimeInterval = 10
+    // The newest major iOS version that never offers to save a password.
+    static let lastVersionWithoutSavePasswordOffer = 17
+    static var offersToSavePassword: Bool {
+        ProcessInfo.processInfo.operatingSystemVersion.majorVersion > lastVersionWithoutSavePasswordOffer
+    }
     // The offer's button that closes it without saving.
     static let savePasswordNotNow = "Not Now"
 }
@@ -29,10 +35,19 @@ extension XCUIApplication {
     // system's, not the app's, and it covers the app, so every tap after it misses until it goes.
     @MainActor
     func closeSavePasswordOffer() {
-        let notNow = buttons[UITestSteps.savePasswordNotNow]
-        if notNow.waitForExistence(timeout: UITestSteps.savePasswordOfferTimeout) {
-            notNow.tap()
+        guard UITestSteps.offersToSavePassword else {
+            return
         }
+        let notNow = buttons[UITestSteps.savePasswordNotNow]
+        guard notNow.waitForExistence(timeout: UITestSteps.savePasswordOfferTimeout) else {
+            return
+        }
+        notNow.tap()
+        // The offer still covers the app while it slides away, so the next tap waits for it to go.
+        XCTAssertTrue(
+            notNow.waitForNonExistence(timeout: UITestSteps.timeout),
+            "iOS's save password offer didn't close"
+        )
     }
 }
 
