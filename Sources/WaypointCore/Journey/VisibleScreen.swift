@@ -38,6 +38,14 @@ struct VisibleScreen {
         case tab(String)
         /// A presented flow's stack.
         case presented
+
+        /// Whether the stack is a tab's.
+        var isTab: Bool {
+            guard case .tab = self else {
+                return false
+            }
+            return true
+        }
     }
 
     /// One stack on the way from the tree's root to the screen on display.
@@ -157,7 +165,8 @@ struct VisibleScreen {
         let owner = stack.coordinatorName
         let views = stack.tree.viewNames
         // The tabs' shared stack has the tab view at its root, which names no tab.
-        let ownRootView = stack.parentNode?.sharedStackTabName == nil ? stack.rootViewName : nil
+        let isSharedTabStack = role.isTab && stack.parentNode?.sharedStackTabName != nil
+        let ownRootView = isSharedTabStack ? nil : stack.rootViewName
         let rootView = ownRootView ?? rootRoute.flatMap { views[$0.routeKey] }
         let root = rootRoute.map { route in
             ScreenReference(route: route, flow: stack.flowID, viewName: rootView, coordinator: owner)

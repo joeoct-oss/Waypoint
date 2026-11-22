@@ -209,8 +209,10 @@ struct JourneyTests {
         tabs.present(JourneyFixtures.CheckoutRoute())
         let presented = try #require(tabs.presented)
         presented.setRootName("Sign in")
+        presented.setRootViewName("SignInView")
 
         #expect(VisibleScreen.rootName(of: presented) == "Sign in")
+        #expect(VisibleScreen.level(of: presented).screens.first?.viewName == "SignInView")
     }
 
     @Test
