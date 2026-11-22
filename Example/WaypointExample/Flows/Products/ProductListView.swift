@@ -9,7 +9,8 @@
 import SwiftUI
 
 // Shop: the "Nebula nights" banner, two products picked as cards, then the rest of the shop as
-// rows, with Filter and Wish list in the navigation bar. The screen reports each choice.
+// rows. Filter and Wish list are `ShopToolbar`, which the main tabs put in the navigation bar. The
+// screen reports each choice.
 struct ProductListView: View {
     private static let pickedCount = 2
 
@@ -17,8 +18,6 @@ struct ProductListView: View {
     let onGoToCart: () -> Void
     let onSelect: (Product) -> Void
     let onSelectCollection: (ProductCollection) -> Void
-    let onFilter: () -> Void
-    let onWishlist: () -> Void
 
     private var picked: [Product] {
         Array(Product.all.prefix(Self.pickedCount))
@@ -44,7 +43,6 @@ struct ProductListView: View {
         }
         .background(Palette.background.color)
         .accessibilityIdentifier(Identifiers.productList)
-        .toolbar { toolbarItems }
     }
 
     // "Your cart is waiting", while the cart has products.
@@ -76,9 +74,18 @@ struct ProductListView: View {
             ProductRowCard(products: newThisWeek, onSelect: onSelect)
         }
     }
+}
 
-    @ToolbarContentBuilder
-    private var toolbarItems: some ToolbarContent {
+// Shop's Wish list and Filter buttons. The main tabs show them in the navigation bar while Shop is
+// selected, since the tab roots share the bar of the one stack around the tabs.
+//
+// Conformances:
+// - `ToolbarContent`, so the main tabs can put it in their toolbar.
+struct ShopToolbar: ToolbarContent {
+    let onFilter: () -> Void
+    let onWishlist: () -> Void
+
+    var body: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Button("Wish list", systemImage: "heart", action: onWishlist)
                 .accessibilityIdentifier(Identifiers.shopWishlist)

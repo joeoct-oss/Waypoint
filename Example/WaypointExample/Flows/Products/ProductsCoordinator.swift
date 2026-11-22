@@ -22,16 +22,17 @@ import WaypointCore
 // (`dismissAll`). The wish list's Done closes its own flow (`dismissFlow`), and the saved sheet's
 // Close does the same from the view (`@DismissFlow`).
 //
-// The stack runs on Waypoint: `router`, the tab's stack router from the main tab router, owns the
-// path, `ProductsFlowView` draws it with `WaypointStack`, and a swipe back comes back to the router
-// by itself. The journey names the stack's first screen `Product list` or `Search`. A product page
-// links to a related product with `WaypointLink`, which pushes through the same router. The router
-// also presents the filters, the saved sheet and the wish list (`FilterRoute`, `SavedRoute`,
+// The stack runs on Waypoint: `router`, the one stack every main tab shares, owns the path,
+// `MainTabView` draws it with `WaypointStack` around the tabs and asks the selected tab's
+// coordinator for each pushed screen, and a swipe back comes back to the router by itself.
+// `ProductsFlowView` draws the tab's root, and `ProductsSheet` its sheets. A product page links to
+// a related product with `WaypointLink`, which pushes through the same router. The router also
+// presents the filters, the saved sheet and the wish list (`FilterRoute`, `SavedRoute`,
 // `WishlistRoute`), each drawn on the presented router with `WaypointStack`; the sheet itself is
 // still SwiftUI's, bound to the router, until Waypoint draws sheets.
 //
 // Conformances:
-// - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the sheet changes.
+// - `Observable` (from `@Observable`), so `ProductsSheet` redraws when the sheet changes.
 @MainActor
 @Observable
 final class ProductsCoordinator {
@@ -66,9 +67,13 @@ final class ProductsCoordinator {
         navigation.issues
     }
 
-    // Whether the filters or the wish list is presented over the stack.
+    // Whether this coordinator's filters, saved sheet or wish list is presented over the stack.
+    // Shop and Search share one stack, so a presentation the other tab made doesn't count.
     var isShowingSheet: Bool {
-        router.presented != nil
+        guard let sheetRouter else {
+            return false
+        }
+        return router.presented === sheetRouter
     }
 
     init(
@@ -194,6 +199,14 @@ final class ProductsCoordinator {
             preview: collection
         )
         router.push(route)
+    }
+
+    // Shop's Filter and Wish list, for the main tabs' navigation bar.
+    func makeShopToolbar() -> ShopToolbar {
+        ShopToolbar(
+            onFilter: { self.showFilters() },
+            onWishlist: { self.openWishlist() }
+        )
     }
 
     func showFilters() {
@@ -369,9 +382,7 @@ final class ProductsCoordinator {
             cart: cart.products(),
             onGoToCart: { self.goToCart() },
             onSelect: { self.showProduct($0) },
-            onSelectCollection: { self.showCollection($0) },
-            onFilter: { self.showFilters() },
-            onWishlist: { self.openWishlist() }
+            onSelectCollection: { self.showCollection($0) }
         )
         .screenChrome(
             title: MainTab.shop.title,

@@ -8,9 +8,11 @@
 
 import SwiftUI
 
-// Search (MA-01): the system search field, always shown under the bar. Before the reader types, it
-// offers recent searches and the shop's categories, and a tap on either fills the field. Once there
-// is a query, it lists the products whose name or category holds every word of it, under a count.
+// Search (MA-01): a search field at the top of the list. It isn't the system's `searchable`, which
+// shows no field for a screen inside the `TabView` that the one stack around the tabs holds. Before
+// the reader types, it offers recent searches and the shop's categories, and a tap on either fills
+// the field. Once there is a query, it lists the products whose name or category holds every word
+// of it, under a count.
 struct SearchView: View {
     private static let recentSearches = [
         "lamp",
@@ -44,6 +46,7 @@ struct SearchView: View {
 
     var body: some View {
         List {
+            searchField
             if query.isEmpty {
                 suggestions
             } else {
@@ -51,11 +54,20 @@ struct SearchView: View {
             }
         }
         .exampleList()
-        .searchable(
-            text: $query,
-            placement: SearchFieldPlacement.navigationBarDrawer(displayMode: .always),
-            prompt: "Products, categories"
-        )
+    }
+
+    private var searchField: some View {
+        Section {
+            HStack(spacing: Spacing.small) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(Palette.textTertiary.color)
+                TextField("Products, categories", text: $query)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.search)
+                    .accessibilityIdentifier(Identifiers.searchField)
+            }
+        }
     }
 
     @ViewBuilder

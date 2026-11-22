@@ -18,9 +18,9 @@ import WaypointCore
 // and goes back to Account, which then shows the guest prompt; the reader stays in the app. Clear
 // all data reports to the app coordinator, which clears the store and starts the window over.
 //
-// The stack runs on Waypoint: `router` is the account tab's stack router from the main tab router,
-// `AccountFlowView` draws it with `WaypointStack`, and each screen above the root is an
-// `AccountRoute`, so the journey lines follow the reader through Account too.
+// The stack runs on Waypoint: `router` is the one stack every main tab shares, which `MainTabView`
+// draws with `WaypointStack` around the tabs. `AccountFlowView` draws the tab's root, and each
+// screen above it is an `AccountRoute`, so the journey lines follow the reader through Account too.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `AccountFlowView` redraws when the account changes.

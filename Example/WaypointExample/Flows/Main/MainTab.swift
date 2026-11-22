@@ -8,8 +8,9 @@
 
 import WaypointCore
 
-// The main tabs, in the order the tab bar shows them. Each tab's stack is named after its raw value
-// in the journey lines and the debug tree: `shop`, `search`, `cart` and `account`.
+// The main tabs, in the order the tab bar shows them. Each tab is named after its raw value in the
+// journey lines and the debug tree: `shop`, `search`, `cart` and `account`. The tabs share one
+// stack, whose flow is `stack`.
 //
 // Conformances:
 // - `String` raw value: gives each tab its name in logs, so its stack's flow is `shop`.
