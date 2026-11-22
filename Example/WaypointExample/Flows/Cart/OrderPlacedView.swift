@@ -21,6 +21,7 @@ struct OrderPlacedView: View {
         )
         .accessibilityIdentifier(Identifiers.orderPlaced)
         .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden()
         .bottomActionBar { continueButton }
     }
 
