@@ -8,16 +8,25 @@
 
 import WaypointCore
 
+// The shop: the products stacks of Shop and Search, which each declare it, so a view model's
+// navigator scoped to it takes only the shop's routes.
+//
+// Conformances:
+// - `NavigationFlow`, so `ProductRoute` names it and a navigator can be scoped to it.
+enum ShopFlow: NavigationFlow { }
+
 // The product screen a products stack pushes. It carries the product's id, and the coordinator
 // looks the product up, so the route stays small enough to compare, log and save. A list that
 // already has the product hands it over as `preview` for the first frame; a link or a restore
 // leaves it `nil`. The journey lines name it `Product 3 "Orbit Lamp"`: its id, then the product's
-// name.
+// name. It belongs to the shop, so a navigator scoped to `ShopFlow` can push it.
 //
 // Conformances:
 // - `TrackableScreen`, so a Waypoint stack router can push it and find its destination, and the
 //   journey shows the product's name.
 struct ProductRoute: TrackableScreen {
+    typealias Flow = ShopFlow
+
     static let publicLogFields: Set<String> = [
         "id",
     ]

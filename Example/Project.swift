@@ -38,10 +38,13 @@ let appResources: ResourceFileElements = [
     "WaypointExample/Resources/**",
 ]
 
-// The app has no accent color asset, so the empty name stops the catalog warning about a missing one.
+// The app has no accent color asset, so the empty name stops the catalog warning about a missing
+// one. Testability stays on in Release too, because the Release UI test run builds the whole
+// scheme, and the unit tests reach the app's view models with `@testable import`.
 let appSettings: SettingsDictionary = [
     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
     "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "",
+    "ENABLE_TESTABILITY": "YES",
 ]
 
 let appDependencies: [TargetDependency] = [
@@ -58,6 +61,15 @@ let uiTestSources: SourceFilesList = [
 ]
 
 let uiTestDependencies: [TargetDependency] = [
+    .target(name: "WaypointExample"),
+]
+
+// The unit tests run inside the app, so they reach its view models with `@testable import`.
+let unitTestSources: SourceFilesList = [
+    "WaypointExampleTests/**",
+]
+
+let unitTestDependencies: [TargetDependency] = [
     .target(name: "WaypointExample"),
 ]
 
@@ -85,11 +97,23 @@ let uiTests = Target.target(
     dependencies: uiTestDependencies
 )
 
+let unitTests = Target.target(
+    name: "WaypointExampleTests",
+    destinations: destinations,
+    product: .unitTests,
+    bundleId: "dev.waypoint.example.tests",
+    deploymentTargets: deploymentTargets,
+    infoPlist: .default,
+    sources: unitTestSources,
+    dependencies: unitTestDependencies
+)
+
 let schemeBuildTargets: [TargetReference] = [
     "WaypointExample",
 ]
 
 let schemeTestTargets: [TestableTarget] = [
+    "WaypointExampleTests",
     "WaypointExampleUITests",
 ]
 
@@ -107,6 +131,7 @@ let packages: [Package] = [
 
 let targets: [Target] = [
     app,
+    unitTests,
     uiTests,
 ]
 
