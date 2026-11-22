@@ -127,7 +127,7 @@ extension TabRouter {
 
     /// Selects a tab that isn't selected, popping the shared stack first with
     /// ``TabStacks/shared``.
-    private func selectOtherStep(_ tab: Tab, in store: TransactionStore) -> StepResult {
+    func selectOtherStep(_ tab: Tab, in store: TransactionStore) -> StepResult {
         let selected = tabStep(.select(tab), in: store)
         guard case .changed = selected, stacks == .shared, let shared = current.tabRouters[tab] else {
             return selected

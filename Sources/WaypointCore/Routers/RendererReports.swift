@@ -140,7 +140,8 @@ extension TabRouter {
     /// Reports that the user selected `tab`.
     ///
     /// Ignored when `tab` is already selected: popping to the root on a second tap is the
-    /// renderer's to report as a pop. A tab that isn't in the container reports `unknownTab`.
+    /// renderer's to report as a pop. A tab that isn't in the container reports `unknownTab`. With
+    /// ``TabStacks/shared``, the shared stack pops in the same change.
     @discardableResult
     package func rendererDidSelect(
         _ tab: Tab,
@@ -149,7 +150,7 @@ extension TabRouter {
     ) -> NavigationOutcome {
         tree.perform(on: self, file: file, line: line) { [unowned self] store in
             store.asUser {
-                store.resolveReport(self.tabStep(.select(tab), in: store), file: file, line: line)
+                store.resolveReport(self.selectOtherStep(tab, in: store), file: file, line: line)
             }
         }
     }

@@ -155,6 +155,18 @@ struct RendererReportTests {
     }
 
     @Test
+    func tabTapOnASharedStackPopsIt() {
+        let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
+        let shared = tabs.router(for: .home)
+        shared.push(ProductRoute(id: 1))
+
+        #expect(tabs.rendererDidSelect(.shop) == .applied)
+
+        #expect(tabs.selection == .shop)
+        #expect(shared.state.path.isEmpty)
+    }
+
+    @Test
     func tabTapOnSelectedTabIsNoOp() {
         let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
         let shopRouter = tabs.router(for: .home)
