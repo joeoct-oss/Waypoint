@@ -42,12 +42,18 @@ extension XCUIApplication {
         guard notNow.waitForExistence(timeout: UITestSteps.savePasswordOfferTimeout) else {
             return
         }
-        notNow.tap()
-        // The offer still covers the app while it slides away, so the next tap waits for it to go.
-        XCTAssertTrue(
-            notNow.waitForNonExistence(timeout: UITestSteps.timeout),
-            "iOS's save password offer didn't close"
-        )
+        // A tap while the offer still fades in is lost, and the offer still covers the app while it
+        // slides away. So the step taps only once the button takes taps, waits for the offer to go,
+        // and taps again if it stayed, at most `maxTaps` times.
+        for _ in 0..<UITestSteps.maxTaps {
+            if notNow.waitUntilHittable() {
+                notNow.tap()
+            }
+            if notNow.waitForNonExistence(timeout: UITestSteps.timeout) {
+                return
+            }
+        }
+        XCTFail("iOS's save password offer didn't close:\n\(debugDescription)")
     }
 }
 
@@ -101,6 +107,19 @@ extension XCUIElement {
             }
         }
         return false
+    }
+
+    // Polls the element until it takes taps or `timeout` passes, and says whether it does.
+    @MainActor
+    func waitUntilHittable() -> Bool {
+        let deadline = Date().addingTimeInterval(UITestSteps.timeout)
+        while Date() < deadline {
+            if exists && isHittable {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(UITestSteps.pollInterval))
+        }
+        return exists && isHittable
     }
 
     // Polls the element's value until it is `value` or `settleTime` passes.
