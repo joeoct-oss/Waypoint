@@ -24,6 +24,13 @@ final class SheetTests: XCTestCase {
     private static let mediumTopShare: CGFloat = 0.35
     private static let largeTopShare: CGFloat = 0.25
     private static let pollInterval: TimeInterval = 0.25
+    // A drag to large starts this far above the sheet's navigation bar, on its grabber, and ends
+    // at this share of the screen's height.
+    private static let grabberOffset: CGFloat = -12
+    private static let dragEndShare: CGFloat = 0.08
+    private static let dragPress: TimeInterval = 0.1
+    // How long a drag waits for the sheet to settle at large before it drags again.
+    private static let settleTimeout: TimeInterval = 2
     // How the event log writes the filters' presentation, with the sizes the router gave it.
     private static let filterPresentation = NSPredicate(format: "label CONTAINS 'detents: [medium, large]'")
 
@@ -35,8 +42,7 @@ final class SheetTests: XCTestCase {
         XCTAssertTrue(bar.waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(waitForTop(of: bar, below: Self.mediumTopShare, in: app), "the filters didn't open at medium")
 
-        bar.swipeUp()
-        XCTAssertTrue(waitForTop(of: bar, above: Self.largeTopShare, in: app), "the filters didn't grow to large")
+        XCTAssertTrue(growToLarge(bar, in: app), "the filters didn't grow to large")
         app.buttons[Identifiers.filterApply].tapWhenReady()
         XCTAssertTrue(bar.waitForNonExistence(timeout: UITestSteps.timeout))
 
@@ -55,8 +61,7 @@ final class SheetTests: XCTestCase {
         XCTAssertTrue(bar.waitForExistence(timeout: UITestSteps.timeout))
         let isMedium = waitForTop(of: bar, below: Self.mediumTopShare, in: app)
         XCTAssertTrue(isMedium, "Reset password didn't open at the app's default medium")
-        bar.swipeUp()
-        let isLarge = waitForTop(of: bar, above: Self.largeTopShare, in: app)
+        let isLarge = growToLarge(bar, in: app)
         XCTAssertTrue(isLarge, "Reset password can't grow to the app's default large")
     }
 
@@ -91,14 +96,38 @@ final class SheetTests: XCTestCase {
     private func waitForTop(
         of element: XCUIElement,
         above share: CGFloat,
+        in app: XCUIApplication,
+        timeout: TimeInterval = UITestSteps.timeout
+    ) -> Bool {
+        waitUntil(timeout: timeout) { element.frame.minY < app.frame.height * share }
+    }
+
+    // Drags a medium sheet up by its grabber until its top sits above `largeTopShare`, at most
+    // `maxTaps` times, and says whether it got there (#307). On iOS 27.2 one `swipeUp()` on the
+    // sheet's navigation bar often leaves the sheet at medium, since the bar takes the swipe.
+    private func growToLarge(
+        _ bar: XCUIElement,
         in app: XCUIApplication
     ) -> Bool {
-        waitUntil { element.frame.minY < app.frame.height * share }
+        for _ in 0..<UITestSteps.maxTaps {
+            let grabber = bar
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+                .withOffset(CGVector(dx: 0, dy: Self.grabberOffset))
+            let top = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: Self.dragEndShare))
+            grabber.press(forDuration: Self.dragPress, thenDragTo: top)
+            if waitForTop(of: bar, above: Self.largeTopShare, in: app, timeout: Self.settleTimeout) {
+                return true
+            }
+        }
+        return false
     }
 
     // Polls by hand, because a sheet settles faster than an expectation's one-second poll.
-    private func waitUntil(_ condition: () -> Bool) -> Bool {
-        let deadline = Date().addingTimeInterval(UITestSteps.timeout)
+    private func waitUntil(
+        timeout: TimeInterval = UITestSteps.timeout,
+        _ condition: () -> Bool
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             if condition() {
                 return true
