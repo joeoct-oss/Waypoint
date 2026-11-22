@@ -95,12 +95,21 @@ struct VisibleScreen {
             flow: last.stack.flowID,
             index: last.screens.count - 1,
             route: top,
-            sharedTab: last.stack.parentNode?.sharedStackTabName
+            sharedTab: Self.sharedTab(of: last)
         )
         self.isTracked = top?.screenTraits.isTracked ?? true
         self.source = Self.source(of: last)
         self.journey = Self.journey(through: levels)
         self.step = Self.step(in: last)
+    }
+
+    /// The selected tab when the level is the stack the tabs share, else `nil`: a flow the tab
+    /// container presents stays one screen whichever tab is under it.
+    private static func sharedTab(of level: Level) -> String? {
+        guard case .tab = level.role else {
+            return nil
+        }
+        return level.stack.parentNode?.sharedStackTabName
     }
 
     /// The name of a tab, a flow or a root screen in words, starting with a capital: `Cart` for

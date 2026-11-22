@@ -190,6 +190,19 @@ struct JourneyTests {
     }
 
     @Test
+    func aSheetOverSharedTabsStaysOneScreenWhenTheTabChanges() throws {
+        let handler = RecordingLogHandler()
+        let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
+        tabs.present(JourneyFixtures.CheckoutRoute())
+        let before = try #require(VisibleScreen(in: tabs)).key
+
+        tabs.select(.shop)
+
+        let after = try #require(VisibleScreen(in: tabs)).key
+        #expect(after == before)
+    }
+
+    @Test
     func aSharedStackIsNamedAfterTheSelectedTab() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
