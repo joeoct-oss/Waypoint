@@ -8,7 +8,6 @@
 
 import SwiftUI
 import Waypoint
-import WaypointCore
 
 // Runs the Lab's demos, presented full screen over the Lab: the view and view-model demos, and the
 // Detail push flow, which `DetailPushCoordinator` runs. Each product demo is the small

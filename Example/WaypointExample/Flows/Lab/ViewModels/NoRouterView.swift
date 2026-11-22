@@ -8,7 +8,6 @@
 
 import SwiftUI
 import Waypoint
-import WaypointCore
 
 // VM-03: a view that uses `@StackNavigation`, shown where no Waypoint stack is above it (full
 // screen in a plain SwiftUI stack, over the account stack). The view still draws. Its push does

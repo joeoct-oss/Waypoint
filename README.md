@@ -50,7 +50,6 @@ Name each screen with a small route:
 ```swift
 import SwiftUI
 import Waypoint
-import WaypointCore
 
 // Conformances:
 // - `Route`, so it can be pushed, presented and saved.
@@ -212,7 +211,7 @@ targets: [
 ]
 ```
 
-`Waypoint` serves SwiftUI and UIKit apps alike. Use `WaypointCore` alone in a module that only decides where to go.
+`Waypoint` serves SwiftUI and UIKit apps alike, and brings `WaypointCore` with it, so a file writes only `import Waypoint`. Use `WaypointCore` alone in a module or file that only decides where to go and draws nothing; never import both.
 
 ## Documentation
 

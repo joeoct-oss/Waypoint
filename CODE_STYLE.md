@@ -264,3 +264,21 @@ For example:
 /// `var` because it is the router's current value. Only `commitWorkingCopy()` replaces it.
 private var committed: Snapshot
 ```
+
+## A file imports `Waypoint`, or `WaypointCore` alone when it draws nothing
+
+`Waypoint` re-exports `WaypointCore`, so app code writes one import. A file that draws, or that uses anything from `Waypoint`, writes `import Waypoint` and never `import WaypointCore` too. A file that only decides where to go, such as a route type, a plain model or a navigation rule, may import `WaypointCore` alone, so it stays free of UI frameworks and can move to a module of its own that tests on Linux. The same holds for DocC snippets and README examples.
+
+- The package's own sources and tests are the exception: each target names the modules it uses, and `scripts/check-core-imports.sh` keeps the core free of UI frameworks.
+- Checked by `scripts/check-single-import.sh`, in `scripts/test-linux.sh` and every tier of `scripts/test-mac.sh`: it fails when an example app file or a Swift code block in the README files, the DocC catalogs or `docs/` imports both modules, or when an example app file imports `WaypointCore` next to SwiftUI or UIKit.
+
+For example:
+
+```swift
+// ProductRoute.swift: draws nothing.
+import WaypointCore
+
+// ProductsCoordinator.swift: draws screens.
+import SwiftUI
+import Waypoint
+```

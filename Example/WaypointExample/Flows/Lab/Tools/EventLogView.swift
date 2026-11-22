@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import WaypointCore
+import Waypoint
 
 // The Lab's event log (DB-02): every navigation call the routers logged, newest first, with its
 // outcome, level, time, line and call site. The filter shows all calls or one outcome, and Share

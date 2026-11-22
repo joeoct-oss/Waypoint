@@ -7,7 +7,6 @@
 //
 
 import Waypoint
-import WaypointCore
 
 // The one container: the services every window shares, made once by the `App` and handed to each
 // window's app coordinator. It holds the product catalog, the local store, the session, the saved

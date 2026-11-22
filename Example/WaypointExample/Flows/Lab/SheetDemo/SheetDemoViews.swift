@@ -8,7 +8,6 @@
 
 import SwiftUI
 import Waypoint
-import WaypointCore
 
 // Draws one stack of the Sheet story, the story's own or a presented level's, with the sheet or
 // cover its router presents over it. A presented level draws the same way, so levels nest as deep

@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import WaypointCore
+import Waypoint
 
 // The account tab: the profile at the root (or Sign in for a guest), orders, the wish list,
 // addresses and settings pushed above it, and the Navigation Lab under settings with the twenty

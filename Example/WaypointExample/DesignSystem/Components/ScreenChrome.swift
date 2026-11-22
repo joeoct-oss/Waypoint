@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import WaypointCore
+import Waypoint
 
 // What every screen shows around its content: the title, the kind when the screen belongs to one
 // kind, and the route trail, which `RouterTrail` reads from the screen's stack router. The root of

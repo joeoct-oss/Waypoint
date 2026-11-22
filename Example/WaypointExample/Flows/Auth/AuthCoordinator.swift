@@ -8,7 +8,6 @@
 
 import SwiftUI
 import Waypoint
-import WaypointCore
 
 // The accounts flow, presented as a sheet when the reader does something that needs an account:
 // Sign in at the root, the three steps of Create account pushed above it, Reset password as a sheet

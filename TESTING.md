@@ -28,6 +28,7 @@ There are two places a test can run:
 | Comment width check | `scripts/check-comment-width.sh` | ✅ | |
 | Concurrency guard rail | `scripts/check-concurrency.sh` | ✅ | ✅ every tier |
 | Example app isolation check (no `@MainActor` in the app or its unit tests) | `scripts/check-example-isolation.sh` | ✅ | ✅ every tier |
+| One import check (no app file or docs snippet imports both `Waypoint` and `WaypointCore`) | `scripts/check-single-import.sh` | ✅ | ✅ every tier |
 | Mac test script's run lock | `scripts/check-test-mac-lock.sh` | ✅ | |
 | Merge batches and the slowest-test list | `scripts/check-merge-batch.sh` | ✅ | |
 | Compile fixtures (must fail, must build) | `Tests/CompileFailures`, `Tests/CompileSuccesses`, checked by `scripts/check-compile-failures.sh` | ✅ | ✅ |
@@ -266,6 +267,7 @@ Find the first row that matches what the log says. Do what it says, once. A retr
 | `imports` a module other than the allowed ones | A real failure: the core must stay pure Swift | No retry. Report the file and the import. |
 | A line from `scripts/check-concurrency.sh` other than `ok:` | A real failure: an unsafe concurrency escape | No retry. Report its lines. |
 | A line from `scripts/check-example-isolation.sh` ending "it is main actor by default" | A real failure: the [example app isolation rule](CODE_STYLE.md#the-example-app-is-main-actor-by-default-the-package-says-every-isolation) | No retry. Report the file and line. |
+| `imports both Waypoint and WaypointCore` or `draws but imports WaypointCore` | A real failure: [one import](CODE_STYLE.md#a-file-imports-waypoint-or-waypointcore-alone-when-it-draws-nothing) | No retry. Report the file. |
 | A line from `scripts/check-compile-failures.sh` that names a fixture and isn't `ok:` | A real failure: a compile promise broke | No retry. Report the fixture and the line. |
 | `✘` from Swift Testing, `XCTAssert…failed`, or `** TEST FAILED **` | A real failure: a test failed | Report each failing test's name and its first failure line. To tell a flaky test from a broken one, you may run that one test again once: `swift test --filter '<test function name>'` (Linux or the Mac host), or `scripts/test-mac.sh quick --only WaypointExampleUITests/<Class>/<test>` (UI). Report what the second run did. The gate still failed. |
 | `ThreadSanitizer: data race` | A real failure: a data race | No retry. Report the first 20 lines of the report. |
