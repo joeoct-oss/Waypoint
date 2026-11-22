@@ -24,6 +24,10 @@
 # WAYPOINT_JOBS jobs, Xcode never clones the simulator, only one run uses a simulator at a time,
 # and the script shuts down each simulator it booted. It ends with the time each step took.
 #
+# One run at a time: the script first takes a run lock that every clone of the repo shares
+# (#294). A second run stops at once and names the run that holds it. A lock left by a run that
+# is no longer going is cleared; a lock whose run is still going is never touched.
+#
 # Usage: scripts/test-mac.sh [quick|full|release] [--ui] [--all] [--only <Target/Class[/test]>]
 #   --ui    quick also runs the example app's unit and UI tests.
 #   --all   quick runs every part, whatever the branch changed.
@@ -35,6 +39,8 @@
 #   WAYPOINT_IOS17_SIMULATOR  the iOS 17 simulator for release (default waypoint-02); must exist.
 #   WAYPOINT_JOBS             build jobs (default half the performance cores, at least 2).
 #   WAYPOINT_BASE             what quick compares the branch with (default origin/main).
+#   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
+#                             script's own checks set it, and WAYPOINT_RUN_LOCK_TEST_PAUSE.
 
 set -euo pipefail
 
@@ -77,6 +83,13 @@ fi
 SIMULATOR_NAME="${WAYPOINT_SIMULATOR:-waypoint-01}"
 IOS17_SIMULATOR_NAME="${WAYPOINT_IOS17_SIMULATOR:-waypoint-02}"
 BASE_REF="${WAYPOINT_BASE:-origin/main}"
+RUN_LOCK="${WAYPOINT_RUN_LOCK:-/tmp/waypoint-test-mac.lock}"
+# How long each tier may run before TESTING.md calls it hung, in minutes.
+case "$TIER" in
+    quick) STOP_AFTER_MINUTES=30 ;;
+    full) STOP_AFTER_MINUTES=35 ;;
+    release) STOP_AFTER_MINUTES=50 ;;
+esac
 
 # Half the performance cores, so the Mac and other simulators stay usable during a run.
 default_jobs() {
@@ -96,10 +109,56 @@ STEP_SECONDS=()
 # The simulators this run booted or locked, released when the script ends.
 BOOTED_UDIDS=()
 LOCK_DIRS=()
+OWNS_RUN_LOCK=false
+# The process group of the step that is running, if any.
+STEP_PID=""
+
+# Every process this run started, children and their children, deepest last.
+run_descendants() {
+    ps -A -o pid= -o ppid= | awk -v root=$$ '
+        { parent[$1] = $2; pids[NR] = $1 }
+        END {
+            for (i = 1; i <= NR; i++) {
+                p = pids[i]
+                for (q = parent[p]; q != "" && q > 1; q = parent[q]) {
+                    if (q == root) { print p; break }
+                }
+            }
+        }'
+}
+
+# A run stopped with TERM leaves its step's tools running, a step's script and what that script
+# started included, even when the step's first process was stopped already; stop the step's
+# process group and anything else the run started, so the clone and the simulators are free
+# before the locks go.
+stop_step_tools() {
+    local pids
+    if [[ -n "$STEP_PID" ]]; then
+        kill -TERM -- "-$STEP_PID" 2>/dev/null || true
+        for _ in $(seq 1 60); do
+            kill -0 -- "-$STEP_PID" 2>/dev/null || break
+            sleep 0.5
+        done
+    fi
+    pids=$(run_descendants)
+    [[ -n "$pids" ]] || return 0
+    # shellcheck disable=SC2086
+    kill -TERM $pids 2>/dev/null || true
+    local pid alive
+    for _ in $(seq 1 60); do
+        alive=false
+        for pid in $pids; do
+            kill -0 "$pid" 2>/dev/null && alive=true
+        done
+        $alive || return 0
+        sleep 0.5
+    done
+}
 
 finish() {
     local status=$?
     local udid lock index
+    stop_step_tools
     for udid in ${BOOTED_UDIDS[@]+"${BOOTED_UDIDS[@]}"}; do
         xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true
     done
@@ -119,16 +178,91 @@ finish() {
     else
         echo "Mac tests failed ($TIER)." >&2
     fi
+    # The run lock goes last, once the simulators are shut down and their locks are gone.
+    if $OWNS_RUN_LOCK && [[ "$(readlink "$RUN_LOCK" 2>/dev/null)" == "$$" ]]; then
+        rm -f "$RUN_LOCK" "$RUN_LOCK.info"
+    fi
 }
 trap finish EXIT
+
+# Whether `pid` is a running test-mac.sh, so a lock pointing at it is a live run's.
+is_test_run() {
+    [[ -n "$1" ]] && ps -p "$1" -o command= 2>/dev/null | grep -q "test-mac.sh"
+}
+
+# Takes the run lock, a symbolic link to this run's pid, so only one Mac run goes at a time in
+# any clone. Stops when another run holds it, and clears a lock whose run has ended.
+take_run_lock() {
+    if ! ln -s "$$" "$RUN_LOCK" 2>/dev/null; then
+        # The link is read once: the pid checked is the pid a clear compares with.
+        local holder
+        holder=$(readlink "$RUN_LOCK" 2>/dev/null || true)
+        if is_test_run "$holder"; then
+            local started info minutes
+            info=$(sed -n 2p "$RUN_LOCK.info" 2>/dev/null || true)
+            started=$(sed -n 1p "$RUN_LOCK.info" 2>/dev/null || true)
+            echo "error: another Mac test run holds the run lock (pid $holder${info:+, $info})" >&2
+            if [[ "$started" =~ ^[0-9]+$ ]]; then
+                minutes=$((($(date +%s) - started) / 60))
+                echo "  it has run for $minutes min" >&2
+            fi
+            echo "  wait for it to finish its teardown; when it runs past its tier's stop time," >&2
+            echo "  stop it as TESTING.md says (Run a Mac tier). Never remove a live run's lock." >&2
+            exit 1
+        fi
+        local stale="$holder"
+        # Only for the script's own check: a pause here stands for a run that stalls between
+        # finding a stale lock and clearing it.
+        sleep "${WAYPOINT_RUN_LOCK_TEST_PAUSE:-0}"
+        # Clearing happens under a second lock, a folder only one run can make, so the link
+        # checked is the link removed: a live run can't put its link there meanwhile, since a new
+        # link only lands on an empty path. A clearing lock left by a stopped run goes after a
+        # minute.
+        local clearing="$RUN_LOCK.clearing"
+        if [[ -n "$(find "$clearing" -maxdepth 0 -mmin +1 2>/dev/null)" ]]; then
+            rmdir "$clearing" 2>/dev/null || true
+        fi
+        if mkdir "$clearing" 2>/dev/null; then
+            if [[ "$(readlink "$RUN_LOCK" 2>/dev/null)" == "$stale" ]]; then
+                rm -f "$RUN_LOCK" "$RUN_LOCK.info"
+                echo "note: cleared a run lock left by a run that has ended (pid ${stale:-unknown})" >&2
+            fi
+            rmdir "$clearing"
+        elif [[ -d "$clearing" ]]; then
+            echo "error: a stale run lock is being cleared (or a stopped run left $clearing);" >&2
+            echo "  try again in two minutes" >&2
+            exit 1
+        fi
+        if ! ln -s "$$" "$RUN_LOCK" 2>/dev/null; then
+            echo "error: another Mac test run took the run lock just now; wait for it" >&2
+            exit 1
+        fi
+    fi
+    OWNS_RUN_LOCK=true
+    {
+        date +%s
+        echo "$TIER, commit $(git rev-parse --short HEAD 2>/dev/null || echo unknown), started $(date '+%Y-%m-%d %H:%M'), in $(pwd), stop after $STOP_AFTER_MINUTES min"
+    } >"$RUN_LOCK.info"
+}
+take_run_lock
 
 # Runs one step and records how long it took. A failing step stops the script.
 step() {
     local name="$1"
     shift
     echo "==> $name"
-    local start=$SECONDS
-    "$@"
+    local start=$SECONDS status=0
+    # Each step runs in a process group of its own, so stopping the run stops everything the
+    # step started, a script's own tools included (`stop_step_tools`).
+    set -m
+    "$@" </dev/null &
+    STEP_PID=$!
+    set +m
+    wait "$STEP_PID" || status=$?
+    if [[ $status -ne 0 ]]; then
+        exit "$status"
+    fi
+    STEP_PID=""
     STEP_NAMES+=("$name")
     STEP_SECONDS+=($((SECONDS - start)))
 }
