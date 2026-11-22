@@ -19,7 +19,6 @@ import WaypointCore
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so the demo redraws when the tabs or the selection change.
-@MainActor
 @Observable
 final class TabsDemoCoordinator {
     private static let flowID = FlowID("labTabs")

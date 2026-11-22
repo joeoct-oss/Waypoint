@@ -17,7 +17,6 @@ import WaypointCore
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so the demo redraws when a toast appears or goes.
-@MainActor
 @Observable
 final class DetailPushCoordinator {
     private static let toastDuration = Duration.seconds(4)

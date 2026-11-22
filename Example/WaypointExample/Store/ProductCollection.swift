@@ -13,7 +13,7 @@ import Foundation
 // Conformances:
 // - `Hashable`, so a collection can be compared and kept in a route's hint.
 // - `Identifiable`, so a route can name a collection by its id.
-struct ProductCollection: Hashable, Identifiable {
+nonisolated struct ProductCollection: Hashable, Identifiable {
     static let nebulaNights = ProductCollection(
         id: "nebula-nights",
         name: "Nebula nights",

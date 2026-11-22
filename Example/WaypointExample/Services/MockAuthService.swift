@@ -16,7 +16,6 @@ import Foundation
 //
 // Conformances:
 // - `AuthService`, so the accounts flow can use it in place of a real server.
-@MainActor
 final class MockAuthService: AuthService {
     static let wrongPassword = "wrong"
 

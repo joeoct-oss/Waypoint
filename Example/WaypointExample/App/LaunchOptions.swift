@@ -70,7 +70,7 @@ struct LaunchOptions {
         for argument: LaunchArgument,
         in defaults: UserDefaults
     ) -> Value? where Value.RawValue == String {
-        defaults.string(forKey: argument.rawValue).flatMap(Value.init(rawValue:))
+        defaults.string(forKey: argument.rawValue).flatMap { Value(rawValue: $0) }
     }
 
     // No `-splashSeconds` keeps the usual splash; `-splashSeconds 0` skips it, as UI tests do.

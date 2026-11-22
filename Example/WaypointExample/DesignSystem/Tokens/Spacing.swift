@@ -9,7 +9,7 @@
 import CoreGraphics
 
 // Spacing on a 4 pt grid, from the design system.
-enum Spacing {
+nonisolated enum Spacing {
     static let extraSmall: CGFloat = 4
     static let small: CGFloat = 8
     static let medium: CGFloat = 12
@@ -19,7 +19,7 @@ enum Spacing {
 }
 
 // Corner radii from the design system.
-enum Radius {
+nonisolated enum Radius {
     static let field: CGFloat = 12
     static let card: CGFloat = 16
     static let sheet: CGFloat = 22
@@ -27,7 +27,7 @@ enum Radius {
 }
 
 // Sizes the design system fixes, such as the smallest touch target.
-enum Size {
+nonisolated enum Size {
     static let minimumTouchTarget: CGFloat = 44
     static let rowIcon: CGFloat = 42
     static let cardIcon: CGFloat = 48

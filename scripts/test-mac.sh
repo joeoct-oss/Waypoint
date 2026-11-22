@@ -456,6 +456,7 @@ case "$TIER" in
 esac
 
 step "Checking the concurrency guard rail" scripts/check-concurrency.sh
+step "Checking the example app's isolation" scripts/check-example-isolation.sh
 
 # `swift test` and the fixture check build with the same flags, so the core is built once.
 SWIFT_FLAGS=(-Xswiftc -warnings-as-errors --jobs "$JOBS")

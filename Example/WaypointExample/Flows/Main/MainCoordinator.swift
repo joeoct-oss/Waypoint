@@ -20,7 +20,6 @@ import WaypointCore
 // another tab pops it, so a tab opens at its root. The journey lines follow the reader across
 // tabs: `tab_selected Cart ◀ Shop`, then the screen the cart shows. The tab bar itself is still
 // SwiftUI's `TabView`, bound to the router's selection, until Waypoint draws tabs itself.
-@MainActor
 final class MainCoordinator {
     let gate: AccountGate
     let tabs: TabRouter<MainTab>

@@ -14,7 +14,7 @@
 //   accessibility identifiers use the same word.
 // - `Codable` (from the raw values), so a branch can sit in an account route.
 // - `CaseIterable`, so Home and the UI tests list every branch from this one declaration.
-enum Branch: String, CaseIterable, Codable {
+nonisolated enum Branch: String, CaseIterable, Codable {
     case swiftUI = "swiftui"
     case uiKit = "uikit"
 

@@ -13,7 +13,6 @@ import Observation
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so each step redraws as its fields change.
-@MainActor
 @Observable
 final class SignUpDraft {
     static let codeLength = 6

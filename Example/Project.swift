@@ -41,10 +41,15 @@ let appResources: ResourceFileElements = [
 // The app has no accent color asset, so the empty name stops the catalog warning about a missing
 // one. Testability stays on in Release too, because the Release UI test run builds the whole
 // scheme, and the unit tests reach the app's view models with `@testable import`.
+//
+// The app's code is main actor by default (Swift 6.2's default actor isolation), so it writes no
+// `@MainActor`; code that runs elsewhere says so with `nonisolated` or `@concurrent`. See
+// CODE_STYLE.md. The package itself writes every isolation explicitly.
 let appSettings: SettingsDictionary = [
     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
     "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "",
     "ENABLE_TESTABILITY": "YES",
+    "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
 ]
 
 let appDependencies: [TargetDependency] = [
@@ -64,7 +69,13 @@ let uiTestDependencies: [TargetDependency] = [
     .target(name: "WaypointExample"),
 ]
 
-// The unit tests run inside the app, so they reach its view models with `@testable import`.
+// The unit tests run inside the app, so they reach its view models with `@testable import`. They
+// are main actor by default, as the app is. The UI tests keep Swift's own default: XCUITest code
+// isn't app code, and the catalog they share with the app is `nonisolated`.
+let unitTestSettings: SettingsDictionary = [
+    "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+]
+
 let unitTestSources: SourceFilesList = [
     "WaypointExampleTests/**",
 ]
@@ -105,7 +116,8 @@ let unitTests = Target.target(
     deploymentTargets: deploymentTargets,
     infoPlist: .default,
     sources: unitTestSources,
-    dependencies: unitTestDependencies
+    dependencies: unitTestDependencies,
+    settings: .settings(base: unitTestSettings)
 )
 
 let schemeBuildTargets: [TargetReference] = [

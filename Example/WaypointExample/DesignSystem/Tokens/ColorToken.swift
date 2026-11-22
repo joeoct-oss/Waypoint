@@ -12,7 +12,7 @@ import UIKit
 // One color of the design system, with its light and dark values as 0xRRGGBB. Both renderers read
 // the same token: SwiftUI through `color`, UIKit through `uiColor`, and both follow the system
 // appearance.
-struct ColorToken {
+nonisolated struct ColorToken {
     let light: UInt32
     let dark: UInt32
 
@@ -27,7 +27,7 @@ struct ColorToken {
     }
 }
 
-extension UIColor {
+nonisolated extension UIColor {
     convenience init(hex: UInt32) {
         let red = CGFloat((hex >> 16) & 0xFF) / 255
         let green = CGFloat((hex >> 8) & 0xFF) / 255

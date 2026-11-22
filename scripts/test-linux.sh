@@ -26,6 +26,9 @@ scripts/check-comment-width.sh
 echo "==> Checking the concurrency guard rail"
 scripts/check-concurrency.sh
 
+echo "==> Checking the example app's isolation"
+scripts/check-example-isolation.sh
+
 echo "==> Checking the Mac test script's run lock"
 scripts/check-test-mac-lock.sh
 

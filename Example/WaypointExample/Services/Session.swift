@@ -14,7 +14,6 @@ import Observation
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so Account redraws when the reader signs in or out.
-@MainActor
 @Observable
 final class Session {
     private let store: LocalStore
