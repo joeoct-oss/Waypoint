@@ -259,7 +259,8 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// Selects a tab.
     ///
     /// Returns `.alreadyThere` if it is selected, unless ``popsToRootOnReselect`` pops its
-    /// stack. Fails with `unknownTab` if it is not one of the tabs.
+    /// stack. Fails with `unknownTab` if it is not one of the tabs. With ``TabStacks/shared``,
+    /// selecting another tab pops the shared stack in the same change.
     ///
     /// - Parameters:
     ///   - tab: The tab to select.
@@ -284,7 +285,8 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// Replaces the list of tabs.
     ///
     /// If the selected tab is removed, the first tab is selected. A removed tab's stack leaves
-    /// the tree. An empty list fails with `unknownTab`.
+    /// the tree. With ``TabStacks/shared`` the shared stack stays while any tab is left, and it
+    /// pops when the selection moves. An empty list fails with `unknownTab`.
     @discardableResult
     public func setTabs(
         _ tabs: [Tab],

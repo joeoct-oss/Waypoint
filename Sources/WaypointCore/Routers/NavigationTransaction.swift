@@ -209,7 +209,8 @@ public struct NavigationTransaction {
     }
 
     /// Selects a tab. Fails with `unknownTab` unless this transaction's router is a tab
-    /// container with that tab.
+    /// container with that tab. With ``TabStacks/shared``, selecting another tab pops the shared
+    /// stack, so set its path after the select.
     ///
     /// Conformances:
     /// - `Tab: NavigationTab`, the tab types a `TabRouter` accepts.
