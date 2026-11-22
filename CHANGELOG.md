@@ -46,6 +46,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - Settings for the whole tree are given once to the root router in one `NavigationConfiguration` (logging, `maxQueuedChanges`, a starting `registry` and `onNavigationFailure`), passed as `configuration:` to `StackRouter`, `TabRouter` and, later, `RootRouter`. Every router reads it through `configuration`, and none can change it: `setLogging(_:)`, `setMaxQueuedChanges(_:)`, `onNavigationFailure(_:)` and the `logging` and `maxQueuedChanges` properties are removed from routers. A queue limit below 1 reports `invalidSetting` at the root initializer's documented `file` and `line` and uses 32. Fallbacks and presentation defaults stay on every router. (#143)
 - Source file headers name the author with their own email instead of the GitHub noreply address. (#140)
 - `scripts/check-comment-width.sh` has the same file header as every other file. (#187)
+- The example app's mid-transition `StackTests` (`testPopMidTransition`, `testPopToRootMidTransition`, `testLinkMidTransition`) no longer time out on a busy Mac (#293). Their wait for the final screen counted from the launch and allowed 3 seconds, which a loaded Mac spent starting the app. It now allows 20 seconds, which can't hide a lost change since a lost change never shows the final screen, and each test also checks that the final screen stays once the stack's transition hold has passed.
 
 ### Added
 
