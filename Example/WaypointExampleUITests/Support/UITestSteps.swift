@@ -17,6 +17,44 @@ enum UITestSteps {
     // How many times `setSwitch(to:)` taps a switch before it gives up.
     static let maxTaps = 3
     static let accountTabTitle = "Account"
+    // How long a step waits for iOS's offer to save a password after a sign in. iOS 27.2 offers
+    // it about 4.5 seconds after the tap, and the step goes on as soon as it shows. iOS 17.5
+    // never offers it, so there the step doesn't wait.
+    static let savePasswordOfferTimeout: TimeInterval = 10
+    // The newest major iOS version that never offers to save a password.
+    static let lastVersionWithoutSavePasswordOffer = 17
+    static var offersToSavePassword: Bool {
+        ProcessInfo.processInfo.operatingSystemVersion.majorVersion > lastVersionWithoutSavePasswordOffer
+    }
+    // The offer's button that closes it without saving.
+    static let savePasswordNotNow = "Not Now"
+}
+
+extension XCUIApplication {
+    // Closes iOS's "Save Password?" offer when it shows after a sign in (#299). The offer is the
+    // system's, not the app's, and it covers the app, so every tap after it misses until it goes.
+    @MainActor
+    func closeSavePasswordOffer() {
+        guard UITestSteps.offersToSavePassword else {
+            return
+        }
+        let notNow = buttons[UITestSteps.savePasswordNotNow]
+        guard notNow.waitForExistence(timeout: UITestSteps.savePasswordOfferTimeout) else {
+            return
+        }
+        // A tap while the offer still fades in is lost, and the offer still covers the app while it
+        // slides away. So the step taps only once the button takes taps, waits for the offer to go,
+        // and taps again if it stayed, at most `maxTaps` times.
+        for _ in 0..<UITestSteps.maxTaps {
+            if notNow.waitUntilHittable() {
+                notNow.tap()
+            }
+            if notNow.waitForNonExistence(timeout: UITestSteps.timeout) {
+                return
+            }
+        }
+        XCTFail("iOS's save password offer didn't close:\n\(debugDescription)")
+    }
 }
 
 extension XCUIElement {
@@ -69,6 +107,19 @@ extension XCUIElement {
             }
         }
         return false
+    }
+
+    // Polls the element until it takes taps or `timeout` passes, and says whether it does.
+    @MainActor
+    func waitUntilHittable() -> Bool {
+        let deadline = Date().addingTimeInterval(UITestSteps.timeout)
+        while Date() < deadline {
+            if exists && isHittable {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(UITestSteps.pollInterval))
+        }
+        return exists && isHittable
     }
 
     // Polls the element's value until it is `value` or `settleTime` passes.
