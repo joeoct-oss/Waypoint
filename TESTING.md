@@ -67,7 +67,7 @@ Find the row for the moment you are at. Run every command in its row, Linux firs
 
 A pull request is **docs only** when every file it changes matches `*.md`, `*.docc/**` or `docs-theme/**`. Read the changed files from the pull request itself, not from its labels. A pull request labelled `runs:mac` always needs `full`, even when it is docs only.
 
-**Nothing merges without a green `full` run** (Yousef, 2026-11-22) on a commit that contains the latest `main`, unless the pull request is docs only. A `quick` run, of any kind, is for working on a branch and never counts for a merge.
+**Nothing merges without a green `full` run** on a commit that contains the latest `main`, unless the pull request is docs only. A `quick` run, of any kind, is for working on a branch and never counts for a merge.
 
 A result belongs to one commit. The merge gate holds only for the head commit it ran on, and that commit must contain the current `main`. When the branch gets a new commit after the run (including a merge of `main`), run the gate again. The one exception: when every file changed since the tested commit is docs only, `scripts/test-linux.sh` alone is enough.
 

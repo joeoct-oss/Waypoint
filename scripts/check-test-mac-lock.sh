@@ -38,6 +38,9 @@ CALLS="$WORK/calls"
 cat >"$STUBS/xcrun" <<'EOF'
 #!/usr/bin/env bash
 echo "xcrun $*" >>"$STUB_CALLS"
+if [[ "$1 $2" == "simctl shutdown" && -L "$WAYPOINT_RUN_LOCK" ]]; then
+    echo "shutdown while the run lock was held" >>"$STUB_CALLS"
+fi
 if [[ "$*" == *"list devices"* ]]; then
     echo '{"devices":{"ios":[{"name":"waypoint-01","udid":"STUB-UDID","state":"Shutdown"}]}}'
 fi
@@ -45,8 +48,13 @@ EOF
 cat >"$STUBS/xcodebuild" <<'EOF'
 #!/usr/bin/env bash
 echo "xcodebuild $*" >>"$STUB_CALLS"
-sleep "${STUB_SECONDS:-0}"
+# The wait runs in a grandchild of test-mac.sh, as a step's script and its tools do.
+"$(dirname "$0")/stub-grandchild" "${STUB_SECONDS:-0}"
 exit "${STUB_STATUS:-0}"
+EOF
+cat >"$STUBS/stub-grandchild" <<'EOF'
+#!/usr/bin/env bash
+sleep "$1"
 EOF
 cat >"$STUBS/tuist" <<'EOF'
 #!/usr/bin/env bash
@@ -80,11 +88,16 @@ lock_gone() {
     [[ ! -e "$LOCK" && ! -L "$LOCK" && ! -e "$LOCK.info" ]]
 }
 
-# 1. A pass leaves no lock.
+# 1. A pass leaves no lock, and the lock goes only after the simulator is shut down.
 if run_script >"$WORK/1.log" 2>&1 && lock_gone; then
     pass "a passing run releases the lock"
 else
     fail "a passing run releases the lock (log: $(tail -3 "$WORK/1.log"))"
+fi
+if grep -q "^xcrun simctl shutdown" "$CALLS" && grep -q "shutdown while the run lock was held" "$CALLS"; then
+    pass "the run lock goes after the simulator is shut down"
+else
+    fail "the run lock goes after the simulator is shut down"
 fi
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
@@ -116,7 +129,7 @@ dead=$!
 wait "$dead"
 ln -s "$dead" "$LOCK"
 echo "0" >"$LOCK.info"
-if run_script >"$WORK/3.log" 2>&1 && grep -q "clearing a run lock" "$WORK/3.log" && lock_gone; then
+if run_script >"$WORK/3.log" 2>&1 && grep -q "cleared a run lock" "$WORK/3.log" && lock_gone; then
     pass "a lock left by an ended run is cleared"
 else
     fail "a lock left by an ended run is cleared (log: $(tail -3 "$WORK/3.log"))"
@@ -126,7 +139,7 @@ fi
 sleep 30 &
 other=$!
 ln -s "$other" "$LOCK"
-if run_script >"$WORK/4.log" 2>&1 && grep -q "clearing a run lock" "$WORK/4.log" && lock_gone; then
+if run_script >"$WORK/4.log" 2>&1 && grep -q "cleared a run lock" "$WORK/4.log" && lock_gone; then
     pass "a lock pointing at a process that isn't a test run is cleared"
 else
     fail "a lock pointing at a process that isn't a test run is cleared (log: $(tail -3 "$WORK/4.log"))"
@@ -159,9 +172,9 @@ for how in step script; do
         kill -TERM "$script_pid" || true
     fi
     wait "$run" 2>/dev/null || true
-    if pgrep -f "$STUBS/xcodebuild" >/dev/null; then
-        fail "a run stopped with TERM ($how) stops its step's tool"
-        pkill -f "$STUBS/xcodebuild" || true
+    if pgrep -f "$STUBS/xcodebuild|$STUBS/stub-grandchild" >/dev/null; then
+        fail "a run stopped with TERM ($how) stops its step's tools, grandchildren included"
+        pkill -f "$STUBS/xcodebuild|$STUBS/stub-grandchild" || true
     fi
     if lock_gone; then
         pass "a run stopped with TERM ($how) releases the lock"
@@ -172,24 +185,27 @@ for how in step script; do
     : >"$CALLS"
 done
 
-# 7. Two runs that find the same stale lock at once: one goes on, the other stops.
+# 7. A run that finds a stale lock and stalls before clearing it, while another run clears it
+# and takes the lock: the stalled run stops and the other run's lock stays.
 sleep 0 &
 dead=$!
 wait "$dead"
 ln -s "$dead" "$LOCK"
-run_script STUB_SECONDS=3 >"$WORK/7a.log" 2>&1 &
-a=$!
-run_script STUB_SECONDS=3 >"$WORK/7b.log" 2>&1 &
-b=$!
-a_status=0
-b_status=0
-wait "$a" || a_status=$?
-wait "$b" || b_status=$?
-if [[ $((a_status == 0)) -ne $((b_status == 0)) ]] &&
-    grep -q "another Mac test run" "$WORK/7a.log" "$WORK/7b.log" && lock_gone; then
-    pass "two runs that find one stale lock: one goes on, the other stops"
+run_script WAYPOINT_RUN_LOCK_TEST_PAUSE=2 >"$WORK/7b.log" 2>&1 &
+stalled=$!
+sleep 0.5
+run_script STUB_SECONDS=4 >"$WORK/7a.log" 2>&1 &
+first=$!
+stalled_status=0
+wait "$stalled" || stalled_status=$?
+holder=$(readlink "$LOCK" 2>/dev/null || true)
+first_status=0
+wait "$first" || first_status=$?
+if [[ $stalled_status -ne 0 && $first_status -eq 0 && -n "$holder" ]] &&
+    grep -q "another Mac test run" "$WORK/7b.log" && lock_gone; then
+    pass "a run that stalls on a stale lock stops, and leaves the live run's lock alone"
 else
-    fail "two runs that find one stale lock: one goes on, the other stops ($a_status, $b_status)"
+    fail "a run that stalls on a stale lock stops ($stalled_status, $first_status, holder ${holder:-none})"
 fi
 
 if [[ $FAILURES -gt 0 ]]; then
