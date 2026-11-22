@@ -44,7 +44,6 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - Settings for the whole tree are given once to the root router in one `NavigationConfiguration` (logging, `maxQueuedChanges`, a starting `registry` and `onNavigationFailure`), passed as `configuration:` to `StackRouter`, `TabRouter` and, later, `RootRouter`. Every router reads it through `configuration`, and none can change it: `setLogging(_:)`, `setMaxQueuedChanges(_:)`, `onNavigationFailure(_:)` and the `logging` and `maxQueuedChanges` properties are removed from routers. A queue limit below 1 reports `invalidSetting` at the root initializer's documented `file` and `line` and uses 32. Fallbacks and presentation defaults stay on every router. (#143)
 - Source file headers name the author with their own email instead of the GitHub noreply address. (#140)
 - `scripts/check-comment-width.sh` has the same file header as every other file. (#187)
-- The example app's UI tests close iOS's "Save Password?" offer after a sign in (#299). On iOS 26 and later it covered the app after `NestedSheetTests.testDoneClosesAllSheets` signed in, so its later taps missed.
 
 ### Added
 
@@ -132,3 +131,4 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 - A failure handler that navigates no longer crashes the app after `maxQueuedChanges` calls were queued. The refused call called the handler, whose call was refused again, without end. Now `reentrantLoop` is reported once per outermost call and later refusals are dropped quietly. (#24)
 - Observation observers no longer see a transaction that changes two routers half applied: every router announces its change before any of them changes its state. (#24)
 - On iOS 17, a change made while a push was still being drawn on a busy device, such as a pop soon after a multi-step push, is no longer lost. The stack's transition hold counts from when the main thread is free after drawing, not from the path change. (#204)
+- The example app's UI tests close iOS's "Save Password?" offer after a sign in (#299). On iOS 27.2 it covered the app after `NestedSheetTests.testDoneClosesAllSheets` signed in, so its later taps missed.
