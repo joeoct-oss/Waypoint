@@ -14,52 +14,18 @@ Every change starts from an issue. Name the branch after it:
 <type>/<issue-number>-<short-kebab-description>
 ```
 
-The types are `feature`, `fix`, `docs`, `test`, `refactor` and `chore`, for example `feature/12-typed-routes` or `fix/31-sheet-dismiss-crash`.
+The types are `feature`, `fix`, `docs`, `test`, `refactor` and `chore`, for example `feature/12-typed-routes` or `fix/31-sheet-dismiss-crash`. After the number comes a short plain-English phrase, two to five words, that a person understands at a glance. Leave out decision, plan and issue numbers and code ids: `docs/251-explain-coordinators-and-renderers`, not `docs/251-align-docs-with-decisions-0017-and-0018`.
 
 ## Test first
 
 - **Unit tests come first.** Write the test, watch it fail, then write the code that makes it pass. Unit tests use Swift Testing.
 - **UI tests cover what a person sees.** Anything visible, such as a push animation, a sheet or a tab switch, gets an XCUITest in the example app. If a change needs no UI test, say why in the pull request.
 - **Navigation logic belongs in `WaypointCore`**, where it can be tested without a simulator.
+- **Which tests run where** is in [TESTING.md](TESTING.md).
 
-## Running tests on Linux
+## Running tests
 
-
-`WaypointCore` is pure Swift (Foundation, Observation and Synchronization only), so it builds and runs its unit tests on Linux. The `Waypoint` target, which holds the SwiftUI renderer (the UIKit renderers are designed to join it), and the `WaypointUIKit` placeholder compile empty there, so renderer code and UI tests still need a Mac.
-
-You need a Swift 6 toolchain (6.0 or newer). From the repository root:
-
-```sh
-scripts/test-linux.sh
-```
-
-The script runs, in order:
-
-1. `scripts/check-core-imports.sh`, which fails if any file in `Sources/WaypointCore` imports a module other than Foundation, Observation, Synchronization or WaypointCore itself.
-2. `scripts/check-comment-width.sh`, which fails if a comment line runs past 100 columns ([Comments wrap at 100 columns](CODE_STYLE.md#comments-wrap-at-100-columns)).
-3. `swift build`.
-4. `scripts/check-compile-failures.sh`, which fails if a file in `Tests/CompileFailures` compiles. Each file holds code Waypoint promises to refuse at compile time, such as pushing another flow's route through a `FlowNavigator`, and names the error it expects in an `// expected-error:` line.
-5. `swift test`. Extra arguments go to `swift test`, for example `scripts/test-linux.sh --filter LinuxBehaviourTests`.
-
-The same `swift test` run works on a Mac. The tests in `Tests/WaypointCoreTests/LinuxBehaviourTests.swift` pin the Observation, main actor and `Sendable` behaviour the core relies on, so a platform difference shows up there first.
-
-## Running tests on a Mac
-
-The renderers and the UI tests need a Mac with Xcode 16 or later:
-
-```sh
-scripts/test-mac.sh          # quick: while working on a branch
-scripts/test-mac.sh full     # before every merge
-scripts/test-mac.sh release  # before a tag
-```
-
-| Tier | What it runs |
-|---|---|
-| `quick` (default) | The concurrency guard rail, the compile fixtures, the package tests on the host and on the simulator (each built once with warnings as errors), and the example app's UI tests when the branch changes `Example/` or a renderer. It skips the parts the branch can't affect: a docs-only branch runs only the guard rail. `--ui` adds the UI tests, `--all` runs every part, and `--only WaypointExampleUITests/StackTests/testPushAndBack` runs just that UI test. |
-| `full` | Every check, whatever changed: `quick` with every part, the example app's UI tests, the unified log tests under the thread sanitizer, and the system link and missing destination UI tests again in the release configuration. A pull request labelled `runs:mac` passes it before merging. |
-| `release` | `full`, plus a build for an iOS device with warnings as errors, and the package and example app tests again on the iOS 17 simulator. |
-
-To keep the Mac usable, builds use at most `WAYPOINT_JOBS` jobs (default half the performance cores), Xcode never clones the simulator, only one run uses a simulator at a time, and the script shuts down each simulator it booted. It ends with the time each step took. Set `WAYPOINT_SIMULATOR` to use a simulator other than `waypoint-01`, `WAYPOINT_IOS17_SIMULATOR` for one other than `waypoint-02` (it must exist, on an iOS 17 runtime), and `WAYPOINT_BASE` to compare the branch with something other than `origin/main`.
+[TESTING.md](TESTING.md) is the one home for running the tests: which layers run on Linux and which on a Mac, which run is needed while working, before a merge and before a tag, the simulators, the exact steps, and what to do when a run fails. In short, `scripts/test-linux.sh` runs the core on Linux, and `scripts/test-mac.sh [quick|full|release]` runs the renderers and the example app's unit and UI tests on a Mac.
 
 ## Documentation site
 

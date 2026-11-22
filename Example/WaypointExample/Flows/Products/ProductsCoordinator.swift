@@ -25,10 +25,12 @@ import WaypointCore
 // The stack runs on Waypoint: `router`, the tab's stack router from the main tab router, owns the
 // path, `ProductsFlowView` draws it with `WaypointStack`, and a swipe back comes back to the router
 // by itself. The journey names the stack's first screen `Product list` or `Search`. A product page
-// links to a related product with `WaypointLink`, which pushes through the same router. The router
-// also presents the filters, the saved sheet and the wish list (`FilterRoute`, `SavedRoute`,
-// `WishlistRoute`), each drawn on the presented router with `WaypointStack`; the sheet itself is
-// still SwiftUI's, bound to the router, until Waypoint draws sheets.
+// links to a related product with `WaypointLink`, which pushes through the same router, and a
+// search result pushes from `SearchModel`, a view model holding the stack's navigator scoped to
+// `ShopFlow`, which the stack declares. The router also presents the filters, the saved sheet and
+// the wish list (`FilterRoute`, `SavedRoute`, `WishlistRoute`), each drawn on the presented router
+// with `WaypointStack`; the sheet itself is still SwiftUI's, bound to the router, until Waypoint
+// draws sheets.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `ProductsFlowView` redraws when the sheet changes.
@@ -47,6 +49,8 @@ final class ProductsCoordinator {
     private let navigation: ProductsNavigation
     private let onAddToCart: (Product) -> Void
     private let cart: ProductsCart
+    // Search's view model, which pushes a tapped result itself.
+    private let searchModel: SearchModel
     // `var` because `showFilters()`, `showSaved()` and `showWishlist()` set it with the router they
     // present, and `releaseSheet()` clears both once the sheet has slid away, so it still draws
     // meanwhile.
@@ -86,6 +90,7 @@ final class ProductsCoordinator {
         self.cart = cart
         self.router = router
         router.setRootName(start.rootName)
+        searchModel = SearchModel.onShopStack(router)
         router.register(FilterRoute.self)
         router.register(SavedRoute.self)
         router.register(WishlistRoute.self)
@@ -378,7 +383,7 @@ final class ProductsCoordinator {
     }
 
     private func makeSearchFlow() -> some View {
-        SearchView(onSelect: { self.showProduct($0) })
+        SearchView(model: searchModel)
             .screenChrome(
                 title: MainTab.search.title,
                 kind: nil,

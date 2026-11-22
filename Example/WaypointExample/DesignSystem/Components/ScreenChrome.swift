@@ -111,22 +111,4 @@ extension View {
         )
         return modifier(chrome)
     }
-
-    // The chrome of a screen that no route shows, such as Order placed, one `step` above the top of
-    // `router`.
-    func screenChrome(
-        title: String,
-        kind: FlowKind?,
-        router: StackRouter,
-        step: String
-    ) -> some View {
-        let top = RouterTrail.steps(on: router, at: router.state.path.last)
-        let chrome = ScreenChrome(
-            title: title,
-            kind: kind,
-            trail: top + CollectionOfOne(step),
-            isRoot: false
-        )
-        return modifier(chrome)
-    }
 }
