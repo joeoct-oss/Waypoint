@@ -102,6 +102,7 @@ final class NestedSheetTests: XCTestCase {
         app.textFields[Identifiers.signInEmail].type(Self.email)
         app.secureTextFields[Identifiers.signInPassword].type(Self.password)
         app.buttons[Identifiers.signInButton].tapWhenReady()
+        app.closeSavePasswordOffer()
     }
 
     // From the event log, goes back to the Lab and reads the routers' tree, so the check is on the

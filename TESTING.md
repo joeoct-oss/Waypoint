@@ -28,6 +28,8 @@ There are two places a test can run:
 | Comment width check | `scripts/check-comment-width.sh` | ✅ | |
 | Concurrency guard rail | `scripts/check-concurrency.sh` | ✅ | ✅ every tier |
 | Example app isolation check (no `@MainActor` in the app or its unit tests) | `scripts/check-example-isolation.sh` | ✅ | ✅ every tier |
+| Mac test script's run lock | `scripts/check-test-mac-lock.sh` | ✅ | |
+| Merge batches and the slowest-test list | `scripts/check-merge-batch.sh` | ✅ | |
 | Compile fixtures (must fail, must build) | `Tests/CompileFailures`, `Tests/CompileSuccesses`, checked by `scripts/check-compile-failures.sh` | ✅ | ✅ |
 | Core unit tests | `Tests/WaypointCoreTests` | ✅ plain and thread sanitizer | ✅ macOS host and simulator |
 | Renderer unit tests | `Tests/WaypointTests`, `Tests/WaypointUIKitTests` (the parts not behind `canImport(SwiftUI)` or `canImport(UIKit)` also run on Linux) | partly | ✅ macOS host and simulator |
@@ -40,8 +42,9 @@ The tests in `Tests/WaypointCoreTests/LinuxBehaviourTests.swift` pin the Observa
 
 Two scripts run every layer. Nothing else counts as a test run:
 
-- `scripts/test-linux.sh` runs, in order: the core imports check, the comment width check, the concurrency guard rail, `swift build`, `swift build --build-tests` with warnings as errors, the compile fixtures, `swift test`, and `swift test` under the thread sanitizer. Extra arguments go to both `swift test` runs.
-- `scripts/test-mac.sh [quick|full|release]` runs the Mac layers in tiers. What each tier runs is in the script's header comment and in the table below.
+- `scripts/test-linux.sh` runs, in order: the core imports check, the comment width check, the concurrency guard rail, the Mac test script's run lock check (`scripts/check-test-mac-lock.sh`, which uses stand-in tools), the merge batch check (`scripts/check-merge-batch.sh`), `swift build`, `swift build --build-tests` with warnings as errors, the compile fixtures, `swift test`, and `swift test` under the thread sanitizer. Extra arguments go to both `swift test` runs.
+- `scripts/test-mac.sh [quick|full|release]` runs the Mac layers in tiers. What each tier runs is in the script's header comment and in the table below. Every tier that runs the example app's tests ends its log with the 10 slowest of them (`scripts/slowest-tests.py`).
+- `scripts/merge-batch.sh` builds a [merge batch](#merge-batches) in the Mac clone and checks it before each merge.
 
 | Tier | Runs | Simulators | Time on the Mac (2026-11-20) | Stop it after |
 |---|---|---|---|---|
@@ -60,14 +63,38 @@ Find the row for the moment you are at. Run every command in its row, Linux firs
 | While working, after a change to anything but docs | `scripts/test-linux.sh` | `scripts/test-mac.sh quick` when the change touches `Sources/Waypoint`, `Sources/WaypointUIKit`, `Sources/WaypointOSLog`, `Example/` or a `Tests/` folder other than `WaypointCoreTests`; otherwise none |
 | While working on one UI test | none | `scripts/test-mac.sh quick --only WaypointExampleUITests/<Class>/<test>` |
 | **Before a pull request merges**, docs only | `scripts/test-linux.sh` | none |
-| **Before a pull request merges**, anything else | `scripts/test-linux.sh` | `scripts/test-mac.sh full` |
+| **Before a pull request merges**, anything else | `scripts/test-linux.sh` on the pull request | `scripts/test-mac.sh full` on its [merge batch](#merge-batches) |
 | Before a tag | `scripts/test-linux.sh` | `scripts/test-mac.sh release` |
 | The issue's tests name iOS 17 | as above | as above, plus `WAYPOINT_SIMULATOR=waypoint-02 scripts/test-mac.sh quick --all` |
 | The issue's tests name iPad | as above | as above, plus `WAYPOINT_SIMULATOR=waypoint-03 scripts/test-mac.sh quick --all` |
 
 A pull request is **docs only** when every file it changes matches `*.md`, `*.docc/**` or `docs-theme/**`. Read the changed files from the pull request itself, not from its labels. A pull request labelled `runs:mac` always needs `full`, even when it is docs only.
 
-A result belongs to one commit. The merge gate holds only for the head commit it ran on, and that commit must contain the current `main`. When the branch gets a new commit after the run (including a merge of `main`), run the gate again. The one exception: when every file changed since the tested commit is docs only, `scripts/test-linux.sh` alone is enough.
+**Nothing merges without a green `full` run** on a commit that contains the latest `main`, unless the pull request is docs only. That commit is the pull request's [merge batch](#merge-batches): a green batch run counts for every pull request in it, as long as `--before-merge` passes right before each one merges. A `quick` run, of any kind, is for working on a branch and never counts for a merge.
+
+### Merge batches
+
+One `full` run covers up to four ready pull requests at once. A pull request is ready when its review is clean, it contains the latest `main`, and its Linux gate passed. A single ready pull request is a batch of one. A docs only pull request needs no batch: its Linux gate is enough.
+
+1. **Build the batch** on the Mac, in your queue turn, as preflight step 4 of [Run a Mac tier](#5-run-a-mac-tier) but with this instead of the checkout:
+
+   ```sh
+   scripts/merge-batch.sh <branch-1> <branch-2> ...
+   ```
+
+   Pass: it prints `batch <sha> tree <tree> main <main sha> branches <branch>@<sha> ...`. Write the whole line down: the report needs it. When it prints `error: <branch> doesn't merge cleanly`, leave that branch out (it must take `main` first) and build the batch again. When it prints `error: a Mac test run ... holds the run lock`, another run is going: wait for your turn.
+2. **Run `full`** on the batch, exactly as [Run a Mac tier](#5-run-a-mac-tier) says. The report goes in every batch pull request's **Tests** section, with the batch line.
+3. **Red batch:** nothing in it merges. Find the pull request the failure belongs to from [When a run fails](#6-when-a-run-fails); it is fixed, or left out, and the new batch runs `full` again.
+4. **Green batch:** the pull requests merge one at a time, squash, in the batch's order. Right before each merge:
+
+   ```sh
+   scripts/merge-batch.sh --before-merge <branch> <its tested sha> <expected main>
+   ```
+
+   The expected `main` is the batch's `main sha` for the first pull request, and the commit the pull request before it merged as for each later one. Pass: it prints `ok:`. When it prints `error:`, the branch or `main` moved since the run: stop. Nothing more from this batch merges. When some of the batch already merged, `main` holds a part of the batch no run tested: run `full` on `main` at once, as step 5 says for a tree mismatch, with the same revert rule. What's left goes in a new batch.
+5. **After the last merge**, `scripts/merge-batch.sh --after-merge <the batch's tree>` must print `ok:`. When it prints `error:`, `main` holds code no `full` run tested: stop merging anything, run `full` on `main` at once (preflight step 4 with `origin/main` in place of the branch), and report it. When that run is red, the batch's pull requests are reverted, newest first, before anything else merges.
+
+A result belongs to one commit. For a merge, that commit is the batch: the gate holds only while each pull request's head is the one the batch tested and `main` is the batch's `main` or the commits of the batch's earlier pull requests, which `--before-merge` checks. When the branch gets a new commit after the run (including a merge of `main`), run the gate again. The one exception: when every file changed since the tested commit is docs only, `scripts/test-linux.sh` alone is enough.
 
 ## 3. The simulators
 
@@ -79,7 +106,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
 | `waypoint-02` | iPhone | 17.5 | `release` (the default `WAYPOINT_IOS17_SIMULATOR`), and iOS 17 checks |
 | `waypoint-03` | iPad | 27.2 | iPad checks only |
 
-- **Mac runs are queued, one at a time.** Runs go in the order they ask. The first run takes the simulators it needs (`release` uses `waypoint-01` and `waypoint-02`). Every later run waits until that run has finished its teardown. Then it checks out its own commit, and the script builds and installs that version on the simulator. There is only one clone on the Mac, so a second run at the same time would change the first run's checkout under it, even on another simulator. Ask whoever keeps the queue for your turn before preflight, and say when your teardown is done. The script also locks each simulator it uses (`${TMPDIR:-/tmp}/waypoint-test-<name>.lock`), but only from the moment it reaches the simulator, and the lock never protects the clone: the queue does.
+- **Mac runs are queued, one at a time.** Runs go in the order they ask. The first run takes the simulators it needs (`release` uses `waypoint-01` and `waypoint-02`). Every later run waits until that run has finished its teardown. Then it checks out its own commit, and the script builds and installs that version on the simulator. There is only one clone on the Mac, so a second run at the same time would change the first run's checkout under it, even on another simulator. Ask whoever keeps the queue for your turn before preflight, and say when your teardown is done. The script backs the queue up with a **run lock**: its first step takes `/tmp/waypoint-test-mac.lock`, a link to its process id that every clone and checkout on the Mac shares, and a second run stops at once with `error: another Mac test run holds the run lock` and runs nothing. The script clears a lock whose run has ended (a crash, a stop, a reboot) by itself, and never removes the lock of a run that is still going. A run that still holds it past its tier's **Stop it after** time is hung: stop it as [Run a Mac tier](#run-1) says, which also releases the lock. The script also locks each simulator it uses (`${TMPDIR:-/tmp}/waypoint-test-<name>.lock`) from the moment it reaches the simulator. Neither lock protects the clone before the script starts, so the queue still comes first.
 - **Never create a simulator.** `scripts/test-mac.sh` creates `WAYPOINT_SIMULATOR` when it is missing, so preflight step 3 checks it exists first and the script never gets the chance.
 - **Never delete, erase or rename a simulator**, and never shut down one you don't hold. Shut down only your own, by name: `xcrun simctl shutdown waypoint-01`. Never `xcrun simctl shutdown all`.
 
@@ -93,7 +120,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
    swift --version
    ```
 
-   Pass: it prints `Swift version 6.` followed by a minor version. When `swift` is missing, install a Swift 6 toolchain (<https://www.swift.org/install/linux/>, or the machine's own setup script), then check again. Any other answer: stop and report it.
+   Pass: it prints `Swift version 6.` followed by a minor version. The run lock check also needs `ps`, `pgrep`, `pkill` and `/usr/bin/python3`: `command -v ps pgrep pkill /usr/bin/python3` prints four lines. When one is missing, install it (on Debian or Ubuntu: `procps` and `python3`). When `swift` is missing, install a Swift 6 toolchain (<https://www.swift.org/install/linux/>, or the machine's own setup script), then check again. Any other answer: stop and report it.
 
 2. Get the exact commit to test, in a clean clone:
 
@@ -148,7 +175,13 @@ Every step runs on the Mac, from the root of the Waypoint package clone, which t
    pgrep -fl "scripts/test-mac.sh"
    ```
 
-   It must print nothing. When it prints a line, another run is going: stop, don't touch the clone, and tell whoever keeps the queue. Then, for every simulator the tier uses:
+   It must print nothing. When it prints a line, another run is going: stop, don't touch the clone, and tell whoever keeps the queue. Then check the run lock:
+
+   ```sh
+   ls -l /tmp/waypoint-test-mac.lock /tmp/waypoint-test-mac.lock.info 2>/dev/null && cat /tmp/waypoint-test-mac.lock.info
+   ```
+
+   When it prints nothing, carry on. When it prints the lock, check its holder with `ps -p "$(readlink /tmp/waypoint-test-mac.lock)" -o command= | grep -q test-mac.sh && echo running`. When that prints `running`, another run holds the Mac: stop, don't touch the clone, and tell whoever keeps the queue. When it prints nothing, the lock is stale and the script clears it itself; carry on. Never remove the lock by hand. Then, for every simulator the tier uses:
 
    ```sh
    xcrun simctl list devices available | grep -E "^ +waypoint-01 \("
@@ -185,7 +218,7 @@ wait "$(cat .build/test-mac.pid)"; echo "exit=$?"
 ```
 
 - Run these lines as one background command that is allowed to run past the tier's **Stop it after** time, and wait for it to end. Never start a second Mac run while it runs.
-- When it is still running at the **Stop it after** time, it is hung. Stop the step it is stuck in with `pkill -TERM -P "$(cat .build/test-mac.pid)"`. The script then fails that step, and its exit step shuts down its simulators and removes its locks. When the script is still running a minute later, run `kill -TERM "$(cat .build/test-mac.pid)"`. Use `TERM`, not `INT`: a script started in the background ignores `INT`. Never `kill -9`. Then go to [When a run fails](#6-when-a-run-fails).
+- When it is still running at the **Stop it after** time, it is hung. Stop the step it is stuck in with `pkill -TERM -P "$(cat .build/test-mac.pid)"`. The script then fails that step, and its exit step shuts down its simulators and removes its locks. When the script is still running two minutes later, run `kill -TERM "$(cat .build/test-mac.pid)"`. Use `TERM`, not `INT`: a script started in the background ignores `INT`. Never `kill -9`. Then go to [When a run fails](#6-when-a-run-fails).
 - `WAYPOINT_JOBS` and `WAYPOINT_BASE` stay unset unless the person who asked for the run names a value.
 
 ### Pass or fail
@@ -193,7 +226,7 @@ wait "$(cat .build/test-mac.pid)"; echo "exit=$?"
 - **Pass:** it prints `exit=0`, and the log has `All Mac tests passed (<tier>).` after the `Step times` table, where `<tier>` is the tier you ran.
 - **Fail:** anything else, including a log that has `Creating simulator`. The failing step is the last `==> ` line in the log. Go to [When a run fails](#6-when-a-run-fails).
 
-Copy the `Step times` table from the end of the log into the report either way.
+Copy the `Step times` table and the slowest-test lists from the end of the log into the report either way.
 
 ### Teardown
 
@@ -207,7 +240,7 @@ Teardown runs after every run, passed or failed, in this order:
 
    When it still says `(Booted)`, shut it down by name: `xcrun simctl shutdown waypoint-01`.
 
-2. **Locks.** `ls -d "${TMPDIR:-/tmp}/waypoint-test-waypoint-01.lock" 2>/dev/null` prints nothing for every simulator the run used. When a lock is still there and no `test-mac.sh` of yours is running, remove that one lock directory.
+2. **Locks.** `ls -d "${TMPDIR:-/tmp}/waypoint-test-waypoint-01.lock" 2>/dev/null` prints nothing for every simulator the run used. When a lock is still there and no `test-mac.sh` of yours is running, remove that one lock directory. `ls -l /tmp/waypoint-test-mac.lock 2>/dev/null` prints nothing too; when it still names your run's pid and that run has ended, leave it, since the next run clears it.
 
 3. **Clone.** Keep the log under the commit's name, then put the clone back on `main`:
 
@@ -236,6 +269,9 @@ Find the first row that matches what the log says. Do what it says, once. A retr
 | A line from `scripts/check-compile-failures.sh` that names a fixture and isn't `ok:` | A real failure: a compile promise broke | No retry. Report the fixture and the line. |
 | `✘` from Swift Testing, `XCTAssert…failed`, or `** TEST FAILED **` | A real failure: a test failed | Report each failing test's name and its first failure line. To tell a flaky test from a broken one, you may run that one test again once: `swift test --filter '<test function name>'` (Linux or the Mac host), or `scripts/test-mac.sh quick --only WaypointExampleUITests/<Class>/<test>` (UI). Report what the second run did. The gate still failed. |
 | `ThreadSanitizer: data race` | A real failure: a data race | No retry. Report the first 20 lines of the report. |
+| `error: a stale run lock is being cleared` | Not a test result: another run was clearing a lock left by an ended run, or a stopped run left its clearing folder | Wait two minutes and start the run again; the script removes a clearing folder older than a minute. When it says the same again, report it. |
+| `error: another Mac test run took the run lock just now` | Not a test result: another run started at the same moment | Don't touch the clone. Report it to whoever keeps the queue. |
+| `error: another Mac test run holds the run lock` | Not a test result: a second run was started while one was going | Don't remove the lock and don't touch the clone. Report it to whoever keeps the queue, with the holder's line from the error. Run again only when your turn comes. |
 | `error: another test run (pid N) is using <name>` | Not a test result: two runs overlapped | Don't remove the lock and don't touch the clone. Report it to whoever keeps the queue, who decides which run starts again. |
 | `error: no simulator named <name>`, or `Creating simulator` | Not a test result: a simulator is missing | Stop the run if it is still going. Don't delete what was created. Report the name. |
 | `error: no iOS simulator runtime installed` | Not a test result: Xcode lacks a runtime | Stop. Report it. |
@@ -256,7 +292,9 @@ Simulators: waypoint-01 (iOS 27.2) [, waypoint-02 (iOS 17.5)] | none
 Time: <total seconds>
 Failures: none | <test or step>: <first failure line>, one per line
 Retry: none | <what ran again and what it did>
+Batch: none | <the merge-batch.sh line>
 Step times: <the table from the end of the log, Mac only>
+Slowest tests: <the slowest-test lists from the end of the log, Mac only>
 Teardown: simulators shut down, locks gone, clone back on main | <what is left>
 ```
 
@@ -266,6 +304,6 @@ Teardown: simulators shut down, locks gone, clone back on main | <what is left>
 - Never edit code, tests or scripts during a run. A run reports; the fix is separate work.
 - Never call a run passed when it didn't print its pass line, when only a retry passed, or when it ran on another commit.
 - Never create, delete, erase or rename a simulator, never shut down one you don't hold, and never run `xcrun simctl shutdown all`.
-- Never remove another run's lock, and never `kill -9` a test run (stop a hung one with `TERM`, as in [Run](#run-1)).
+- Never remove another run's lock, the run lock included, and never `kill -9` a test run (stop a hung one with `TERM`, as in [Run](#run-1)).
 - Never start a Mac run before the run ahead of it in the queue has finished its teardown.
 - Never stash, reset or delete changes in the Mac clone that aren't yours.
