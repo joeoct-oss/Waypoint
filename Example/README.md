@@ -22,7 +22,7 @@ tuist generate --path Example --no-open
 open Example/WaypointExample.xcworkspace
 ```
 
-`scripts/test-mac.sh full` generates the project and runs the unit tests (`WaypointExampleTests`, Swift Testing, for the view models) and the UI tests on the project simulator, then runs `SystemLinkTests` and `MissingDestinationTests` again in the release configuration. `scripts/test-mac.sh --only WaypointExampleUITests/StackTests` runs one class or test; see [Run a Mac tier](../TESTING.md#5-run-a-mac-tier) for the steps and [Where each test runs](../TESTING.md#1-where-each-test-runs) for the tiers.
+`scripts/test-mac.sh full` generates the project and runs the unit tests (`WaypointExampleTests`, Swift Testing, for the view models, the services container and the store) and the UI tests on the project simulator, then runs `SystemLinkTests` and `MissingDestinationTests` again in the release configuration. `scripts/test-mac.sh --only WaypointExampleUITests/StackTests` runs one class or test; see [Run a Mac tier](../TESTING.md#5-run-a-mac-tier) for the steps and [Where each test runs](../TESTING.md#1-where-each-test-runs) for the tiers.
 
 ## Launch arguments
 
@@ -33,8 +33,9 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 | Folder | What it holds |
 |---|---|
 | `App/` | The `App`, the app coordinator and its roots, and launch arguments |
-| `Services/` | The local store, the session, the auth service protocol and its mock |
-| `Store/` | The fixed sample products and orders, and the account type |
+| `Dependencies/` | `AppServices`, the one container the `App` makes, and one dependency struct per feature (`ProductsDependencies`, `CartDependencies`, `AccountDependencies`, `AuthDependencies`, `LabDependencies`) listing what that feature uses |
+| `Services/` | The local store, the session, the saved addresses, the auth service protocol and its mock, and the issue and event logs |
+| `Store/` | The product catalog (`ProductCatalog`, with `SampleCatalog` for the fixed sample products), orders, and the account type |
 | `Flows/Splash/` | The splash screen |
 | `Flows/Auth/` | The account gate, and the accounts sheet: sign in, the create account steps and the reset password sheet, with their coordinator |
 | `Flows/Main/` | The main tabs and their coordinator |
@@ -49,6 +50,8 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 ## Rules the app follows
 
 - Each window has its own app coordinator; the `App` holds no navigation state, only the shared services.
+- Services reach a feature through its dependency struct, which `AppServices` gives; nothing reads a service from a static, a singleton or the SwiftUI environment. `AppServices` holds only what lives as long as the app.
+- The app and its unit tests are main actor by default, so they write no `@MainActor` (see [`CODE_STYLE.md`](../CODE_STYLE.md)).
 - Screens report through callbacks; only coordinators navigate, with `make…Flow()` to build and `show…()` to navigate.
 - Accessibility identifiers follow one pattern: `<flow>.<screen>` for journeys, and `root.<branch>`, `<branch>.<flow>.<kind>`, `placeholder.<flow>.<kind>`, `lab.story.<story>` and `lab.detail.<screen>` in the Lab.
 - The code follows the package's code style in [`CODE_STYLE.md`](../CODE_STYLE.md).

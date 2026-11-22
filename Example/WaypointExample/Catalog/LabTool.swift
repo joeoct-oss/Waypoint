@@ -14,7 +14,7 @@
 // - `Codable` (from the raw values), so a tool can sit in an account route.
 // - `CaseIterable`, so the Lab lists every tool from this one declaration.
 // - `Hashable` (from the raw values), so the account stack can push a tool's screen.
-enum LabTool: String, CaseIterable, Codable {
+nonisolated enum LabTool: String, CaseIterable, Codable {
     case navigationTree
     case eventLog
 

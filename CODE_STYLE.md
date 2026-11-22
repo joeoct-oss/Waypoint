@@ -225,6 +225,16 @@ enum AppRoot: NavigationRoot {
 When a type needs a set of conformances that many types share, it lists the set's one name with one reason, and the set's own doc comment gives the reason for each part. The sets are `NavigationValue` (`Hashable & Codable & Sendable`), `NavigationRecord` (`Sendable & Equatable & NavigationDescribable`) and `NavigationStateValue` (`NavigationRecord & Codable`), type aliases for Waypoint's own value types, and the protocols `Route`, `NavigationTab` and `NavigationRoot` for the app's types. Don't name a new set for fewer than three types or three conformances.
 This applies to source code, tests and DocC. Only the platform base types that a type must adopt to exist at all (`View`, `App`, `UIViewController` and its subclasses) are left out. The package's "Why these conformances" article explains the common ones (`Hashable`, `Codable`, `Sendable`, `Equatable`, `AnyObject`) once. A linter can't judge a reason, so review checks this rule, and the package PR template has a checklist line for it.
 
+## The example app is main actor by default; the package says every isolation
+
+The example app and its unit tests set Swift 6.2's default actor isolation to the main actor (`SWIFT_DEFAULT_ACTOR_ISOLATION` in `Example/Project.swift`), so their code writes no `@MainActor`. It marks only the code that runs elsewhere:
+
+- `nonisolated` for work that needs no actor: plain values that a route holds or a log handler builds (`Product`, `Address`, `EventLogEntry`), the log handlers themselves, and the `Catalog/` types the UI tests share, so both targets see them the same way.
+- `@concurrent` for slow async work that should leave the main actor.
+- The one place `@MainActor` is still written: a task that nonisolated code sends back to the main actor, `Task { @MainActor in … }`, as the log handlers do.
+
+The package writes every isolation explicitly (`@MainActor` on routers, `nonisolated` where it applies), because a library can't rely on its clients' defaults. The UI test target keeps Swift's own default, since XCUITest code isn't app code. `scripts/check-example-isolation.sh` checks the example app on every Linux and Mac run until the lint setup (#70) takes it over as the custom SwiftLint rule `no_main_actor_in_example`.
+
 ## `let` by default
 
 Immutability catches logic errors before they happen at run time:

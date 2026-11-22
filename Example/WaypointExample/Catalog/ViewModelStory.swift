@@ -14,7 +14,7 @@
 // - `Codable` (from the raw values), so a story can sit in an account route.
 // - `CaseIterable`, so the Lab lists every story from this one declaration.
 // - `Hashable` (from the raw values), so the account stack can push a story's screen.
-enum ViewModelStory: String, CaseIterable, Codable {
+nonisolated enum ViewModelStory: String, CaseIterable, Codable {
     case style
     case lateResult
     case noRouter

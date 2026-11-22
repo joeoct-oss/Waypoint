@@ -27,7 +27,6 @@ import WaypointCore
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `AccountFlowView` redraws when the account changes.
-@MainActor
 @Observable
 final class AccountCoordinator {
     // The pushed wish list suggests nothing; only the wish list sheet on Shop does.
@@ -45,7 +44,7 @@ final class AccountCoordinator {
     private let events: EventLog
     private let rules: NavigationRules
     private let issues: IssueLog
-    private let describeTree: @MainActor () -> String
+    private let describeTree: () -> String
     // Runs the Lab's view and view-model demos, each full screen on a Waypoint stack of its own.
     let labDemos: LabDemoCoordinator
 
@@ -60,7 +59,7 @@ final class AccountCoordinator {
         rules: NavigationRules,
         issues: IssueLog,
         events: EventLog,
-        describeTree: @escaping @MainActor () -> String,
+        describeTree: @escaping () -> String,
         onClearAllData: @escaping () -> Void
     ) {
         self.session = session

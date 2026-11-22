@@ -18,7 +18,6 @@ import WaypointCore
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so the product redraws while reviews load.
-@MainActor
 @Observable
 final class LabProductModel {
     private let navigation: FlowNavigator<LabShopFlow>

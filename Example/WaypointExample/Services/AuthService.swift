@@ -11,7 +11,6 @@ import Foundation
 
 // Signs readers in, creates accounts and sends reset links. The example app uses
 // `MockAuthService`; a real app would put its server behind the same three calls.
-@MainActor
 protocol AuthService {
     func signIn(
         email: String,

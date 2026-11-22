@@ -25,7 +25,6 @@ import WaypointCore
 // Conformances:
 // - `Observable` (from `@Observable`), so `AuthFlowView` redraws when a sheet, the error or the
 //   busy state changes.
-@MainActor
 @Observable
 final class AuthCoordinator {
     let router: StackRouter

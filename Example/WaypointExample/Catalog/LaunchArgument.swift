@@ -19,7 +19,7 @@
 //
 // Conformances:
 // - `String` raw values, so each argument's name is its `UserDefaults` key.
-enum LaunchArgument: String {
+nonisolated enum LaunchArgument: String {
     case clearData
     case signedIn
     case lab

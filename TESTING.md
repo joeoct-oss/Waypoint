@@ -27,11 +27,12 @@ There are two places a test can run:
 | Core imports check | `scripts/check-core-imports.sh` | ✅ | |
 | Comment width check | `scripts/check-comment-width.sh` | ✅ | |
 | Concurrency guard rail | `scripts/check-concurrency.sh` | ✅ | ✅ every tier |
+| Example app isolation check (no `@MainActor` in the app or its unit tests) | `scripts/check-example-isolation.sh` | ✅ | ✅ every tier |
 | Compile fixtures (must fail, must build) | `Tests/CompileFailures`, `Tests/CompileSuccesses`, checked by `scripts/check-compile-failures.sh` | ✅ | ✅ |
 | Core unit tests | `Tests/WaypointCoreTests` | ✅ plain and thread sanitizer | ✅ macOS host and simulator |
 | Renderer unit tests | `Tests/WaypointTests`, `Tests/WaypointUIKitTests` (the parts not behind `canImport(SwiftUI)` or `canImport(UIKit)` also run on Linux) | partly | ✅ macOS host and simulator |
 | Unified log tests | `Tests/WaypointOSLogTests` | | ✅ thread sanitizer in `full` and `release` |
-| Example app unit tests (Swift Testing, view models) | `Example/WaypointExampleTests` | | ✅ simulator, with the UI tests |
+| Example app unit tests (Swift Testing: view models, the services container and the store) | `Example/WaypointExampleTests` | | ✅ simulator, with the UI tests |
 | Example app UI tests (XCUITest) | `Example/WaypointExampleUITests` | | ✅ simulator |
 | iOS device build | `Waypoint-Package` for `generic/platform=iOS` | | ✅ `release` only |
 

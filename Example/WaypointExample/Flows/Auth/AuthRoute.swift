@@ -67,7 +67,7 @@ struct TermsRoute: TrackableScreen {
 // Conformances:
 // - `CaseIterable`, so each step knows the one after it and the trail can name the steps before it.
 // - `Hashable` and `Codable`, so a step can sit in a `CreateAccountRoute`.
-enum CreateAccountStep: CaseIterable, Hashable, Codable {
+nonisolated enum CreateAccountStep: CaseIterable, Hashable, Codable {
     case details
     case password
     case checkEmail

@@ -12,10 +12,10 @@ import Foundation
 // Everything the example app keeps between launches: the signed-in account, the accounts made on
 // this device, the cart, the wish list and the saved addresses. It lives in its own `UserDefaults`
 // domain, so Clear all data in Settings removes all of it at once and leaves the system's own
-// settings alone.
-@MainActor
+// settings alone. The app uses `appDomain`; a test passes a domain of its own, so it never reads or
+// changes the app's data.
 final class LocalStore {
-    private static let domain = "dev.waypoint.example.data"
+    static let appDomain = "dev.waypoint.example.data"
 
     private static func decodeAccount(_ data: Data) -> Account? {
         try? JSONDecoder().decode(Account.self, from: data)
@@ -33,6 +33,7 @@ final class LocalStore {
         try? JSONEncoder().encode(addresses)
     }
 
+    private let domain: String
     private let defaults: UserDefaults
 
     var account: Account? {
@@ -81,12 +82,13 @@ final class LocalStore {
         }
     }
 
-    init() {
-        defaults = UserDefaults(suiteName: Self.domain) ?? .standard
+    init(domain: String = LocalStore.appDomain) {
+        self.domain = domain
+        defaults = UserDefaults(suiteName: domain) ?? .standard
     }
 
     func clearAll() {
-        defaults.removePersistentDomain(forName: Self.domain)
+        defaults.removePersistentDomain(forName: domain)
     }
 }
 

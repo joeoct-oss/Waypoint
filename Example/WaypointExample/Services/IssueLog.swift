@@ -16,7 +16,6 @@ import WaypointCore
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so the banner appears when an issue arrives.
-@MainActor
 @Observable
 final class IssueLog {
     // `var` because each issue logged replaces it. Only `record(_:)` changes it.
@@ -43,7 +42,7 @@ final class IssueLog {
 //
 // Conformances:
 // - `LogHandler`, so the app's navigation configuration can log to it.
-struct IssueLogHandler: LogHandler {
+nonisolated struct IssueLogHandler: LogHandler {
     let issues: IssueLog
 
     func isEnabled(level: LogLevel, category: LogCategory) -> Bool {

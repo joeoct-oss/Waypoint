@@ -10,7 +10,7 @@
 // the cart pushed above a product, and the two choices it reports to the main tabs, Go to cart and
 // Check out. The cart itself belongs to the Cart tab.
 struct ProductsCart {
-    let products: @MainActor () -> [Product]
-    let onGoToCart: @MainActor () -> Void
-    let onCheckout: @MainActor () -> Void
+    let products: () -> [Product]
+    let onGoToCart: () -> Void
+    let onCheckout: () -> Void
 }

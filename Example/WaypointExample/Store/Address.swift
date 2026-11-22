@@ -15,7 +15,7 @@ import Foundation
 // - `Codable`, so the local store can save the reader's addresses.
 // - `Hashable`, so an address can sit in a navigation path and lists can tell addresses apart.
 // - `Identifiable`, so lists can show addresses without naming an id key path.
-struct Address: Codable, Hashable, Identifiable {
+nonisolated struct Address: Codable, Hashable, Identifiable {
     static let samples = [
         Address(
             id: "home",

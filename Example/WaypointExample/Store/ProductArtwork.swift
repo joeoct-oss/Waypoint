@@ -12,7 +12,7 @@
 // Conformances:
 // - `Hashable`, so a product that holds one stays hashable.
 // - `CaseIterable`, so a preview can show every illustration.
-enum ProductArtwork: Hashable, CaseIterable {
+nonisolated enum ProductArtwork: Hashable, CaseIterable {
     case orbitLamp
     case cometMug
     case nebulaThrow

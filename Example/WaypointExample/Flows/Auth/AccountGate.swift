@@ -27,7 +27,6 @@ import WaypointCore
 // Conformances:
 // - `Observable` (from `@Observable`), so `MainTabView` presents and dismisses the accounts sheet,
 //   and shows the notice.
-@MainActor
 @Observable
 final class AccountGate {
     private static let noticeDuration = Duration.seconds(3)

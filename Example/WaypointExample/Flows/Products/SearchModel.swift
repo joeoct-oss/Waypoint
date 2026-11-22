@@ -14,7 +14,6 @@ import WaypointCore
 // checks. It imports only `WaypointCore`, never SwiftUI, so a unit test drives it with a real
 // router and no screen. `onShopStack(_:)` is the one place that wires it: the coordinator and the
 // unit tests both call it.
-@MainActor
 final class SearchModel {
     private let navigation: FlowNavigator<ShopFlow>
 

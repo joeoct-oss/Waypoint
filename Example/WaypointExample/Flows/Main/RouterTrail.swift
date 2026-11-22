@@ -15,7 +15,6 @@ import WaypointCore
 // A stack presented from another stack starts with that stack's whole trail, so checkout reads
 // `main › cart › checkout`. A stack with no router above it, such as a Lab demo, starts with its
 // root name.
-@MainActor
 enum RouterTrail {
     static let tabsName = "main"
     private static let unnamedRoot = "flow"
@@ -123,7 +122,6 @@ extension TrailStep where Self: TrackableScreen {
 }
 
 // Every route the example app's trail names. A route left out reads by its type name.
-@MainActor
 enum TrailStepTypes {
     static let all: [any TrailStep.Type] = [
         ProductRoute.self,
