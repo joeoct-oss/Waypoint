@@ -95,7 +95,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
    swift --version
    ```
 
-   Pass: it prints `Swift version 6.` followed by a minor version. When `swift` is missing, install a Swift 6 toolchain (<https://www.swift.org/install/linux/>, or the machine's own setup script), then check again. Any other answer: stop and report it.
+   Pass: it prints `Swift version 6.` followed by a minor version. The run lock check also needs `ps`, `pgrep`, `pkill` and `/usr/bin/python3`: `command -v ps pgrep pkill /usr/bin/python3` prints four lines. When one is missing, install it (on Debian or Ubuntu: `procps` and `python3`). When `swift` is missing, install a Swift 6 toolchain (<https://www.swift.org/install/linux/>, or the machine's own setup script), then check again. Any other answer: stop and report it.
 
 2. Get the exact commit to test, in a clean clone:
 

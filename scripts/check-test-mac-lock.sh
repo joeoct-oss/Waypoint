@@ -23,6 +23,16 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# The lock and the script use these; without `ps` a live lock would look stale.
+missing=()
+for tool in ps pgrep pkill /usr/bin/python3; do
+    command -v "$tool" >/dev/null || missing+=("$tool")
+done
+if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "error: the run lock check needs ${missing[*]} (on Linux: the procps and python3 packages)" >&2
+    exit 1
+fi
+
 WORK=$(mktemp -d)
 cleanup() {
     rm -rf "$WORK"
