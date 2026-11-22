@@ -12,14 +12,14 @@ import XCTest
 // fallbacks every flow inherits: a `popTo` of a screen that isn't in the stack pops to the root,
 // and a present while a flow is up replaces it. Each recovery shows in the issue banner over the
 // tabs and as a recovered entry in the Lab's event log. Settings' toggle changes the duplicate
-// push rule, so a fast double tap pushes twice, and counts a call no fallback covers.
+// push rule, which Open Orders twice tries, and Settings counts a call no fallback covers.
 @MainActor
 final class FallbackTests: XCTestCase {
     private static let accountTitle = "Account"
     private static let settingsTitle = "Settings"
-    private static let shopTitle = "Shop"
-    private static let lampTitle = "Orbit Lamp"
-    private static let lampID = 1
+    private static let ordersTitle = "Orders"
+    // How long a Back takes to settle, so a screen that isn't coming back has had its chance.
+    private static let settleTime: TimeInterval = 1
     private static let recovered = "recovered"
     private static let switchOn = "1"
     private static let oneFailure = "1"
@@ -73,27 +73,36 @@ final class FallbackTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: UITestSteps.timeout), .completed, count.label)
     }
 
+    // A real double tap can't show the rule: iOS drops the second tap while the push animates. Open
+    // Orders twice pushes again while the first push still animates instead.
     func testDuplicatePushRuleFromSettings() {
         let app = openSettings(signedIn: true)
+        let pushTwice = app.buttons[Identifiers.tryPushTwice]
+
+        // By default the second push is skipped, so one Back returns to Settings.
+        XCTAssertTrue(app.reveal(pushTwice))
+        pushTwice.tap()
+        XCTAssertTrue(app.navigationBars[Self.ordersTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: UITestSteps.timeout))
+
         let toggle = app.switches[Identifiers.duplicatePushRule]
         XCTAssertTrue(app.reveal(toggle))
         // The row's own switch, since a tap in the middle of a SwiftUI toggle's row may not
         // flip it.
         toggle.switches.firstMatch.tap()
         XCTAssertEqual(toggle.value as? String, Self.switchOn, "the toggle stayed off")
-        app.goBack()
 
-        app.openTab(Self.shopTitle)
-        let lampRow = app.buttons[Identifiers.product(id: Self.lampID)]
-        XCTAssertTrue(lampRow.waitForExistence(timeout: UITestSteps.timeout))
-        lampRow.doubleTap()
-        XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: UITestSteps.timeout))
+        // With `.allow` both pushes go through, so one Back still shows Orders.
+        XCTAssertTrue(app.reveal(pushTwice))
+        pushTwice.tap()
+        XCTAssertTrue(app.navigationBars[Self.ordersTitle].waitForExistence(timeout: UITestSteps.timeout))
         app.goBack()
-
-        // The second tap pushed the lamp again, so one Back shows the lamp, not the shop.
-        XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: UITestSteps.timeout))
+        let settings = app.navigationBars[Self.settingsTitle]
+        XCTAssertFalse(settings.waitForExistence(timeout: Self.settleTime), "only one Orders was pushed")
+        XCTAssertTrue(app.navigationBars[Self.ordersTitle].exists)
         app.goBack()
-        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: UITestSteps.timeout))
     }
 
     private func openSettings(signedIn: Bool = false) -> XCUIApplication {

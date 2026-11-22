@@ -11,14 +11,16 @@ import SwiftUI
 // Settings (AU-05, AU-06): App (Appearance and Notifications), Developer (the Navigation Lab for
 // trying every demo flow, and Clear all data, which asks to confirm next to the button), About (the
 // version) and, for a signed-in reader, Sign out. Navigation rules (#280) shows the duplicate push
-// rule, which it can change for testing, the queued-call limit and how many calls failed with no
-// fallback, and tries the two calls the app's fallbacks recover and one no fallback covers. The
-// screen reports each choice to the account coordinator.
+// rule, which it can change for testing, and a button that pushes Orders twice in a row to try
+// it. It shows the queued-call limit and how many calls failed with no fallback, and tries the two
+// calls the app's fallbacks recover and one no fallback covers. The screen reports each choice to
+// the account coordinator.
 struct SettingsView: View {
     private static let rulesTitle = "Navigation rules"
-    private static let pushesTwiceTitle = "Double tap pushes twice"
-    private static let rulesFooter = "A double tap pushes once by default. The first two calls below "
-        + "fail and the app's fallbacks recover them; the last one has no fallback, so it counts as not "
+    private static let pushesTwiceTitle = "Allow the same push twice"
+    private static let rulesFooter = "By default a second push of the screen already on its way is "
+        + "skipped, so Open Orders twice opens it once. Of the last three calls, the first two fail and "
+        + "the app's fallbacks recover them; the last one has no fallback, so it counts as not "
         + "recovered. The issue banner and the Lab's event log show each one."
 
     let isSignedIn: Bool
@@ -67,6 +69,8 @@ struct SettingsView: View {
         Section {
             Toggle(Self.pushesTwiceTitle, isOn: Binding(reading: rules.pushesTwice, writing: rules.onSetPushesTwice))
                 .accessibilityIdentifier(Identifiers.duplicatePushRule)
+            Button("Open Orders twice", action: rules.onTryPushTwice)
+                .accessibilityIdentifier(Identifiers.tryPushTwice)
             LabeledContent("Queued calls limit", value: rules.queueLimit, format: .number)
                 .accessibilityIdentifier(Identifiers.queueLimit)
             LabeledContent("Calls not recovered", value: rules.failureCount, format: .number)
@@ -142,6 +146,7 @@ struct SettingsRules {
     let queueLimit: Int
     let failureCount: Int
     let onSetPushesTwice: (Bool) -> Void
+    let onTryPushTwice: () -> Void
     let onTryMissingPop: () -> Void
     let onTryPresentTwice: () -> Void
     let onTryUnrecovered: () -> Void

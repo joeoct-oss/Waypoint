@@ -32,6 +32,9 @@ import WaypointCore
 final class AccountCoordinator {
     // The pushed wish list suggests nothing; only the wish list sheet on Shop does.
     private static let noSuggestions: [Product] = []
+    // How long Open Orders twice waits before its second push: long enough for the stack to start
+    // the first push, well inside its animation.
+    private static let secondPushDelay = Duration.milliseconds(150)
 
     let router: StackRouter
     private let session: Session
@@ -224,6 +227,17 @@ final class AccountCoordinator {
         router.popToRoot()
     }
 
+    // Settings' "Open Orders twice": pushes Orders, then again while the first push still animates,
+    // as a fast double tap would if iOS let both taps through. The duplicate push rule decides:
+    // `.skipWhileInFlight` skips the second, `.allow` pushes Orders twice.
+    func tryPushTwice() {
+        router.push(AccountRoute.orders)
+        Task { [router] in
+            try? await Task.sleep(for: Self.secondPushDelay)
+            router.push(AccountRoute.orders)
+        }
+    }
+
     // Settings' "Go back to Orders": Orders isn't in the stack, so the call fails and the app's
     // fallback pops to Account instead, which the issue banner and the event log show.
     func tryMissingPop() {
@@ -318,6 +332,7 @@ final class AccountCoordinator {
                 queueLimit: rules.queueLimit,
                 failureCount: issues.failureCount,
                 onSetPushesTwice: { self.rules.setPushesTwice($0) },
+                onTryPushTwice: { self.tryPushTwice() },
                 onTryMissingPop: { self.tryMissingPop() },
                 onTryPresentTwice: { self.tryPresentTwice() },
                 onTryUnrecovered: { self.tryUnrecovered() }

@@ -37,7 +37,8 @@ final class NavigationRules {
         tabs.setFallback(.replacePresentation, for: .alreadyPresenting)
     }
 
-    // Settings' toggle: `.allow` lets a fast double tap push twice, `.skipWhileInFlight` once.
+    // Settings' toggle: `.allow` lets a second push of the same route go through while the first is
+    // still animating, `.skipWhileInFlight` skips it.
     func setPushesTwice(_ pushesTwice: Bool) {
         let rule = pushesTwice ? DuplicatePushRule.allow : .skipWhileInFlight
         tabs.setDuplicatePushRule(rule)

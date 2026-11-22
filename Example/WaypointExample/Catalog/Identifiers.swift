@@ -84,6 +84,7 @@ enum Identifiers {
     static let clearData = "settings.clearData"
     static let confirmClearData = "settings.clearData.confirm"
     static let duplicatePushRule = "settings.duplicatePushRule"
+    static let tryPushTwice = "settings.tryPushTwice"
     static let queueLimit = "settings.queueLimit"
     static let failureCount = "settings.failureCount"
     static let tryMissingPop = "settings.tryMissingPop"
