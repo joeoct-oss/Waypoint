@@ -13,9 +13,9 @@ import WaypointCore
 // The cart tab: the cart at the root, and checkout presented full screen as its own flow. Check out
 // needs an account, so the account gate asks a guest to sign in first.
 //
-// Both run on Waypoint: the cart's stack is the cart tab's router from the main tab router, and
-// checkout is a flow that router presents full screen, with a fresh router of its own each time,
-// which `CartFlowView` draws with `WaypointStack(flow: CheckoutFlow.self)`. So the journey lines
+// Both run on Waypoint: the cart's router is the one stack every main tab shares, and checkout is
+// a flow that router presents full screen, with a fresh router of its own each time, which
+// `CheckoutCover` draws with `WaypointStack(flow: CheckoutFlow.self)`. So the journey lines
 // write `flow_started Checkout from Cart`, each step with `step 2 of 3`, and `flow_finished`. It
 // starts at the address step with a saved address chosen; Continue pushes Payment, then Review,
 // and Add a new address pushes the form. Saving the
@@ -66,9 +66,13 @@ final class CartCoordinator {
         checkoutAddresses.first { $0.id == selectedAddressID }
     }
 
-    // Whether checkout is presented over the cart.
+    // Whether checkout is presented over the cart. Every tab shares one stack, so a sheet another
+    // tab presents doesn't count.
     var isCheckingOut: Bool {
-        router.presented != nil
+        guard let checkoutRouter else {
+            return false
+        }
+        return router.presented === checkoutRouter
     }
 
     // Checkout's router while checkout shows, else the cart's own, so a screen still drawing as the

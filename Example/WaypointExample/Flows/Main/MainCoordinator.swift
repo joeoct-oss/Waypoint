@@ -9,16 +9,17 @@
 import SwiftUI
 import WaypointCore
 
-// The main tabs: Shop, Search, Cart and Account, each with its own coordinator and stack, the same
-// for guests and signed-in readers. The main coordinator makes the tabs once and keeps them, so
-// each tab keeps its place while the reader switches tabs. Cart's tab shows how many products the
-// cart holds. Its account gate presents the accounts sheet over the tabs when an action needs an
-// account.
+// The main tabs: Shop, Search, Cart and Account, each with its own coordinator, the same for guests
+// and signed-in readers. The main coordinator makes the tabs once and keeps them. Cart's tab shows
+// how many products the cart holds. Its account gate presents the accounts sheet over the tabs when
+// an action needs an account.
 //
-// The tabs run on one Waypoint `TabRouter`, and each tab's coordinator draws its tab's stack
-// router, so the whole tab bar is one tree. The journey lines then follow the reader across tabs:
-// `tab_selected Cart ◀ Shop`, then the screen the cart shows. The tab bar itself is still SwiftUI's
-// `TabView`, bound to the router's selection, until Waypoint draws tabs itself.
+// The tabs run on one Waypoint `TabRouter` with one stack around them all (`stacks: .shared`), as
+// in UIKit with `hidesBottomBarWhenPushed`: a pushed screen covers the tab bar, and the bar slides
+// away with the tab's root. Every tab's coordinator pushes onto that one stack, and selecting
+// another tab pops it, so a tab opens at its root. The journey lines follow the reader across
+// tabs: `tab_selected Cart ◀ Shop`, then the screen the cart shows. The tab bar itself is still
+// SwiftUI's `TabView`, bound to the router's selection, until Waypoint draws tabs itself.
 @MainActor
 final class MainCoordinator {
     let gate: AccountGate
@@ -36,6 +37,18 @@ final class MainCoordinator {
         cart.isCheckingOut ? nil : gate.notice
     }
 
+    // Whether a screen is pushed above the selected tab's root. Every tab pushes onto one stack,
+    // which a tab switch pops, so its path belongs to the selected tab.
+    var showsPushedScreen: Bool {
+        !shop.router.state.path.isEmpty
+    }
+
+    // The products coordinator of the selected tab: Search's while Search shows, else Shop's,
+    // which Go to cart selects.
+    private var selectedProducts: ProductsCoordinator {
+        tabs.selection == .search ? search : shop
+    }
+
     init(
         services: AppServices,
         launch: LaunchOptions,
@@ -44,6 +57,7 @@ final class MainCoordinator {
         // The tab bar pops nothing on a second tap, as before every tab ran on Waypoint.
         let tabs = TabRouter(
             selection: launch.opensLab ? MainTab.account : .shop,
+            stacks: .shared,
             popsToRootOnReselect: false,
             configuration: services.navigation
         )
@@ -113,9 +127,11 @@ final class MainCoordinator {
             describeTree: { [tabs] in tabs.debugTree() },
             onClearAllData: onClearAllData
         )
-        // The journey box names each router by the coordinator that owns it; each tab's
-        // coordinator names its own.
+        // The journey box names each router by the coordinator that owns it. The tabs share one
+        // stack, which every tab coordinator names in turn, so the main coordinator, which owns
+        // it, names it last. The journey names the selected tab beside it.
         tabs.setCoordinator(self)
+        tabs.router(for: .shop).setCoordinator(self)
     }
 
     // The tab the reader picked in the tab bar.
@@ -123,8 +139,9 @@ final class MainCoordinator {
         tabs.select(tab)
     }
 
-    // TX-02: one transaction selects Shop and sets its path to the cart's first product with the
-    // cart above it. The tabs change once, the stack draws once, and Back goes to the product.
+    // TX-02: one transaction selects Shop and sets the stack's path to the cart's first product
+    // with the cart above it. The tabs change once, the stack draws once, and Back goes to the
+    // product.
     private static func goToCart(
         tabs: TabRouter<MainTab>,
         cart: CartCoordinator
@@ -167,6 +184,24 @@ final class MainCoordinator {
         case .account:
             makeAccountFlow()
         }
+    }
+
+    // Shop and Search push the same routes onto the one stack, so the selected tab's coordinator
+    // draws them.
+    func makeProductFlow(for route: ProductRoute) -> some View {
+        selectedProducts.makeProductFlow(for: route)
+    }
+
+    func makeCollectionFlow(for route: CollectionRoute) -> some View {
+        selectedProducts.makeCollectionFlow(for: route)
+    }
+
+    func makeShopCartFlow() -> some View {
+        selectedProducts.makeCartFlow()
+    }
+
+    func makeAccountFlow(for route: AccountRoute) -> some View {
+        account.makeDestination(for: route)
     }
 
     func makeAuthFlow(_ auth: AuthCoordinator) -> some View {

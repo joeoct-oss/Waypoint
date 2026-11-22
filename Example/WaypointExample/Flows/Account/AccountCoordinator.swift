@@ -21,9 +21,9 @@ import WaypointCore
 // fallback covers, closing the tab's stack, which `onNavigationFailure` counts. Clear
 // all data reports to the app coordinator, which clears the store and starts the window over.
 //
-// The stack runs on Waypoint: `router` is the account tab's stack router from the main tab router,
-// `AccountFlowView` draws it with `WaypointStack`, and each screen above the root is an
-// `AccountRoute`, so the journey lines follow the reader through Account too.
+// The stack runs on Waypoint: `router` is the one stack every main tab shares, which `MainTabView`
+// draws with `WaypointStack` around the tabs. `AccountFlowView` draws the tab's root, and each
+// screen above it is an `AccountRoute`, so the journey lines follow the reader through Account too.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `AccountFlowView` redraws when the account changes.
@@ -230,7 +230,7 @@ final class AccountCoordinator {
     // Settings' "Open Orders twice": pushes Orders, then again while the first push still animates,
     // as a fast double tap would if iOS let both taps through. The duplicate push rule decides:
     // `.skipWhileInFlight` skips the second, `.allow` pushes Orders twice.
-    func tryPushTwice() {
+    func showPushTwice() {
         router.push(AccountRoute.orders)
         Task { [router] in
             try? await Task.sleep(for: Self.secondPushDelay)
@@ -240,13 +240,13 @@ final class AccountCoordinator {
 
     // Settings' "Go back to Orders": Orders isn't in the stack, so the call fails and the app's
     // fallback pops to Account instead, which the issue banner and the event log show.
-    func tryMissingPop() {
+    func showMissingPop() {
         router.popTo(AccountRoute.orders)
     }
 
     // Settings' "Open sign in twice": the second present fails because sign in is already up, and
     // the app's fallback replaces the first sheet with the second in one change.
-    func tryPresentTwice() {
+    func showPresentTwice() {
         gate.showSignIn()
         gate.showSignIn()
     }
@@ -254,7 +254,7 @@ final class AccountCoordinator {
     // Settings' "Close the Account tab": the tab's stack wasn't presented, so `dismissFlow` has
     // nothing to dismiss. No fallback covers it, so the configuration's `onNavigationFailure`
     // counts it.
-    func tryUnrecovered() {
+    func showUnrecovered() {
         router.dismissFlow()
     }
 
@@ -332,10 +332,10 @@ final class AccountCoordinator {
                 queueLimit: rules.queueLimit,
                 failureCount: issues.failureCount,
                 onSetPushesTwice: { self.rules.setPushesTwice($0) },
-                onTryPushTwice: { self.tryPushTwice() },
-                onTryMissingPop: { self.tryMissingPop() },
-                onTryPresentTwice: { self.tryPresentTwice() },
-                onTryUnrecovered: { self.tryUnrecovered() }
+                onTryPushTwice: { self.showPushTwice() },
+                onTryMissingPop: { self.showMissingPop() },
+                onTryPresentTwice: { self.showPresentTwice() },
+                onTryUnrecovered: { self.showUnrecovered() }
             )
         )
     }

@@ -284,9 +284,13 @@ private struct DuplicateKey: Hashable {
     /// The screen's route, or `nil` for a root screen with no route.
     let route: AnyRoute?
 
+    /// The selected tab when the tabs share one stack, else `nil`.
+    let sharedTab: String?
+
     /// The key of a screen on display.
     init(_ key: VisibleScreen.Key) {
         self.flow = key.flow
         self.route = key.route
+        self.sharedTab = key.sharedTab
     }
 }

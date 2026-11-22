@@ -175,6 +175,74 @@ struct JourneyTests {
     }
 
     @Test
+    func switchingTabRootsOnASharedStackVisitsTheNewTab() throws {
+        let handler = RecordingLogHandler()
+        let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
+        tabs.router(for: .home).setRootName("Search")
+        tabs.select(.shop)
+        #expect(tabs.screenVisit?.screen.title == "Shop")
+
+        tabs.select(.profile)
+
+        let visit = try #require(tabs.screenVisit)
+        #expect(visit.screen.title == "Profile")
+        #expect(visit.journey.map(\.title) == ["Profile"])
+    }
+
+    @Test
+    func aSheetOverSharedTabsStaysOneScreenWhenTheTabChanges() throws {
+        let handler = RecordingLogHandler()
+        let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
+        tabs.present(JourneyFixtures.CheckoutRoute())
+        let before = try #require(VisibleScreen(in: tabs)).key
+
+        tabs.select(.shop)
+
+        let after = try #require(VisibleScreen(in: tabs)).key
+        #expect(after == before)
+    }
+
+    @Test
+    func aNamedFlowOverSharedTabsKeepsItsName() throws {
+        let handler = RecordingLogHandler()
+        let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
+        tabs.present(JourneyFixtures.CheckoutRoute())
+        let presented = try #require(tabs.presented)
+        presented.setRootName("Sign in")
+        presented.setRootViewName("SignInView")
+
+        #expect(VisibleScreen.rootName(of: presented) == "Sign in")
+        #expect(VisibleScreen.level(of: presented).screens.first?.viewName == "SignInView")
+    }
+
+    @Test
+    func theTabViewAtASharedStacksRootNamesNoScreen() throws {
+        let handler = RecordingLogHandler()
+        let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
+        tabs.router(for: .home).setRootViewName("TabView")
+
+        tabs.select(.shop)
+
+        let visible = try #require(VisibleScreen(in: tabs))
+        #expect(visible.screen.viewName == nil)
+        #expect(visible.screen.title == "Shop")
+    }
+
+    @Test
+    func aSharedStackIsNamedAfterTheSelectedTab() throws {
+        let handler = RecordingLogHandler()
+        let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
+        tabs.select(.shop)
+
+        tabs.router(for: .shop).push(ItemRoute(id: 3, title: nil))
+
+        let visit = try #require(tabs.screenVisit)
+        #expect(visit.source.title == "Shop")
+        #expect(tabs.debugTree().contains("Shop"))
+        #expect(!tabs.debugTree().contains("Stack"))
+    }
+
+    @Test
     func aScreenThatStartsAJourneyIsTheSourceOfWhatItOpens() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock())

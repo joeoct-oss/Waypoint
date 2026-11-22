@@ -54,6 +54,7 @@ enum Identifiers {
     static let signedInDone = "auth.signedIn.done"
     static let productReviews = "product.reviews"
     static let productShare = "product.share"
+    static let searchField = "search.field"
     static let searchResultCount = "search.resultCount"
     static let cartEmpty = "cart.empty"
     static let browseShop = "cart.browseShop"

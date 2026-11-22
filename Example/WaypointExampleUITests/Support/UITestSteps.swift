@@ -86,10 +86,14 @@ extension XCUIElement {
 }
 
 extension XCUIApplication {
-    // Taps the first button in the navigation bar, which is Back on a pushed screen.
+    // Taps Back: the first button of the first navigation bar a person can reach. A sheet over a
+    // pushed screen leaves that screen's bar in the tree under it, and the tabs share one stack, so
+    // the screen under the sheet can come first; its Back lies under the sheet and can't be hit.
     @MainActor
     func goBack() {
-        navigationBars.buttons.element(boundBy: 0).tap()
+        let backs = navigationBars.allElementsBoundByIndex.map { $0.buttons.element(boundBy: 0) }
+        let reachable = backs.first { $0.exists && $0.isHittable }
+        (reachable ?? navigationBars.buttons.element(boundBy: 0)).tap()
     }
 
     // Drags across the app's window, the way a person swipes back, slowly, because a fast drag can

@@ -70,7 +70,8 @@ final class FallbackTests: XCTestCase {
         XCTAssertTrue(app.navigationBars[Self.settingsTitle].exists, "a failed call moved the screen")
         let counted = NSPredicate(format: "label CONTAINS %@", Self.oneFailure)
         let wait = expectation(for: counted, evaluatedWith: count)
-        XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: UITestSteps.timeout), .completed, count.label)
+        let waits = [wait]
+        XCTAssertEqual(XCTWaiter.wait(for: waits, timeout: UITestSteps.timeout), .completed, count.label)
     }
 
     // A real double tap can't show the rule: iOS drops the second tap while the push animates. Open
