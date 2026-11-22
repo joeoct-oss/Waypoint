@@ -15,7 +15,10 @@ import WaypointCore
 // `events`. Orders, the wish list and Addresses need an account, so the account gate asks a guest
 // to sign in first. Add a new address pushes the form; saving keeps the address in the address
 // book, which checkout shares, and goes back to the list. Sign out, in Settings, ends the session
-// and goes back to Account, which then shows the guest prompt; the reader stays in the app. Clear
+// and goes back to Account, which then shows the guest prompt; the reader stays in the app.
+// Settings also shows the app's navigation rules, and tries the two calls their fallbacks recover:
+// going back to a screen that isn't in the stack, and opening sign in while it is up, and one no
+// fallback covers, closing the tab's stack, which `onNavigationFailure` counts. Clear
 // all data reports to the app coordinator, which clears the store and starts the window over.
 //
 // The stack runs on Waypoint: `router` is the one stack every main tab shares, which `MainTabView`
@@ -29,6 +32,9 @@ import WaypointCore
 final class AccountCoordinator {
     // The pushed wish list suggests nothing; only the wish list sheet on Shop does.
     private static let noSuggestions: [Product] = []
+    // How long Open Orders twice waits before its second push: long enough for the stack to start
+    // the first push, well inside its animation.
+    private static let secondPushDelay = Duration.milliseconds(150)
 
     let router: StackRouter
     private let session: Session
@@ -37,6 +43,8 @@ final class AccountCoordinator {
     private let gate: AccountGate
     private let onClearAllData: () -> Void
     private let events: EventLog
+    private let rules: NavigationRules
+    private let issues: IssueLog
     private let describeTree: @MainActor () -> String
     // Runs the Lab's view and view-model demos, each full screen on a Waypoint stack of its own.
     let labDemos: LabDemoCoordinator
@@ -49,6 +57,8 @@ final class AccountCoordinator {
         addressBook: AddressBook,
         gate: AccountGate,
         navigation: NavigationConfiguration,
+        rules: NavigationRules,
+        issues: IssueLog,
         events: EventLog,
         describeTree: @escaping @MainActor () -> String,
         onClearAllData: @escaping () -> Void
@@ -59,6 +69,8 @@ final class AccountCoordinator {
         self.gate = gate
         self.onClearAllData = onClearAllData
         self.events = events
+        self.rules = rules
+        self.issues = issues
         self.describeTree = describeTree
         self.router = router
         labDemos = LabDemoCoordinator(navigation: navigation)
@@ -215,6 +227,37 @@ final class AccountCoordinator {
         router.popToRoot()
     }
 
+    // Settings' "Open Orders twice": pushes Orders, then again while the first push still animates,
+    // as a fast double tap would if iOS let both taps through. The duplicate push rule decides:
+    // `.skipWhileInFlight` skips the second, `.allow` pushes Orders twice.
+    func showPushTwice() {
+        router.push(AccountRoute.orders)
+        Task { [router] in
+            try? await Task.sleep(for: Self.secondPushDelay)
+            router.push(AccountRoute.orders)
+        }
+    }
+
+    // Settings' "Go back to Orders": Orders isn't in the stack, so the call fails and the app's
+    // fallback pops to Account instead, which the issue banner and the event log show.
+    func showMissingPop() {
+        router.popTo(AccountRoute.orders)
+    }
+
+    // Settings' "Open sign in twice": the second present fails because sign in is already up, and
+    // the app's fallback replaces the first sheet with the second in one change.
+    func showPresentTwice() {
+        gate.showSignIn()
+        gate.showSignIn()
+    }
+
+    // Settings' "Close the Account tab": the tab's stack wasn't presented, so `dismissFlow` has
+    // nothing to dismiss. No fallback covers it, so the configuration's `onNavigationFailure`
+    // counts it.
+    func showUnrecovered() {
+        router.dismissFlow()
+    }
+
     func clearAllData() {
         onClearAllData()
     }
@@ -283,7 +326,17 @@ final class AccountCoordinator {
             isSignedIn: session.account != nil,
             onShowLab: { self.showLab() },
             onClearAllData: { self.clearAllData() },
-            onSignOut: { self.signOut() }
+            onSignOut: { self.signOut() },
+            rules: SettingsRules(
+                pushesTwice: rules.duplicatePushRule == .allow,
+                queueLimit: rules.queueLimit,
+                failureCount: issues.failureCount,
+                onSetPushesTwice: { self.rules.setPushesTwice($0) },
+                onTryPushTwice: { self.showPushTwice() },
+                onTryMissingPop: { self.showMissingPop() },
+                onTryPresentTwice: { self.showPresentTwice() },
+                onTryUnrecovered: { self.showUnrecovered() }
+            )
         )
     }
 

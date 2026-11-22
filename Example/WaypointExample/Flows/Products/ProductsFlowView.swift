@@ -9,16 +9,15 @@
 import SwiftUI
 import Waypoint
 
-// Draws Shop's or Search's root screen from its coordinator, with the newest navigation issue over
-// it, above the tab bar, when there is one. The screens it pushes go on the one stack around the
-// tabs, which `MainTabView` draws, so they cover the tab bar.
+// Draws Shop's or Search's root screen from its coordinator; the main tabs show the newest
+// navigation issue over it. The screens it pushes go on the one stack around the tabs, which
+// `MainTabView` draws, so they cover the tab bar.
 struct ProductsFlowView: View {
     let products: ProductsCoordinator
 
     var body: some View {
         products.makeRootFlow()
             .task { await products.playLaunchSteps() }
-            .overlay(alignment: .bottom) { IssueBanner(issues: products.issues) }
     }
 }
 

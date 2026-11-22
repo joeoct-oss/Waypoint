@@ -51,17 +51,19 @@ struct MainTabView: View {
         }
     }
 
-    // Shop's and Search's newest navigation issue, while a screen is pushed from either. A tab's
-    // root shows its own, above the tab bar, which this one would cover.
+    // The newest navigation issue, over whatever screen is pushed above a tab's root. A tab's root
+    // shows the same banner itself, above the tab bar, which this one would cover.
     @ViewBuilder
     private var pushedIssue: some View {
-        if main.showsPushedProducts {
-            IssueBanner(issues: main.shop.issues)
+        if main.showsPushedScreen {
+            IssueBanner(issues: main.issues)
         }
     }
 
+    // The newest navigation issue shows over every tab's root, above the tab bar.
     private func tabContent(for tab: MainTab) -> some View {
         main.makeTabFlow(for: tab)
+            .overlay(alignment: .bottom) { IssueBanner(issues: main.issues) }
             .tabItem { Label(tab.title, systemImage: tab.symbolName) }
             .badge(main.badge(for: tab))
             .tag(tab)

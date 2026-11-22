@@ -67,10 +67,6 @@ final class ProductsCoordinator {
     // switch.
     private var hasPlayedLaunchSteps: Bool
 
-    var issues: IssueLog {
-        navigation.issues
-    }
-
     // Whether this coordinator's filters, saved sheet or wish list is presented over the stack.
     // Shop and Search share one stack, so a presentation the other tab made doesn't count.
     var isShowingSheet: Bool {
