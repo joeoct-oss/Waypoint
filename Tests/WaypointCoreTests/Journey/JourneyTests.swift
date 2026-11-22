@@ -214,6 +214,19 @@ struct JourneyTests {
     }
 
     @Test
+    func theTabViewAtASharedStacksRootNamesNoScreen() throws {
+        let handler = RecordingLogHandler()
+        let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
+        tabs.router(for: .home).setRootViewName("TabView")
+
+        tabs.select(.shop)
+
+        let visible = try #require(VisibleScreen(in: tabs))
+        #expect(visible.screen.viewName == nil)
+        #expect(visible.screen.title == "Shop")
+    }
+
+    @Test
     func aSharedStackIsNamedAfterTheSelectedTab() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)

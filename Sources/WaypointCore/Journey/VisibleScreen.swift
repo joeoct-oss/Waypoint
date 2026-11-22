@@ -156,7 +156,9 @@ struct VisibleScreen {
         let pushed = stack.showsRootRoute ? Array(stack.shownRoutes.dropFirst()) : stack.shownRoutes
         let owner = stack.coordinatorName
         let views = stack.tree.viewNames
-        let rootView = stack.rootViewName ?? rootRoute.flatMap { views[$0.routeKey] }
+        // The tabs' shared stack has the tab view at its root, which names no tab.
+        let ownRootView = stack.parentNode?.sharedStackTabName == nil ? stack.rootViewName : nil
+        let rootView = ownRootView ?? rootRoute.flatMap { views[$0.routeKey] }
         let root = rootRoute.map { route in
             ScreenReference(route: route, flow: stack.flowID, viewName: rootView, coordinator: owner)
         } ?? ScreenReference(

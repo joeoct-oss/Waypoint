@@ -102,6 +102,21 @@ struct SharedTabStackTests {
     }
 
     @Test
+    func settingThePathBeforeSelectingAnotherTabInOneTransactionPopsIt() {
+        let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
+
+        tabs.transaction {
+            $0.router(for: MainTab.shop).setPath {
+                ProductRoute(id: 1)
+            }
+            $0.select(MainTab.shop)
+        }
+
+        #expect(tabs.selection == .shop)
+        #expect(tabs.router(for: .shop).state.path.isEmpty)
+    }
+
+    @Test
     func removingATabKeepsTheSharedStack() {
         let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
         let shared = tabs.router(for: .home)
