@@ -123,10 +123,14 @@ enum JourneyFixtures {
     /// A tab router with every `MainTab`, whose tree logs from `.debug` to `handler`, with a
     /// manual clock.
     @MainActor
-    static func tabs(_ handler: RecordingLogHandler, clock: ManualClock) -> TabRouter<MainTab> {
+    static func tabs(
+        _ handler: RecordingLogHandler,
+        clock: ManualClock,
+        stacks: TabStacks = .perTab
+    ) -> TabRouter<MainTab> {
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug)
         let configuration = NavigationConfiguration(logging: logging, registry: .permissive)
-        let tabs = TabRouter(selection: MainTab.home, configuration: configuration)
+        let tabs = TabRouter(selection: MainTab.home, stacks: stacks, configuration: configuration)
         tabs.tree.journeyClock = {
             clock.now
         }

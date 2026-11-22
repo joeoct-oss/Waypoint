@@ -145,7 +145,33 @@ WaypointStack(router) {
 .tabBarOnPushedScreens(.hidden)
 ```
 
-The stack applies it around each pushed screen, the missing-destination screen included, and sends nothing for `.automatic`. Screens don't decide it themselves, so a new screen gets it right without doing anything, and a screen in a sheet or a full-screen cover never touches the tab bar. SwiftUI lets the stack's value win over one a screen sets inside itself, so every pushed screen of the stack gets the same visibility. The bar leaves and comes back as SwiftUI draws it: it disappears at the start of a push and appears once a pop ends. SwiftUI can't slide a `TabView`'s bar with a pushed screen, because its stacks sit inside the tab bar controller's own hosting controllers, so UIKit ignores `hidesBottomBarWhenPushed`; the system slide comes with a UIKit tab bar holding a navigation controller in each tab. The tab bar only exists on iOS, so other systems ignore it.
+The stack applies it around each pushed screen, the missing-destination screen included, and sends nothing for `.automatic`. Screens don't decide it themselves, so a new screen gets it right without doing anything, and a screen in a sheet or a full-screen cover never touches the tab bar. SwiftUI lets the stack's value win over one a screen sets inside itself, so every pushed screen of the stack gets the same visibility. The bar leaves and comes back as SwiftUI draws it: it disappears at the start of a push and appears once a pop ends. SwiftUI can't slide a `TabView`'s bar with a pushed screen, because its stacks sit inside the tab bar controller's own hosting controllers, so UIKit ignores `hidesBottomBarWhenPushed`; for the system slide, use one stack around the tabs (below), or a UIKit tab bar holding a navigation controller in each tab. The tab bar only exists on iOS, so other systems ignore it.
+
+**One stack around the tabs.** For pushed screens that slide in over the tab bar the system's own way, make the tab router with `stacks: .shared` and draw its stack around the `TabView`. The bar then belongs to the screen underneath: it leaves with the tab's root on a push, comes back with it on a pop, and follows the finger on a swipe back, with no tab bar code. Register every tab's destinations once, on the `TabView`, so a route can be pushed whichever tab is shown:
+
+```swift
+WaypointStack(tabs.router(for: .shop)) {
+    TabView(selection: $selection) {
+        ShopView()
+            .tabItem { Label("Shop", systemImage: "bag") }
+            .tag(MainTab.shop)
+        AccountView()
+            .tabItem { Label("Account", systemImage: "person") }
+            .tag(MainTab.account)
+    }
+    .destination(ProductRoute.self) { route in
+        ProductView(id: route.id)
+    }
+}
+```
+
+`tabBarOnPushedScreens(_:)` isn't needed with it. Selecting another tab pops the pushed screens, so each tab doesn't keep its own history.
+
+The tab roots then sit inside the stack's root, so put what the navigation bar shows on the `TabView` instead:
+
+- **Titles and toolbars.** A tab root's own `navigationTitle` and `toolbar` don't reach the bar. Set them on the `TabView`, keyed by the selected tab.
+- **Search.** `searchable` shows no field with a `TabView` as the stack's root, wherever it's applied. Draw the field in the screen, as the example app's Search tab does.
+- **Sheets and covers.** A sheet or cover attached to a tab root doesn't present while a pushed screen covers that root. Attach them around the `TabView`, inside the stack.
 
 > Note: Apps show a coordinator's `view` and never create or wire a stack themselves. Waypoint makes one wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code (#151). A pushed child coordinator shares its parent's stack. A destination may return a SwiftUI view or a UIKit view controller, in either renderer. Apps still push routes, never views. See <doc:Renderers>.
 

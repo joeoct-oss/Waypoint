@@ -192,9 +192,9 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(placed.waitForExistence(timeout: UITestSteps.timeout))
         app.buttons[Identifiers.continueShopping].tapWhenReady()
 
-        // Shop keeps its place, so it still shows the product the order started from, with the tab
-        // bar hidden as on every pushed screen.
-        XCTAssertTrue(app.navigationBars[Self.cartProductTitle].waitForExistence(timeout: UITestSteps.timeout))
+        // The tabs share one stack, and Add to cart's switch to Cart popped it, so Shop opens at
+        // its root.
+        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertFalse(placed.exists)
     }
 
@@ -342,8 +342,9 @@ final class JourneyTests: XCTestCase {
     func testGoToCartIsOneTransaction() {
         let app = ExampleApp.launch(signedIn: true)
         addProductToCart(in: app)
+        // Add to cart's switch to Cart popped the one stack the tabs share, so Shop opens at its
+        // root.
         app.openTab(Self.shopTitle)
-        app.goBack()
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
 
         app.buttons[Identifiers.goToCart].tapWhenReady()
