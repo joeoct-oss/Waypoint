@@ -27,12 +27,8 @@ final class LabSheetTests: XCTestCase {
     func testLabSheetButtonsChangeRouter() {
         let app = openSheetStory()
         app.segmentedControls[Identifiers.sheetDemoSize].buttons[Self.largeTitle].tapWhenReady()
-        // The row's own switch, since a tap in the middle of a SwiftUI toggle's row may not
-        // flip it.
         let swipe = app.switches[Identifiers.sheetDemoSwipe]
-        XCTAssertTrue(swipe.waitForExistence(timeout: UITestSteps.timeout))
-        swipe.switches.firstMatch.tap()
-        XCTAssertEqual(swipe.value as? String, Self.switchOff, "the swipe toggle stayed on")
+        XCTAssertTrue(swipe.setSwitch(to: Self.switchOff), "the swipe toggle stayed on")
 
         app.buttons[Identifiers.sheetDemoPresent].tapWhenReady()
         let first = level(1, in: app)

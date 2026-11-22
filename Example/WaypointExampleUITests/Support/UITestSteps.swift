@@ -14,6 +14,8 @@ enum UITestSteps {
     static let timeout: TimeInterval = 5
     static let pollInterval: TimeInterval = 0.25
     static let settleTime: TimeInterval = 1
+    // How many times `setSwitch(to:)` taps a switch before it gives up.
+    static let maxTaps = 3
     static let accountTabTitle = "Account"
 }
 
@@ -46,6 +48,40 @@ extension XCUIElement {
     func turnOn() {
         XCTAssertTrue(waitForExistence(timeout: UITestSteps.timeout))
         switches.firstMatch.tap()
+    }
+
+    // Flips the switch inside a toggle row until its value is `value` ("1" on, "0" off), and says
+    // whether it got there. It taps the row's own switch, since a tap in the middle of the row may
+    // land on its label. On iOS 17.5 the value can show the change a moment late, or a tap can
+    // miss, so it waits up to `settleTime` after each tap and taps again, at most `maxTaps` times.
+    @MainActor
+    func setSwitch(to value: String) -> Bool {
+        guard waitForExistence(timeout: UITestSteps.timeout) else {
+            return false
+        }
+        for _ in 0..<UITestSteps.maxTaps {
+            if self.value as? String == value {
+                return true
+            }
+            switches.firstMatch.tap()
+            if waitForValue(value) {
+                return true
+            }
+        }
+        return false
+    }
+
+    // Polls the element's value until it is `value` or `settleTime` passes.
+    @MainActor
+    private func waitForValue(_ value: String) -> Bool {
+        let deadline = Date().addingTimeInterval(UITestSteps.settleTime)
+        while Date() < deadline {
+            if self.value as? String == value {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(UITestSteps.pollInterval))
+        }
+        return self.value as? String == value
     }
 }
 
