@@ -381,6 +381,7 @@ final class JourneyTests: XCTestCase {
         app.textFields[Identifiers.signInEmail].type(Self.email)
         app.secureTextFields[Identifiers.signInPassword].type(password)
         app.buttons[Identifiers.signInButton].tapWhenReady()
+        app.closeSavePasswordOffer()
     }
 
     private func fillDetails(in app: XCUIApplication) {

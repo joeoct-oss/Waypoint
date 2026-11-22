@@ -17,6 +17,23 @@ enum UITestSteps {
     // How many times `setSwitch(to:)` taps a switch before it gives up.
     static let maxTaps = 3
     static let accountTabTitle = "Account"
+    // How long a step waits for iOS's offer to save a password after a sign in. iOS 26 and later
+    // offer it; iOS 17 doesn't, so there the step waits this long for nothing.
+    static let savePasswordOfferTimeout: TimeInterval = 2
+    // The offer's button that closes it without saving.
+    static let savePasswordNotNow = "Not Now"
+}
+
+extension XCUIApplication {
+    // Closes iOS's "Save Password?" offer when it shows after a sign in (#299). The offer is the
+    // system's, not the app's, and it covers the app, so every tap after it misses until it goes.
+    @MainActor
+    func closeSavePasswordOffer() {
+        let notNow = buttons[UITestSteps.savePasswordNotNow]
+        if notNow.waitForExistence(timeout: UITestSteps.savePasswordOfferTimeout) {
+            notNow.tap()
+        }
+    }
 }
 
 extension XCUIElement {
