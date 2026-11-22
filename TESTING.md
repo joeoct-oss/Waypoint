@@ -193,7 +193,7 @@ wait "$(cat .build/test-mac.pid)"; echo "exit=$?"
 ```
 
 - Run these lines as one background command that is allowed to run past the tier's **Stop it after** time, and wait for it to end. Never start a second Mac run while it runs.
-- When it is still running at the **Stop it after** time, it is hung. Stop the step it is stuck in with `pkill -TERM -P "$(cat .build/test-mac.pid)"`. The script then fails that step, and its exit step shuts down its simulators and removes its locks. When the script is still running a minute later, run `kill -TERM "$(cat .build/test-mac.pid)"`. Use `TERM`, not `INT`: a script started in the background ignores `INT`. Never `kill -9`. Then go to [When a run fails](#6-when-a-run-fails).
+- When it is still running at the **Stop it after** time, it is hung. Stop the step it is stuck in with `pkill -TERM -P "$(cat .build/test-mac.pid)"`. The script then fails that step, and its exit step shuts down its simulators and removes its locks. When the script is still running two minutes later, run `kill -TERM "$(cat .build/test-mac.pid)"`. Use `TERM`, not `INT`: a script started in the background ignores `INT`. Never `kill -9`. Then go to [When a run fails](#6-when-a-run-fails).
 - `WAYPOINT_JOBS` and `WAYPOINT_BASE` stay unset unless the person who asked for the run names a value.
 
 ### Pass or fail
@@ -243,6 +243,8 @@ Find the first row that matches what the log says. Do what it says, once. A retr
 | A line from `scripts/check-compile-failures.sh` that names a fixture and isn't `ok:` | A real failure: a compile promise broke | No retry. Report the fixture and the line. |
 | `✘` from Swift Testing, `XCTAssert…failed`, or `** TEST FAILED **` | A real failure: a test failed | Report each failing test's name and its first failure line. To tell a flaky test from a broken one, you may run that one test again once: `swift test --filter '<test function name>'` (Linux or the Mac host), or `scripts/test-mac.sh quick --only WaypointExampleUITests/<Class>/<test>` (UI). Report what the second run did. The gate still failed. |
 | `ThreadSanitizer: data race` | A real failure: a data race | No retry. Report the first 20 lines of the report. |
+| `error: a stale run lock is being cleared` | Not a test result: another run was clearing a lock left by an ended run, or a stopped run left its clearing folder | Wait two minutes and start the run again; the script removes a clearing folder older than a minute. When it says the same again, report it. |
+| `error: another Mac test run took the run lock just now` | Not a test result: another run started at the same moment | Don't touch the clone. Report it to whoever keeps the queue. |
 | `error: another Mac test run holds the run lock` | Not a test result: a second run was started while one was going | Don't remove the lock and don't touch the clone. Report it to whoever keeps the queue, with the holder's line from the error. Run again only when your turn comes. |
 | `error: another test run (pid N) is using <name>` | Not a test result: two runs overlapped | Don't remove the lock and don't touch the clone. Report it to whoever keeps the queue, who decides which run starts again. |
 | `error: no simulator named <name>`, or `Creating simulator` | Not a test result: a simulator is missing | Stop the run if it is still going. Don't delete what was created. Report the name. |

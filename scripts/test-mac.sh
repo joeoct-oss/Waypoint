@@ -228,6 +228,10 @@ take_run_lock() {
                 echo "note: cleared a run lock left by a run that has ended (pid ${stale:-unknown})" >&2
             fi
             rmdir "$clearing"
+        elif [[ -d "$clearing" ]]; then
+            echo "error: a stale run lock is being cleared (or a stopped run left $clearing);" >&2
+            echo "  try again in two minutes" >&2
+            exit 1
         fi
         if ! ln -s "$$" "$RUN_LOCK" 2>/dev/null; then
             echo "error: another Mac test run took the run lock just now; wait for it" >&2
