@@ -229,7 +229,7 @@ This applies to source code, tests and DocC. Only the platform base types that a
 
 The example app and its unit tests set Swift 6.2's default actor isolation to the main actor (`SWIFT_DEFAULT_ACTOR_ISOLATION` in `Example/Project.swift`), so their code writes no `@MainActor`. It marks only the code that runs elsewhere:
 
-- `nonisolated` for work that needs no actor: plain values that a route holds or a log handler builds (`Product`, `Address`, `EventLogEntry`), the log handlers themselves, and the `Catalog/` types the UI tests share, so both targets see them the same way.
+- `nonisolated` for work that needs no actor: plain values that a route holds or a log handler builds (`Product`, `Address`, `EventLogEntry`), the log handlers themselves, design tokens that nonisolated code reads (`Typography`, read by a button's attribute transformer), and the `Catalog/` types the UI tests share, so both targets see them the same way.
 - `@concurrent` for slow async work that should leave the main actor.
 - The one place `@MainActor` is still written: a task that nonisolated code sends back to the main actor, `Task { @MainActor in … }`, as the log handlers do.
 
