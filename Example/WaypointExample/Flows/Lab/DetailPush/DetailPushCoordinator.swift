@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import WaypointCore
+import Waypoint
 
 // Runs the Lab's Detail push flow (TB-02 and TB-03 on the design canvas) on its own stack router:
 // the shop list at the root, a product pushed from a row, and the cart pushed by Add to cart. The

@@ -8,7 +8,6 @@
 
 import SwiftUI
 import Waypoint
-import WaypointCore
 
 // The demo product in the outputs style: the view knows nothing from Waypoint and reports Add to
 // cart, and the coordinator that made it pushes.

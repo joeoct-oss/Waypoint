@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import WaypointCore
+import Waypoint
 
 // Draws a sheet the way its Waypoint `SheetOptions` say: the sizes it rests at and opens at, the
 // drag indicator, and whether a swipe can close it. The app's sheets are still SwiftUI's own, bound

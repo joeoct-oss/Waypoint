@@ -7,7 +7,6 @@
 //
 
 import Waypoint
-import WaypointCore
 
 // The services every window shares: the local store, the session, the saved addresses, the auth
 // service, and the navigation configuration each stack router gets, which logs to the unified log,

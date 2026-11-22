@@ -8,7 +8,6 @@
 
 import SwiftUI
 import Waypoint
-import WaypointCore
 
 // The Tabs story (TX-04): a tab container whose tabs change at run time. It starts with Shop and
 // Search; Show all four tabs brings back Cart and Account, and Show two tabs takes them away again,

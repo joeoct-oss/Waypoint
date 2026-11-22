@@ -7,7 +7,6 @@
 //
 
 import Waypoint
-import WaypointCore
 
 // Writes the Waypoint lines from `systemLevel` up, and every interval, to the unified log, so
 // Console.app shows the lines under the `dev.waypoint.example.waypoint` subsystem and Instruments

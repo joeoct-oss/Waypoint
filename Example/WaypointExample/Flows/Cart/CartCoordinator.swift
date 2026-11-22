@@ -8,7 +8,6 @@
 
 import SwiftUI
 import Waypoint
-import WaypointCore
 
 // The cart tab: the cart at the root, and checkout presented full screen as its own flow. Check out
 // needs an account, so the account gate asks a guest to sign in first.

@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import WaypointCore
+import Waypoint
 
 // The main tabs: Shop, Search, Cart and Account, each with its own coordinator, the same for guests
 // and signed-in readers. The main coordinator makes the tabs once and keeps them. Cart's tab shows
