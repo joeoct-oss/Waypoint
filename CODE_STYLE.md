@@ -235,6 +235,10 @@ The example app and its unit tests set Swift 6.2's default actor isolation to th
 
 The package writes every isolation explicitly (`@MainActor` on routers, `nonisolated` where it applies), because a library can't rely on its clients' defaults. The UI test target keeps Swift's own default, since XCUITest code isn't app code. `scripts/check-example-isolation.sh` checks the example app on every Linux and Mac run until the lint setup (#70) takes it over as the custom SwiftLint rule `no_main_actor_in_example`.
 
+## An example app service gets a protocol only at a boundary or for a test
+
+In the example app, a service gets a protocol when it reaches outside the app (auth, a server, a catalog that will be fetched), or when a test needs to control its answers, such as seeing that the account gate was asked to sign in. The protocol arrives in the change whose test first needs the fake. Values and state holders that only read and write the local store stay concrete, and a test uses the real ones on a store of its own (`LocalStore(domain:)`), so it checks what the shopper sees, not a script. A feature's dependency struct lists the services it uses: a protocol's existential (`any AuthService`) or a concrete type. Services are protocols, not structs of closures, so the calls that belong together stay grouped by a type. Today `AuthService` and `ProductCatalog` are protocols. A linter can't judge when a test needs a fake, so review checks this rule.
+
 ## `let` by default
 
 Immutability catches logic errors before they happen at run time:
