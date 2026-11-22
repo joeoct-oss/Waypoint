@@ -28,6 +28,7 @@ There are two places a test can run:
 | Comment width check | `scripts/check-comment-width.sh` | ✅ | |
 | Concurrency guard rail | `scripts/check-concurrency.sh` | ✅ | ✅ every tier |
 | Mac test script's run lock | `scripts/check-test-mac-lock.sh` | ✅ | |
+| Merge batches and the slowest-test list | `scripts/check-merge-batch.sh` | ✅ | |
 | Compile fixtures (must fail, must build) | `Tests/CompileFailures`, `Tests/CompileSuccesses`, checked by `scripts/check-compile-failures.sh` | ✅ | ✅ |
 | Core unit tests | `Tests/WaypointCoreTests` | ✅ plain and thread sanitizer | ✅ macOS host and simulator |
 | Renderer unit tests | `Tests/WaypointTests`, `Tests/WaypointUIKitTests` (the parts not behind `canImport(SwiftUI)` or `canImport(UIKit)` also run on Linux) | partly | ✅ macOS host and simulator |
@@ -40,8 +41,9 @@ The tests in `Tests/WaypointCoreTests/LinuxBehaviourTests.swift` pin the Observa
 
 Two scripts run every layer. Nothing else counts as a test run:
 
-- `scripts/test-linux.sh` runs, in order: the core imports check, the comment width check, the concurrency guard rail, the Mac test script's run lock check (`scripts/check-test-mac-lock.sh`, which uses stand-in tools), `swift build`, `swift build --build-tests` with warnings as errors, the compile fixtures, `swift test`, and `swift test` under the thread sanitizer. Extra arguments go to both `swift test` runs.
-- `scripts/test-mac.sh [quick|full|release]` runs the Mac layers in tiers. What each tier runs is in the script's header comment and in the table below.
+- `scripts/test-linux.sh` runs, in order: the core imports check, the comment width check, the concurrency guard rail, the Mac test script's run lock check (`scripts/check-test-mac-lock.sh`, which uses stand-in tools), the merge batch check (`scripts/check-merge-batch.sh`), `swift build`, `swift build --build-tests` with warnings as errors, the compile fixtures, `swift test`, and `swift test` under the thread sanitizer. Extra arguments go to both `swift test` runs.
+- `scripts/test-mac.sh [quick|full|release]` runs the Mac layers in tiers. What each tier runs is in the script's header comment and in the table below. Every tier that runs the example app's tests ends its log with the 10 slowest of them (`scripts/slowest-tests.py`).
+- `scripts/merge-batch.sh` builds a [merge batch](#merge-batches) in the Mac clone and checks it before each merge.
 
 | Tier | Runs | Simulators | Time on the Mac (2026-11-20) | Stop it after |
 |---|---|---|---|---|
@@ -60,16 +62,38 @@ Find the row for the moment you are at. Run every command in its row, Linux firs
 | While working, after a change to anything but docs | `scripts/test-linux.sh` | `scripts/test-mac.sh quick` when the change touches `Sources/Waypoint`, `Sources/WaypointUIKit`, `Sources/WaypointOSLog`, `Example/` or a `Tests/` folder other than `WaypointCoreTests`; otherwise none |
 | While working on one UI test | none | `scripts/test-mac.sh quick --only WaypointExampleUITests/<Class>/<test>` |
 | **Before a pull request merges**, docs only | `scripts/test-linux.sh` | none |
-| **Before a pull request merges**, anything else | `scripts/test-linux.sh` | `scripts/test-mac.sh full` |
+| **Before a pull request merges**, anything else | `scripts/test-linux.sh` on the pull request | `scripts/test-mac.sh full` on its [merge batch](#merge-batches) |
 | Before a tag | `scripts/test-linux.sh` | `scripts/test-mac.sh release` |
 | The issue's tests name iOS 17 | as above | as above, plus `WAYPOINT_SIMULATOR=waypoint-02 scripts/test-mac.sh quick --all` |
 | The issue's tests name iPad | as above | as above, plus `WAYPOINT_SIMULATOR=waypoint-03 scripts/test-mac.sh quick --all` |
 
 A pull request is **docs only** when every file it changes matches `*.md`, `*.docc/**` or `docs-theme/**`. Read the changed files from the pull request itself, not from its labels. A pull request labelled `runs:mac` always needs `full`, even when it is docs only.
 
-**Nothing merges without a green `full` run** on a commit that contains the latest `main`, unless the pull request is docs only. A `quick` run, of any kind, is for working on a branch and never counts for a merge.
+**Nothing merges without a green `full` run** on a commit that contains the latest `main`, unless the pull request is docs only. That commit is the pull request's [merge batch](#merge-batches): a green batch run counts for every pull request in it, as long as `--before-merge` passes right before each one merges. A `quick` run, of any kind, is for working on a branch and never counts for a merge.
 
-A result belongs to one commit. The merge gate holds only for the head commit it ran on, and that commit must contain the current `main`. When the branch gets a new commit after the run (including a merge of `main`), run the gate again. The one exception: when every file changed since the tested commit is docs only, `scripts/test-linux.sh` alone is enough.
+### Merge batches
+
+One `full` run covers up to four ready pull requests at once. A pull request is ready when its review is clean, it contains the latest `main`, and its Linux gate passed. A single ready pull request is a batch of one. A docs only pull request needs no batch: its Linux gate is enough.
+
+1. **Build the batch** on the Mac, in your queue turn, as preflight step 4 of [Run a Mac tier](#5-run-a-mac-tier) but with this instead of the checkout:
+
+   ```sh
+   scripts/merge-batch.sh <branch-1> <branch-2> ...
+   ```
+
+   Pass: it prints `batch <sha> tree <tree> main <main sha> branches <branch>@<sha> ...`. Write the whole line down: the report needs it. When it prints `error: <branch> doesn't merge cleanly`, leave that branch out (it must take `main` first) and build the batch again. When it prints `error: a Mac test run ... holds the run lock`, another run is going: wait for your turn.
+2. **Run `full`** on the batch, exactly as [Run a Mac tier](#5-run-a-mac-tier) says. The report goes in every batch pull request's **Tests** section, with the batch line.
+3. **Red batch:** nothing in it merges. Find the pull request the failure belongs to from [When a run fails](#6-when-a-run-fails); it is fixed, or left out, and the new batch runs `full` again.
+4. **Green batch:** the pull requests merge one at a time, squash, in the batch's order. Right before each merge:
+
+   ```sh
+   scripts/merge-batch.sh --before-merge <branch> <its tested sha> <expected main>
+   ```
+
+   The expected `main` is the batch's `main sha` for the first pull request, and the commit the pull request before it merged as for each later one. Pass: it prints `ok:`. When it prints `error:`, the branch or `main` moved since the run: stop. Nothing more from this batch merges. When some of the batch already merged, `main` holds a part of the batch no run tested: run `full` on `main` at once, as step 5 says for a tree mismatch, with the same revert rule. What's left goes in a new batch.
+5. **After the last merge**, `scripts/merge-batch.sh --after-merge <the batch's tree>` must print `ok:`. When it prints `error:`, `main` holds code no `full` run tested: stop merging anything, run `full` on `main` at once (preflight step 4 with `origin/main` in place of the branch), and report it. When that run is red, the batch's pull requests are reverted, newest first, before anything else merges.
+
+A result belongs to one commit. For a merge, that commit is the batch: the gate holds only while each pull request's head is the one the batch tested and `main` is the batch's `main` or the commits of the batch's earlier pull requests, which `--before-merge` checks. When the branch gets a new commit after the run (including a merge of `main`), run the gate again. The one exception: when every file changed since the tested commit is docs only, `scripts/test-linux.sh` alone is enough.
 
 ## 3. The simulators
 
@@ -201,7 +225,7 @@ wait "$(cat .build/test-mac.pid)"; echo "exit=$?"
 - **Pass:** it prints `exit=0`, and the log has `All Mac tests passed (<tier>).` after the `Step times` table, where `<tier>` is the tier you ran.
 - **Fail:** anything else, including a log that has `Creating simulator`. The failing step is the last `==> ` line in the log. Go to [When a run fails](#6-when-a-run-fails).
 
-Copy the `Step times` table from the end of the log into the report either way.
+Copy the `Step times` table and the slowest-test lists from the end of the log into the report either way.
 
 ### Teardown
 
@@ -266,7 +290,9 @@ Simulators: waypoint-01 (iOS 27.2) [, waypoint-02 (iOS 17.5)] | none
 Time: <total seconds>
 Failures: none | <test or step>: <first failure line>, one per line
 Retry: none | <what ran again and what it did>
+Batch: none | <the merge-batch.sh line>
 Step times: <the table from the end of the log, Mac only>
+Slowest tests: <the slowest-test lists from the end of the log, Mac only>
 Teardown: simulators shut down, locks gone, clone back on main | <what is left>
 ```
 

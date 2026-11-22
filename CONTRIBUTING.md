@@ -64,13 +64,13 @@ New source files start with this header:
 - **Title:** one plain English sentence in the imperative that says what the change does for the package, with no prefix and no trailing period. For example: "Refuse a push when the route has no destination".
 - **Body:** fill in the template. Say what changed, why, and how it was tested, and flag any public API change.
 - **Changelog:** add a line to `CHANGELOG.md` under **Unreleased** for anything a package user would notice.
-- **Keep the branch current.** It must contain the latest `main` before it merges.
+- **Keep the branch current.** It must contain the latest `main` when its [merge batch](TESTING.md#merge-batches) is built.
 
 ## Review and merge
 
 - A pull request merges when its review is clean and every check is green.
 - **Squash merge only.** The commit title is the pull request title, and GitHub adds the number.
-- Pull requests merge one at a time, so each one is tested against the `main` it lands on.
+- Pull requests merge one at a time, in **merge batches**: up to four ready pull requests are stacked on the latest `main` and one Mac `full` run covers them all, then they merge in the batch's order. Nothing merges without a green `full` run on a commit that contains the latest `main`. The steps are in [TESTING.md: Merge batches](TESTING.md#merge-batches).
 - The branch is deleted after the merge.
 
 ## License

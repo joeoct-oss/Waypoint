@@ -7,7 +7,7 @@
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
 # Runs the WaypointCore checks that must pass on Linux: the import check, the concurrency guard
-# rail, the Mac test script's run lock check (#294), a build with warnings as errors, the
+# rail, the Mac test script's run lock check (#294), the merge batch check (#295), a build with warnings as errors, the
 # compile-fixture check, the unit tests, and the unit tests again under the thread sanitizer (#24).
 # The renderer targets compile empty on Linux, so this covers the core only.
 #
@@ -28,6 +28,9 @@ scripts/check-concurrency.sh
 
 echo "==> Checking the Mac test script's run lock"
 scripts/check-test-mac-lock.sh
+
+echo "==> Checking merge batches"
+scripts/check-merge-batch.sh
 
 echo "==> swift build"
 swift build

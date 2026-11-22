@@ -22,7 +22,8 @@
 # Each build is made once: the host build with warnings as errors is the build `swift test` runs,
 # and the simulator build with warnings as errors is the build its tests run. Builds use at most
 # WAYPOINT_JOBS jobs, Xcode never clones the simulator, only one run uses a simulator at a time,
-# and the script shuts down each simulator it booted. It ends with the time each step took.
+# and the script shuts down each simulator it booted. It ends with the time each step took and
+# the 10 slowest example app tests of each run (#295), read from its result bundle.
 #
 # One run at a time: the script first takes a run lock that every clone of the repo shares
 # (#294). A second run stops at once and names the run that holds it. A lock left by a run that
@@ -155,6 +156,22 @@ stop_step_tools() {
     done
 }
 
+# This run's result bundles, one per example app test step, whose slowest tests the report lists.
+RESULTS_DIR=.build/results
+SLOWEST_TEST_COUNT=10
+
+# Lists the slowest tests of each result bundle. Only a report: it never fails the run.
+report_slowest_tests() {
+    local bundle
+    for bundle in "$RESULTS_DIR"/*.xcresult; do
+        [[ -d "$bundle" ]] || continue
+        echo
+        echo "$(basename "$bundle" .xcresult):"
+        xcrun xcresulttool get test-results tests --path "$bundle" 2>/dev/null |
+            scripts/slowest-tests.py "$SLOWEST_TEST_COUNT" || echo "note: no test times in $bundle"
+    done
+}
+
 finish() {
     local status=$?
     local udid lock index
@@ -172,6 +189,10 @@ finish() {
             printf '  %5ss  %s\n' "${STEP_SECONDS[$index]}" "${STEP_NAMES[$index]}"
         done
         printf '  %5ss  total\n' "$SECONDS"
+    fi
+    # A run turned away at the run lock reports nothing of the run that holds it.
+    if $OWNS_RUN_LOCK; then
+        report_slowest_tests
     fi
     if [[ $status -eq 0 ]]; then
         echo "All Mac tests passed ($TIER)."
@@ -245,6 +266,8 @@ take_run_lock() {
     } >"$RUN_LOCK.info"
 }
 take_run_lock
+# The result bundles of an earlier run would show in this run's report.
+rm -rf "$RESULTS_DIR"
 
 # Runs one step and records how long it took. A failing step stops the script.
 step() {
@@ -382,14 +405,18 @@ package_tests_on() {
         SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
 }
 
-# The example app's unit and UI tests on a simulator. Extra arguments go to xcodebuild.
+# The example app's unit and UI tests on a simulator, with a result bundle named `name` in
+# `.build/results` that the report reads its slowest tests from. Extra arguments go to xcodebuild.
 example_tests_on() {
-    local udid="$1"
-    shift
+    local udid="$1" name="$2"
+    shift 2
+    local bundle="$RESULTS_DIR/$name.xcresult"
+    mkdir -p "$RESULTS_DIR"
     xcodebuild test "${XCODE_TEST_FLAGS[@]}" \
         -workspace Example/WaypointExample.xcworkspace \
         -scheme WaypointExample \
         -destination "platform=iOS Simulator,id=$udid" \
+        -resultBundlePath "$bundle" \
         "$@"
 }
 
@@ -465,9 +492,9 @@ fi
 
 if $RUN_UI; then
     if [[ -n "$ONLY_TEST" ]]; then
-        step "xcodebuild test $ONLY_TEST on $SIMULATOR_NAME" example_tests_on "$UDID" -only-testing:"$ONLY_TEST"
+        step "xcodebuild test $ONLY_TEST on $SIMULATOR_NAME" example_tests_on "$UDID" example-only -only-testing:"$ONLY_TEST"
     else
-        step "xcodebuild test example app on $SIMULATOR_NAME" example_tests_on "$UDID"
+        step "xcodebuild test example app on $SIMULATOR_NAME" example_tests_on "$UDID" example
     fi
 fi
 
@@ -476,7 +503,7 @@ fi
 # configuration.
 if $RUN_RELEASE_REPORTS; then
     step "xcodebuild test release reports (Release) on $SIMULATOR_NAME" \
-        example_tests_on "$UDID" \
+        example_tests_on "$UDID" release-reports \
         -configuration Release \
         -only-testing:WaypointExampleUITests/SystemLinkTests \
         -only-testing:WaypointExampleUITests/MissingDestinationTests
@@ -492,5 +519,5 @@ if $RUN_IOS17; then
     fi
     claim_simulator "$IOS17_SIMULATOR_NAME" "$IOS17_UDID"
     step "xcodebuild test Waypoint-Package on $IOS17_SIMULATOR_NAME" package_tests_on "$IOS17_UDID"
-    step "xcodebuild test example app on $IOS17_SIMULATOR_NAME" example_tests_on "$IOS17_UDID"
+    step "xcodebuild test example app on $IOS17_SIMULATOR_NAME" example_tests_on "$IOS17_UDID" example-ios17
 fi
