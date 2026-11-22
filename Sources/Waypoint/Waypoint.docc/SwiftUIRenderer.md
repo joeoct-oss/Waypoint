@@ -167,6 +167,12 @@ WaypointStack(tabs.router(for: .shop)) {
 
 `tabBarOnPushedScreens(_:)` isn't needed with it. Selecting another tab pops the pushed screens, so each tab doesn't keep its own history.
 
+The tab roots then sit inside the stack's root, so put what the navigation bar shows on the `TabView` instead:
+
+- **Titles and toolbars.** A tab root's own `navigationTitle` and `toolbar` don't reach the bar. Set them on the `TabView`, keyed by the selected tab.
+- **Search.** `searchable` shows no field with a `TabView` as the stack's root, wherever it's applied. Draw the field in the screen, as the example app's Search tab does.
+- **Sheets and covers.** A sheet or cover attached to a tab root doesn't present while a pushed screen covers that root. Attach them around the `TabView`, inside the stack.
+
 > Note: Apps show a coordinator's `view` and never create or wire a stack themselves. Waypoint makes one wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code (#151). A pushed child coordinator shares its parent's stack. A destination may return a SwiftUI view or a UIKit view controller, in either renderer. Apps still push routes, never views. See <doc:Renderers>.
 
 ### The Waypoint link
