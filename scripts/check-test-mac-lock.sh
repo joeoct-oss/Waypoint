@@ -60,6 +60,16 @@ cat >"$STUBS/tuist" <<'EOF'
 #!/usr/bin/env bash
 echo "tuist $*" >>"$STUB_CALLS"
 EOF
+# The script runs Tuist through mise where mise is installed; the stand-in runs what follows `--`,
+# so the stand-in tuist runs, never the real one.
+cat >"$STUBS/mise" <<'EOF'
+#!/usr/bin/env bash
+while [[ $# -gt 0 && "$1" != "--" ]]; do
+    shift
+done
+shift
+exec "$@"
+EOF
 cat >"$STUBS/sysctl" <<'EOF'
 #!/usr/bin/env bash
 echo 4
@@ -98,6 +108,11 @@ if grep -q "^xcrun simctl shutdown" "$CALLS" && grep -q "shutdown while the run 
     pass "the run lock goes after the simulator is shut down"
 else
     fail "the run lock goes after the simulator is shut down"
+fi
+if grep -q "^tuist generate" "$CALLS"; then
+    pass "the stand-in tuist ran, never the real one"
+else
+    fail "the stand-in tuist ran, never the real one"
 fi
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.

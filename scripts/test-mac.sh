@@ -185,22 +185,19 @@ finish() {
 }
 trap finish EXIT
 
-# The process that holds the run lock, when it is still a test-mac.sh run, or nothing.
-run_lock_holder() {
-    local holder
-    holder=$(readlink "$RUN_LOCK" 2>/dev/null || true)
-    if [[ -n "$holder" ]] && ps -p "$holder" -o command= 2>/dev/null | grep -q "test-mac.sh"; then
-        echo "$holder"
-    fi
+# Whether `pid` is a running test-mac.sh, so a lock pointing at it is a live run's.
+is_test_run() {
+    [[ -n "$1" ]] && ps -p "$1" -o command= 2>/dev/null | grep -q "test-mac.sh"
 }
 
 # Takes the run lock, a symbolic link to this run's pid, so only one Mac run goes at a time in
 # any clone. Stops when another run holds it, and clears a lock whose run has ended.
 take_run_lock() {
     if ! ln -s "$$" "$RUN_LOCK" 2>/dev/null; then
+        # The link is read once: the pid checked is the pid a clear compares with.
         local holder
-        holder=$(run_lock_holder)
-        if [[ -n "$holder" ]]; then
+        holder=$(readlink "$RUN_LOCK" 2>/dev/null || true)
+        if is_test_run "$holder"; then
             local started info minutes
             info=$(sed -n 2p "$RUN_LOCK.info" 2>/dev/null || true)
             started=$(sed -n 1p "$RUN_LOCK.info" 2>/dev/null || true)
@@ -213,8 +210,7 @@ take_run_lock() {
             echo "  stop it as TESTING.md says (Run a Mac tier). Never remove a live run's lock." >&2
             exit 1
         fi
-        local stale moved
-        stale=$(readlink "$RUN_LOCK" 2>/dev/null || true)
+        local stale="$holder" moved
         # Only for the script's own check: a pause here stands for a run that stalls between
         # finding a stale lock and clearing it.
         sleep "${WAYPOINT_RUN_LOCK_TEST_PAUSE:-0}"
