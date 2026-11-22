@@ -26,8 +26,10 @@ struct LocalStoreTests {
         store.cartProductIDs = [Self.lampID]
         store.wishlistProductIDs = [Self.lampID]
         store.account = .sample
+        let appDataAfterWrites = Self.appData()
         store.clearAll()
 
+        #expect(appDataAfterWrites == appData)
         #expect(Self.appData() == appData)
     }
 
