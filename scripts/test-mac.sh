@@ -22,7 +22,8 @@
 # Each build is made once: the host build with warnings as errors is the build `swift test` runs,
 # and the simulator build with warnings as errors is the build its tests run. Builds use at most
 # WAYPOINT_JOBS jobs, Xcode never clones the simulator, only one run uses a simulator at a time,
-# and the script shuts down each simulator it booted. It ends with the time each step took.
+# and the script shuts down each simulator it booted. It ends with the time each step took and
+# the 10 slowest example app tests of each run (#295), read from its result bundle.
 #
 # One run at a time: the script first takes a run lock that every clone of the repo shares
 # (#294). A second run stops at once and names the run that holds it. A lock left by a run that

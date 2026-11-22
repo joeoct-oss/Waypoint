@@ -70,7 +70,7 @@ New source files start with this header:
 
 - A pull request merges when its review is clean and every check is green.
 - **Squash merge only.** The commit title is the pull request title, and GitHub adds the number.
-- Pull requests merge one at a time, so each one is tested against the `main` it lands on.
+- Pull requests merge one at a time, in **merge batches**: up to four ready pull requests are stacked on the latest `main` and one Mac `full` run covers them all, then they merge in the batch's order. Nothing merges without a green `full` run on a commit that contains the latest `main`. The steps are in [TESTING.md: Merge batches](TESTING.md#merge-batches).
 - The branch is deleted after the merge.
 
 ## License

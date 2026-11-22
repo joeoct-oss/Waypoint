@@ -51,16 +51,16 @@ git clone -q "$WORK/remote.git" "$WORK/seed" 2>/dev/null
     printf 'a\n' >a.txt
     printf 'b\n' >b.txt
     git add . && git commit -q -m base
-    git push -q origin main
-    git checkout -q -b one && printf 'a one\n' >a.txt && git commit -qam one && git push -q origin one
+    git push -q origin main 2>/dev/null
+    git checkout -q -b one && printf 'a one\n' >a.txt && git commit -qam one && git push -q origin one 2>/dev/null
     git checkout -q main
-    git checkout -q -b two && printf 'b two\n' >b.txt && git commit -qam two && git push -q origin two
+    git checkout -q -b two && printf 'b two\n' >b.txt && git commit -qam two && git push -q origin two 2>/dev/null
     git checkout -q main
-    git checkout -q -b clash && printf 'a clash\n' >a.txt && git commit -qam clash && git push -q origin clash
+    git checkout -q -b clash && printf 'a clash\n' >a.txt && git commit -qam clash && git push -q origin clash 2>/dev/null
 )
 
 # The clone under test carries the scripts, as the Mac clone does.
-git clone -q "$WORK/remote.git" "$WORK/clone"
+git clone -q "$WORK/remote.git" "$WORK/clone" 2>/dev/null
 mkdir -p "$WORK/clone/scripts"
 cp "$SCRIPTS/merge-batch.sh" "$WORK/clone/scripts/"
 printf 'scripts/\n' >>"$WORK/clone/.git/info/exclude"
@@ -83,7 +83,7 @@ git checkout -q main
 # 2. Squash-merging in the batch's order gives the batch's tree.
 git checkout -q -b squashed origin/main
 for branch in one two; do
-    git merge -q --squash "origin/$branch" >/dev/null && git commit -q -m "squash $branch"
+    git merge -q --squash "origin/$branch" >/dev/null 2>&1 && git commit -q -m "squash $branch"
 done
 if [[ -n "${tree:-}" && "$(git rev-parse HEAD^{tree})" == "$tree" ]]; then
     pass "squash-merging the batch's branches in order gives the batch's tree"
@@ -91,6 +91,36 @@ else
     fail "squash-merging the batch's branches in order gives the batch's tree"
 fi
 git checkout -q main
+
+# 2b. --before-merge lets the merge go when nothing moved, and stops the batch when the branch
+# or main moved.
+one_head=$(git rev-parse origin/one)
+main_head=$(git rev-parse origin/main)
+if scripts/merge-batch.sh --before-merge one "$one_head" "$main_head" >/dev/null 2>&1; then
+    pass "--before-merge lets the merge go when nothing moved"
+else
+    fail "--before-merge lets the merge go when nothing moved"
+fi
+(cd "$WORK/seed" && git checkout -q one && printf 'late\n' >late.txt && git add late.txt &&
+    git commit -q -m late && git push -q origin one 2>/dev/null)
+if out=$(scripts/merge-batch.sh --before-merge one "$one_head" "$main_head" 2>&1); then
+    fail "--before-merge stops the batch when the branch moved"
+elif [[ "$out" == *"one moved"* ]]; then
+    pass "--before-merge stops the batch when the branch moved"
+else
+    fail "--before-merge names the moved branch ($out)"
+fi
+(cd "$WORK/seed" && git checkout -q main && printf 'main moved\n' >m.txt && git add m.txt &&
+    git commit -q -m moved && git push -q origin main 2>/dev/null)
+two_head=$(git rev-parse origin/two)
+if out=$(scripts/merge-batch.sh --before-merge two "$two_head" "$main_head" 2>&1); then
+    fail "--before-merge stops the batch when main moved"
+elif [[ "$out" == *"main moved"* ]]; then
+    pass "--before-merge stops the batch when main moved"
+else
+    fail "--before-merge names the moved main ($out)"
+fi
+git fetch -q origin
 
 # 3. A conflicting branch stops the batch and leaves the clone as it was.
 before=$(git rev-parse HEAD)
