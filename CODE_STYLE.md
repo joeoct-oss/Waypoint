@@ -229,8 +229,9 @@ This applies to source code, tests and DocC. Only the platform base types that a
 
 The example app and its unit tests set Swift 6.2's default actor isolation to the main actor (`SWIFT_DEFAULT_ACTOR_ISOLATION` in `Example/Project.swift`), so their code writes no `@MainActor`. It marks only the code that runs elsewhere:
 
-- `nonisolated` for work that needs no actor: plain values that a route holds or a log handler builds (`Product`, `Address`, `EventLogEntry`), the log handlers themselves, design tokens that nonisolated code reads (`Typography`, read by a button's attribute transformer), and the `Catalog/` types the UI tests share, so both targets see them the same way.
+- `nonisolated` for work that needs no actor: plain values that a route holds or a log handler builds (`Product`, `Address`, `EventLogEntry`), the log handlers themselves, the design tokens (`ColorToken`, `Palette`, `Typography`, `Spacing`), because UIKit and SwiftUI call some of their closures off the main actor, and the `Catalog/` types the UI tests share, so both targets see them the same way.
 - `@concurrent` for slow async work that should leave the main actor.
+- A closure that UIKit or SwiftUI may call off the main actor, such as a dynamic `UIColor { traits in … }` provider (SwiftUI resolves colors on its render thread) or an attribute transformer, is made in `nonisolated` code. Made in main-actor code, it is inferred main actor, and the runtime traps when the system calls it elsewhere. The compiler can't see this, so review checks it, and the UI tests catch it.
 - The one place `@MainActor` is still written: a task that nonisolated code sends back to the main actor, `Task { @MainActor in … }`, as the log handlers do.
 
 The package writes every isolation explicitly (`@MainActor` on routers, `nonisolated` where it applies), because a library can't rely on its clients' defaults. The UI test target keeps Swift's own default, since XCUITest code isn't app code. `scripts/check-example-isolation.sh` checks the example app on every Linux and Mac run until the lint setup (#70) takes it over as the custom SwiftLint rule `no_main_actor_in_example`.
