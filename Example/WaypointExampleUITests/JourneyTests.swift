@@ -263,7 +263,14 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(sheet.waitForNonExistence(timeout: UITestSteps.timeout), "the sign-in sheet stayed")
         let wishlistBar = app.navigationBars[Self.wishlistTitle]
         XCTAssertTrue(wishlistBar.waitForExistence(timeout: UITestSteps.timeout), "the wish list didn't push")
-        app.goBack()
+        // On a slow run the bar shows before the push ends, and a Back tap then is lost, so wait
+        // until Back takes taps, and tap once more if the wish list is still there.
+        let back = wishlistBar.buttons.element(boundBy: 0)
+        XCTAssertTrue(back.waitUntilHittable(), "the wish list has no Back button")
+        back.tap()
+        if !wishlistBar.waitForNonExistence(timeout: UITestSteps.settleTime), back.exists, back.isHittable {
+            back.tap()
+        }
 
         XCTAssertTrue(wishlistBar.waitForNonExistence(timeout: UITestSteps.timeout), "Back stayed on the wish list")
         XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout), "Account lost its Wish list row")
