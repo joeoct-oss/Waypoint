@@ -56,6 +56,28 @@ struct ResetPasswordCoordinatorTests {
         let expected: [FlowResult<String>] = [.cancelled]
         #expect(results.values == expected)
     }
+
+    @Test
+    func secondTapKeepsTheFlowOnScreen() {
+        let store = TestStore.make()
+        defer {
+            store.clearAll()
+        }
+        let auth = AuthCoordinator(
+            router: StackRouter(),
+            reason: .account,
+            service: MockAuthService(store: store),
+            onSignedIn: { _ in },
+            onCancel: { }
+        )
+        auth.showResetPassword()
+        let first = auth.resetPassword
+
+        auth.showResetPassword()
+
+        #expect(auth.resetPassword === first)
+        #expect(auth.router.presented === first?.router)
+    }
 }
 
 // The results the accounts flow got, oldest first.

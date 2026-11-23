@@ -45,7 +45,7 @@ final class AuthCoordinator {
     private(set) var sheetOptions: SheetOptions?
     // `var` for the same reason as `presentedSheet`: Reset password's coordinator, which draws
     // that sheet.
-    private var resetPassword: ResetPasswordCoordinator?
+    private(set) var resetPassword: ResetPasswordCoordinator?
     // `var` because `showSignedIn(as:onDone:)` sets it with the account Signed in names.
     private var signedInAccount: Account?
     // `var` because `showSignedIn(as:onDone:)` sets it with what Done on Signed in runs.
@@ -148,8 +148,12 @@ final class AuthCoordinator {
     // reader is choosing a new password.
     func showResetPassword() {
         let reset = ResetPasswordCoordinator(service: service)
-        router.present(reset, style: .sheet) { result in
+        let outcome = router.present(reset, style: .sheet) { result in
             self.resetPasswordEnded(with: result)
+        }
+        // A refused present, such as a second tap while the sheet is up, keeps the flow on screen.
+        guard outcome.didChange else {
+            return
         }
         resetPassword = reset
         keepPresentedSheet(.resetPassword)
