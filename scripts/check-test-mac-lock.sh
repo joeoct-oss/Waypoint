@@ -155,6 +155,38 @@ else
     fail "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
 fi
 
+# 1c. Tuist's selective testing is off in a merge gate and after any change outside `Example/`,
+# and on only in a quick run that changes nothing but `Example/`. `--plan` prints the decision
+# without a run, in a copy of the working tree with its own one-commit history.
+TREE="$WORK/tree"
+mkdir -p "$TREE"
+git ls-files -z | tar --null -T - -cf - | tar -xf - -C "$TREE"
+git -C "$TREE" init -q
+git -C "$TREE" add -A
+git -C "$TREE" -c user.name=check -c user.email=check@example.invalid commit -q -m base
+plan_of() {
+    (cd "$TREE" && env PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+        scripts/test-mac.sh "$@" --plan 2>/dev/null | grep '^plan:')
+}
+expect_plan() {
+    local name="$1" want="$2" got
+    shift 2
+    got=$(plan_of "$@" || true)
+    if [[ "$got" == *"selective testing $want"* ]]; then
+        pass "$name"
+    else
+        fail "$name (plan: ${got:-none})"
+    fi
+}
+expect_plan "a full run never skips a test: selective testing is off" off full
+touch "$TREE/Example/SelectiveProbe.swift"
+expect_plan "a quick run that changes only Example/ may skip passed tests" on quick
+rm "$TREE/Example/SelectiveProbe.swift"
+touch "$TREE/Sources/SelectiveProbe.swift"
+expect_plan "a quick run that changes the package runs every test" off quick
+rm "$TREE/Sources/SelectiveProbe.swift"
+expect_plan "a quick run with no changes runs every test" off quick
+
 # 2. A second run stops at once and runs nothing while the first holds the lock.
 : >"$CALLS"
 run_script STUB_SECONDS=4 >"$WORK/2a.log" 2>&1 &

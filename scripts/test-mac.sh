@@ -31,11 +31,13 @@
 # (#294). A second run stops at once and names the run that holds it. A lock left by a run that
 # is no longer going is cleared; a lock whose run is still going is never touched.
 #
-# Usage: scripts/test-mac.sh [quick|full|release] [--ui] [--all] [--only <Target/Class[/test]>]
+# Usage: scripts/test-mac.sh [quick|full|release] [--ui] [--all] [--only <Target/Class[/test]>] [--plan]
 #   --ui    quick also runs the example app's unit and UI tests.
 #   --all   quick runs every part, whatever the branch changed.
 #   --only  quick runs only the guard rail and this example UI test (passed to `tuist test --test-targets`),
 #           for example `--only WaypointExampleUITests/StackTests/testPushAndBack`.
+#   --plan  prints what the run would do, including whether Tuist's selective testing is on, and
+#           stops: no lock, no simulator, no build.
 #
 # Environment:
 #   WAYPOINT_SIMULATOR        the project simulator (default waypoint-01), created when missing.
@@ -63,11 +65,13 @@ TIER="quick"
 WITH_UI=false
 RUN_ALL=false
 ONLY_TEST=""
+PLAN_ONLY=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         quick | full | release) TIER="$1" ;;
         --ui) WITH_UI=true ;;
         --all) RUN_ALL=true ;;
+        --plan) PLAN_ONLY=true ;;
         --only)
             [[ $# -ge 2 ]] || usage
             ONLY_TEST="$2"
@@ -280,7 +284,9 @@ take_run_lock() {
         echo "$TIER, commit $(git rev-parse --short HEAD 2>/dev/null || echo unknown), started $(date '+%Y-%m-%d %H:%M'), in $(pwd), stop after $STOP_AFTER_MINUTES min"
     } >"$RUN_LOCK.info"
 }
-take_run_lock
+if ! $PLAN_ONLY; then
+    take_run_lock
+fi
 # The result bundles of an earlier run would show in this run's report.
 rm -rf "$RESULTS_DIR"
 
@@ -445,18 +451,15 @@ example_tests_on() {
     local os
     os=$(simulator_os "$udid")
     local tuist_flags=() offline_settings=()
-    if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
-        tuist_flags=(--no-selective-testing --no-binary-cache --no-upload --inspect-mode off --skip-quarantine)
-        # The build's post-action reads it too, so it sends no build timings.
-        offline_settings=(WAYPOINT_TUIST_OFFLINE=1)
-    elif [[ "$TIER" != quick || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CHANGED_PACKAGE; then
-        # A test asked for by name, with --ui or --all always runs, even when it passed before.
-        # So does every test after a change outside `Example/`: Tuist hashes the Waypoint package
-        # by its product names, not its sources, so it can't see a renderer change.
-        tuist_flags=(--no-selective-testing --skip-quarantine)
-    else
-        tuist_flags=(--skip-quarantine)
-    fi
+    case "$SELECTIVE_TESTING" in
+        offline)
+            tuist_flags=(--no-selective-testing --no-binary-cache --no-upload --inspect-mode off --skip-quarantine)
+            # The build's post-action reads it too, so it sends no build timings.
+            offline_settings=(WAYPOINT_TUIST_OFFLINE=1)
+            ;;
+        off) tuist_flags=(--no-selective-testing --skip-quarantine) ;;
+        on) tuist_flags=(--skip-quarantine) ;;
+    esac
     mkdir -p "$RESULTS_DIR"
     tuist_cmd test WaypointExample \
         --path Example \
@@ -503,6 +506,23 @@ case "$TIER" in
         fi
         ;;
 esac
+
+# Whether `tuist test` may skip test targets that passed before (selective testing).
+if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
+    SELECTIVE_TESTING=offline
+elif [[ "$TIER" != quick || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CHANGED_PACKAGE; then
+    # A merge gate, a test asked for by name, with --ui or --all always runs every test, even one
+    # that passed before. So does every test after a change outside `Example/`: Tuist hashes the
+    # Waypoint package by its product names, not its sources, so it can't see a renderer change.
+    SELECTIVE_TESTING=off
+else
+    SELECTIVE_TESTING=on
+fi
+if $PLAN_ONLY; then
+    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING"
+    trap - EXIT
+    exit 0
+fi
 
 step "Checking the concurrency guard rail" scripts/check-concurrency.sh
 step "Checking the example app's isolation" scripts/check-example-isolation.sh
