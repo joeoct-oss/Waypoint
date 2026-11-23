@@ -36,9 +36,7 @@ extension PresentingRouter {
         let presentation = Presentation(style: style, flow: router.flowID)
         switch PresentationReducer.reduce(state, .present(presentation)) {
         case .changed(_, let changes):
-            updateWorkingPresentation(presentation, presented: router)
-            store.record(changes, in: flowID)
-            return .changed
+            return attach(router, presentation, changes, in: store)
         case .unchanged:
             return undoingJoin(of: router, result: .unchanged)
         case .rejected(let rejection):

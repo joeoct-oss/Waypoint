@@ -97,7 +97,7 @@ extension PresentingRouter {
     }
 
     /// Stores the new child and records the change.
-    private func attach(
+    func attach(
         _ child: StackRouter,
         _ presentation: Presentation,
         _ changes: [NavigationChange],
