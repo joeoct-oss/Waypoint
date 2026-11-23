@@ -33,13 +33,20 @@ extension StackRouter {
         tree.report(issue, level: .error)
     }
 
-    /// Reports `releasedRouterReturned`: `coordinator`'s `makeRouter()` returned this router,
-    /// which ended with the coordinator it was made for, so its calls return `.ignored`.
-    func reportReleasedRouterReturned(to coordinator: AnyObject, file: StaticString, line: UInt) {
+    /// Reports `releasedRouterReturned`: `coordinator` got this router from its `makeRouter()`
+    /// or stores it, but the router ended with the coordinator it belonged to, so its calls
+    /// return `.ignored`.
+    func reportReleasedRouterReturned(
+        to coordinator: AnyObject,
+        from source: RouterTable.Source,
+        file: StaticString,
+        line: UInt
+    ) {
         let name = ViewTypeName.of(type(of: coordinator))
-        let message = "\(name).makeRouter() returned a router whose coordinator is gone. A router "
-            + "Waypoint takes from makeRouter() ends with its coordinator, so this one ignores every "
-            + "call. Make a new router in makeRouter() each time it is called."
+        let how = source == .made ? "\(name).makeRouter() returned" : "\(name) stores"
+        let message = "\(how) a router whose coordinator is gone. A router ends with its "
+            + "coordinator, so this one ignores every call. Give each coordinator a new router: "
+            + "make one in makeRouter() each time it is called."
         let issue = NavigationIssue(
             kind: .releasedRouterReturned,
             flow: flowID,

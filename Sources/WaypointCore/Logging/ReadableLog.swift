@@ -187,7 +187,7 @@ enum ReadableLog {
         case .rootNameReplaced:
             return "rootName replaced the root name makeRouter() set"
         case .releasedRouterReturned:
-            return "makeRouter() returned a router that already ended"
+            return "this coordinator got a router that already ended"
         }
     }
 

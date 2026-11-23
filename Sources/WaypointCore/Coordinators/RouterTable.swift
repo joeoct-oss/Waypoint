@@ -11,10 +11,10 @@
 /// A coordinator's router is made the first time it is read, named after the coordinator and
 /// given the coordinator's destinations. The table holds each coordinator weakly and its router
 /// strongly, keyed by the coordinator's identity. At each read and before each navigation call
-/// that isn't queued, it sweeps: an entry whose coordinator is gone is removed, and a router the
-/// table made for it is made inert, so its calls return `.ignored` and log `staleNavigator`,
-/// unless a live entry still holds it. A stored router the table adopted stays live, since the
-/// app made it and may still use it.
+/// that isn't queued, it sweeps: an entry whose coordinator is gone is removed, and its router is
+/// made inert, so its calls return `.ignored` and log `staleNavigator`, unless a live entry still
+/// holds it. A router ends with its coordinator: one handed to a later coordinator is reported as
+/// `releasedRouterReturned`.
 ///
 /// Removed entries are let go only after the table is updated, so any `deinit` that runs then
 /// finds a consistent table.
@@ -32,17 +32,11 @@ final class RouterTable {
         /// coordinator owns, which the table only remembers so it reports it once.
         let ownsRouter: Bool
 
-        /// Whether the table made the router with `makeRouter()`. Only such a router is made
-        /// inert when its coordinator is gone; a stored one belongs to the app, which may still
-        /// use it.
-        let isMade: Bool
-
         /// Creates an entry for `coordinator`.
-        init(coordinator: AnyObject, router: StackRouter, ownsRouter: Bool, isMade: Bool) {
+        init(coordinator: AnyObject, router: StackRouter, ownsRouter: Bool) {
             self.coordinator = coordinator
             self.router = router
             self.ownsRouter = ownsRouter
-            self.isMade = isMade
         }
     }
 
@@ -125,8 +119,8 @@ final class RouterTable {
         entries[id]?.router
     }
 
-    /// Removes every entry whose coordinator is gone, and makes a router the table made for it
-    /// inert unless a live entry still holds it. The removed entries are let go after the table
+    /// Removes every entry whose coordinator is gone, and makes its router inert unless a live
+    /// entry still holds it. The removed entries are let go after the table
     /// is updated.
     func sweep() {
         guard !isSweeping, entries.values.contains(where: \.isDead) else {
@@ -139,7 +133,7 @@ final class RouterTable {
         for id in removed.keys {
             entries.removeValue(forKey: id)
         }
-        for entry in removed.values where entry.isMade && !isHeldByLiveEntry(entry.router) {
+        for entry in removed.values where !isHeldByLiveEntry(entry.router) {
             entry.router.detachSubtree()
         }
         isSweeping = false
@@ -176,14 +170,13 @@ final class RouterTable {
         line: UInt = #line
     ) {
         if let owner = liveOwner(of: router, other: coordinator) {
-            store(Entry(coordinator: coordinator, router: router, ownsRouter: false, isMade: false), as: id)
+            store(Entry(coordinator: coordinator, router: router, ownsRouter: false), as: id)
             router.reportRouterOwned(by: owner, heldBy: coordinator, from: source, file: file, line: line)
             return
         }
-        let entry = Entry(coordinator: coordinator, router: router, ownsRouter: true, isMade: source == .made)
-        store(entry, as: id)
-        if source == .made, !router.isActive {
-            router.reportReleasedRouterReturned(to: coordinator, file: file, line: line)
+        store(Entry(coordinator: coordinator, router: router, ownsRouter: true), as: id)
+        if !router.isActive {
+            router.reportReleasedRouterReturned(to: coordinator, from: source, file: file, line: line)
         }
         if source == .stored {
             router.reportRouterNotFromWaypoint(storedIn: coordinator, file: file, line: line)
@@ -204,16 +197,13 @@ final class RouterTable {
     }
 
     /// The router a coordinator going away reads: never stored, named, registered or joined.
-    /// Its own router, made inert, unless a live entry still holds that router or the router is a
-    /// stored one the app made; then a fresh inert one, so that router is left as it is.
+    /// Its own router, made inert, unless a live entry still holds that router; then a fresh
+    /// inert one, so the live router is left as it is.
     private func inertRouter<Coordinator: StackCoordinating>(
         for coordinator: Coordinator,
         leftIn found: Entry?
     ) -> StackRouter {
         sweep()
-        if let found, !found.isMade {
-            return StackRouter.inert()
-        }
         let router = found?.router ?? coordinator.makeRouter()
         guard !isHeldByLiveEntry(router) else {
             return StackRouter.inert()

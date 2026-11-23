@@ -243,15 +243,21 @@ struct StackCoordinatingTests {
     }
 
     @Test
-    func adoptedStoredRouterStaysLiveAfterItsCoordinatorIsGone() {
+    func storedRouterReusedAfterItsCoordinatorIsGoneIsReported() throws {
         let stored = StackRouter(configuration: .permissive)
+        let reported = Recorder<NavigationIssue>()
+        stored.tree.onReported { issue in
+            reported.record(issue)
+        }
         adoptAndDrop(stored)
         let next = StoredRouterCoordinator(router: stored)
 
-        let outcome = next.router.push(ProductRoute(id: 1))
+        let outcome = next.navigator.push(ProductRoute(id: 1))
 
-        #expect(outcome == .applied)
-        #expect(stored.isActive)
+        #expect(outcome == .ignored)
+        #expect(!stored.isActive)
+        let issue = try #require(reported.values.first { $0.kind == .releasedRouterReturned })
+        #expect(issue.message.contains("StoredRouterCoordinator stores"))
     }
 
     @Test

@@ -74,8 +74,8 @@ public struct NavigationIssue: NavigationRecord {
         /// name. Name the root screen with `rootName`.
         case rootNameReplaced
 
-        /// A coordinator's `makeRouter()` returned a router that ended with the coordinator it
-        /// was made for, so every call on it returns `.ignored`.
+        /// A coordinator got a router, from its `makeRouter()` or stored, that ended with the
+        /// coordinator it belonged to, so every call on it returns `.ignored`.
         case releasedRouterReturned
     }
 
