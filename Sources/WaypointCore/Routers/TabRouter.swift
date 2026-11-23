@@ -89,8 +89,8 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// The coordinator of the child flow this container presents, kept while the flow is
     /// presented, so a parent needn't keep it. `nil` when the presented flow has no coordinator.
     ///
-    /// `var` because flows are presented and dismissed. Only `commitPresented(from:to:)` changes
-    /// it.
+    /// `var` because flows are presented and dismissed. Only `commitPresented(from:to:)` and
+    /// `markDetached()` change it.
     @ObservationIgnored private var presentedCoordinator: AnyObject?
 
     /// Whether this router is in the tree.
@@ -668,6 +668,8 @@ extension TabRouter: TransactionParticipant {
     /// Marks this router as gone from the tree. Its calls return `.ignored` from now on.
     func markDetached() {
         isAttached = false
+        tree.releaseWhenIdle(presentedCoordinator)
+        presentedCoordinator = nil
     }
 
     /// Detaches tab routers that no tab uses any more, and attaches new ones. A shared stack stays

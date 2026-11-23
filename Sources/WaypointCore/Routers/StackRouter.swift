@@ -168,7 +168,7 @@ public final class StackRouter: NavigationRouter {
     /// so a parent needn't keep it. `nil` when the presented flow has no coordinator.
     ///
     /// `var` because flows are presented and dismissed. Only `commitWorkingCopy(around:)` and
-    /// `forward(to:)` change it.
+    /// `markDetached()` change it.
     @ObservationIgnored private var presentedCoordinator: AnyObject?
 
     /// The tree this router left to join a parent's, kept until the start that joined it
@@ -786,6 +786,8 @@ extension StackRouter: TransactionParticipant {
     /// flow it runs ends, and its parent gets the result once the current call is done.
     func markDetached() {
         isAttached = false
+        tree.releaseWhenIdle(presentedCoordinator)
+        presentedCoordinator = nil
         guard let flow = childFlow, flow.isStarted else {
             return
         }
@@ -870,8 +872,6 @@ extension StackRouter {
     /// this router presented leaves the tree.
     func forward(to target: StackRouter) {
         committed.presented?.detachSubtree()
-        tree.releaseWhenIdle(presentedCoordinator)
-        presentedCoordinator = nil
         forwardTarget = target
         target.forwarders.append(self)
         markDetached()

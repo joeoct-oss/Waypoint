@@ -184,20 +184,24 @@ struct ChildFlowTests {
     func parentDismissCancelsNestedChildren() {
         let parent = StackRouter()
         let outer = CheckoutFlowCoordinator()
-        let inner = CheckoutFlowCoordinator()
         let results = Recorder<String>()
+        weak var weakInner: CheckoutFlowCoordinator?
         parent.present(outer) { result in
             results.record("outer \(result)")
         }
-        outer.router.present(inner) { result in
-            results.record("inner \(result)")
+        do {
+            let inner = CheckoutFlowCoordinator()
+            weakInner = inner
+            outer.router.present(inner) { result in
+                results.record("inner \(result)")
+            }
         }
 
         parent.dismiss()
 
         let expected = ["outer cancelled", "inner cancelled"]
         #expect(results.values.sorted() == expected.sorted())
-        #expect(!inner.router.isActive)
+        #expect(weakInner == nil)
     }
 
     @Test
