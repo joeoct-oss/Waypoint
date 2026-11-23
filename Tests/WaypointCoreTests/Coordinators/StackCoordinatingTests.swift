@@ -156,21 +156,10 @@ struct StackCoordinatingTests {
     }
 
     @Test
-    func rootNameSetByMakeRouterIsKept() {
-        let router = StackRouter()
-        router.setRootName("Kept")
-        let coordinator = StoredRouterCoordinator(router: router)
-
-        _ = coordinator.navigator
-
-        #expect(router.rootName == "Kept")
-    }
-
-    @Test
-    func rootNameMakeRouterSetIsKeptOverTheDefault() {
+    func defaultRootNameReplacesTheNameMakeRouterSet() {
         let coordinator = NamedRouterCoordinator()
 
-        #expect(coordinator.router.rootName == "Made list")
+        #expect(coordinator.router.rootName == "NamedRouter")
     }
 
     @Test
@@ -236,13 +225,6 @@ struct StackCoordinatingTests {
 
         #expect(outcome == .applied)
         #expect(stored.isActive)
-    }
-
-    @Test
-    func declaredRootNameEqualToTheDefaultCountsAsTheDefault() {
-        let coordinator = SameNameCoordinator()
-
-        #expect(coordinator.router.rootName == "Made list")
     }
 
     @Test
