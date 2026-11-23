@@ -16,6 +16,9 @@ import WaypointTestSupport
 @Suite("Tab coordinators and their children")
 @MainActor
 struct TabCoordinatingTests {
+    /// Both tab layouts, for tests that cover each.
+    nonisolated static let bothLayouts: [TabStacks] = [.perTab, .shared]
+
     // MARK: - Children and their routers
 
     @Test
@@ -232,7 +235,37 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.values.isEmpty)
     }
 
-    @Test(arguments: [TabStacks.perTab, .shared])
+    @Test
+    func keptMergedChildReturnedForATabAddedBackGetsTheNewStack() throws {
+        let kept = Recorder<ParentReadingCoordinator>()
+        let tabs = MainTabsCoordinator { tab, parent in
+            guard tab == .shop else {
+                return TabChildCoordinator()
+            }
+            if let child = kept.last {
+                return child
+            }
+            let reader = ParentReadingCoordinator(tab: tab, parent: parent)
+            reader.tabNavigator.push(ProductRoute(id: 1))
+            kept.record(reader)
+            return reader
+        }
+        let router = tabs.router
+        let withoutShop: [MainTab] = [.home, .profile]
+        router.setTabs(withoutShop)
+
+        router.setTabs(MainTab.allCases)
+
+        let child = try #require(kept.last)
+        let stack = router.router(for: .shop)
+        #expect(child.router === stack)
+        #expect(stack.isActive)
+        #expect(stack.coordinatorName == "ParentReadingCoordinator")
+        #expect(child.navigator.push(ProductRoute(id: 2)) == .applied)
+        #expect(tabs.reported.values.isEmpty)
+    }
+
+    @Test(arguments: Self.bothLayouts)
     func removedTabReleasesItsChild(stacks: TabStacks) {
         let tabs = MainTabsCoordinator(stacks: stacks)
         weak let released = child(of: tabs, for: .profile)
@@ -417,7 +450,8 @@ struct TabCoordinatingTests {
         let router = tabs.router
         let shared = router.router(for: .home)
 
-        router.setTabs([.shop, .profile])
+        let withoutHome: [MainTab] = [.shop, .profile]
+        router.setTabs(withoutHome)
         RouterTable.shared.sweep()
 
         #expect(shared.isActive)
@@ -427,7 +461,7 @@ struct TabCoordinatingTests {
 
     // MARK: - Refusals
 
-    @Test(arguments: [TabStacks.perTab, .shared])
+    @Test(arguments: Self.bothLayouts)
     func sameCoordinatorForTwoTabsIsRefused(stacks: TabStacks) throws {
         let child = TabChildCoordinator()
         let tabs = MainTabsCoordinator(stacks: stacks) { tab, _ in
@@ -456,7 +490,8 @@ struct TabCoordinatingTests {
         }
         weak let child = child(of: tabs, for: .home)
 
-        tabs.router.setTabs([.home, .profile])
+        let withoutShop: [MainTab] = [.home, .profile]
+        tabs.router.setTabs(withoutShop)
         RouterTable.shared.sweep()
 
         #expect(child != nil)

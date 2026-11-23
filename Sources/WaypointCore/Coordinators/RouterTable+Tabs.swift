@@ -110,15 +110,16 @@ extension RouterTable {
     private func attach<Tab: NavigationTab>(_ child: any StackCoordinating, as tab: Tab, to router: TabRouter<Tab>) {
         let childRouter = checkedRouter(of: child, file: #fileID, line: #line)
         let tabStack = router.router(for: tab)
+        if childRouter.parentNode === router, !childRouter.isActive {
+            router.nameTabCoordinator(ViewTypeName.of(type(of: child)), for: tab)
+            restart(child, on: tabStack)
+            return
+        }
         guard entry(for: ObjectIdentifier(child))?.ownsRouter == true else {
             return
         }
         router.nameTabCoordinator(ViewTypeName.of(type(of: child)), for: tab)
         if childRouter === tabStack {
-            return
-        }
-        if childRouter.parentNode === router, !childRouter.isActive {
-            restart(child, on: tabStack)
             return
         }
         guard childRouter.canJoinAnotherTree else {
@@ -155,7 +156,8 @@ extension RouterTable {
     }
 
     /// Gives `child`, kept by the app and returned again for a tab added back, the tab's new
-    /// stack: its old router left the tree with the removed tab. Navigators of the old router
+    /// stack: its old router, its own or the one it was merged into, left the tree with the
+    /// removed tab. Navigators of the old router
     /// stay stale, as for any removed tab.
     private func restart<Child: StackCoordinating>(_ child: Child, on stack: StackRouter) {
         settle(stack, of: child, as: ObjectIdentifier(child), from: .made)
