@@ -446,7 +446,7 @@ example_tests_on() {
     os=$(simulator_os "$udid")
     local tuist_flags=() offline_settings=()
     if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
-        tuist_flags=(--no-selective-testing --no-binary-cache --no-upload --inspect-mode off)
+        tuist_flags=(--no-selective-testing --no-binary-cache --no-upload --inspect-mode off --skip-quarantine)
         # The build's post-action reads it too, so it sends no build timings.
         offline_settings=(WAYPOINT_TUIST_OFFLINE=1)
     elif [[ "$TIER" != quick || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CHANGED_PACKAGE; then

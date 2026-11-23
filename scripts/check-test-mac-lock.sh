@@ -148,7 +148,7 @@ else
 fi
 : >"$CALLS"
 if run_script WAYPOINT_TUIST_OFFLINE=1 >"$WORK/1b.log" 2>&1 &&
-    grep "^tuist test" "$CALLS" | grep -q -- "--no-selective-testing --no-binary-cache --no-upload --inspect-mode off" &&
+    grep "^tuist test" "$CALLS" | grep -q -- "--no-selective-testing --no-binary-cache --no-upload --inspect-mode off --skip-quarantine" &&
     grep "^tuist test" "$CALLS" | grep -q -- " WAYPOINT_TUIST_OFFLINE=1"; then
     pass "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
 else
