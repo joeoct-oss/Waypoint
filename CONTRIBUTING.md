@@ -69,7 +69,7 @@ New source files start with this header:
 ## Review and merge
 
 - A pull request merges when its review is clean and every check is green.
-- **Squash merge by default.** The commit title is the pull request title, and GitHub adds the number. When the branch's commits explain why the change was made, use a merge commit instead, so `main` keeps that history. Never a rebase merge (it is turned off).
+- **Squash merge by default.** The commit title is the pull request title, and GitHub adds the number. When the branch's commits explain why the change was made, use a merge commit instead, so `main` keeps that history; give it the same title, the pull request title followed by `(#<number>)`. Never a rebase merge (it is turned off).
 - Pull requests merge one at a time, in **merge batches**: up to four ready pull requests are stacked on the latest `main` and one Mac `full` run covers them all, then they merge in the batch's order. Nothing merges without a green `full` run on a commit that contains the latest `main`. The steps are in [TESTING.md: Merge batches](TESTING.md#merge-batches).
 - The branch is deleted after the merge.
 
