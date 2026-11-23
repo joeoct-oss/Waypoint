@@ -44,7 +44,8 @@ mkdir -p "$STUBS"
 CALLS="$WORK/calls"
 : >"$CALLS"
 
-# Stand-ins for the tools the script calls. xcodebuild sleeps STUB_SECONDS and exits STUB_STATUS.
+# Stand-ins for the tools the script calls. `tuist test`, which runs the example app's tests,
+# sleeps STUB_SECONDS and exits STUB_STATUS.
 cat >"$STUBS/xcrun" <<'EOF'
 #!/usr/bin/env bash
 echo "xcrun $*" >>"$STUB_CALLS"
@@ -52,7 +53,7 @@ if [[ "$1 $2" == "simctl shutdown" && -L "$WAYPOINT_RUN_LOCK" ]]; then
     echo "shutdown while the run lock was held" >>"$STUB_CALLS"
 fi
 if [[ "$*" == *"list devices"* ]]; then
-    echo '{"devices":{"ios":[{"name":"waypoint-01","udid":"STUB-UDID","state":"Shutdown"}]}}'
+    echo '{"devices":{"com.apple.CoreSimulator.SimRuntime.iOS-27-2":[{"name":"waypoint-01","udid":"STUB-UDID","state":"Shutdown"}]}}'
 fi
 EOF
 cat >"$STUBS/xcodebuild" <<'EOF'
@@ -69,6 +70,10 @@ EOF
 cat >"$STUBS/tuist" <<'EOF'
 #!/usr/bin/env bash
 echo "tuist $*" >>"$STUB_CALLS"
+if [[ "$1" == test ]]; then
+    "$(dirname "$0")/stub-grandchild" "${STUB_SECONDS:-0}"
+    exit "${STUB_STATUS:-0}"
+fi
 EOF
 # The script runs Tuist through mise where mise is installed; the stand-in runs what follows `--`,
 # so the stand-in tuist runs, never the real one.
@@ -119,11 +124,68 @@ if grep -q "^xcrun simctl shutdown" "$CALLS" && grep -q "shutdown while the run 
 else
     fail "the run lock goes after the simulator is shut down"
 fi
-if grep -q "^tuist generate" "$CALLS"; then
+if grep -q "^tuist test WaypointExample" "$CALLS"; then
     pass "the stand-in tuist ran, never the real one"
 else
     fail "the stand-in tuist ran, never the real one"
 fi
+# The example app's tests run through `tuist test` (#312): on the project simulator, into a
+# result bundle, with two parallel workers.
+TUIST_CALL=$(grep "^tuist test WaypointExample" "$CALLS" | head -1)
+for part in "--path Example" "--device waypoint-01" "--os 27.2" "--skip-quarantine" "-T .build/results/example-only.xcresult" \
+    "--test-targets WaypointExampleUITests/StackTests/testPushAndBack" \
+    "-parallel-testing-enabled YES" "-parallel-testing-worker-count 2"; do
+    if [[ "$TUIST_CALL" == *" $part"* ]]; then
+        pass "tuist test gets $part"
+    else
+        fail "tuist test gets $part (call: $TUIST_CALL)"
+    fi
+done
+if [[ "$TUIST_CALL" == *"--no-selective-testing"* ]]; then
+    pass "a test asked for with --only always runs: selective testing is off"
+else
+    fail "a test asked for with --only always runs: selective testing is off (call: $TUIST_CALL)"
+fi
+: >"$CALLS"
+if run_script WAYPOINT_TUIST_OFFLINE=1 >"$WORK/1b.log" 2>&1 &&
+    grep "^tuist test" "$CALLS" | grep -q -- "--no-selective-testing --no-binary-cache --no-upload --inspect-mode off --skip-quarantine" &&
+    grep "^tuist test" "$CALLS" | grep -q -- " WAYPOINT_TUIST_OFFLINE=1"; then
+    pass "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
+else
+    fail "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
+fi
+
+# 1c. Tuist's selective testing is off in a merge gate and after any change outside `Example/`,
+# and on only in a quick run that changes nothing but `Example/`. `--plan` prints the decision
+# without a run, in a copy of the working tree with its own one-commit history.
+TREE="$WORK/tree"
+mkdir -p "$TREE"
+git ls-files -z | tar --null -T - -cf - | tar -xf - -C "$TREE"
+git -C "$TREE" init -q
+git -C "$TREE" add -A
+git -C "$TREE" -c user.name=check -c user.email=check@example.invalid commit -q -m base
+plan_of() {
+    (cd "$TREE" && env PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+        scripts/test-mac.sh "$@" --plan 2>/dev/null | grep '^plan:')
+}
+expect_plan() {
+    local name="$1" want="$2" got
+    shift 2
+    got=$(plan_of "$@" || true)
+    if [[ "$got" == *"selective testing $want"* ]]; then
+        pass "$name"
+    else
+        fail "$name (plan: ${got:-none})"
+    fi
+}
+expect_plan "a full run never skips a test: selective testing is off" off full
+touch "$TREE/Example/SelectiveProbe.swift"
+expect_plan "a quick run that changes only Example/ may skip passed tests" on quick
+rm "$TREE/Example/SelectiveProbe.swift"
+touch "$TREE/Sources/SelectiveProbe.swift"
+expect_plan "a quick run that changes the package runs every test" off quick
+rm "$TREE/Sources/SelectiveProbe.swift"
+expect_plan "a quick run with no changes runs every test" off quick
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
 : >"$CALLS"
@@ -142,10 +204,10 @@ else
     pass "a second run stops and names the run that holds the lock"
 fi
 wait "$first" || fail "the first run passes while a second one is turned away"
-if [[ "$(grep -c '^xcodebuild' "$CALLS")" == 1 ]] && lock_gone; then
+if [[ "$(grep -c '^tuist test' "$CALLS")" == 1 ]] && lock_gone; then
     pass "the second run ran nothing, and the first released the lock"
 else
-    fail "the second run ran nothing, and the first released the lock ($(grep -c '^xcodebuild' "$CALLS") xcodebuild calls)"
+    fail "the second run ran nothing, and the first released the lock ($(grep -c '^tuist test' "$CALLS") tuist test calls)"
 fi
 
 # 3. A lock left by a run that has ended is cleared.
@@ -186,7 +248,7 @@ for how in step script; do
     run_script STUB_SECONDS=20 >"$WORK/6-$how.log" 2>&1 &
     run=$!
     for _ in $(seq 1 50); do
-        grep -q '^xcodebuild' "$CALLS" 2>/dev/null && [[ -L "$LOCK" ]] && break
+        grep -q '^tuist test' "$CALLS" 2>/dev/null && [[ -L "$LOCK" ]] && break
         sleep 0.1
     done
     sleep 0.5
@@ -197,9 +259,9 @@ for how in step script; do
         kill -TERM "$script_pid" || true
     fi
     wait "$run" 2>/dev/null || true
-    if pgrep -f "$STUBS/xcodebuild|$STUBS/stub-grandchild" >/dev/null; then
+    if pgrep -f "$STUBS/tuist|$STUBS/stub-grandchild" >/dev/null; then
         fail "a run stopped with TERM ($how) stops its step's tools, grandchildren included"
-        pkill -f "$STUBS/xcodebuild|$STUBS/stub-grandchild" || true
+        pkill -f "$STUBS/tuist|$STUBS/stub-grandchild" || true
     fi
     if lock_gone; then
         pass "a run stopped with TERM ($how) releases the lock"

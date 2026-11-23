@@ -21,24 +21,32 @@
 #
 # Each build is made once: the host build with warnings as errors is the build `swift test` runs,
 # and the simulator build with warnings as errors is the build its tests run. Builds use at most
-# WAYPOINT_JOBS jobs, Xcode never clones the simulator, only one run uses a simulator at a time,
-# and the script shuts down each simulator it booted. It ends with the time each step took and
+# WAYPOINT_JOBS jobs, only one run uses a simulator at a time, and the script shuts down each
+# simulator it booted. The example app's tests run through `tuist test`, which also generates the
+# project, on WAYPOINT_UI_WORKERS temporary copies of the simulator at once (#312); Xcode makes the
+# copies and removes them, and the package's tests never use copies. It ends with the time each step took and
 # the 10 slowest example app tests of each run (#295), read from its result bundle.
 #
 # One run at a time: the script first takes a run lock that every clone of the repo shares
 # (#294). A second run stops at once and names the run that holds it. A lock left by a run that
 # is no longer going is cleared; a lock whose run is still going is never touched.
 #
-# Usage: scripts/test-mac.sh [quick|full|release] [--ui] [--all] [--only <Target/Class[/test]>]
+# Usage: scripts/test-mac.sh [quick|full|release] [--ui] [--all] [--only <Target/Class[/test]>] [--plan]
 #   --ui    quick also runs the example app's unit and UI tests.
 #   --all   quick runs every part, whatever the branch changed.
-#   --only  quick runs only the guard rail and this example UI test (passed to -only-testing),
+#   --only  quick runs only the guard rail and this example UI test (passed to `tuist test --test-targets`),
 #           for example `--only WaypointExampleUITests/StackTests/testPushAndBack`.
+#   --plan  prints what the run would do, including whether Tuist's selective testing is on, and
+#           stops: no lock, no simulator, no build.
 #
 # Environment:
 #   WAYPOINT_SIMULATOR        the project simulator (default waypoint-01), created when missing.
 #   WAYPOINT_IOS17_SIMULATOR  the iOS 17 simulator for release (default waypoint-02); must exist.
 #   WAYPOINT_JOBS             build jobs (default half the performance cores, at least 2).
+#   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 2;
+#                             1 runs them on the simulator itself).
+#   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing, the binary
+#                             cache and uploads (default 0).
 #   WAYPOINT_BASE             what quick compares the branch with (default origin/main).
 #   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
 #                             script's own checks set it, and WAYPOINT_RUN_LOCK_TEST_PAUSE.
@@ -57,11 +65,13 @@ TIER="quick"
 WITH_UI=false
 RUN_ALL=false
 ONLY_TEST=""
+PLAN_ONLY=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         quick | full | release) TIER="$1" ;;
         --ui) WITH_UI=true ;;
         --all) RUN_ALL=true ;;
+        --plan) PLAN_ONLY=true ;;
         --only)
             [[ $# -ge 2 ]] || usage
             ONLY_TEST="$2"
@@ -100,9 +110,18 @@ default_jobs() {
 }
 JOBS="${WAYPOINT_JOBS:-$(default_jobs)}"
 
-# Settings every simulator test run shares: the job cap, and no parallel testing, which would
-# clone the simulator once per worker.
+# Settings the package's simulator tests run with: the job cap, and no parallel testing, which
+# would clone the simulator once per worker.
 XCODE_TEST_FLAGS=(-quiet -jobs "$JOBS" -parallel-testing-enabled NO)
+
+# The example app's tests run on this many simulator copies at once (#312), so they take about
+# half as long.
+UI_WORKERS="${WAYPOINT_UI_WORKERS:-2}"
+if [[ "$UI_WORKERS" -gt 1 ]]; then
+    EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled YES -parallel-testing-worker-count "$UI_WORKERS")
+else
+    EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled NO)
+fi
 
 # The steps run so far, with the seconds each took, printed when the script ends.
 STEP_NAMES=()
@@ -265,7 +284,9 @@ take_run_lock() {
         echo "$TIER, commit $(git rev-parse --short HEAD 2>/dev/null || echo unknown), started $(date '+%Y-%m-%d %H:%M'), in $(pwd), stop after $STOP_AFTER_MINUTES min"
     } >"$RUN_LOCK.info"
 }
-take_run_lock
+if ! $PLAN_ONLY; then
+    take_run_lock
+fi
 # The result bundles of an earlier run would show in this run's report.
 rm -rf "$RESULTS_DIR"
 
@@ -405,19 +426,50 @@ package_tests_on() {
         SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
 }
 
-# The example app's unit and UI tests on a simulator, with a result bundle named `name` in
-# `.build/results` that the report reads its slowest tests from. Extra arguments go to xcodebuild.
+# Prints the iOS version of the simulator `udid`, such as 27.2, read from its runtime's name.
+simulator_os() {
+    xcrun simctl list devices -j |
+        /usr/bin/python3 -c 'import json,re,sys; u=sys.argv[1]; d=json.load(sys.stdin)["devices"]; print(next((re.sub(r".*iOS-(\d+)-(\d+).*", r"\1.\2", k) for k, r in d.items() for x in r if x["udid"]==u), ""))' "$1"
+}
+
+# The example app's unit and UI tests through `tuist test`, which generates the project first, on
+# the simulator `name`, with a result bundle named `bundle_name` in `.build/results` that the
+# report reads its slowest tests from (#312). Extra arguments go to `tuist test`, such as
+# `--test-targets` or `--configuration`.
+#
+# Tuist's binary cache is on in every tier, and every run's results go to the project's Tuist
+# dashboard (Test Insights: run times and flaky tests). Selective testing, which skips test
+# targets nothing changed since their last pass, is on only in a `quick` run of a branch that
+# changes nothing outside `Example/`: a merge gate, `--only`, `--ui` and `--all` run every test
+# they name. Tuist's quarantine is never applied (`--skip-quarantine`): a flaky test still runs
+# and still fails the run. All of it uses the Tuist server project in `Example/Tuist.swift`;
+# WAYPOINT_TUIST_OFFLINE=1 turns every server feature off, for a Mac that isn't signed in.
 example_tests_on() {
-    local udid="$1" name="$2"
-    shift 2
-    local bundle="$RESULTS_DIR/$name.xcresult"
+    local udid="$1" simulator="$2" bundle_name="$3"
+    shift 3
+    local bundle="$RESULTS_DIR/$bundle_name.xcresult"
+    local os
+    os=$(simulator_os "$udid")
+    local tuist_flags=() offline_settings=()
+    case "$SELECTIVE_TESTING" in
+        offline)
+            tuist_flags=(--no-selective-testing --no-binary-cache --no-upload --inspect-mode off --skip-quarantine)
+            # The build's post-action reads it too, so it sends no build timings.
+            offline_settings=(WAYPOINT_TUIST_OFFLINE=1)
+            ;;
+        off) tuist_flags=(--no-selective-testing --skip-quarantine) ;;
+        on) tuist_flags=(--skip-quarantine) ;;
+    esac
     mkdir -p "$RESULTS_DIR"
-    xcodebuild test "${XCODE_TEST_FLAGS[@]}" \
-        -workspace Example/WaypointExample.xcworkspace \
-        -scheme WaypointExample \
-        -destination "platform=iOS Simulator,id=$udid" \
-        -resultBundlePath "$bundle" \
-        "$@"
+    tuist_cmd test WaypointExample \
+        --path Example \
+        --device "$simulator" \
+        ${os:+--os "$os"} \
+        ${tuist_flags[@]+"${tuist_flags[@]}"} \
+        -T "$bundle" \
+        "$@" \
+        -- -quiet -jobs "$JOBS" "${EXAMPLE_PARALLEL_FLAGS[@]}" \
+        ${offline_settings[@]+"${offline_settings[@]}"}
 }
 
 # What this run does.
@@ -455,6 +507,23 @@ case "$TIER" in
         ;;
 esac
 
+# Whether `tuist test` may skip test targets that passed before (selective testing).
+if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
+    SELECTIVE_TESTING=offline
+elif [[ "$TIER" != quick || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CHANGED_PACKAGE; then
+    # A merge gate, a test asked for by name, with --ui or --all always runs every test, even one
+    # that passed before. So does every test after a change outside `Example/`: Tuist hashes the
+    # Waypoint package by its product names, not its sources, so it can't see a renderer change.
+    SELECTIVE_TESTING=off
+else
+    SELECTIVE_TESTING=on
+fi
+if $PLAN_ONLY; then
+    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING"
+    trap - EXIT
+    exit 0
+fi
+
 step "Checking the concurrency guard rail" scripts/check-concurrency.sh
 step "Checking the example app's isolation" scripts/check-example-isolation.sh
 step "Checking that app code imports Waypoint once" scripts/check-single-import.sh
@@ -488,15 +557,12 @@ if $RUN_SIMULATOR; then
     step "xcodebuild test Waypoint-Package with warnings as errors on $SIMULATOR_NAME" package_tests_on "$UDID"
 fi
 
-if $RUN_UI || $RUN_IOS17; then
-    step "tuist generate example app" tuist_cmd generate --path Example --no-open
-fi
-
 if $RUN_UI; then
     if [[ -n "$ONLY_TEST" ]]; then
-        step "xcodebuild test $ONLY_TEST on $SIMULATOR_NAME" example_tests_on "$UDID" example-only -only-testing:"$ONLY_TEST"
+        step "tuist test $ONLY_TEST on $SIMULATOR_NAME" \
+            example_tests_on "$UDID" "$SIMULATOR_NAME" example-only --test-targets "$ONLY_TEST"
     else
-        step "xcodebuild test example app on $SIMULATOR_NAME" example_tests_on "$UDID" example
+        step "tuist test example app on $SIMULATOR_NAME" example_tests_on "$UDID" "$SIMULATOR_NAME" example
     fi
 fi
 
@@ -504,11 +570,11 @@ fi
 # release builds too, so their UI tests run again with the app and the tests built in the release
 # configuration.
 if $RUN_RELEASE_REPORTS; then
-    step "xcodebuild test release reports (Release) on $SIMULATOR_NAME" \
-        example_tests_on "$UDID" release-reports \
-        -configuration Release \
-        -only-testing:WaypointExampleUITests/SystemLinkTests \
-        -only-testing:WaypointExampleUITests/MissingDestinationTests
+    step "tuist test release reports (Release) on $SIMULATOR_NAME" \
+        example_tests_on "$UDID" "$SIMULATOR_NAME" release-reports \
+        --configuration Release \
+        --test-targets WaypointExampleUITests/SystemLinkTests \
+        --test-targets WaypointExampleUITests/MissingDestinationTests
 fi
 
 # The minimum iOS version runs last, on its own simulator, which the script never creates: it
@@ -521,5 +587,6 @@ if $RUN_IOS17; then
     fi
     claim_simulator "$IOS17_SIMULATOR_NAME" "$IOS17_UDID"
     step "xcodebuild test Waypoint-Package on $IOS17_SIMULATOR_NAME" package_tests_on "$IOS17_UDID"
-    step "xcodebuild test example app on $IOS17_SIMULATOR_NAME" example_tests_on "$IOS17_UDID" example-ios17
+    step "tuist test example app on $IOS17_SIMULATOR_NAME" \
+        example_tests_on "$IOS17_UDID" "$IOS17_SIMULATOR_NAME" example-ios17
 fi
