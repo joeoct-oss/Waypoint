@@ -3,6 +3,7 @@
 # - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
 # - a newer push cancels the run still going for the same PR,
 # - the SwiftPM build folder is cached between runs.
+# A second job builds the package with Swift 6.2, the minimum Package.swift declares (build only, no tests).
 # The Mac stays the full test gate (scripts/test-mac.sh, see TESTING.md); there is no macOS job here.
 # Switched off unless the repository variable CI_ENABLED is "true".
 name: CI
@@ -61,3 +62,23 @@ jobs:
       - name: Run the Linux checks
         run: scripts/test-linux.sh
 
+  minimum-swift:
+    name: Builds with Swift 6.2
+    if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: swift:6.2
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Restore the build cache
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: linux-swift-6.2-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ github.sha }}
+          restore-keys: |
+            linux-swift-6.2-${{ hashFiles('Package.swift', 'Package.resolved') }}-
+
+      - name: swift build
+        run: swift build
