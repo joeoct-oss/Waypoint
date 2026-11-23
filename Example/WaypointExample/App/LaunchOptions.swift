@@ -10,10 +10,11 @@ import Foundation
 
 // What the launch arguments ask for: start from a fresh install, start signed in, open the
 // Navigation Lab, open one of its entries, skip the splash or keep it up longer, push products onto
-// the shop with a change mid-push, draw the product page's related link as a system link, or make
-// it push a route with no destination in its stack. UI tests use them to start a journey or open
-// any Lab entry directly. `startingOver()` gives the options for starting a window over after Clear
-// all data: the same splash, and no screen opened directly.
+// the shop with a change mid-push, draw the product page's related link as a system link, make it
+// push a route with no destination in its stack, or make the Lab's demo reviews load slower. UI
+// tests use them to start a journey or open any Lab entry directly. `startingOver()` gives the
+// options for starting a window over after Clear all data: the same splash, and no screen opened
+// directly.
 struct LaunchOptions {
     private static let defaultSplashDuration = Duration.seconds(1)
 
@@ -26,6 +27,8 @@ struct LaunchOptions {
     let shopSteps: ShopLaunchSteps
     let usesSystemLinks: Bool
     let linksToMissingDestination: Bool
+    // `nil` keeps the Lab's usual reviews delay.
+    let labReviewsDelay: Duration?
 
     init(defaults: UserDefaults) {
         let branch = Self.value(Branch.self, for: .branch, in: defaults)
@@ -48,6 +51,7 @@ struct LaunchOptions {
         )
         usesSystemLinks = defaults.bool(forKey: LaunchArgument.systemLinks.rawValue)
         linksToMissingDestination = defaults.bool(forKey: LaunchArgument.missingDestination.rawValue)
+        labReviewsDelay = Self.makeLabReviewsDelay(in: defaults)
     }
 
     private init(splashDuration: Duration) {
@@ -60,6 +64,7 @@ struct LaunchOptions {
         shopSteps = .none
         usesSystemLinks = false
         linksToMissingDestination = false
+        labReviewsDelay = nil
     }
 
     // Conformances:
@@ -79,6 +84,15 @@ struct LaunchOptions {
             return defaultSplashDuration
         }
         let seconds = defaults.double(forKey: LaunchArgument.splashSeconds.rawValue)
+        return .seconds(max(0, seconds))
+    }
+
+    // No `-labReviewsSeconds` keeps the Lab's usual delay.
+    private static func makeLabReviewsDelay(in defaults: UserDefaults) -> Duration? {
+        guard defaults.object(forKey: LaunchArgument.labReviewsSeconds.rawValue) != nil else {
+            return nil
+        }
+        let seconds = defaults.double(forKey: LaunchArgument.labReviewsSeconds.rawValue)
         return .seconds(max(0, seconds))
     }
 

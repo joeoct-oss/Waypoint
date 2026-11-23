@@ -27,7 +27,8 @@ enum ExampleApp {
         shopPath: [Int] = [],
         shopFollowUp: ShopFollowUp? = nil,
         systemLinks: Bool = false,
-        missingDestination: Bool = false
+        missingDestination: Bool = false,
+        labReviewsSeconds: Int? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = arguments(
@@ -40,7 +41,8 @@ enum ExampleApp {
             shopPath: shopPath,
             shopFollowUp: shopFollowUp,
             systemLinks: systemLinks,
-            missingDestination: missingDestination
+            missingDestination: missingDestination,
+            labReviewsSeconds: labReviewsSeconds
         )
         app.launch()
         return app
@@ -56,7 +58,8 @@ enum ExampleApp {
         shopPath: [Int],
         shopFollowUp: ShopFollowUp?,
         systemLinks: Bool,
-        missingDestination: Bool
+        missingDestination: Bool,
+        labReviewsSeconds: Int?
     ) -> [String] {
         let path = shopPath.isEmpty ? nil : shopPath.map(String.init).joined(separator: ",")
         let values: [(LaunchArgument, String?)] = [
@@ -71,6 +74,7 @@ enum ExampleApp {
             (LaunchArgument.shopFollowUp, shopFollowUp?.rawValue),
             (LaunchArgument.systemLinks, systemLinks ? yes : nil),
             (LaunchArgument.missingDestination, missingDestination ? yes : nil),
+            (LaunchArgument.labReviewsSeconds, labReviewsSeconds.map(String.init)),
         ]
         return values.flatMap { argumentPair($0.0, $0.1) }
     }

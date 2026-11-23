@@ -27,9 +27,10 @@ import Waypoint
 @Observable
 final class LabDemoCoordinator {
     private static let shopFlowID = FlowID("labShop")
-    private static let reviewsDelay = Duration.milliseconds(2500)
+    private static let defaultReviewsDelay = Duration.milliseconds(2500)
 
     private let navigation: NavigationConfiguration
+    private let reviewsDelay: Duration
     // `var` because `showDemo(_:)` and `dismissDemo()` change it, and `syncDemo(_:)` takes the
     // system's own dismissal.
     private(set) var presentedDemo: LabDemo?
@@ -54,8 +55,10 @@ final class LabDemoCoordinator {
         }
     }
 
-    init(navigation: NavigationConfiguration) {
+    // `reviewsDelay` is how long the demo reviews take to load; `nil` keeps the usual delay.
+    init(navigation: NavigationConfiguration, reviewsDelay: Duration? = nil) {
         self.navigation = navigation
+        self.reviewsDelay = reviewsDelay ?? Self.defaultReviewsDelay
         presentedDemo = nil
         router = nil
         productModel = nil
@@ -252,7 +255,7 @@ final class LabDemoCoordinator {
     private func makeProductModel(_ router: StackRouter) -> LabProductModel {
         LabProductModel(
             navigation: router.navigator(for: LabShopFlow.self),
-            reviewsDelay: Self.reviewsDelay,
+            reviewsDelay: reviewsDelay,
             onLateOutcome: { self.recordLateOutcome($0) }
         )
     }

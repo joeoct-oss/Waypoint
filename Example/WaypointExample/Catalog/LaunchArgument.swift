@@ -14,7 +14,9 @@
 // into that push, while it still animates (`pop`, `popToRoot` or `link`). `-systemLinks YES` draws
 // the product page's related link as a system `NavigationLink`, so a UI test can check how Waypoint
 // reports one. `-missingDestination YES` makes that link push a reviews route the router knows but
-// no screen of the stack draws, so a UI test can check the screen Waypoint shows instead. UI tests
+// no screen of the stack draws, so a UI test can check the screen Waypoint shows instead.
+// `-labReviewsSeconds 6` makes the Lab's demo reviews take that long to load, so a UI test has time
+// to close the demo before they arrive, however slow the run. UI tests
 // pass them, and the app reads them through `UserDefaults`, which parses `-name value` pairs.
 //
 // Conformances:
@@ -31,6 +33,7 @@ nonisolated enum LaunchArgument: String {
     case shopFollowUp
     case systemLinks
     case missingDestination
+    case labReviewsSeconds
 
     var flag: String {
         "-\(rawValue)"
