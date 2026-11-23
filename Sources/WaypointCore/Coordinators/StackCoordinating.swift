@@ -78,9 +78,10 @@ extension StackCoordinating {
         RouterTable.shared.checkedRouter(of: self, file: #fileID, line: #line).navigator
     }
 
-    /// A new router with the default settings.
+    /// A new router with the default settings. Made while a parent lazily starts this
+    /// coordinator, it is made inside the parent's tree, so calls from `init` get its settings.
     public func makeRouter() -> StackRouter {
-        StackRouter()
+        RouterTable.shared.takeJoiningMark(for: type(of: self)) ?? StackRouter()
     }
 
     /// Registers nothing.

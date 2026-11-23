@@ -51,7 +51,7 @@ public final class StackRouter: NavigationRouter {
     /// The flow this router drives.
     ///
     /// `var` because a router that joins another tree takes a name that is free there, such as
-    /// its tab's. Only `join(tabOf:named:)` and `moveSubtree(into:from:)` change it.
+    /// its tab's. Only the `join` functions and `moveSubtree(into:from:)` change it.
     @ObservationIgnored public private(set) var flowID: FlowID
 
     /// The route of the stack's root screen, if it has one. `popTo` this route pops to root.
@@ -60,14 +60,13 @@ public final class StackRouter: NavigationRouter {
     /// The tree this router belongs to.
     ///
     /// `var` because a router made on its own joins another tree once, such as a tab child's
-    /// router becoming the tab's stack. Only `join(tabOf:named:)` and `moveSubtree(into:from:)`
-    /// change it.
+    /// router becoming the tab's stack. Only `moveSubtree(into:from:)` changes it.
     @ObservationIgnored private(set) var tree: NavigationTreeContext
 
     /// The router that presented or contains this one.
     ///
-    /// `var` because a router made on its own gets a parent when it joins another tree. Only
-    /// `join(tabOf:named:)` changes it.
+    /// `var` because a router made on its own gets a parent when it joins another tree. Only the
+    /// `join` functions and `undoJoin()` change it.
     @ObservationIgnored private(set) weak var parentNode: (any TreeNode)?
 
     /// The router every call goes to once a tab container took this router's place with another,
@@ -98,7 +97,8 @@ public final class StackRouter: NavigationRouter {
     /// Whether this router is in the tree.
     ///
     /// `var` because a router joins the tree when the transaction that creates it commits, and
-    /// leaves when its flow is dismissed. Only `markAttached()` and `markDetached()` change it.
+    /// leaves when its flow is dismissed. Only `markAttached()`, `markDetached()`,
+    /// `join(presentedBy:named:flow:)` and `undoJoin()` change it.
     @ObservationIgnored private(set) var isAttached: Bool
 
     /// Presentation defaults and fallbacks set on this router.
@@ -157,6 +157,19 @@ public final class StackRouter: NavigationRouter {
     /// `var` because a renderer or coordinator declares it after the router exists. Only
     /// ``declareFlow(_:)`` changes it.
     @ObservationIgnored private var declaredFlowType: (any NavigationFlow.Type)?
+
+    /// The child flow this router runs for a coordinator a parent started, or `nil`.
+    ///
+    /// `var` because a flow starts and ends. Only `join(presentedBy:named:flow:)`,
+    /// `markAttached()`, `markDetached()` and `undoJoin()` change it.
+    @ObservationIgnored private(set) var childFlow: (any ChildFlowRecord)?
+
+    /// The tree this router left to join a parent's, kept until the start that joined it
+    /// commits, so a rolled-back start can put it back. `nil` otherwise.
+    ///
+    /// `var` because it is set by a join and cleared by its commit or roll back. Only
+    /// `join(presentedBy:named:flow:)`, `markAttached()` and `undoJoin()` change it.
+    @ObservationIgnored private var joinedFrom: NavigationTreeContext?
 
     /// The current state. Change it through the navigation methods below.
     public var state: StackState {
@@ -329,6 +342,18 @@ public final class StackRouter: NavigationRouter {
         self.parentNode = parent
         self.committed = Snapshot(state: StackState(), presented: nil)
         self.isAttached = false
+    }
+
+    /// Creates the router of a child coordinator made while a parent starts it, inside the
+    /// parent's `tree` from the start, so calls from the child's `init` get the tree's settings.
+    /// It joins its parent when the start commits.
+    init(joining tree: NavigationTreeContext, flow name: String) {
+        self.tree = tree
+        self.flowID = tree.claimFlowName(name)
+        self.rootRoute = nil
+        self.parentNode = nil
+        self.committed = Snapshot(state: StackState(), presented: nil)
+        self.isAttached = true
     }
 
     /// Creates the router of one tab, inside a tab container.
@@ -726,22 +751,34 @@ extension StackRouter: TransactionParticipant {
         next.presented?.markAttached()
     }
 
-    /// Drops the working copy, and frees the name of a presented router that never joined.
+    /// Drops the working copy, and frees the name of a presented router that never joined, or
+    /// puts a child's router that joined back where it was.
     func discardWorkingCopy() {
         if let created = working?.presented, created !== committed.presented {
-            tree.releaseFlowName(created.flowID)
+            releaseUncommitted(created)
         }
         working = nil
     }
 
-    /// Marks this router as in the tree, when the transaction that created it commits.
+    /// Marks this router as in the tree, when the transaction that created it commits. A child
+    /// flow it runs has started.
     func markAttached() {
         isAttached = true
+        joinedFrom = nil
+        childFlow?.start()
     }
 
-    /// Marks this router as gone from the tree. Its calls return `.ignored` from now on.
+    /// Marks this router as gone from the tree. Its calls return `.ignored` from now on. A child
+    /// flow it runs ends, and its parent gets the result once the current call is done.
     func markDetached() {
         isAttached = false
+        guard let flow = childFlow, flow.isStarted else {
+            return
+        }
+        childFlow = nil
+        tree.runWhenIdle {
+            flow.end()
+        }
     }
 }
 
@@ -766,12 +803,52 @@ extension StackRouter {
     }
 
     /// Moves this router and the flows it presents into `tree`, carrying over the route types and
-    /// view names `previous` knows, and taking flow names free in `tree`.
+    /// view names `previous` knows, and taking flow names free in `tree` in place of theirs in
+    /// `previous`.
     func moveSubtree(into tree: NavigationTreeContext, from previous: NavigationTreeContext) {
         tree.takeOver(previous)
+        previous.releaseFlowName(flowID)
         self.tree = tree
         flowID = tree.claimFlowName(flowID.name)
         presented?.moveSubtree(into: tree, from: previous)
+    }
+
+    /// Moves this router, made on its own or for a lazy start, with every flow it presents, into
+    /// `parent`'s tree as the flow `parent` presents for a child coordinator, named `name`, and
+    /// keeps `flow` until it ends. It stays out of the tree until the start commits.
+    func join(presentedBy parent: any TreeNode, named name: String, flow: any ChildFlowRecord) {
+        joinedFrom = tree
+        if tree !== parent.tree {
+            moveSubtree(into: parent.tree, from: tree)
+        }
+        parentNode = parent
+        parent.tree.releaseFlowName(flowID)
+        flowID = parent.tree.claimFlowName(name)
+        isAttached = false
+        childFlow = flow
+    }
+
+    /// Puts a router whose join was rolled back where it was: the root of its own tree again,
+    /// with no child flow. Returns `false` when it didn't join.
+    func undoJoin() -> Bool {
+        guard let previous = joinedFrom else {
+            return false
+        }
+        let parentTree = tree
+        let home = previous === parentTree ? NavigationTreeContext(configuration: parentTree.configuration) : previous
+        joinedFrom = nil
+        childFlow = nil
+        parentNode = nil
+        moveSubtree(into: home, from: parentTree)
+        isAttached = true
+        return true
+    }
+
+    /// Moves a router made for a lazy start that belongs to another coordinator into a tree of
+    /// its own, so it never joins the parent's.
+    func leaveJoiningTree() {
+        let previous = tree
+        moveSubtree(into: NavigationTreeContext(configuration: previous.configuration), from: previous)
     }
 
     /// Sends every call from now on to `target`, which took this router's place and keeps it. A

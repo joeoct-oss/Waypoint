@@ -351,6 +351,68 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         }
     }
 
+    /// Presents the flow of `child`, a coordinator, above the whole tab container, as
+    /// ``StackRouter/present(_:style:trigger:else:file:line:onFinish:)`` does above a stack.
+    ///
+    /// - Parameters:
+    ///   - child: The coordinator of the presented flow.
+    ///   - style: How the flow is presented. Default: `.sheet`.
+    ///   - trigger: What started it, written in the journey box. Default: `nil`.
+    ///   - fallback: What to do if the presentation fails. Default: the flow's policy.
+    ///   - file: The calling file, where an issue points. Leave the default.
+    ///   - line: The calling line, where an issue points. Leave the default.
+    ///   - onFinish: Gets the flow's result, once.
+    @discardableResult
+    public func present<Child: FlowCoordinating>(
+        _ child: Child,
+        style: PresentationStyle = .sheet,
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line,
+        onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void
+    ) -> NavigationOutcome {
+        present(style: style, trigger: trigger, else: fallback, file: file, line: line, onFinish: onFinish) {
+            child
+        }
+    }
+
+    /// Presents the flow of the coordinator `makeChild` returns, above the whole tab container,
+    /// building it only when the present happens, as
+    /// ``StackRouter/present(style:trigger:else:file:line:onFinish:_:)`` does above a stack.
+    ///
+    /// - Parameters:
+    ///   - style: How the flow is presented. Default: `.sheet`.
+    ///   - trigger: What started it, written in the journey box. Default: `nil`.
+    ///   - fallback: What to do if the presentation fails. Default: the flow's policy.
+    ///   - file: The calling file, where an issue points. Leave the default.
+    ///   - line: The calling line, where an issue points. Leave the default.
+    ///   - onFinish: Gets the flow's result, once.
+    ///   - makeChild: Builds the coordinator of the presented flow.
+    @discardableResult
+    public func present<Child: FlowCoordinating>(
+        style: PresentationStyle = .sheet,
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line,
+        onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void,
+        _ makeChild: @escaping @MainActor () -> Child
+    ) -> NavigationOutcome {
+        let request = PresentationRequest { router, store in
+            router.presentChildStep(style: style, file: file, line: line, in: store, onFinish: onFinish, makeChild)
+        }
+        return perform(
+            file: file,
+            line: line,
+            fallback: fallback,
+            presentation: request,
+            trigger: trigger
+        ) { router, store in
+            request.step(router, store)
+        }
+    }
+
     /// Dismisses the flow presented above the container. Returns `.alreadyThere` when nothing is.
     @discardableResult
     public func dismiss(
@@ -573,7 +635,8 @@ extension TabRouter: TransactionParticipant {
         reportTabsChanged(from: previous.state.tabs, to: next.state.tabs)
     }
 
-    /// Drops the working copy, and frees the names of routers that never joined.
+    /// Drops the working copy, and frees the names of routers that never joined, or puts a child's
+    /// router that joined back where it was.
     func discardWorkingCopy() {
         guard let dropped = working else {
             return
@@ -582,9 +645,11 @@ extension TabRouter: TransactionParticipant {
         let created = dropped.tabRouters.values.filter { router in
             !committed.tabRouters.values.contains { $0 === router }
         }
-        let presentedCreated = dropped.presented.flatMap { $0 === committed.presented ? nil : $0 }
-        for router in created + (presentedCreated.map { [$0] } ?? []) {
+        for router in created {
             tree.releaseFlowName(router.flowID)
+        }
+        if let presentedCreated = dropped.presented, presentedCreated !== committed.presented {
+            releaseUncommitted(presentedCreated)
         }
     }
 
