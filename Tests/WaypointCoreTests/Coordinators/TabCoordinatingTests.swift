@@ -483,6 +483,9 @@ struct TabCoordinatingTests {
         _ = child.navigator
 
         #expect(RouterTable.shared.entryRouter(for: ObjectIdentifier(child)) === shared)
+        #expect(child.navigator.push(ProductRoute(id: 1)) == .applied)
+        #expect(child.navigator.pop() == .applied)
+        #expect(shared.state.path.isEmpty)
         #expect(child.registrations.count == registrations)
         #expect(child.registrations.last === shared)
         #expect(tabs.reported.values.isEmpty)

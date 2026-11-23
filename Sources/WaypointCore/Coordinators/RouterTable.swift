@@ -133,7 +133,8 @@ final class RouterTable {
 
     /// The router of `coordinator`, after checking that it is the table's: a stored router is
     /// reported, then adopted, named and registered, or, when another coordinator owns it, only
-    /// reported. A router a tab container merged into its shared stack counts as the table's.
+    /// reported. A router a tab container merged into a tab's stack counts as the table's, and that
+    /// stack is returned, so navigators follow its screens.
     /// Waypoint calls this whenever it touches a coordinator.
     func checkedRouter<Coordinator: StackCoordinating>(
         of coordinator: Coordinator,
@@ -143,8 +144,11 @@ final class RouterTable {
         let router = coordinator.router
         let id = ObjectIdentifier(coordinator)
         if let entry = entries[id], entry.coordinator === coordinator {
-            if entry.router === router || router.forwardTarget === entry.router {
+            if entry.router === router {
                 return router
+            }
+            if router.forwardTarget === entry.router, let target = entry.router as? StackRouter {
+                return target
             }
         }
         guard Self.isAlive(coordinator) else {
