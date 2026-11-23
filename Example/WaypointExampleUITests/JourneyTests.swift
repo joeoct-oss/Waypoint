@@ -35,6 +35,10 @@ final class JourneyTests: XCTestCase {
     private static let signedOut = "Signed out"
     private static let cartProductID = 1
     private static let cartProductTitle = "Orbit Lamp"
+    // The identifier UIKit gives a navigation bar's Back button.
+    private static let backButtonID = "BackButton"
+    // How many times the wish list test taps Back before it gives up.
+    private static let backTapTries = 3
     // The trail of product 1 on Shop, in either form: `main › shop › orbit lamp` on the bar, or
     // `Route trail: main, shop, orbit lamp` on the strip.
     private static let productTrail = NSPredicate(
@@ -263,13 +267,16 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(sheet.waitForNonExistence(timeout: UITestSteps.timeout), "the sign-in sheet stayed")
         let wishlistBar = app.navigationBars[Self.wishlistTitle]
         XCTAssertTrue(wishlistBar.waitForExistence(timeout: UITestSteps.timeout), "the wish list didn't push")
-        // On a slow run the bar shows before the push ends, and a Back tap then is lost, so wait
-        // until Back takes taps, and tap once more if the wish list is still there.
-        let back = wishlistBar.buttons.element(boundBy: 0)
-        XCTAssertTrue(back.waitUntilHittable(), "the wish list has no Back button")
-        back.tap()
-        if !wishlistBar.waitForNonExistence(timeout: UITestSteps.settleTime), back.exists, back.isHittable {
-            back.tap()
+        // Back is found by its identifier: on iOS 27 the bar's first button isn't always Back, and
+        // Back can report itself not hittable while it shows. On a slow run the bar shows before
+        // the push ends and a Back tap then is lost, so tap again while the wish list stays.
+        let back = wishlistBar.buttons[Self.backButtonID]
+        XCTAssertTrue(back.waitForExistence(timeout: UITestSteps.timeout), "the wish list has no Back button")
+        for _ in 0..<Self.backTapTries where back.exists {
+            back.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            if wishlistBar.waitForNonExistence(timeout: UITestSteps.settleTime) {
+                break
+            }
         }
 
         XCTAssertTrue(wishlistBar.waitForNonExistence(timeout: UITestSteps.timeout), "Back stayed on the wish list")
