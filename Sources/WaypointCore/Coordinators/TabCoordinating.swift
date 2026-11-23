@@ -32,8 +32,9 @@
 ///
 /// Each tab's coordinator is asked for once, and kept as long as this coordinator and its tab
 /// are. A tab added later is asked for when it is added, and a removed tab's coordinator is let
-/// go. Return a new coordinator for each tab: one returned for two tabs is reported as
-/// `coordinatorDrawnTwice`, and the second tab keeps a stack of its own.
+/// go. Return a different coordinator for each tab, a new one or one this coordinator keeps: one
+/// returned for two tabs is reported as `coordinatorDrawnTwice`, and the second tab keeps a stack
+/// of its own. A kept coordinator returned again for a tab added back gets the tab's new stack.
 ///
 /// With ``TabStacks/shared``, the selected tab's coordinator is asked first, and its router
 /// becomes the shared stack. Every other tab's coordinator drives that same stack: a router it

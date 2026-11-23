@@ -211,6 +211,27 @@ struct TabCoordinatingTests {
         #expect(profile.push(ProductRoute(id: 1)) == .applied)
     }
 
+    @Test
+    func keptChildReturnedForATabAddedBackGetsTheNewStack() {
+        let kept = TabChildCoordinator()
+        let tabs = MainTabsCoordinator(giving: .profile) {
+            kept
+        }
+        let router = tabs.router
+        let oldStack = kept.router
+        router.setTabs(MainTab.homeAndShop)
+
+        router.setTabs(MainTab.allCases)
+
+        let stack = router.router(for: .profile)
+        #expect(!oldStack.isActive)
+        #expect(kept.router === stack)
+        #expect(stack.isActive)
+        #expect(stack.coordinatorName == "TabChildCoordinator")
+        #expect(kept.navigator.push(ProductRoute(id: 1)) == .applied)
+        #expect(tabs.reported.values.isEmpty)
+    }
+
     @Test(arguments: [TabStacks.perTab, .shared])
     func removedTabReleasesItsChild(stacks: TabStacks) {
         let tabs = MainTabsCoordinator(stacks: stacks)

@@ -37,7 +37,8 @@
 @MainActor
 public protocol TabCoordinator: TabCoordinating {
     /// The stack coordinator of `tab`. Asked once per tab, when the router is made or the tab is
-    /// added. Return a new coordinator for each tab.
+    /// added. Return a different coordinator for each tab: a new one, or one this coordinator
+    /// keeps, which gets a new stack when its tab is removed and added back.
     func tabCoordinator(for tab: Tab) -> any StackCoordinator
 }
 

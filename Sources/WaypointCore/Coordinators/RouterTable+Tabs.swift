@@ -117,6 +117,10 @@ extension RouterTable {
         if childRouter === tabStack {
             return
         }
+        if childRouter.parentNode === router, !childRouter.isActive {
+            restart(child, on: tabStack)
+            return
+        }
         guard childRouter.canJoinAnotherTree else {
             tabStack.reportRouterInAnotherTree(of: child, for: tab)
             return
@@ -148,6 +152,14 @@ extension RouterTable {
         childRouter.forward(to: shared)
         store(Entry(coordinator: child, router: shared, ownsRouter: false), as: ObjectIdentifier(child))
         child.registerDestinations(on: shared)
+    }
+
+    /// Gives `child`, kept by the app and returned again for a tab added back, the tab's new
+    /// stack: its old router left the tree with the removed tab. Navigators of the old router
+    /// stay stale, as for any removed tab.
+    private func restart<Child: StackCoordinating>(_ child: Child, on stack: StackRouter) {
+        settle(stack, of: child, as: ObjectIdentifier(child), from: .made)
+        nameTabStack(stack, of: child)
     }
 
     /// Names a tab's adopted stack: a child that keeps its type's default root name leaves the
