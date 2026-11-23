@@ -186,6 +186,8 @@ enum ReadableLog {
             return "this coordinator uses another coordinator's router"
         case .rootNameReplaced:
             return "rootName replaced the root name makeRouter() set"
+        case .releasedRouterReturned:
+            return "makeRouter() returned a router that already ended"
         }
     }
 

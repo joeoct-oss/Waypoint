@@ -73,6 +73,10 @@ public struct NavigationIssue: NavigationRecord {
         /// A coordinator's `makeRouter()` named the root screen, and its `rootName` replaced that
         /// name. Name the root screen with `rootName`.
         case rootNameReplaced
+
+        /// A coordinator's `makeRouter()` returned a router that ended with the coordinator it
+        /// was made for, so every call on it returns `.ignored`.
+        case releasedRouterReturned
     }
 
     /// What went wrong.

@@ -182,6 +182,9 @@ final class RouterTable {
         }
         let entry = Entry(coordinator: coordinator, router: router, ownsRouter: true, isMade: source == .made)
         store(entry, as: id)
+        if source == .made, !router.isActive {
+            router.reportReleasedRouterReturned(to: coordinator, file: file, line: line)
+        }
         if source == .stored {
             router.reportRouterNotFromWaypoint(storedIn: coordinator, file: file, line: line)
         }

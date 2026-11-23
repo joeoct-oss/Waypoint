@@ -174,6 +174,22 @@ struct StackCoordinatingTests {
     }
 
     @Test
+    func routerFromMakeRouterEndsWithItsCoordinator() throws {
+        let router = makeAndDropCoordinatorRouter()
+        let reported = Recorder<NavigationIssue>()
+        router.tree.onReported { issue in
+            reported.record(issue)
+        }
+        let next = GivenRouterCoordinator(given: router)
+
+        let outcome = next.router.push(ProductRoute(id: 1))
+
+        #expect(outcome == .ignored)
+        let issue = try #require(reported.values.first { $0.kind == .releasedRouterReturned })
+        #expect(issue.message.contains("GivenRouterCoordinator"))
+    }
+
+    @Test
     func declaredRootNameWinsOverMakeRouters() {
         let coordinator = OwnRouterCoordinator()
 
