@@ -443,9 +443,11 @@ example_tests_on() {
     local bundle="$RESULTS_DIR/$bundle_name.xcresult"
     local os
     os=$(simulator_os "$udid")
-    local tuist_flags=()
+    local tuist_flags=() offline_settings=()
     if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
         tuist_flags=(--no-selective-testing --no-binary-cache --no-upload --inspect-mode off)
+        # The build's post-action reads it too, so it sends no build timings.
+        offline_settings=(WAYPOINT_TUIST_OFFLINE=1)
     elif [[ "$TIER" != quick ]]; then
         tuist_flags=(--no-selective-testing --skip-quarantine)
     else
@@ -459,7 +461,8 @@ example_tests_on() {
         ${tuist_flags[@]+"${tuist_flags[@]}"} \
         -T "$bundle" \
         "$@" \
-        -- -quiet -jobs "$JOBS" "${EXAMPLE_PARALLEL_FLAGS[@]}"
+        -- -quiet -jobs "$JOBS" "${EXAMPLE_PARALLEL_FLAGS[@]}" \
+        ${offline_settings[@]+"${offline_settings[@]}"}
 }
 
 # What this run does.
