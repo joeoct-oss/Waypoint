@@ -33,7 +33,7 @@ extension StackRouter {
         tree.report(issue, level: .error)
     }
 
-    /// Reports `invalidSetting`: the root name `makeRouter()` gave this router, `earlier`, is
+    /// Reports `rootNameReplaced`: the root name `makeRouter()` gave this router, `earlier`, is
     /// replaced by the coordinator's `rootName`.
     func reportRootNameReplaced(
         _ earlier: String,
@@ -45,7 +45,7 @@ extension StackRouter {
         let name = ViewTypeName.of(type(of: coordinator))
         let message = "\(name).makeRouter() named the root screen \"\(earlier)\", and \(name).rootName "
             + "names it \"\(rootName)\" instead. Name the root screen with rootName, not in makeRouter()."
-        let issue = NavigationIssue(kind: .invalidSetting, flow: flowID, message: message, file: file, line: line)
+        let issue = NavigationIssue(kind: .rootNameReplaced, flow: flowID, message: message, file: file, line: line)
         tree.report(issue, level: .error)
     }
 

@@ -184,6 +184,8 @@ enum ReadableLog {
             return "this coordinator stores its own router"
         case .routerOwnedByAnotherCoordinator:
             return "this coordinator uses another coordinator's router"
+        case .rootNameReplaced:
+            return "rootName replaced the root name makeRouter() set"
         }
     }
 

@@ -406,6 +406,7 @@ public struct NavigationIssue: NavigationRecord {
         case missingDestination
         case routerNotFromWaypoint
         case routerOwnedByAnotherCoordinator
+        case rootNameReplaced
     }
     /// What went wrong.
     public let kind: Kind

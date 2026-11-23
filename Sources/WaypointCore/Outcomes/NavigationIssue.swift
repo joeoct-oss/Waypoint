@@ -69,6 +69,10 @@ public struct NavigationIssue: NavigationRecord {
         /// owns, so both drive one stack.
         /// Waypoint leaves the router with its owner.
         case routerOwnedByAnotherCoordinator
+
+        /// A coordinator's `makeRouter()` named the root screen, and its `rootName` replaced that
+        /// name. Name the root screen with `rootName`.
+        case rootNameReplaced
     }
 
     /// What went wrong.

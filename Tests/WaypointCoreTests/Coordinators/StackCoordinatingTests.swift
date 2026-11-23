@@ -168,7 +168,7 @@ struct StackCoordinatingTests {
 
         #expect(router.rootName == "NamedRouter")
         let issue = try #require(reported.last)
-        #expect(issue.kind == .invalidSetting)
+        #expect(issue.kind == .rootNameReplaced)
         #expect(issue.message.contains("\"Made list\""))
         #expect(issue.message.contains("rootName"))
     }
