@@ -110,15 +110,14 @@ extension RouterTable {
     private func attach<Tab: NavigationTab>(_ child: any StackCoordinating, as tab: Tab, to router: TabRouter<Tab>) {
         let childRouter = checkedRouter(of: child, file: #fileID, line: #line)
         let tabStack = router.router(for: tab)
+        router.nameTabCoordinator(ViewTypeName.of(type(of: child)), for: tab)
         if childRouter.parentNode === router, !childRouter.isActive {
-            router.nameTabCoordinator(ViewTypeName.of(type(of: child)), for: tab)
             restart(child, on: tabStack)
             return
         }
         guard entry(for: ObjectIdentifier(child))?.ownsRouter == true else {
             return
         }
-        router.nameTabCoordinator(ViewTypeName.of(type(of: child)), for: tab)
         if childRouter === tabStack {
             return
         }

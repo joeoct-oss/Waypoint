@@ -235,10 +235,10 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.values.isEmpty)
     }
 
-    @Test
-    func keptMergedChildReturnedForATabAddedBackGetsTheNewStack() throws {
+    @Test(arguments: Self.bothLayouts)
+    func keptMergedChildReturnedForATabAddedBackGetsTheNewStack(stacks: TabStacks) throws {
         let kept = Recorder<ParentReadingCoordinator>()
-        let tabs = MainTabsCoordinator { tab, parent in
+        let tabs = MainTabsCoordinator(stacks: stacks) { tab, parent in
             guard tab == .shop else {
                 return TabChildCoordinator()
             }
@@ -255,6 +255,7 @@ struct TabCoordinatingTests {
         router.setTabs(withoutShop)
 
         router.setTabs(MainTab.allCases)
+        router.select(.shop)
 
         let child = try #require(kept.last)
         let stack = router.router(for: .shop)
@@ -371,6 +372,29 @@ struct TabCoordinatingTests {
         #expect(issue.message.contains("EarlyPushCoordinator"))
         #expect(issue.message.contains("profile"))
         #expect(early.last?.router === shared)
+    }
+
+    @Test
+    func transactionOnMergedChildRouterForwards() throws {
+        let early = Recorder<EarlyPushCoordinator>()
+        let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
+            guard tab == .profile else {
+                return TabChildCoordinator()
+            }
+            let child = EarlyPushCoordinator()
+            early.record(child)
+            return child
+        }
+        let shared = tabs.router.router(for: .home)
+        let child = try #require(early.last)
+
+        let outcome = child.made.transaction { transaction in
+            transaction.push(ProductRoute(id: 2))
+            transaction.push(ProductRoute(id: 3))
+        }
+
+        #expect(outcome == .applied)
+        #expect(shared.state.path.count == 2)
     }
 
     @Test

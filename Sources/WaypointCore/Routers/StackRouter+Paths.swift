@@ -70,7 +70,10 @@ extension StackRouter {
         line: UInt = #line,
         _ body: @escaping (NavigationTransaction) -> Void
     ) -> NavigationOutcome {
-        tree.perform(on: self, file: file, line: line) { [unowned self] store in
+        if let forwardTarget {
+            return forwardTarget.transaction(file: file, line: line, body)
+        }
+        return tree.perform(on: self, file: file, line: line) { [unowned self] store in
             NavigationTransaction.run(body, on: self, in: store)
         }
     }
