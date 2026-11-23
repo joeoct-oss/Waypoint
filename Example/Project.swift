@@ -53,9 +53,9 @@ let appSettings: SettingsDictionary = [
 ]
 
 let appDependencies: [TargetDependency] = [
-    .package(product: "WaypointCore"),
-    .package(product: "Waypoint"),
-    .package(product: "WaypointUIKit"),
+    .external(name: "WaypointCore"),
+    .external(name: "Waypoint"),
+    .external(name: "WaypointUIKit"),
 ]
 
 // The UI tests compile the app's catalog and identifiers too, so a test names a screen with the
@@ -164,10 +164,6 @@ let scheme = Scheme.scheme(
     runAction: .runAction(executable: "WaypointExample")
 )
 
-let packages: [Package] = [
-    .local(path: ".."),
-]
-
 let targets: [Target] = [
     app,
     unitTests,
@@ -180,7 +176,6 @@ let schemes: [Scheme] = [
 
 let project = Project(
     name: "WaypointExample",
-    packages: packages,
     settings: .settings(base: baseSettings),
     targets: targets,
     schemes: schemes
