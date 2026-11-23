@@ -1,9 +1,10 @@
 # Runs the Linux checks (scripts/test-linux.sh) on pull requests to main.
 # Built to stay inside the account's included Actions minutes:
 # - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
-# - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**, docs-theme/**) skips
-#   both Swift jobs, which GitHub counts as passed; the "Changed files and docs checks" job still runs the two checks that
-#   read docs (comment width and one import in snippets), and it fails the run if they fail,
+# - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**, docs-theme/**)
+#   skips both Swift jobs, which GitHub counts as passed; the first job, "Changed files and docs
+#   checks" (a required check too), still runs the two checks that read docs. If that job fails,
+#   the Swift jobs run anyway,
 # - a newer push cancels the run still going for the same PR,
 # - the SwiftPM build folder is cached between runs.
 # A second job builds the package with Swift 6.2, the minimum Package.swift declares (build only, no tests).
@@ -69,7 +70,11 @@ jobs:
   linux:
     name: Linux checks
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    # Runs unless the first job passed and found docs only, so a failed or cancelled first job
+    # never lets the Swift jobs skip.
+    if: >-
+      !cancelled() && vars.CI_ENABLED == 'true' && !github.event.pull_request.draft &&
+      !(needs.changes.result == 'success' && needs.changes.outputs.code == 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     container:
@@ -110,7 +115,11 @@ jobs:
   minimum-swift:
     name: Builds with Swift 6.2
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    # Runs unless the first job passed and found docs only, so a failed or cancelled first job
+    # never lets the Swift jobs skip.
+    if: >-
+      !cancelled() && vars.CI_ENABLED == 'true' && !github.event.pull_request.draft &&
+      !(needs.changes.result == 'success' && needs.changes.outputs.code == 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container: swift:6.2
