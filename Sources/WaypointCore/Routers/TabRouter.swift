@@ -608,9 +608,10 @@ extension TabRouter: TransactionParticipant {
         }
     }
 
-    /// Tells the tab coordinator which tabs a change added and removed.
+    /// Tells the tab coordinator which tabs a change added and removed, once the call and the
+    /// calls it queued are done, so a new child's calls from its `init` apply at once.
     private func reportTabsChanged(from previous: [Tab], to next: [Tab]) {
-        guard let tabsChanged, previous != next else {
+        guard tabsChanged != nil, previous != next else {
             return
         }
         let added = next.filter { !previous.contains($0) }
@@ -618,7 +619,9 @@ extension TabRouter: TransactionParticipant {
         guard !added.isEmpty || !removed.isEmpty else {
             return
         }
-        tabsChanged(added, removed)
+        tree.runAfterTurn { [weak self] in
+            self?.tabsChanged?(added, removed)
+        }
     }
 
     /// Detaches the old presented router and attaches the new one, if it changed.

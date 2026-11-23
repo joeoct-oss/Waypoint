@@ -173,6 +173,29 @@ struct TabCoordinatingTests {
     }
 
     @Test
+    func tabPushFromChildOfAddedTabIsKept() throws {
+        let child = Recorder<ParentReadingCoordinator>()
+        let tabs = MainTabsCoordinator(tabs: MainTab.homeAndShop) { tab, parent in
+            guard tab == .profile else {
+                return TabChildCoordinator()
+            }
+            let reader = ParentReadingCoordinator(tab: tab, parent: parent)
+            child.record(reader)
+            reader.tabNavigator.push(ProductRoute(id: 1))
+            return reader
+        }
+        let router = tabs.router
+
+        router.setTabs(MainTab.allCases)
+
+        let reader = try #require(child.last)
+        let stack = router.router(for: .profile)
+        #expect(stack.state.path.count == 1)
+        #expect(reader.router === stack)
+        #expect(tabs.reported.values.isEmpty)
+    }
+
+    @Test
     func tabChildReadingParentRouterInInitDoesNotRejoin() throws {
         let child = Recorder<ParentReadingCoordinator>()
         let tabs = MainTabsCoordinator { tab, parent in

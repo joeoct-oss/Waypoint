@@ -30,6 +30,13 @@ final class NavigationTreeContext {
     /// `enqueue` and `drainQueue` change it.
     private var turn = Turn.idle
 
+    /// Work to run once the current call and the calls it queued are done, such as asking a tab
+    /// coordinator for the children of tabs a call added.
+    ///
+    /// `var` because commits add work and the end of a turn runs it. Only `runAfterTurn(_:)` and
+    /// `drainQueue` change it.
+    private var afterTurn: [() -> Void] = []
+
     /// Flow names used by routers in the tree.
     ///
     /// `var` because flows come and go. Only ``claimFlowName(_:)`` and ``releaseFlowName(_:)``
@@ -455,6 +462,16 @@ final class NavigationTreeContext {
             call()
         }
         turn = .idle
+        while !afterTurn.isEmpty {
+            let work = afterTurn.removeFirst()
+            work()
+        }
+    }
+
+    /// Runs `work` once the call being applied and the calls it queued are done, when calls
+    /// made from `work` apply at once.
+    func runAfterTurn(_ work: @escaping () -> Void) {
+        afterTurn.append(work)
     }
 
     /// Removes the first queued call and returns it, or `nil` when the queue is empty.
