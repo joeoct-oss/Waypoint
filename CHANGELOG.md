@@ -27,6 +27,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ### Changed
 
+- CI does no work it doesn't need (#5). A pull request that changes only docs skips the Swift jobs (**Linux checks** and **Builds with Swift 6.2**), and a new first check, **Changed files and docs checks**, runs the two checks that read Markdown on every pull request. `scripts/test-linux.sh` builds once with warnings as errors and runs the fixture check and the tests on that build, instead of building the same code twice more.
 - Pull requests merge by squash by default, or with a merge commit (same title format) when the branch's commits explain why the change was made; rebase merges are off. `main` no longer requires linear history (#320).
 - Pull requests to `main` get CI (#5): `.github/workflows/ci.yml` runs `scripts/test-linux.sh` as the **Linux checks** check on GitHub Actions when a pull request is ready for review and on each push after that (drafts are skipped, a newer push cancels the older run). It runs only when the repository variable `CI_ENABLED` is `true`. The Mac stays the full gate. Its checks are the Linux merge gate in `TESTING.md`: a hand run of `scripts/test-linux.sh` is needed only while `CI_ENABLED` is off, or when `main` moved after the check ran.
 - The package needs Swift 6.2 or later (Xcode 26 or later): `Package.swift` now says `swift-tools-version: 6.2`. The code already used `weak let`, which arrived in Swift 6.2, so a Swift 6.0 build failed; CI now builds with Swift 6.2 on every pull request. (#316)
