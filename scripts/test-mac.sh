@@ -108,8 +108,8 @@ JOBS="${WAYPOINT_JOBS:-$(default_jobs)}"
 # clone the simulator once per worker.
 XCODE_TEST_FLAGS=(-quiet -jobs "$JOBS" -parallel-testing-enabled NO)
 
-# The example app's tests run on this many simulator copies at once (#312, approved by Yousef on
-# 2026-11-23), so they take about half as long.
+# The example app's tests run on this many simulator copies at once (#312), so they take about
+# half as long.
 UI_WORKERS="${WAYPOINT_UI_WORKERS:-2}"
 if [[ "$UI_WORKERS" -gt 1 ]]; then
     EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled YES -parallel-testing-worker-count "$UI_WORKERS")
