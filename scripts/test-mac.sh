@@ -43,6 +43,8 @@
 #   WAYPOINT_JOBS             build jobs (default half the performance cores, at least 2).
 #   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 2;
 #                             1 runs them on the simulator itself).
+#   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing, the binary
+#                             cache and uploads (default 0).
 #   WAYPOINT_BASE             what quick compares the branch with (default origin/main).
 #   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
 #                             script's own checks set it, and WAYPOINT_RUN_LOCK_TEST_PAUSE.
@@ -427,23 +429,30 @@ simulator_os() {
 # The example app's unit and UI tests through `tuist test`, which generates the project first, on
 # the simulator `name`, with a result bundle named `bundle_name` in `.build/results` that the
 # report reads its slowest tests from (#312). Extra arguments go to `tuist test`, such as
-# `--test-targets` or `--configuration`. Tuist's selective testing, binary cache and uploads stay
-# off until the project is linked to a Tuist account.
+# `--test-targets` or `--configuration`.
+#
+# Tuist's binary cache is on in every tier. Selective testing, which skips test targets nothing
+# changed since their last pass, is on in `quick` only: a merge gate runs every test. Both use the
+# Tuist server project in `Example/Tuist.swift`; WAYPOINT_TUIST_OFFLINE=1 turns every server
+# feature off, for a Mac that isn't signed in.
 example_tests_on() {
     local udid="$1" simulator="$2" bundle_name="$3"
     shift 3
     local bundle="$RESULTS_DIR/$bundle_name.xcresult"
     local os
     os=$(simulator_os "$udid")
+    local tuist_flags=()
+    if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
+        tuist_flags=(--no-selective-testing --no-binary-cache --no-upload --inspect-mode off)
+    elif [[ "$TIER" != quick ]]; then
+        tuist_flags=(--no-selective-testing)
+    fi
     mkdir -p "$RESULTS_DIR"
     tuist_cmd test WaypointExample \
         --path Example \
         --device "$simulator" \
         ${os:+--os "$os"} \
-        --no-selective-testing \
-        --no-binary-cache \
-        --no-upload \
-        --inspect-mode off \
+        ${tuist_flags[@]+"${tuist_flags[@]}"} \
         -T "$bundle" \
         "$@" \
         -- -quiet -jobs "$JOBS" "${EXAMPLE_PARALLEL_FLAGS[@]}"

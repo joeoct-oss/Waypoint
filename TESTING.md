@@ -44,7 +44,7 @@ The tests in `Tests/WaypointCoreTests/LinuxBehaviourTests.swift` pin the Observa
 Two scripts run every layer. Nothing else counts as a test run:
 
 - `scripts/test-linux.sh` runs, in order: the core imports check, the comment width check, the concurrency guard rail, the Mac test script's run lock check (`scripts/check-test-mac-lock.sh`, which uses stand-in tools), the merge batch check (`scripts/check-merge-batch.sh`), `swift build`, `swift build --build-tests` with warnings as errors, the compile fixtures, `swift test`, and `swift test` under the thread sanitizer. Extra arguments go to both `swift test` runs.
-- `scripts/test-mac.sh [quick|full|release]` runs the Mac layers in tiers. What each tier runs is in the script's header comment and in the table below. The example app's unit and UI tests run through `tuist test`, which generates the project first, on `WAYPOINT_UI_WORKERS` temporary copies of the simulator at once (default 2, #312). Xcode makes the copies and removes them when the step ends; the package's tests never use copies. Tuist's selective testing, binary cache and uploads stay off until the project is linked to a Tuist account. Every tier that runs the example app's tests ends its log with the 10 slowest of them (`scripts/slowest-tests.py`).
+- `scripts/test-mac.sh [quick|full|release]` runs the Mac layers in tiers. What each tier runs is in the script's header comment and in the table below. The example app's unit and UI tests run through `tuist test`, which generates the project first, on `WAYPOINT_UI_WORKERS` temporary copies of the simulator at once (default 2, #312). Xcode makes the copies and removes them when the step ends; the package's tests never use copies. The project is linked to the Tuist server project `joeoct91/waypoint` (`Example/Tuist.swift`), so `tuist test` uses Tuist's binary cache in every tier, and its selective testing, which skips test targets nothing changed since their last pass, in `quick` only: a merge gate runs every test. The Mac signs in once with `mise exec -- tuist auth login`; `WAYPOINT_TUIST_OFFLINE=1` turns every server feature off. Every tier that runs the example app's tests ends its log with the 10 slowest of them (`scripts/slowest-tests.py`).
 - `scripts/merge-batch.sh` builds a [merge batch](#merge-batches) in the Mac clone and checks it before each merge.
 
 | Tier | Runs | Simulators | Time on the Mac (2026-11-20) | Stop it after |
@@ -220,7 +220,7 @@ wait "$(cat .build/test-mac.pid)"; echo "exit=$?"
 
 - Run these lines as one background command that is allowed to run past the tier's **Stop it after** time, and wait for it to end. Never start a second Mac run while it runs.
 - When it is still running at the **Stop it after** time, it is hung. Stop the step it is stuck in with `pkill -TERM -P "$(cat .build/test-mac.pid)"`. The script then fails that step, and its exit step shuts down its simulators and removes its locks. When the script is still running two minutes later, run `kill -TERM "$(cat .build/test-mac.pid)"`. Use `TERM`, not `INT`: a script started in the background ignores `INT`. Never `kill -9`. Then go to [When a run fails](#6-when-a-run-fails).
-- `WAYPOINT_JOBS`, `WAYPOINT_BASE` and `WAYPOINT_UI_WORKERS` stay unset unless the person who asked for the run names a value.
+- `WAYPOINT_JOBS`, `WAYPOINT_BASE`, `WAYPOINT_UI_WORKERS` and `WAYPOINT_TUIST_OFFLINE` stay unset unless the person who asked for the run names a value.
 
 ### Pass or fail
 

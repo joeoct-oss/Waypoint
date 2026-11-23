@@ -130,10 +130,9 @@ else
     fail "the stand-in tuist ran, never the real one"
 fi
 # The example app's tests run through `tuist test` (#312): on the project simulator, into a
-# result bundle, with Tuist's server features off and two parallel workers.
+# result bundle, with two parallel workers. A quick run keeps Tuist's selective testing on.
 TUIST_CALL=$(grep "^tuist test WaypointExample" "$CALLS" | head -1)
-for part in "--path Example" "--device waypoint-01" "--os 27.2" "--no-selective-testing" \
-    "--no-binary-cache" "--no-upload" "--inspect-mode off" "-T .build/results/example-only.xcresult" \
+for part in "--path Example" "--device waypoint-01" "--os 27.2" "-T .build/results/example-only.xcresult" \
     "--test-targets WaypointExampleUITests/StackTests/testPushAndBack" \
     "-parallel-testing-enabled YES" "-parallel-testing-worker-count 2"; do
     if [[ "$TUIST_CALL" == *" $part"* ]]; then
@@ -142,6 +141,18 @@ for part in "--path Example" "--device waypoint-01" "--os 27.2" "--no-selective-
         fail "tuist test gets $part (call: $TUIST_CALL)"
     fi
 done
+if [[ "$TUIST_CALL" != *"--no-selective-testing"* ]]; then
+    pass "a quick run keeps selective testing on"
+else
+    fail "a quick run keeps selective testing on (call: $TUIST_CALL)"
+fi
+: >"$CALLS"
+if run_script WAYPOINT_TUIST_OFFLINE=1 >"$WORK/1b.log" 2>&1 &&
+    grep "^tuist test" "$CALLS" | grep -q -- "--no-selective-testing --no-binary-cache --no-upload --inspect-mode off"; then
+    pass "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
+else
+    fail "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
+fi
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
 : >"$CALLS"
