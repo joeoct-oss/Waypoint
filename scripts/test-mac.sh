@@ -433,9 +433,10 @@ simulator_os() {
 #
 # Tuist's binary cache is on in every tier, and every run's results go to the project's Tuist
 # dashboard (Test Insights: run times and flaky tests). Selective testing, which skips test
-# targets nothing changed since their last pass, is on only in a `quick` run that chose its parts
-# itself: a merge gate, `--only` and `--ui` run every test they name. Tuist's quarantine is never
-# applied (`--skip-quarantine`): a flaky test still runs and still fails the run. All of it uses the Tuist server project in `Example/Tuist.swift`;
+# targets nothing changed since their last pass, is on only in a `quick` run of a branch that
+# changes nothing outside `Example/`: a merge gate, `--only`, `--ui` and `--all` run every test
+# they name. Tuist's quarantine is never applied (`--skip-quarantine`): a flaky test still runs
+# and still fails the run. All of it uses the Tuist server project in `Example/Tuist.swift`;
 # WAYPOINT_TUIST_OFFLINE=1 turns every server feature off, for a Mac that isn't signed in.
 example_tests_on() {
     local udid="$1" simulator="$2" bundle_name="$3"
@@ -448,8 +449,10 @@ example_tests_on() {
         tuist_flags=(--no-selective-testing --no-binary-cache --no-upload --inspect-mode off)
         # The build's post-action reads it too, so it sends no build timings.
         offline_settings=(WAYPOINT_TUIST_OFFLINE=1)
-    elif [[ "$TIER" != quick || -n "$ONLY_TEST" ]] || $WITH_UI; then
-        # A test asked for by name or with --ui always runs, even when it passed before.
+    elif [[ "$TIER" != quick || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CHANGED_PACKAGE; then
+        # A test asked for by name, with --ui or --all always runs, even when it passed before.
+        # So does every test after a change outside `Example/`: Tuist hashes the Waypoint package
+        # by its product names, not its sources, so it can't see a renderer change.
         tuist_flags=(--no-selective-testing --skip-quarantine)
     else
         tuist_flags=(--skip-quarantine)
