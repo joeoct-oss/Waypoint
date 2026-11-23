@@ -104,8 +104,8 @@ default_jobs() {
 }
 JOBS="${WAYPOINT_JOBS:-$(default_jobs)}"
 
-# Settings every simulator test run shares: the job cap, and no parallel testing, which would
-# clone the simulator once per worker.
+# Settings the package's simulator tests run with: the job cap, and no parallel testing, which
+# would clone the simulator once per worker.
 XCODE_TEST_FLAGS=(-quiet -jobs "$JOBS" -parallel-testing-enabled NO)
 
 # The example app's tests run on this many simulator copies at once (#312), so they take about
