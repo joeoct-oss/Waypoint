@@ -105,7 +105,8 @@ extension RouterTable {
     }
 
     /// Makes the router of `child` the stack of `tab`: adopted when it can join, merged into a
-    /// shared stack another tab already brought, or refused and reported.
+    /// shared stack another tab already brought, or into a tab stack that already has screens,
+    /// such as one the child pushed on in `init`, or refused and reported.
     private func attach<Tab: NavigationTab>(_ child: any StackCoordinating, as tab: Tab, to router: TabRouter<Tab>) {
         let childRouter = checkedRouter(of: child, file: #fileID, line: #line)
         let tabStack = router.router(for: tab)
@@ -120,16 +121,20 @@ extension RouterTable {
             tabStack.reportRouterInAnotherTree(of: child, for: tab)
             return
         }
-        if router.stacks == .shared, liveOwner(of: tabStack, other: child) != nil {
+        let standInHasScreens = !tabStack.state.path.isEmpty || tabStack.presented != nil
+        if standInHasScreens || (router.stacks == .shared && liveOwner(of: tabStack, other: child) != nil) {
             merge(child, router: childRouter, into: tabStack, for: tab)
+            if router.stacks == .perTab {
+                tabStack.setCoordinator(child)
+            }
         } else {
             router.adoptTabRouter(childRouter, for: tab)
             nameTabStack(childRouter, of: child)
         }
     }
 
-    /// Sends the calls of `child`'s router to `shared`, the stack another tab's child already
-    /// brought, and registers the child's destinations there.
+    /// Sends the calls of `child`'s router to `shared`, the tab's stack that another tab's child
+    /// already brought or that already has screens, and registers the child's destinations there.
     private func merge<Tab: NavigationTab>(
         _ child: any StackCoordinating,
         router childRouter: StackRouter,

@@ -146,6 +146,30 @@ struct TabCoordinatingTests {
     }
 
     @Test
+    func tabPushBeforeChildAdoptionIsKept() throws {
+        let child = Recorder<ParentReadingCoordinator>()
+        let tabs = MainTabsCoordinator { tab, parent in
+            guard tab == .shop else {
+                return TabChildCoordinator()
+            }
+            let reader = ParentReadingCoordinator(tab: tab, parent: parent)
+            reader.tabNavigator.push(ProductRoute(id: 1))
+            child.record(reader)
+            return reader
+        }
+
+        let stack = tabs.router.router(for: .shop)
+
+        let reader = try #require(child.last)
+        #expect(stack.state.path.count == 1)
+        #expect(reader.router === stack)
+        #expect(stack.coordinatorName == "ParentReadingCoordinator")
+        #expect(reader.router.push(ProductRoute(id: 2)) == .applied)
+        #expect(stack.state.path.count == 2)
+        #expect(tabs.reported.values.isEmpty)
+    }
+
+    @Test
     func tabChildReadingParentRouterInInitDoesNotRejoin() throws {
         let child = Recorder<ParentReadingCoordinator>()
         let tabs = MainTabsCoordinator { tab, parent in
