@@ -148,10 +148,11 @@ final class AuthCoordinator {
     // reader is choosing a new password.
     func showResetPassword() {
         let reset = ResetPasswordCoordinator(service: service)
-        let outcome = router.present(reset, style: .sheet) { result in
+        // No fallback, so a second tap while the sheet is up is refused and keeps the flow on
+        // screen, with what the reader typed, instead of the app's `.replacePresentation`.
+        let outcome = router.present(reset, style: .sheet, else: NavigationFallback.none) { result in
             self.resetPasswordEnded(with: result)
         }
-        // A refused present, such as a second tap while the sheet is up, keeps the flow on screen.
         guard outcome.didChange else {
             return
         }
