@@ -19,7 +19,7 @@ Follow the steps in order and word for word. Each step says what to run, what a 
 
 There are two places a test can run:
 
-- **Linux**: a Linux machine with a Swift 6 toolchain, such as a cloud container. `WaypointCore` is pure Swift, so the core builds and tests here. The renderer targets compile empty on Linux, so nothing here touches SwiftUI or UIKit.
+- **Linux**: a Linux machine with a Swift 6.2 or later toolchain, such as a cloud container. `WaypointCore` is pure Swift, so the core builds and tests here. The renderer targets compile empty on Linux, so nothing here touches SwiftUI or UIKit.
 - **The Mac**: a Mac with Xcode 26 or later (the example app needs Swift 6.2), and the tools from `scripts/bootstrap.sh` ([setup](CONTRIBUTING.md#setup)). Everything that needs Apple's frameworks, Xcode or a simulator runs here.
 
 | Layer | Where it lives | Linux | Mac |
@@ -121,7 +121,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
    swift --version
    ```
 
-   Pass: it prints `Swift version 6.` followed by a minor version. The run lock check also needs `ps`, `pgrep`, `pkill` and `/usr/bin/python3`: `command -v ps pgrep pkill /usr/bin/python3` prints four lines. When one is missing, install it (on Debian or Ubuntu: `procps` and `python3`). When `swift` is missing, install a Swift 6 toolchain (<https://www.swift.org/install/linux/>, or the machine's own setup script), then check again. Any other answer: stop and report it.
+   Pass: it prints `Swift version 6.` followed by a minor version of 2 or more. The run lock check also needs `ps`, `pgrep`, `pkill` and `/usr/bin/python3`: `command -v ps pgrep pkill /usr/bin/python3` prints four lines. When one is missing, install it (on Debian or Ubuntu: `procps` and `python3`). When `swift` is missing, install a Swift 6.2 or later toolchain (<https://www.swift.org/install/linux/>, or the machine's own setup script), then check again. Any other answer: stop and report it.
 
 2. Get the exact commit to test, in a clean clone:
 
@@ -155,7 +155,7 @@ Nothing to tear down. Leave `.build` in place: the next run reuses it.
 
 ### On pull requests (CI)
 
-When the repository variable `CI_ENABLED` is `true`, GitHub Actions runs this suite on every pull request to `main` that is ready for review (`.github/workflows/ci.yml`, #5): on opening, on every push and when a draft is marked ready. Draft pull requests are skipped and a newer push cancels the older run. It runs the whole suite on every change, docs only included. Its check is called **Linux checks**, and `main` only takes pull requests where it passed. While `CI_ENABLED` is not `true` the jobs show as skipped, which GitHub lets through; a skipped check is not a pass, so run `scripts/test-linux.sh` by hand as below before merging. A green **Linux checks** on the pull request's head is the Linux gate, so a merge needs no separate cloud run. Runs use the account's included Actions minutes; there is no macOS job, so the Mac tiers below stay the Mac gate.
+When the repository variable `CI_ENABLED` is `true`, GitHub Actions runs this suite on every pull request to `main` that is ready for review (`.github/workflows/ci.yml`, #5): on opening, on every push and when a draft is marked ready. Draft pull requests are skipped and a newer push cancels the older run. It runs the whole suite on every change, docs only included. Its check is called **Linux checks**; a second check, **Builds with Swift 6.2**, builds the package with the minimum Swift that `Package.swift` declares (#316). `main` only takes pull requests where both passed. While `CI_ENABLED` is not `true` the jobs show as skipped, which GitHub lets through; a skipped check is not a pass, so run `scripts/test-linux.sh` by hand as below before merging. A green **Linux checks** on the pull request's head is the Linux gate, so a merge needs no separate cloud run. Runs use the account's included Actions minutes; there is no macOS job, so the Mac tiers below stay the Mac gate.
 
 ## 5. Run a Mac tier
 
