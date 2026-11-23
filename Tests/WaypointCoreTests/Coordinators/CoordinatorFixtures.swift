@@ -108,10 +108,14 @@ final class DeinitReadingCoordinator: StackCoordinating {
         self.madeRouter = madeRouter
     }
 
-    /// Pushes from `deinit`, where the coordinator is going away.
-    isolated deinit {
-        let router = router
-        outcomes.record((router.push(ProductRoute(id: 1)), router))
+    /// Pushes from `deinit`, where the coordinator is going away. The tests free it on the main
+    /// actor. `MainActor.assumeIsolated` instead of `isolated deinit`, which needs a newer OS
+    /// than the package's minimum.
+    deinit {
+        MainActor.assumeIsolated {
+            let router = router
+            outcomes.record((router.push(ProductRoute(id: 1)), router))
+        }
     }
 
     /// The given router, or a permissive one.
