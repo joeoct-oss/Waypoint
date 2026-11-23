@@ -9,6 +9,8 @@
 // Tuist's settings for the example app. The Tuist version is pinned with mise (#80). The project
 // is linked to its Tuist server project, which keeps the selective testing results and the binary
 // cache that `scripts/test-mac.sh` uses (#312); the Mac signs in once with `tuist auth login`.
+// `enableCaching` adds Xcode's compilation cache settings to the generated project, backed by
+// Tuist's remote cache; `tuist setup cache` installs the local proxy it talks to, once per Mac.
 
 import ProjectDescription
 
@@ -16,5 +18,9 @@ let tuistProject = "joeoct91/waypoint"
 
 let tuist = Tuist(
     fullHandle: tuistProject,
-    project: .tuist()
+    project: .tuist(
+        generationOptions: .options(
+            enableCaching: true
+        )
+    )
 )
