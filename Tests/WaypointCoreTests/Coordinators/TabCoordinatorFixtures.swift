@@ -262,3 +262,30 @@ final class GivenTabsCoordinator: TabCoordinating {
         return TabChildCoordinator()
     }
 }
+
+/// A tab's child that presents a flow on its own permissive router in `init`, before it joins
+/// its tab.
+///
+/// Conformances:
+/// - `StackCoordinating`, so the core makes its router.
+@MainActor
+final class EarlyPresentCoordinator: StackCoordinating {
+    /// The router made in `init`.
+    let made: StackRouter
+
+    /// The flow presented in `init`.
+    let presentedFlow: StackRouter?
+
+    /// Presents the cart on a new router.
+    init() {
+        let router = StackRouter(configuration: .permissive)
+        router.present(CartRoute())
+        made = router
+        presentedFlow = router.presented
+    }
+
+    /// The router made in `init`, already presenting a flow.
+    func makeRouter() -> StackRouter {
+        made
+    }
+}

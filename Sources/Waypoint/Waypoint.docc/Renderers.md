@@ -276,7 +276,7 @@ The choice for a place is made in this order:
 
 A pushed child flow shares its parent's stack, so its parent's renderer draws it. A pushed child that declares a renderer has it ignored, and that is reported in debug.
 
-The issue kinds for these reports, such as `coordinatorDrawnTwice`, `rendererNotSupportedHere` and `rendererIgnoredForPushedFlow`, are added to `NavigationIssue.Kind` when #59 builds them.
+`coordinatorDrawnTwice` is in `NavigationIssue.Kind` already, for a tab coordinator that returns one coordinator for two tabs; its report for a coordinator drawn in two places comes later in #59. `rendererNotSupportedHere` and `rendererIgnoredForPushedFlow` are added with the first renderer that isn't the default (#14).
 
 ### Mixing SwiftUI and UIKit
 

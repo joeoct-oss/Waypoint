@@ -775,8 +775,10 @@ extension StackRouter {
     }
 
     /// Sends every call from now on to `target`, which took this router's place and keeps it. A
-    /// navigator of the root screen keeps working; one of a pushed screen is stale.
+    /// navigator of the root screen keeps working; one of a pushed screen is stale, and a flow
+    /// this router presented leaves the tree.
     func forward(to target: StackRouter) {
+        committed.presented?.detachSubtree()
         forwardTarget = target
         target.forwarders.append(self)
         markDetached()

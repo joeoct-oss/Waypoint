@@ -122,8 +122,9 @@ extension RouterTable {
         file: StaticString,
         line: UInt
     ) {
-        let childRouter = checkedRouter(of: child, file: file, line: line)
         let tabStack = router.router(for: tab)
+        acceptStoredTabStack(of: child, tabStack, file: file, line: line)
+        let childRouter = checkedRouter(of: child, file: file, line: line)
         router.nameTabCoordinator(ViewTypeName.of(type(of: child)), for: tab)
         if childRouter.parentNode === router, !childRouter.isActive {
             restart(child, on: tabStack)
@@ -168,6 +169,20 @@ extension RouterTable {
         childRouter.forward(to: shared)
         store(Entry(coordinator: child, router: shared, ownsRouter: false), as: ObjectIdentifier(child))
         child.registerDestinations(on: shared)
+    }
+
+    /// Settles `child` on `stack`, with no report, when it stores the stack its own tab
+    /// coordinator handed it: that is the router the table would give it.
+    private func acceptStoredTabStack<Child: StackCoordinating>(
+        of child: Child,
+        _ stack: StackRouter,
+        file: StaticString,
+        line: UInt
+    ) {
+        guard entry(for: ObjectIdentifier(child)) == nil, child.router === stack else {
+            return
+        }
+        settle(stack, of: child, as: ObjectIdentifier(child), from: .made, file: file, line: line)
     }
 
     /// Gives `child`, kept by the app and returned again for a tab added back, the tab's new

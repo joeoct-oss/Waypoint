@@ -398,6 +398,29 @@ struct TabCoordinatingTests {
     }
 
     @Test
+    func mergedChildsEarlyPresentedFlowLeavesTheTree() throws {
+        let early = Recorder<EarlyPresentCoordinator>()
+        let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
+            guard tab == .profile else {
+                return TabChildCoordinator()
+            }
+            let child = EarlyPresentCoordinator()
+            early.record(child)
+            return child
+        }
+        _ = tabs.router
+        let child = try #require(early.last)
+        let presented = try #require(child.presentedFlow)
+
+        let outcome = presented.push(ProductRoute(id: 1))
+
+        #expect(!presented.isActive)
+        #expect(outcome == .ignored)
+        let expected: [NavigationIssue.Kind] = [.tabChildRouterMerged]
+        #expect(tabs.reportedKinds == expected)
+    }
+
+    @Test
     func staleNavigatorOfMergedChildForwards() throws {
         let early = Recorder<EarlyPushCoordinator>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
@@ -576,8 +599,7 @@ struct TabCoordinatingTests {
         let stack = router.router(for: .shop)
         #expect(stack.isActive)
         #expect(stack.coordinatorName == "StoredRouterCoordinator")
-        #expect(!tabs.reportedKinds.contains(.routerInAnotherTree))
-        #expect(!tabs.reportedKinds.contains(.routerOwnedByAnotherCoordinator))
+        #expect(tabs.reported.values.isEmpty)
     }
 
     @Test
