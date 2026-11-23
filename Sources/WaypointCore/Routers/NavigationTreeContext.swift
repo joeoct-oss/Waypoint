@@ -219,6 +219,9 @@ final class NavigationTreeContext {
         isLive: @escaping () -> Bool,
         _ body: @escaping (TransactionStore) -> CallResult
     ) -> NavigationOutcome {
+        if !turn.isApplying {
+            RouterTable.shared.sweep()
+        }
         guard router.isAttached, isLive() else {
             logIgnored(router.flowID, file: file, line: line)
             return .ignored

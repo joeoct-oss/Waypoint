@@ -180,6 +180,14 @@ enum ReadableLog {
             return "the screen showed something the router can't match"
         case .missingDestination:
             return "this stack has no destination for this screen"
+        case .routerNotFromWaypoint:
+            return "this coordinator stores its own router"
+        case .routerOwnedByAnotherCoordinator:
+            return "this coordinator uses another coordinator's router"
+        case .rootNameReplaced:
+            return "rootName replaced the root name makeRouter() set"
+        case .releasedRouterReturned:
+            return "this coordinator got a router that already ended"
         }
     }
 

@@ -269,7 +269,7 @@ final class ShopCoordinator: StackCoordinator {
 }
 ```
 
-`ShopCoordinator().view` is the whole flow, drawn. The router comes from the conformance, so the coordinator doesn't declare one. A coordinator that declares `let router = StackRouter()` uses its own, as tests and previews do.
+`ShopCoordinator().view` is the whole flow, drawn. The router comes from the conformance, so the coordinator doesn't declare one. A coordinator that wants a router of its own, as tests and previews do, implements `makeRouter()`; a stored `let router` is reported as `routerNotFromWaypoint` and adopted.
 
 `WaypointStack(router) { … }` and `WaypointStack(flow:router:root:)` above stay as the lower-level views, for a stack that no coordinator runs.
 

@@ -13,7 +13,8 @@ import Waypoint
 // Detail push flow, which `DetailPushCoordinator` runs. Each product demo is the small
 // `LabShopFlow` on a Waypoint stack of its own, because stacks don't nest, and Detail push is
 // `DetailPushFlow` on another, Tabs is `TabsDemoCoordinator`'s tab container, and Sheet is
-// `SheetDemoCoordinator`'s stack with the sheets and covers it presents. Every
+// `SheetDemoCoordinator`'s stack with the sheets and covers it presents. Detail push's coordinator
+// makes its own router, which Waypoint drops once this coordinator lets it go. Every other
 // product demo gets a fresh router, which this coordinator owns while the demo is up and drops once
 // it has closed, so a navigator that outlives the demo has no router left. The no-router demo runs
 // in a plain SwiftUI stack instead: the account stack above the Lab is a Waypoint stack, so only a
@@ -26,7 +27,6 @@ import Waypoint
 @Observable
 final class LabDemoCoordinator {
     private static let shopFlowID = FlowID("labShop")
-    private static let detailPushFlowID = FlowID("detailPush")
     private static let reviewsDelay = Duration.milliseconds(2500)
 
     private let navigation: NavigationConfiguration
@@ -81,15 +81,16 @@ final class LabDemoCoordinator {
         }
     }
 
-    // Tabs and Sheet make their own routers, so they get no stack router here and no product model.
+    // Detail push, Tabs and Sheet make their own routers, so they get no stack router here and no
+    // product model.
     func showDemo(_ demo: LabDemo) {
-        let ownsRouter = demo == .tabs || demo == .sheet
-        let router = ownsRouter ? nil : makeRouter(for: demo)
+        let ownsRouter = demo == .detailPush || demo == .tabs || demo == .sheet
+        let router = ownsRouter ? nil : makeRouter()
         lateOutcome = nil
-        detailPush = demo == .detailPush ? router.map { DetailPushCoordinator(router: $0) } : nil
+        detailPush = demo == .detailPush ? DetailPushCoordinator(navigation: navigation) : nil
         tabsDemo = demo == .tabs ? makeTabsDemo() : nil
         sheetDemo = demo == .sheet ? makeSheetDemo() : nil
-        productModel = detailPush == nil ? router.map { makeProductModel($0) } : nil
+        productModel = router.map { makeProductModel($0) }
         self.router = router
         presentedDemo = demo
     }
@@ -113,10 +114,6 @@ final class LabDemoCoordinator {
 
     func recordLateOutcome(_ outcome: NavigationOutcome) {
         lateOutcome = outcome.description
-    }
-
-    private static func flowID(for demo: LabDemo) -> FlowID {
-        demo == .detailPush ? detailPushFlowID : shopFlowID
     }
 
     @ViewBuilder
@@ -245,9 +242,9 @@ final class LabDemoCoordinator {
             .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func makeRouter(for demo: LabDemo) -> StackRouter {
+    private func makeRouter() -> StackRouter {
         StackRouter(
-            flow: Self.flowID(for: demo),
+            flow: Self.shopFlowID,
             configuration: navigation
         )
     }
