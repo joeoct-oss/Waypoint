@@ -227,6 +227,25 @@ struct StackCoordinatingTests {
     }
 
     @Test
+    func adoptedStoredRouterStaysLiveAfterItsCoordinatorIsGone() {
+        let stored = StackRouter(configuration: .permissive)
+        adoptAndDrop(stored)
+        let next = StoredRouterCoordinator(router: stored)
+
+        let outcome = next.router.push(ProductRoute(id: 1))
+
+        #expect(outcome == .applied)
+        #expect(stored.isActive)
+    }
+
+    @Test
+    func declaredRootNameEqualToTheDefaultCountsAsTheDefault() {
+        let coordinator = SameNameCoordinator()
+
+        #expect(coordinator.router.rootName == "Made list")
+    }
+
+    @Test
     func reusedIdentifierGetsAFreshEntry() throws {
         let table = RouterTable()
         let freedID = try #require(makeAndDropEntry(in: table))
@@ -300,6 +319,12 @@ struct StackCoordinatingTests {
         owner.router.tree.onReported { _ in
             _ = reader
         }
+    }
+
+    /// Makes a coordinator that stores `router`, lets Waypoint adopt it, and drops the
+    /// coordinator.
+    private func adoptAndDrop(_ router: StackRouter) {
+        _ = StoredRouterCoordinator(router: router).navigator
     }
 
     /// Makes a coordinator, reads its router and drops the coordinator, keeping the router.

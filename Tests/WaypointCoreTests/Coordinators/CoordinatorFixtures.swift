@@ -158,3 +158,23 @@ final class NamedRouterCoordinator: StackCoordinating {
         return router
     }
 }
+
+/// A stack coordinator that declares the same root name as its default, and whose `makeRouter()`
+/// names the root screen.
+///
+/// Conformances:
+/// - `StackCoordinating`, so the core names its router.
+@MainActor
+final class SameNameCoordinator: StackCoordinating {
+    /// The same name the type would get by default.
+    var rootName: String {
+        "SameName"
+    }
+
+    /// A router whose root screen is named `Made list`.
+    func makeRouter() -> StackRouter {
+        let router = StackRouter()
+        router.setRootName("Made list")
+        return router
+    }
+}
