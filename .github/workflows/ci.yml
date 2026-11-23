@@ -1,6 +1,10 @@
 # Runs the Linux checks (scripts/test-linux.sh) on pull requests to main.
 # Built to stay inside the account's included Actions minutes:
 # - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
+# - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**, docs-theme/**)
+#   skips both Swift jobs, which GitHub counts as passed; the first job, "Changed files and docs
+#   checks" (a required check too), still runs the two checks that read docs. If that job fails,
+#   the Swift jobs run anyway,
 # - a newer push cancels the run still going for the same PR,
 # - the SwiftPM build folder is cached between runs.
 # A second job builds the package with Swift 6.2, the minimum Package.swift declares (build only, no tests).
@@ -22,9 +26,55 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Changed files and docs checks
+    if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.files.outputs.code }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # "code" is false only when every changed file is docs only. Renames list both names, so a
+      # Swift file renamed to a .md file still counts as code. A run started by hand has no pull
+      # request to compare with, so it runs everything.
+      - name: List the changed files
+        id: files
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          code=true
+          if [ -n "$BASE" ]; then
+            changed=$(git diff --name-only --no-renames "$BASE...$HEAD")
+            printf '%s\n' "$changed"
+            if [ -z "$(printf '%s\n' "$changed" | grep -Ev '\.md$|\.docc/|^docs-theme/|^$')" ]; then
+              code=false
+            fi
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "Swift jobs run: $code"
+
+      # The two Linux checks that read Markdown need no Swift, so they run here on every pull
+      # request, docs only included. scripts/test-linux.sh runs them again with the rest.
+      - name: Check comment line width
+        run: scripts/check-comment-width.sh
+
+      - name: Check that app code and docs snippets import Waypoint once
+        run: scripts/check-single-import.sh
+
   linux:
     name: Linux checks
-    if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
+    needs: changes
+    # Runs unless the first job passed and found docs only, so a failed or cancelled first job
+    # never lets the Swift jobs skip.
+    if: >-
+      !cancelled() && vars.CI_ENABLED == 'true' && !github.event.pull_request.draft &&
+      !(needs.changes.result == 'success' && needs.changes.outputs.code == 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     container:
@@ -64,7 +114,12 @@ jobs:
 
   minimum-swift:
     name: Builds with Swift 6.2
-    if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
+    needs: changes
+    # Runs unless the first job passed and found docs only, so a failed or cancelled first job
+    # never lets the Swift jobs skip.
+    if: >-
+      !cancelled() && vars.CI_ENABLED == 'true' && !github.event.pull_request.draft &&
+      !(needs.changes.result == 'success' && needs.changes.outputs.code == 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container: swift:6.2
