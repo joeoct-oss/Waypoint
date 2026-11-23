@@ -27,7 +27,11 @@ jobs:
     if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    container: swift:6.4
+    container:
+      image: swift:6.4
+      # The thread sanitizer turns off address randomization for itself, which Docker's default
+      # seccomp profile forbids; without this it stops with "incompatible memory layout".
+      options: --security-opt seccomp=unconfined
     steps:
       - name: Check out
         uses: actions/checkout@v4
