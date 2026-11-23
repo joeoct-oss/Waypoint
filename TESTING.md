@@ -36,7 +36,7 @@ There are two places a test can run:
 | Renderer unit tests | `Tests/WaypointTests`, `Tests/WaypointUIKitTests` (the parts not behind `canImport(SwiftUI)` or `canImport(UIKit)` also run on Linux) | partly | ✅ macOS host and simulator |
 | Unified log tests | `Tests/WaypointOSLogTests` | | ✅ thread sanitizer in `full` and `release` |
 | Example app unit tests (Swift Testing: view models, the services container and the store) | `Example/WaypointExampleTests` | | ✅ simulator, with the UI tests |
-| Example app UI tests (XCUITest) | `Example/WaypointExampleUITests` | | ✅ simulator |
+| Example app UI tests (XCUITest) | `Example/WaypointExampleUITests`, run through `tuist test` on 2 simulator copies at once | | ✅ simulator |
 | iOS device build | `Waypoint-Package` for `generic/platform=iOS` | | ✅ `release` only |
 
 The tests in `Tests/WaypointCoreTests/LinuxBehaviourTests.swift` pin the Observation, main actor and `Sendable` behaviour the core relies on, so a difference between Linux and Apple platforms shows up there first.
@@ -44,14 +44,14 @@ The tests in `Tests/WaypointCoreTests/LinuxBehaviourTests.swift` pin the Observa
 Two scripts run every layer. Nothing else counts as a test run:
 
 - `scripts/test-linux.sh` runs, in order: the core imports check, the comment width check, the concurrency guard rail, the Mac test script's run lock check (`scripts/check-test-mac-lock.sh`, which uses stand-in tools), the merge batch check (`scripts/check-merge-batch.sh`), `swift build`, `swift build --build-tests` with warnings as errors, the compile fixtures, `swift test`, and `swift test` under the thread sanitizer. Extra arguments go to both `swift test` runs.
-- `scripts/test-mac.sh [quick|full|release]` runs the Mac layers in tiers. What each tier runs is in the script's header comment and in the table below. Every tier that runs the example app's tests ends its log with the 10 slowest of them (`scripts/slowest-tests.py`).
+- `scripts/test-mac.sh [quick|full|release]` runs the Mac layers in tiers. What each tier runs is in the script's header comment and in the table below. The example app's unit and UI tests run through `tuist test`, which generates the project first, on `WAYPOINT_UI_WORKERS` temporary copies of the simulator at once (default 2, #312). Xcode makes the copies and removes them when the step ends; the package's tests never use copies. The project is linked to the Tuist server project `joeoct91/waypoint` (`Example/Tuist.swift`), so `tuist test` uses Tuist's binary cache in every tier, and its selective testing, which skips test targets nothing changed since their last pass, only in a `quick` run of a branch that changes nothing outside `Example/`: a merge gate, `--only`, `--ui` and `--all` run every test they name, and so does any change to the package, since Tuist can't see the package's sources in its hashes. Every run's results also go to the project's Tuist dashboard (Test Insights: run times and flaky tests), and every build of the example app, in Xcode or a script, sends its timings there (Build Insights, a scheme post-action). Tuist's quarantine is never applied (`--skip-quarantine`): a flaky test still runs and still fails the run. The generated project also uses Xcode's compilation cache, backed by Tuist's remote cache (`enableCaching` in `Example/Tuist.swift`), so a build reuses what an earlier build of the same sources compiled. The Mac signs in once with `mise exec -- tuist auth login` and installs the cache's local proxy once with `mise exec -- tuist setup cache` (a login item, `tuist.cas-proxy`); `WAYPOINT_TUIST_OFFLINE=1` turns every server feature off except the compilation cache, which goes through the proxy whenever it runs. Every tier that runs the example app's tests ends its log with the 10 slowest of them (`scripts/slowest-tests.py`).
 - `scripts/merge-batch.sh` builds a [merge batch](#merge-batches) in the Mac clone and checks it before each merge.
 
-| Tier | Runs | Simulators | Time on the Mac (2026-11-20) | Stop it after |
+| Tier | Runs | Simulators | Time on the Mac | Stop it after |
 |---|---|---|---|---|
-| `quick` (default) | The guard rail, the compile fixtures, the host and simulator package tests (each built once with warnings as errors), and the example app's unit and UI tests when the branch changes `Example/` or a renderer. It skips parts the branch can't affect: a branch with only docs changes runs the guard rail alone. `--ui` adds the example app's tests, `--all` runs every part, `--only <Target/Class[/test]>` runs the guard rail and that one UI test. | `WAYPOINT_SIMULATOR` | about 12 min with the UI tests | 30 min |
-| `full` | Every part, whatever changed: the guard rail, the compile fixtures, host and simulator package tests, the unified log tests under the thread sanitizer, the example app's unit tests and all UI tests, then the system link and missing destination UI tests again in the Release configuration. | `WAYPOINT_SIMULATOR` | about 14 min | 35 min |
-| `release` | `full`, then the iOS device build, then the package tests and the example app's unit and UI tests again on the iOS 17 simulator. | `WAYPOINT_SIMULATOR` and `WAYPOINT_IOS17_SIMULATOR` | about 23 min | 50 min |
+| `quick` (default) | The guard rail, the compile fixtures, the host and simulator package tests (each built once with warnings as errors), and the example app's unit and UI tests when the branch changes `Example/` or a renderer. It skips parts the branch can't affect: a branch with only docs changes runs the guard rail alone. `--ui` adds the example app's tests, `--all` runs every part, `--only <Target/Class[/test]>` runs the guard rail and that one UI test. Any tier with `--plan` prints what it would run, and whether selective testing is on, without running anything. | `WAYPOINT_SIMULATOR` | about 12 min with the UI tests (2026-11-20, before `tuist test`) | 30 min |
+| `full` | Every part, whatever changed: the guard rail, the compile fixtures, host and simulator package tests, the unified log tests under the thread sanitizer, the example app's unit tests and all UI tests, then the system link and missing destination UI tests again in the Release configuration. | `WAYPOINT_SIMULATOR` | about 19 to 22 min through `tuist test` on 2 simulator copies (2026-11-23; about 26 min before) | 35 min |
+| `release` | `full`, then the iOS device build, then the package tests and the example app's unit and UI tests again on the iOS 17 simulator. | `WAYPOINT_SIMULATOR` and `WAYPOINT_IOS17_SIMULATOR` | about 23 min (2026-11-20, before `tuist test`; not measured since) | 50 min |
 
 `scripts/test-linux.sh` takes about 3 minutes in a cloud container from a clean checkout (2026-11-21); stop it after 15 minutes.
 
@@ -108,7 +108,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
 | `waypoint-03` | iPad | 27.2 | iPad checks only |
 
 - **Mac runs are queued, one at a time.** Runs go in the order they ask. The first run takes the simulators it needs (`release` uses `waypoint-01` and `waypoint-02`). Every later run waits until that run has finished its teardown. Then it checks out its own commit, and the script builds and installs that version on the simulator. There is only one clone on the Mac, so a second run at the same time would change the first run's checkout under it, even on another simulator. Ask whoever keeps the queue for your turn before preflight, and say when your teardown is done. The script backs the queue up with a **run lock**: its first step takes `/tmp/waypoint-test-mac.lock`, a link to its process id that every clone and checkout on the Mac shares, and a second run stops at once with `error: another Mac test run holds the run lock` and runs nothing. The script clears a lock whose run has ended (a crash, a stop, a reboot) by itself, and never removes the lock of a run that is still going. A run that still holds it past its tier's **Stop it after** time is hung: stop it as [Run a Mac tier](#run-1) says, which also releases the lock. The script also locks each simulator it uses (`${TMPDIR:-/tmp}/waypoint-test-<name>.lock`) from the moment it reaches the simulator. Neither lock protects the clone before the script starts, so the queue still comes first.
-- **Never create a simulator.** `scripts/test-mac.sh` creates `WAYPOINT_SIMULATOR` when it is missing, so preflight step 3 checks it exists first and the script never gets the chance.
+- **Never create a simulator.** `scripts/test-mac.sh` creates `WAYPOINT_SIMULATOR` when it is missing, so preflight step 3 checks it exists first and the script never gets the chance. The temporary copies Xcode makes for parallel testing (#312) are the one exception: Xcode makes and removes them itself, and they never join the pool.
 - **Never delete, erase or rename a simulator**, and never shut down one you don't hold. Shut down only your own, by name: `xcrun simctl shutdown waypoint-01`. Never `xcrun simctl shutdown all`.
 
 ## 4. Run the Linux suite
@@ -224,7 +224,7 @@ wait "$(cat .build/test-mac.pid)"; echo "exit=$?"
 
 - Run these lines as one background command that is allowed to run past the tier's **Stop it after** time, and wait for it to end. Never start a second Mac run while it runs.
 - When it is still running at the **Stop it after** time, it is hung. Stop the step it is stuck in with `pkill -TERM -P "$(cat .build/test-mac.pid)"`. The script then fails that step, and its exit step shuts down its simulators and removes its locks. When the script is still running two minutes later, run `kill -TERM "$(cat .build/test-mac.pid)"`. Use `TERM`, not `INT`: a script started in the background ignores `INT`. Never `kill -9`. Then go to [When a run fails](#6-when-a-run-fails).
-- `WAYPOINT_JOBS` and `WAYPOINT_BASE` stay unset unless the person who asked for the run names a value.
+- `WAYPOINT_JOBS`, `WAYPOINT_BASE`, `WAYPOINT_UI_WORKERS` and `WAYPOINT_TUIST_OFFLINE` stay unset unless the person who asked for the run names a value.
 
 ### Pass or fail
 
@@ -309,7 +309,7 @@ Teardown: simulators shut down, locks gone, clone back on main | <what is left>
 - Never skip, disable, comment out or delete a test, a check or a fixture to get a pass, and never change a timeout, a filter or a flag the command above doesn't name.
 - Never edit code, tests or scripts during a run. A run reports; the fix is separate work.
 - Never call a run passed when it didn't print its pass line, when only a retry passed, or when it ran on another commit.
-- Never create, delete, erase or rename a simulator, never shut down one you don't hold, and never run `xcrun simctl shutdown all`.
+- Never create, delete, erase or rename a simulator (Xcode's own temporary copies for parallel testing aside, #312), never shut down one you don't hold, and never run `xcrun simctl shutdown all`.
 - Never remove another run's lock, the run lock included, and never `kill -9` a test run (stop a hung one with `TERM`, as in [Run](#run-1)).
 - Never start a Mac run before the run ahead of it in the queue has finished its teardown.
 - Never stash, reset or delete changes in the Mac clone that aren't yours.
