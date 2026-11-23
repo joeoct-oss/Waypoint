@@ -766,6 +766,10 @@ struct ChildFlowTests {
 }
 
 /// Which router a refused child's router is.
+///
+/// Conformances:
+/// - `CaseIterable`, so a test runs once for each.
+/// - `Sendable`, so Swift Testing can pass it to the test as an argument.
 enum RefusingRouter: CaseIterable, Sendable {
     /// The router presenting the child.
     case caller
@@ -774,6 +778,10 @@ enum RefusingRouter: CaseIterable, Sendable {
 }
 
 /// The two ways to start a child flow.
+///
+/// Conformances:
+/// - `CaseIterable`, so a test runs once for each.
+/// - `Sendable`, so Swift Testing can pass it to the test as an argument.
 enum StartForm: CaseIterable, Sendable {
     /// Passing the child.
     case eager
