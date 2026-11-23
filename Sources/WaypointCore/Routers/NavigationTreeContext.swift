@@ -485,6 +485,17 @@ final class NavigationTreeContext {
         work()
     }
 
+    /// Lets `object` go once no call is being applied, so its `deinit`, such as a child
+    /// coordinator's, never runs inside a commit.
+    func releaseWhenIdle(_ object: AnyObject?) {
+        guard let object else {
+            return
+        }
+        runWhenIdle {
+            withExtendedLifetime(object) { }
+        }
+    }
+
     /// Removes the first queued call and returns it, or `nil` when the queue is empty.
     private func takeNextQueuedCall() -> (() -> Void)? {
         guard let call = turn.queue.first else {

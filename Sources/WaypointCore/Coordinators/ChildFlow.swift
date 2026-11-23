@@ -16,23 +16,28 @@ protocol ChildFlowRecord: AnyObject {
     /// ends.
     var isStarted: Bool { get }
 
-    /// Marks the start as committed.
-    func start()
+    /// Marks the start as committed, and hands the coordinator to the router that presents the
+    /// flow, which keeps it from now on.
+    func start() -> AnyObject?
 
     /// Gives the parent the flow's result: the value it finished with, or `.cancelled`.
     func end()
 }
 
-/// A child flow whose coordinator finishes with `Output`: the coordinator, held while the flow
-/// runs, and what the parent gets when it ends.
+/// A child flow whose coordinator finishes with `Output`: the coordinator, held until the flow
+/// starts, and what the parent gets when it ends.
 ///
 /// Conformances:
 /// - `ChildFlowRecord`, so the child's router can end it without knowing `Output`.
 @MainActor
 final class ChildFlow<Output: Sendable>: ChildFlowRecord {
-    /// The child coordinator, held strongly so the flow lives as long as its router is in the
-    /// tree, even when the parent keeps no reference to it.
-    private let coordinator: AnyObject
+    /// The child coordinator, held strongly until the start commits, then handed to the router
+    /// that presents the flow. The record never keeps it after that: the child's router keeps this
+    /// record, and the router table keeps that router, so holding the coordinator here would keep
+    /// all three alive after the presenting router is gone.
+    ///
+    /// `var` because the start hands it over. Only `start()` changes it.
+    private var coordinator: AnyObject?
 
     /// The parent's `onFinish:`.
     private let onFinish: (FlowResult<Output>) -> Void
@@ -61,9 +66,12 @@ final class ChildFlow<Output: Sendable>: ChildFlowRecord {
         self.output = output
     }
 
-    /// Marks the start as committed.
-    func start() {
+    /// Marks the start as committed, and hands over the coordinator.
+    func start() -> AnyObject? {
         isStarted = true
+        let started = coordinator
+        coordinator = nil
+        return started
     }
 
     /// Calls `onFinish` with the kept value, or `.cancelled`.

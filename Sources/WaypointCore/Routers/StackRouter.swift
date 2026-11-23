@@ -161,8 +161,15 @@ public final class StackRouter: NavigationRouter {
     /// The child flow this router runs for a coordinator a parent started, or `nil`.
     ///
     /// `var` because a flow starts and ends. Only `join(presentedBy:named:flow:)`,
-    /// `markAttached()`, `markDetached()` and `undoJoin()` change it.
+    /// `markDetached()` and `undoJoin()` change it.
     @ObservationIgnored private(set) var childFlow: (any ChildFlowRecord)?
+
+    /// The coordinator of the child flow this router presents, kept while the flow is presented,
+    /// so a parent needn't keep it. `nil` when the presented flow has no coordinator.
+    ///
+    /// `var` because flows are presented and dismissed. Only `commitWorkingCopy(around:)` and
+    /// `forward(to:)` change it.
+    @ObservationIgnored private var presentedCoordinator: AnyObject?
 
     /// The tree this router left to join a parent's, kept until the start that joined it
     /// commits, so a rolled-back start can put it back. `nil` otherwise.
@@ -749,6 +756,9 @@ extension StackRouter: TransactionParticipant {
         }
         previous.presented?.detachSubtree()
         next.presented?.markAttached()
+        let started = next.presented?.startChildFlow()
+        tree.releaseWhenIdle(presentedCoordinator)
+        presentedCoordinator = started
     }
 
     /// Drops the working copy, and frees the name of a presented router that never joined, or
@@ -760,11 +770,15 @@ extension StackRouter: TransactionParticipant {
         working = nil
     }
 
-    /// Marks this router as in the tree, when the transaction that created it commits. A child
-    /// flow it runs has started.
+    /// Marks this router as in the tree, when the transaction that created it commits.
     func markAttached() {
         isAttached = true
         joinedFrom = nil
+    }
+
+    /// Starts the child flow this router runs, once the start that presented it commits, and
+    /// returns its coordinator for the presenting router to keep. `nil` when it runs none.
+    func startChildFlow() -> AnyObject? {
         childFlow?.start()
     }
 
@@ -856,6 +870,8 @@ extension StackRouter {
     /// this router presented leaves the tree.
     func forward(to target: StackRouter) {
         committed.presented?.detachSubtree()
+        tree.releaseWhenIdle(presentedCoordinator)
+        presentedCoordinator = nil
         forwardTarget = target
         target.forwarders.append(self)
         markDetached()

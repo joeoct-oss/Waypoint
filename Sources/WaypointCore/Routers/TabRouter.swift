@@ -86,6 +86,13 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// this file change it.
     @ObservationIgnored private var working: Snapshot?
 
+    /// The coordinator of the child flow this container presents, kept while the flow is
+    /// presented, so a parent needn't keep it. `nil` when the presented flow has no coordinator.
+    ///
+    /// `var` because flows are presented and dismissed. Only `commitPresented(from:to:)` changes
+    /// it.
+    @ObservationIgnored private var presentedCoordinator: AnyObject?
+
     /// Whether this router is in the tree.
     ///
     /// `var` because a router leaves the tree when its flow is dismissed. Only `markAttached()`
@@ -697,5 +704,8 @@ extension TabRouter: TransactionParticipant {
         }
         previous?.detachSubtree()
         next?.markAttached()
+        let started = next?.startChildFlow()
+        tree.releaseWhenIdle(presentedCoordinator)
+        presentedCoordinator = started
     }
 }

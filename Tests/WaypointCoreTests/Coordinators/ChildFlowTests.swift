@@ -237,6 +237,29 @@ struct ChildFlowTests {
     }
 
     @Test
+    func droppedParentReleasesAndCancelsItsChild() {
+        let results = Recorder<FlowResult<String>>()
+        weak var weakChild: CheckoutFlowCoordinator?
+        weak var weakRouter: StackRouter?
+        do {
+            let parent = StackRouter()
+            let child = CheckoutFlowCoordinator()
+            weakChild = child
+            weakRouter = child.router
+            parent.present(child) { result in
+                results.record(result)
+            }
+        }
+
+        RouterTable.shared.sweep()
+
+        #expect(weakChild == nil)
+        #expect(weakRouter == nil)
+        let expected: [FlowResult<String>] = [.cancelled]
+        #expect(results.values == expected)
+    }
+
+    @Test
     func presentedFlowReleasedOnDismiss() {
         let parent = StackRouter()
         weak var weakChild: CheckoutFlowCoordinator?
