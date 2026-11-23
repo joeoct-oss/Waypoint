@@ -209,6 +209,17 @@ struct StackCoordinatingTests {
     }
 
     @Test
+    func keptNavigatorsFirstCallAfterCoordinatorIsGoneIsIgnored() {
+        let router = makeAndDropCoordinatorRouter()
+        let navigation = router.navigator
+
+        let outcome = navigation.push(ProductRoute(id: 1))
+
+        #expect(outcome == .ignored)
+        #expect(router.state.path.isEmpty)
+    }
+
+    @Test
     func reusedIdentifierGetsAFreshEntry() throws {
         let table = RouterTable()
         let freedID = try #require(makeAndDropEntry(in: table))

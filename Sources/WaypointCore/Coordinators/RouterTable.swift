@@ -10,9 +10,10 @@
 ///
 /// A coordinator's router is made the first time it is read, named after the coordinator and
 /// given the coordinator's destinations. The table holds each coordinator weakly and its router
-/// strongly, keyed by the coordinator's identity. At each read and after each navigation call it
-/// sweeps: an entry whose coordinator is gone is removed, and its router is made inert, so its
-/// calls return `.ignored` and log `staleNavigator`, unless a live entry still holds it.
+/// strongly, keyed by the coordinator's identity. At each read and before each navigation call
+/// that isn't queued, it sweeps: an entry whose coordinator is gone is removed, and its router
+/// is made inert, so its calls return `.ignored` and log `staleNavigator`, unless a live entry
+/// still holds it.
 ///
 /// Removed entries are let go only after the table is updated, so any `deinit` that runs then
 /// finds a consistent table.

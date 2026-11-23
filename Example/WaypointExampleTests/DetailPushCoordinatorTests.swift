@@ -36,9 +36,8 @@ struct DetailPushCoordinatorTests {
         let navigation = router.navigator
 
         lab.releaseDemo()
-        _ = DetailPushCoordinator(navigation: .default).router
 
-        #expect(!router.isActive)
         #expect(navigation.push(DetailProductRoute(productID: 1)) == .ignored)
+        #expect(!router.isActive)
     }
 }
