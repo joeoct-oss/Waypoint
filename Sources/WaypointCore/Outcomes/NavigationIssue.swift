@@ -65,7 +65,8 @@ public struct NavigationIssue: NavigationRecord {
         /// adopts the stored router; implement `makeRouter()` for a router of the app's own.
         case routerNotFromWaypoint
 
-        /// A coordinator stores a router another coordinator owns, so both drive one stack.
+        /// A coordinator stores, or makes with `makeRouter()`, a router another coordinator
+        /// owns, so both drive one stack.
         /// Waypoint leaves the router with its owner.
         case routerOwnedByAnotherCoordinator
     }

@@ -183,7 +183,7 @@ enum ReadableLog {
         case .routerNotFromWaypoint:
             return "this coordinator stores its own router"
         case .routerOwnedByAnotherCoordinator:
-            return "this coordinator stores another coordinator's router"
+            return "this coordinator uses another coordinator's router"
         }
     }
 
