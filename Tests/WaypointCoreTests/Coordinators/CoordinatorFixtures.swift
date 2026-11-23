@@ -178,3 +178,15 @@ final class SameNameCoordinator: StackCoordinating {
         return router
     }
 }
+
+/// A stack coordinator whose router takes any route, so a test can present without registering.
+///
+/// Conformances:
+/// - `StackCoordinating`, so the core makes and keeps its router.
+@MainActor
+final class PermissiveCoordinator: StackCoordinating {
+    /// A router with a permissive registry.
+    func makeRouter() -> StackRouter {
+        StackRouter(configuration: .permissive)
+    }
+}

@@ -140,7 +140,7 @@ final class RouterTable {
             entries.removeValue(forKey: id)
         }
         for entry in removed.values where entry.isMade && !isHeldByLiveEntry(entry.router) {
-            entry.router.markDetached()
+            entry.router.detachSubtree()
         }
         isSweeping = false
         withExtendedLifetime(removed) { }
@@ -216,7 +216,7 @@ final class RouterTable {
         guard !isHeldByLiveEntry(router) else {
             return StackRouter.inert()
         }
-        router.markDetached()
+        router.detachSubtree()
         return router
     }
 

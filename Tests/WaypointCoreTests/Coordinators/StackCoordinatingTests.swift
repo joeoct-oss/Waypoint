@@ -246,6 +246,19 @@ struct StackCoordinatingTests {
     }
 
     @Test
+    func sweptRouterTakesItsPresentedFlowWithIt() throws {
+        let router = makeAndDropCoordinatorRouter(presenting: true)
+        let presented = try #require(router.presented)
+        let navigation = presented.navigator
+
+        let outcome = navigation.push(ProductRoute(id: 1))
+
+        #expect(outcome == .ignored)
+        #expect(!router.isActive)
+        #expect(!presented.isActive)
+    }
+
+    @Test
     func reusedIdentifierGetsAFreshEntry() throws {
         let table = RouterTable()
         let freedID = try #require(makeAndDropEntry(in: table))
@@ -327,9 +340,14 @@ struct StackCoordinatingTests {
         _ = StoredRouterCoordinator(router: router).navigator
     }
 
-    /// Makes a coordinator, reads its router and drops the coordinator, keeping the router.
-    private func makeAndDropCoordinatorRouter() -> StackRouter {
-        ShopListCoordinator().router
+    /// Makes a coordinator, reads its router, presents a flow on it when `presenting`, and drops
+    /// the coordinator, keeping the router.
+    private func makeAndDropCoordinatorRouter(presenting: Bool = false) -> StackRouter {
+        let coordinator = PermissiveCoordinator()
+        if presenting {
+            coordinator.router.present(CartRoute())
+        }
+        return coordinator.router
     }
 
     /// Makes an entry in `table` for a coordinator that is then freed, and returns its id.
