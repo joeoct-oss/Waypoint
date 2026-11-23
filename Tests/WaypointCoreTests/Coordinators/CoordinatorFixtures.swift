@@ -139,3 +139,18 @@ final class GivenRouterCoordinator: StackCoordinating {
         given
     }
 }
+
+/// A stack coordinator whose `makeRouter()` names the root screen and keeps the default
+/// `rootName`.
+///
+/// Conformances:
+/// - `StackCoordinating`, so the core keeps the name its router came with.
+@MainActor
+final class NamedRouterCoordinator: StackCoordinating {
+    /// A router whose root screen is named `Made list`.
+    func makeRouter() -> StackRouter {
+        let router = StackRouter()
+        router.setRootName("Made list")
+        return router
+    }
+}

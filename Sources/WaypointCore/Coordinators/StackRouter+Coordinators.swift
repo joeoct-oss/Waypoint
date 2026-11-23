@@ -22,7 +22,13 @@ extension StackRouter {
         let message = "\(name) stores its router instead of taking the one Waypoint makes. Waypoint "
             + "uses it from now on, but calls made before now could fail with unregisteredRoute. "
             + "Remove the stored router, and implement makeRouter() to make one of your own."
-        let issue = NavigationIssue(kind: .routerNotFromWaypoint, flow: flowID, message: message, file: file, line: line)
+        let issue = NavigationIssue(
+            kind: .routerNotFromWaypoint,
+            flow: flowID,
+            message: message,
+            file: file,
+            line: line
+        )
         tree.report(issue, level: .error)
     }
 

@@ -167,6 +167,13 @@ struct StackCoordinatingTests {
     }
 
     @Test
+    func rootNameMakeRouterSetIsKeptOverTheDefault() {
+        let coordinator = NamedRouterCoordinator()
+
+        #expect(coordinator.router.rootName == "Made list")
+    }
+
+    @Test
     func declaredRootNameWinsOverMakeRouters() {
         let coordinator = OwnRouterCoordinator()
 
