@@ -44,7 +44,8 @@ final class NavigationTreeContext {
 
     /// How many pushed screens were given an id, for each screen's id.
     ///
-    /// `var` because each pushed screen takes the next id. Only ``claimScreenID()`` changes it.
+    /// `var` because each pushed screen takes the next id. Only ``claimScreenID()`` and
+    /// `takeOver(_:)` change it.
     private var screenCount: UInt64 = 0
 
     /// The time on the tree's clock, for the journey's durations and duplicate window.
@@ -67,14 +68,15 @@ final class NavigationTreeContext {
     /// Whether a renderer names views, so a presentation's box waits for its view's name.
     ///
     /// `var` because it turns on when a renderer first names a view. Only
-    /// `StackRouter.setRootViewName(_:)` and `registerViewName(_:for:)` change it.
+    /// `StackRouter.setRootViewName(_:)`, `registerViewName(_:for:)` and `takeOver(_:)` change
+    /// it.
     var namesViews = false
 
     /// The name of the view that draws each route type, as renderers registered them, for the
     /// journey box.
     ///
     /// `var` because renderers register destinations as they draw. Only
-    /// `StackRouter.registerViewName(_:for:)` changes it.
+    /// `StackRouter.registerViewName(_:for:)` and `takeOver(_:)` change it.
     var viewNames: [RouteKey: String] = [:]
 
     /// Route types registered for decoding and as having a destination.

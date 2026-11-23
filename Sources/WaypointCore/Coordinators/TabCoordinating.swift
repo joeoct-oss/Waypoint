@@ -38,7 +38,8 @@
 ///
 /// With ``TabStacks/shared``, the selected tab's coordinator is asked first, and its router
 /// becomes the shared stack. Every other tab's coordinator drives that same stack: a router it
-/// made on its own is reported as `tabChildRouterMerged`, and its calls go to the shared stack.
+/// made on its own sends its calls to the shared stack, and screens it pushed or presented on
+/// that router before joining are dropped and reported as `tabChildRouterMerged`.
 ///
 /// Conformances:
 /// - `AnyObject`, because a coordinator is one shared object that owns its router, and the

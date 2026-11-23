@@ -51,7 +51,7 @@ public final class StackRouter: NavigationRouter {
     /// The flow this router drives.
     ///
     /// `var` because a router that joins another tree takes a name that is free there, such as
-    /// its tab's. Only `join(tabOf:named:)` and `moveSubtree(into:)` change it.
+    /// its tab's. Only `join(tabOf:named:)` and `moveSubtree(into:from:)` change it.
     @ObservationIgnored public private(set) var flowID: FlowID
 
     /// The route of the stack's root screen, if it has one. `popTo` this route pops to root.
@@ -60,7 +60,7 @@ public final class StackRouter: NavigationRouter {
     /// The tree this router belongs to.
     ///
     /// `var` because a router made on its own joins another tree once, such as a tab child's
-    /// router becoming the tab's stack. Only `join(tabOf:named:)` and `moveSubtree(into:)` change
+    /// router becoming the tab's stack. Only `join(tabOf:named:)` and `moveSubtree(into:from:)` change
     /// it.
     @ObservationIgnored private(set) var tree: NavigationTreeContext
 
