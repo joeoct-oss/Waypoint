@@ -27,6 +27,8 @@ protocol ChildFlowRecord: AnyObject {
 /// A child flow whose coordinator finishes with `Output`: the coordinator, held until the flow
 /// starts, and what the parent gets when it ends.
 ///
+/// `Output` is `Sendable` because the parent gets it in a `FlowResult`, which is `Sendable`.
+///
 /// Conformances:
 /// - `ChildFlowRecord`, so the child's router can end it without knowing `Output`.
 @MainActor

@@ -85,6 +85,9 @@ extension PresentingRouter {
 }
 
 extension FlowNaming {
+    /// The flow name a router gets when none is given.
+    static let defaultFlowName = "main"
+
     /// The name of a child coordinator's flow: its router's own name, unless that is the default
     /// `main`, then the coordinator's type name without `Coordinator`, starting lowercase:
     /// `checkout` for `CheckoutCoordinator`.
@@ -105,7 +108,4 @@ extension FlowNaming {
         }
         return first.lowercased() + name.dropFirst()
     }
-
-    /// The flow name a router gets when none is given.
-    static let defaultFlowName = "main"
 }

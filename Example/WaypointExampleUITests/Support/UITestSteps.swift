@@ -17,6 +17,8 @@ enum UITestSteps {
     // How many times `setSwitch(to:)` taps a switch before it gives up.
     static let maxTaps = 3
     static let accountTabTitle = "Account"
+    // The identifier UIKit gives a navigation bar's Back button.
+    static let backButtonID = "BackButton"
     // How long a step waits for iOS's offer to save a password after a sign in. iOS 27.2 offers
     // it about 4.5 seconds after the tap, and the step goes on as soon as it shows. iOS 17.5
     // never offers it, so there the step doesn't wait.
@@ -137,14 +139,24 @@ extension XCUIElement {
 }
 
 extension XCUIApplication {
-    // Taps Back: the first button of the first navigation bar a person can reach. A sheet over a
-    // pushed screen leaves that screen's bar in the tree under it, and the tabs share one stack, so
-    // the screen under the sheet can come first; its Back lies under the sheet and can't be hit.
+    // Taps Back: the Back button of the first navigation bar a person can reach, found by its
+    // identifier, or the bar's first button when it has none. On iOS 27 a bar's first button isn't
+    // always Back. A sheet over a pushed screen leaves that screen's bar in the tree under it, and
+    // the tabs share one stack, so the screen under the sheet can come first; its Back lies under
+    // the sheet and can't be hit. Back can also report itself not hittable while it shows, so
+    // when no Back is hittable, the first one that shows is tapped by its middle.
     @MainActor
     func goBack() {
-        let backs = navigationBars.allElementsBoundByIndex.map { $0.buttons.element(boundBy: 0) }
-        let reachable = backs.first { $0.exists && $0.isHittable }
-        (reachable ?? navigationBars.buttons.element(boundBy: 0)).tap()
+        let backs = navigationBars.allElementsBoundByIndex.map { bar in
+            let back = bar.buttons[UITestSteps.backButtonID]
+            return back.exists ? back : bar.buttons.element(boundBy: 0)
+        }
+        if let reachable = backs.first(where: { $0.exists && $0.isHittable }) {
+            reachable.tap()
+            return
+        }
+        let shown = backs.first { $0.exists } ?? navigationBars.buttons.element(boundBy: 0)
+        shown.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 
     // Drags across the app's window, the way a person swipes back, slowly, because a fast drag can

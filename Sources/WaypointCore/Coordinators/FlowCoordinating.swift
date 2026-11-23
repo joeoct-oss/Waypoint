@@ -11,6 +11,8 @@
 /// A parent gets it exactly once for each child flow it started, in the `onFinish:` of
 /// ``StackRouter/present(_:style:trigger:else:file:line:onFinish:)``.
 ///
+/// `Value` is `Sendable` because the result is `Sendable`, so the value it carries must be too.
+///
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
 public enum FlowResult<Value: Sendable>: Sendable {
