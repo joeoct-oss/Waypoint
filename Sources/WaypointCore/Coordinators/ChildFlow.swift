@@ -16,6 +16,9 @@ protocol ChildFlowRecord: AnyObject {
     /// ends.
     var isStarted: Bool { get }
 
+    /// The type of the flow's coordinator, so a repeated push of the same flow can be skipped.
+    var coordinatorType: ObjectIdentifier { get }
+
     /// Marks the start as committed, and hands the coordinator to the router that presents the
     /// flow, which keeps it from now on.
     func start() -> AnyObject?
@@ -49,6 +52,9 @@ final class ChildFlow<Output: Sendable>: ChildFlowRecord {
     /// `var` because the coordinator finishes after the flow starts. Only `keep(_:)` changes it.
     private var output: Output?
 
+    /// The type of the flow's coordinator.
+    let coordinatorType: ObjectIdentifier
+
     /// Whether the start that made it was committed.
     ///
     /// `var` because the start commits after the record is made. Only `start()` changes it.
@@ -57,6 +63,7 @@ final class ChildFlow<Output: Sendable>: ChildFlowRecord {
     /// A record for `coordinator`, whose parent gets the result in `onFinish`.
     init(coordinator: AnyObject, onFinish: @escaping (FlowResult<Output>) -> Void) {
         self.coordinator = coordinator
+        self.coordinatorType = ObjectIdentifier(type(of: coordinator))
         self.onFinish = onFinish
     }
 

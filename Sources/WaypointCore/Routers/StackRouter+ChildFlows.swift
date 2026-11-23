@@ -112,7 +112,8 @@ extension StackRouter {
     /// The flow ends with `.cancelled` when the user goes back past its root screen, or when this
     /// router changes its own path: a push, a pop or a `popTo` here ends the child on top first.
     /// `finish(with:)` and `dismissFlow()` in the child pop back to the screen below its root
-    /// screen. A child that needs a stack of its own is presented with
+    /// screen. Under ``DuplicatePushRule/skipWhileInFlight``, a push of the same coordinator type
+    /// while its push is still animating returns `.alreadyThere`. A child that needs a stack of its own is presented with
     /// ``present(_:style:trigger:else:file:line:onFinish:)``. Refusals are as for a present.
     ///
     /// - Parameters:
@@ -162,7 +163,9 @@ extension StackRouter {
     }
 
     /// Pushes the marker of the child flow `makeChild` returns, whose router joins this router's
-    /// tree as the flow on top of this stack. A child flow already on top ends first.
+    /// tree as the flow on top of this stack. A child flow already on top ends first. A push of
+    /// the flow still being pushed, such as the second tap of a double tap, builds nothing when the
+    /// duplicate push rule skips it.
     func pushChildStep<Child: FlowCoordinating>(
         file: StaticString,
         line: UInt,
@@ -171,6 +174,10 @@ extension StackRouter {
         _ makeChild: () -> Child
     ) -> StepResult {
         store.enlist(self)
+        if let skipped = pushOfFlowInFlight(of: Child.self) {
+            store.noteSkippedPush(skipped)
+            return .unchanged
+        }
         let table = RouterTable.shared
         let child = table.build(makeChild, joining: tree, file: file, line: line)
         let router = table.checkedRouter(of: child, file: file, line: line)
@@ -198,6 +205,18 @@ extension StackRouter {
         case .rejected(let rejection):
             return undoingJoin(of: router, result: .failed(draft(rejection)))
         }
+    }
+
+    /// The marker of the child flow on top when it is a `type` flow still being pushed and the
+    /// duplicate push rule skips such pushes, or `nil` when the push goes ahead.
+    private func pushOfFlowInFlight(of type: Any.Type) -> AnyRoute? {
+        guard duplicatePushRule == .skipWhileInFlight, let pushed = current.pushed else {
+            return nil
+        }
+        guard let marker = pushed.marker, pushInFlight == marker else {
+            return nil
+        }
+        return pushed.childFlow?.coordinatorType == ObjectIdentifier(type) ? marker : nil
     }
 
     /// Pops this stack back to the screen below the marker of `child`, the child flow on top,

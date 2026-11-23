@@ -221,4 +221,84 @@ struct PushedChildFlowTests {
         #expect(presenting.presented === presented.router)
         #expect(presenting.pushedFlow == nil)
     }
+
+    @Test
+    func doubleTapPushesTheFlowOnce() {
+        let parent = StackRouter()
+        let first = Recorder<FlowResult<String>>()
+        let built = Recorder<CheckoutFlowCoordinator>()
+        let child = CheckoutFlowCoordinator()
+        parent.push(child) { result in
+            first.record(result)
+        }
+        let marker = parent.state.path.last
+        if let marker {
+            parent.rendererDidStartPush(of: marker)
+        }
+
+        let outcome = parent.push(onFinish: { _ in }) {
+            let twin = CheckoutFlowCoordinator()
+            built.record(twin)
+            return twin
+        }
+
+        #expect(outcome == .alreadyThere)
+        #expect(built.values.isEmpty)
+        #expect(first.values.isEmpty)
+        #expect(parent.pushedFlow === child.router)
+    }
+
+    @Test
+    func ignoredPushBuildsNothing() {
+        let inert = StackRouter.inert()
+        let built = Recorder<CheckoutFlowCoordinator>()
+        let results = Recorder<FlowResult<String>>()
+
+        let outcome = inert.push(onFinish: { result in
+            results.record(result)
+        }) {
+            let child = CheckoutFlowCoordinator()
+            built.record(child)
+            return child
+        }
+
+        #expect(outcome == .ignored)
+        #expect(built.values.isEmpty)
+        #expect(results.values.isEmpty)
+    }
+
+    @Test
+    func rolledBackPushLeavesChildAsItWas() {
+        let parent = StackRouter()
+        let child = CheckoutFlowCoordinator()
+        child.router.push(ProductRoute(id: 3))
+        let childTree = child.router.tree
+        let results = Recorder<FlowResult<String>>()
+        let draft = IssueDraft(kind: .denied, flow: parent.flowID, message: "Denied after the start.")
+        let context = FallbackContext(explicit: nil, file: #fileID, line: #line)
+        let onFinish: @MainActor (FlowResult<String>) -> Void = { result in
+            results.record(result)
+        }
+
+        let outcome = parent.tree.perform(on: parent, file: #fileID, line: #line) { store in
+            _ = parent.pushChildStep(file: #fileID, line: #line, in: store, onFinish: onFinish) {
+                child
+            }
+            return store.resolve(.failed(draft), on: parent, context)
+        }
+
+        #expect(outcome.failure?.issue.kind == .denied)
+        #expect(parent.pushedFlow == nil)
+        #expect(parent.state.path.isEmpty)
+        #expect(child.router.parent == nil)
+        #expect(child.router.tree === childTree)
+        #expect(child.router.isActive)
+        let path = [AnyRoute(ProductRoute(id: 3))]
+        #expect(child.router.state.path == path)
+        let retried = parent.push(child) { result in
+            results.record(result)
+        }
+        #expect(retried == .applied)
+        #expect(results.values.isEmpty)
+    }
 }
