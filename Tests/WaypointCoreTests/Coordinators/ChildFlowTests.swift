@@ -185,6 +185,7 @@ struct ChildFlowTests {
         let parent = StackRouter()
         let outer = CheckoutFlowCoordinator()
         let results = Recorder<String>()
+        // `var` because a weak reference must be one: it reads `nil` once the test lets go.
         weak var weakInner: CheckoutFlowCoordinator?
         parent.present(outer) { result in
             results.record("outer \(result)")
@@ -223,6 +224,7 @@ struct ChildFlowTests {
     @Test
     func childReleasedAfterFinish() {
         let parent = StackRouter()
+        // `var` because a weak reference must be one: it reads `nil` once the test lets go.
         weak var weakChild: CheckoutFlowCoordinator?
         weak var weakRouter: StackRouter?
         do {
@@ -243,6 +245,7 @@ struct ChildFlowTests {
     @Test
     func droppedParentReleasesAndCancelsItsChild() {
         let results = Recorder<FlowResult<String>>()
+        // `var` because a weak reference must be one: it reads `nil` once the test lets go.
         weak var weakChild: CheckoutFlowCoordinator?
         weak var weakRouter: StackRouter?
         do {
@@ -266,6 +269,7 @@ struct ChildFlowTests {
     @Test
     func presentedFlowReleasedOnDismiss() {
         let parent = StackRouter()
+        // `var` because a weak reference must be one: it reads `nil` once the test lets go.
         weak var weakChild: CheckoutFlowCoordinator?
         weak var weakRouter: StackRouter?
         do {
@@ -286,6 +290,7 @@ struct ChildFlowTests {
     func finishReleasesRouterAndCoordinator() {
         let parent = StackRouter()
         let results = Recorder<FlowResult<String>>()
+        // `var` because a weak reference must be one: it reads `nil` once the test lets go.
         weak var weakChild: CheckoutFlowCoordinator?
         do {
             let child = CheckoutFlowCoordinator()
@@ -627,6 +632,7 @@ struct ChildFlowTests {
     func tabsKeepTheirChildUntilItFinishes() {
         let tabs = TabRouter(selection: MainTab.home)
         let results = Recorder<FlowResult<String>>()
+        // `var` because a weak reference must be one: it reads `nil` once the test lets go.
         weak var weakChild: CheckoutFlowCoordinator?
         do {
             let child = CheckoutFlowCoordinator()
@@ -663,6 +669,7 @@ struct ChildFlowTests {
     @Test
     func droppedTabsReleaseAndCancelTheirChild() {
         let results = Recorder<FlowResult<String>>()
+        // `var` because a weak reference must be one: it reads `nil` once the test lets go.
         weak var weakChild: CheckoutFlowCoordinator?
         do {
             let tabs = TabRouter(selection: MainTab.home)
