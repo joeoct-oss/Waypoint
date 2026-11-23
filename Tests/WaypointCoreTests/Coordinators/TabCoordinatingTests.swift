@@ -597,6 +597,25 @@ struct TabCoordinatingTests {
     }
 
     @Test
+    func tabRouterOfAnotherTabCoordinatorIsNotAdopted() throws {
+        let owner = MainTabsCoordinator()
+        let taken = owner.router
+        let homeStack = taken.router(for: .home)
+        let thief = GivenTabsCoordinator(given: taken)
+
+        _ = thief.router
+
+        #expect(thief.asked.values.isEmpty)
+        #expect(taken.router(for: .home) === homeStack)
+        #expect(homeStack.isActive)
+        #expect(taken.coordinatorName == "MainTabsCoordinator")
+        let expected: [NavigationIssue.Kind] = [.routerOwnedByAnotherCoordinator]
+        #expect(owner.reportedKinds == expected)
+        let issue = try #require(owner.reported.last)
+        #expect(issue.message.contains("GivenTabsCoordinator"))
+    }
+
+    @Test
     func tabChildWithAnotherCoordinatorsRouterGetsItsOwn() {
         let owner = ShopListCoordinator()
         let taken = owner.router

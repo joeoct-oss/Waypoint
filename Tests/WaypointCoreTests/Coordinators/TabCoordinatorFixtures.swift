@@ -232,3 +232,33 @@ final class StoredTabsCoordinator: TabCoordinating {
         return TabChildCoordinator()
     }
 }
+
+/// A tab coordinator whose `makeRouter()` returns a tab router it was given, such as another tab
+/// coordinator's.
+///
+/// Conformances:
+/// - `TabCoordinating`, so the core checks the router `makeRouter()` returns.
+@MainActor
+final class GivenTabsCoordinator: TabCoordinating {
+    /// The router `makeRouter()` returns.
+    let given: TabRouter<MainTab>
+
+    /// Each tab it was asked for, in order.
+    let asked = Recorder<MainTab>()
+
+    /// Creates a coordinator whose `makeRouter()` returns `given`.
+    init(given: TabRouter<MainTab>) {
+        self.given = given
+    }
+
+    /// The router it was given.
+    func makeRouter() -> TabRouter<MainTab> {
+        given
+    }
+
+    /// A plain child, recording the tab.
+    func coordinator(for tab: MainTab) -> any StackCoordinating {
+        asked.record(tab)
+        return TabChildCoordinator()
+    }
+}

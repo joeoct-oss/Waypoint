@@ -44,13 +44,7 @@ extension RouterTable {
             return router
         }
         sweep()
-        if let owner = liveOwner(of: router, other: coordinator) {
-            store(Entry(coordinator: coordinator, router: router, ownsRouter: false), as: id)
-            router.reportRouterOwned(by: owner, heldBy: coordinator, from: .stored, file: file, line: line)
-            return router
-        }
-        router.reportRouterNotFromWaypoint(storedIn: coordinator, file: file, line: line)
-        settleTabs(router, of: coordinator, as: id)
+        settleTabs(router, of: coordinator, as: id, from: .stored, file: file, line: line)
         return router
     }
 
@@ -62,13 +56,25 @@ extension RouterTable {
     }
 
     /// Keeps `router` as the router of `coordinator`, then asks for each tab's child: the
-    /// selected tab first with ``TabStacks/shared``. The entry is stored first, so a child that
-    /// reads its parent's router gets this one.
+    /// selected tab first with ``TabStacks/shared``. When another live tab coordinator owns the
+    /// router, it reports that and leaves the router and its children as they are. The entry is
+    /// stored first, so a child that reads its parent's router gets this one.
     func settleTabs<Coordinator: TabCoordinating>(
         _ router: TabRouter<Coordinator.Tab>,
         of coordinator: Coordinator,
-        as id: ObjectIdentifier
+        as id: ObjectIdentifier,
+        from source: Source = .made,
+        file: StaticString = #fileID,
+        line: UInt = #line
     ) {
+        if let owner = liveOwner(of: router, other: coordinator) {
+            store(Entry(coordinator: coordinator, router: router, ownsRouter: false), as: id)
+            router.reportRouterOwned(by: owner, heldBy: coordinator, from: source, file: file, line: line)
+            return
+        }
+        if source == .stored {
+            router.reportRouterNotFromWaypoint(storedIn: coordinator, file: file, line: line)
+        }
         let entry = Entry(coordinator: coordinator, router: router, ownsRouter: true)
         store(entry, as: id)
         router.setCoordinator(coordinator)
