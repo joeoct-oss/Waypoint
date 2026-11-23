@@ -100,7 +100,8 @@ git checkout -q main
 # 2-merge. Merging in the batch's order with merge commits gives the batch's tree too.
 git checkout -q -b merged origin/main
 for branch in one two; do
-    git merge -q --no-ff -m "merge $branch" "origin/$branch" >/dev/null 2>&1
+    git merge -q --no-ff -m "merge $branch" "origin/$branch" >/dev/null 2>&1 ||
+        fail "merging $branch with a merge commit"
 done
 if [[ -n "${tree:-}" && "$(git rev-parse HEAD^{tree})" == "$tree" ]]; then
     pass "merging the batch's branches in order with merge commits gives the batch's tree"
