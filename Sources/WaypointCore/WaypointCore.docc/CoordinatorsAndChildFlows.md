@@ -256,7 +256,7 @@ router.push(ReviewCoordinator(product: product)) { result in
 }
 ```
 
-The flow ends with `.cancelled` when the user goes back past the child's root screen, or when the parent changes its own path: a push, a pop or a `popTo` on the parent ends the child on top first, then does what was asked. Pushing a second child flow ends the first. `finish(with:)` and `dismissFlow()` in the child pop back to the screen below the child's root screen. A child flow that needs a stack of its own is presented. The lazy form, `router.push(onFinish:) { child }`, builds the child only when the push happens, as the lazy present does. Drawing a pushed child's screens comes with the coordinator's `root` and `destinations` (#59, its next part).
+The flow ends with `.cancelled` when the user goes back past the child's root screen, or when the parent changes its own path: a push, a pop or a `popTo` on the parent ends the child on top first, then does what was asked. Pushing a second child flow ends the first. `finish(with:)` and `dismissFlow()` in the child pop back to the screen below the child's root screen. A child flow that needs a stack of its own is presented. The lazy form, `router.push(onFinish:) { child }`, builds the child only when the push happens, as the lazy present does. Drawing a pushed child's screens comes with the coordinator's `root` and `destinations` (#59, its next part); until then both push forms are `package`, and they become public with it.
 
 ```swift
 extension StackRouter {

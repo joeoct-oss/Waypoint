@@ -98,7 +98,10 @@ extension StackRouter {
         }
     }
 
-    /// Pushes the flow of `child`, a coordinator, on this stack. The child's screens follow on
+    /// Pushes the flow of `child`, a coordinator, on this stack. `package` until renderers draw a
+    /// pushed flow's screens (#59, its next part), then public.
+    ///
+    /// The child's screens follow on
     /// the same stack: the child's root screen first, then each screen its router pushes. The
     /// child's router joins this router's tree, and the parent gets the flow's result in
     /// `onFinish` exactly once.
@@ -125,7 +128,7 @@ extension StackRouter {
     ///   - line: The calling line, where an issue points. Leave the default.
     ///   - onFinish: Gets the flow's result, once.
     @discardableResult
-    public func push<Child: FlowCoordinating>(
+    package func push<Child: FlowCoordinating>(
         _ child: Child,
         trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
@@ -150,7 +153,7 @@ extension StackRouter {
     ///   - onFinish: Gets the flow's result, once.
     ///   - makeChild: Builds the coordinator of the pushed flow.
     @discardableResult
-    public func push<Child: FlowCoordinating>(
+    package func push<Child: FlowCoordinating>(
         trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
@@ -196,16 +199,27 @@ extension StackRouter {
         }
         switch StackReducer.reduce(current.state.withPath(below), .push(marker), rootRoute: rootRoute) {
         case .changed(let next, let changes):
-            updateWorkingCopy { snapshot in
-                snapshot.pushing(router, state: next)
-            }
-            store.record(changes, in: flowID)
-            return .changed
+            return applyPush(of: router, next, changes, in: store)
         case .unchanged:
             return undoingJoin(of: router, result: .unchanged)
         case .rejected(let rejection):
             return undoingJoin(of: router, result: .failed(draft(rejection)))
         }
+    }
+
+    /// Stores the state with `router`'s marker on top and `router` as the pushed flow, and records
+    /// the changes.
+    private func applyPush(
+        of router: StackRouter,
+        _ next: StackState,
+        _ changes: [NavigationChange],
+        in store: TransactionStore
+    ) -> StepResult {
+        updateWorkingCopy { snapshot in
+            snapshot.pushing(router, state: next)
+        }
+        store.record(changes, in: flowID)
+        return .changed
     }
 
     /// The marker of the child flow on top when it is a `type` flow still being pushed and the
