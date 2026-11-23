@@ -12,34 +12,44 @@ import Waypoint
 // The Tabs story (TX-04): a tab container whose tabs change at run time. It starts with Shop and
 // Search; Show all four tabs brings back Cart and Account, and Show two tabs takes them away again,
 // each with one `TabRouter.setTabs(_:)` call. The selection stays when its tab stays, and falls
-// back to the first tab, Shop, when its tab goes. Each tab hosts a Waypoint stack of its own.
+// back to the first tab, Shop, when its tab goes.
+//
+// It stores no router: `TabCoordinator` makes one with `makeRouter()` the first time it is read,
+// and asks `tabCoordinator(for:)` for each tab's coordinator then, so each tab's stack is that
+// coordinator's router. A tab added later gets its coordinator when it is added, and a removed
+// tab's coordinator is let go.
 //
 // The tab bar is still SwiftUI's, bound to the tab router, until Waypoint draws tabs.
 //
 // Conformances:
+// - `TabCoordinator`, so Waypoint makes its router and hands each tab's coordinator its stack.
 // - `Observable` (from `@Observable`), so the demo redraws when the tabs or the selection change.
 @Observable
-final class TabsDemoCoordinator {
+final class TabsDemoCoordinator: TabCoordinator {
     private static let flowID = FlowID("labTabs")
     private static let fewTabs = [
         DemoTab.shop,
         DemoTab.search,
     ]
 
-    let tabs: TabRouter<DemoTab>
+    private let navigation: NavigationConfiguration
     private let onClose: () -> Void
 
     // Whether every tab shows, so the button offers to take two away.
     var showsAllTabs: Bool {
-        tabs.state.tabs.count == DemoTab.allCases.count
+        router.state.tabs.count == DemoTab.allCases.count
     }
 
     init(
         navigation: NavigationConfiguration,
         onClose: @escaping () -> Void
     ) {
+        self.navigation = navigation
         self.onClose = onClose
-        tabs = TabRouter(
+    }
+
+    func makeRouter() -> TabRouter<DemoTab> {
+        TabRouter(
             tabs: Self.fewTabs,
             selection: .shop,
             flow: Self.flowID,
@@ -47,11 +57,15 @@ final class TabsDemoCoordinator {
         )
     }
 
+    func tabCoordinator(for tab: DemoTab) -> any StackCoordinator {
+        TabsDemoTabCoordinator()
+    }
+
     func makeTabFlow(for tab: DemoTab) -> some View {
-        WaypointStack(tabs.router(for: tab)) {
+        WaypointStack(router.router(for: tab)) {
             TabsDemoView(
                 tab: tab,
-                selection: tabs.selection,
+                selection: router.selection,
                 showsAllTabs: showsAllTabs,
                 onChangeTabs: { self.toggleTabs() },
                 onClose: { self.close() }
@@ -60,7 +74,7 @@ final class TabsDemoCoordinator {
     }
 
     func selectTab(_ tab: DemoTab) {
-        tabs.select(tab)
+        router.select(tab)
     }
 
     func close() {
@@ -70,12 +84,21 @@ final class TabsDemoCoordinator {
     // Shows all four tabs, or only Shop and Search.
     func toggleTabs() {
         if showsAllTabs {
-            tabs.setTabs(Self.fewTabs)
+            router.setTabs(Self.fewTabs)
         } else {
-            tabs.setTabs(DemoTab.allCases)
+            router.setTabs(DemoTab.allCases)
         }
     }
 }
+
+// The coordinator of one tab of the Tabs story. Its router is the tab's stack, named after the tab
+// because it keeps the default root name. It has no screens of its own yet: the tab coordinator
+// draws each tab's stack until coordinators draw their own screens, later in #59.
+//
+// Conformances:
+// - `StackCoordinator`, so Waypoint makes its router and the tab coordinator makes it the tab's
+//   stack.
+final class TabsDemoTabCoordinator: StackCoordinator { }
 
 // A tab of the Tabs story.
 //

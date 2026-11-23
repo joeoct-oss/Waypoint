@@ -72,7 +72,7 @@ final class AccountCoordinator {
         self.issues = issues
         self.describeTree = describeTree
         self.router = router
-        labDemos = LabDemoCoordinator(navigation: navigation)
+        labDemos = LabDemoCoordinator(navigation: navigation, reviewsDelay: launch.labReviewsDelay)
         router.setRootName(MainTab.account.title)
         router.setCoordinator(self)
         openLaunchPath(launch)

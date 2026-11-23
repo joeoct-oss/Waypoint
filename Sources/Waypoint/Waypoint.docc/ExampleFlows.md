@@ -108,16 +108,30 @@ Two naming rules keep a coordinator readable. Each `case` body is one call to a 
 
 ### 2. Tabs, one stack each
 
-The tab coordinator owns the tab router and one stack coordinator for each tab. Each is created once and kept, so a tab keeps its state while the screen redraws. A link that arrives before the tabs are drawn, as in section 5, reaches the same shop router: how each tab's stack router joins the tab router, before any call or link reaches it, is in "Joining the tree" in the core's coordinators article.
+The tab coordinator owns the tab router and one stack coordinator for each tab. Each is created once and kept, so a tab keeps its state while the screen redraws. A link that arrives before the tabs are drawn, as in section 5, reaches the same shop router: `tabCoordinator(for:)` names each tab's coordinator, whose router becomes the tab's stack as soon as the tab coordinator's router is first read, as "Joining the tree" in the core's coordinators article says.
 
 ```swift
 // Conformances:
 // - `TabCoordinator`, so Waypoint can draw its tabs.
 final class MainTabsCoordinator: TabCoordinator {
-    let router = TabRouter(selection: MainTab.home)
     let home = HomeCoordinator()
     let shop = ShopCoordinator()
     let profile = ProfileCoordinator()
+
+    func makeRouter() -> TabRouter<MainTab> {
+        TabRouter(tabs: MainTab.allCases, selection: .home)
+    }
+
+    func tabCoordinator(for tab: MainTab) -> any StackCoordinator {
+        switch tab {
+        case .home:
+            home
+        case .shop:
+            shop
+        case .profile:
+            profile
+        }
+    }
 
     @ViewBuilder
     func makeTabFlow(for tab: MainTab) -> some View {

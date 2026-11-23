@@ -78,6 +78,10 @@ protocol TreeNode: NavigationRouter, TransactionParticipant {
     /// journey names the tab the reader sees rather than the shared stack.
     var sharedStackTabName: String? { get }
 
+    /// The selected tab's child coordinator's name when a tab container's tabs share one stack,
+    /// else `nil`, so the journey names the coordinator of the tab the reader sees.
+    var sharedStackCoordinatorName: String? { get }
+
     /// This router and the routers inside it, as the readable tree prints them.
     func readableTree(_ naming: RouteNaming) -> ReadableTree
 
@@ -91,6 +95,11 @@ protocol TreeNode: NavigationRouter, TransactionParticipant {
 extension TreeNode {
     /// `nil`: only a tab container whose tabs share one stack names a tab.
     var sharedStackTabName: String? {
+        nil
+    }
+
+    /// `nil`: only a tab container whose tabs share one stack names a coordinator for it.
+    var sharedStackCoordinatorName: String? {
         nil
     }
 

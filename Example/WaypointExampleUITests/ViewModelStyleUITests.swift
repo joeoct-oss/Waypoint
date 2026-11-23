@@ -23,6 +23,8 @@ final class ViewModelStyleUITests: XCTestCase {
     private static let missingRouter = "noRouterInScope"
     // Reviews take 2.5 seconds to arrive, so the wait for them is longer than the usual one.
     private static let reviewsTimeout: TimeInterval = 8
+    private static let lateReviewsSeconds = 8
+    private static let lateOutcomeTimeout: TimeInterval = 16
     private static let reviewsTapAttempts = 3
 
     func testEachStyleBuysTheSameWay() {
@@ -40,16 +42,20 @@ final class ViewModelStyleUITests: XCTestCase {
         }
     }
 
+    // The reviews take `lateReviewsSeconds` here, so the demo is closed before they arrive even on
+    // a slow run; the test waits for the cover to go before it waits for the outcome.
     func testLatePushAfterBackIsIgnored() {
-        let app = ExampleApp.launch(lab: true)
+        let app = ExampleApp.launch(lab: true, labReviewsSeconds: Self.lateReviewsSeconds)
         open(.lateResult, in: app)
 
         app.buttons[Identifiers.labOpenLateDemo].tapWhenReady()
         loadReviews(in: app)
-        app.buttons[Identifiers.labDemoClose].tapWhenReady()
+        let close = app.buttons[Identifiers.labDemoClose]
+        close.tapWhenReady()
+        XCTAssertTrue(close.waitForNonExistence(timeout: Self.reviewsTimeout), "the demo stayed open")
 
         let outcome = app.staticTexts[Identifiers.labLateOutcome]
-        XCTAssertTrue(outcome.waitForExistence(timeout: Self.reviewsTimeout))
+        XCTAssertTrue(outcome.waitForExistence(timeout: Self.lateOutcomeTimeout))
         XCTAssertEqual(outcome.label, Self.ignored)
         XCTAssertFalse(app.descendants(matching: .any)[Identifiers.labDemoReviewsScreen].exists)
     }

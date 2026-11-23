@@ -162,7 +162,7 @@ With `.shared`:
 - A transaction that selects a tab and then sets the path keeps that path. Select first: a path set before the select is popped by it.
 - Removing the selected tab with `setTabs(_:)` pops the shared stack too, since the selection moves to another tab.
 - The tree shows the shared stack once, as `stack`. The journey box names it, and its root screen, after the selected tab, such as `Shop`, so `setRootName(_:)` doesn't apply to it.
-- The shared stack has one coordinator name: name it from the coordinator that owns the tabs, after the tabs' own coordinators, since the last `setCoordinator(_:)` wins.
+- With a tab coordinator, the journey names the shared stack after the selected tab's coordinator, whatever name was set. Without one, the shared stack has one coordinator name: name it from the code that owns the tabs, after the tabs' own coordinators, since the last `setCoordinator(_:)` wins.
 
 The renderer draws the shared stack around the tab bar, as the SwiftUI renderer article in the `Waypoint` documentation shows.
 

@@ -30,6 +30,13 @@ final class NavigationTreeContext {
     /// `enqueue` and `drainQueue` change it.
     private var turn = Turn.idle
 
+    /// Work to run once the current call and the calls it queued are done, such as asking a tab
+    /// coordinator for the children of tabs a call added.
+    ///
+    /// `var` because commits add work and the end of a turn runs it. Only `runAfterTurn(_:)` and
+    /// `drainQueue` change it.
+    private var afterTurn: [() -> Void] = []
+
     /// Flow names used by routers in the tree.
     ///
     /// `var` because flows come and go. Only ``claimFlowName(_:)`` and ``releaseFlowName(_:)``
@@ -44,7 +51,8 @@ final class NavigationTreeContext {
 
     /// How many pushed screens were given an id, for each screen's id.
     ///
-    /// `var` because each pushed screen takes the next id. Only ``claimScreenID()`` changes it.
+    /// `var` because each pushed screen takes the next id. Only ``claimScreenID()`` and
+    /// `takeOver(_:)` change it.
     private var screenCount: UInt64 = 0
 
     /// The time on the tree's clock, for the journey's durations and duplicate window.
@@ -67,14 +75,15 @@ final class NavigationTreeContext {
     /// Whether a renderer names views, so a presentation's box waits for its view's name.
     ///
     /// `var` because it turns on when a renderer first names a view. Only
-    /// `StackRouter.setRootViewName(_:)` and `registerViewName(_:for:)` change it.
+    /// `StackRouter.setRootViewName(_:)`, `registerViewName(_:for:)` and `takeOver(_:)` change
+    /// it.
     var namesViews = false
 
     /// The name of the view that draws each route type, as renderers registered them, for the
     /// journey box.
     ///
     /// `var` because renderers register destinations as they draw. Only
-    /// `StackRouter.registerViewName(_:for:)` changes it.
+    /// `StackRouter.registerViewName(_:for:)` and `takeOver(_:)` change it.
     var viewNames: [RouteKey: String] = [:]
 
     /// Route types registered for decoding and as having a destination.
@@ -171,6 +180,30 @@ final class NavigationTreeContext {
         let name = candidates.first { !flowNames.contains($0) } ?? base
         flowNames.insert(name)
         return FlowID(name)
+    }
+
+    /// Takes over what `other`, the tree of a router joining this one, knew: its registered
+    /// route types and view names, and its screen ids, so ids stay unique on a moved stack.
+    func takeOver(_ other: NavigationTreeContext) {
+        guard other !== self else {
+            return
+        }
+        for type in other.registry.registeredTypes {
+            registerOpened(type)
+        }
+        viewNames.merge(other.viewNames) { mine, _ in
+            mine
+        }
+        namesViews = namesViews || other.namesViews
+        screenCount = max(screenCount, other.screenCount)
+    }
+
+    /// Registers `type`, opened from an existential.
+    private func registerOpened<R: Route>(_ type: R.Type) {
+        guard !registry.isRegistered(type) else {
+            return
+        }
+        register(type)
     }
 
     /// Frees a flow name when its router leaves the tree.
@@ -429,6 +462,16 @@ final class NavigationTreeContext {
             call()
         }
         turn = .idle
+        while !afterTurn.isEmpty {
+            let work = afterTurn.removeFirst()
+            work()
+        }
+    }
+
+    /// Runs `work` once the call being applied and the calls it queued are done, when calls
+    /// made from `work` apply at once.
+    func runAfterTurn(_ work: @escaping () -> Void) {
+        afterTurn.append(work)
     }
 
     /// Removes the first queued call and returns it, or `nil` when the queue is empty.

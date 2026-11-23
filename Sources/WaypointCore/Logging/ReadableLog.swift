@@ -188,6 +188,12 @@ enum ReadableLog {
             return "rootName replaced the root name makeRouter() set"
         case .releasedRouterReturned:
             return "this coordinator got a router that already ended"
+        case .coordinatorDrawnTwice:
+            return "one coordinator was given two tabs"
+        case .routerInAnotherTree:
+            return "this tab's coordinator brought a router from another tree"
+        case .tabChildRouterMerged:
+            return "this tab's coordinator's early screens were dropped"
         }
     }
 

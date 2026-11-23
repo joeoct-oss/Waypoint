@@ -77,6 +77,21 @@ public struct NavigationIssue: NavigationRecord {
         /// A coordinator got a router, from its `makeRouter()` or stored, that ended with the
         /// coordinator it belonged to, so every call on it returns `.ignored`.
         case releasedRouterReturned
+
+        /// A tab coordinator returned one child coordinator for two tabs. The second tab keeps a
+        /// stack of its own, with none of the child's destinations, or shows the tabs' shared
+        /// stack.
+        case coordinatorDrawnTwice
+
+        /// A tab's child coordinator brought a router that is already in another tree, such as a
+        /// presented flow's, so it can't become the tab's stack. The tab keeps a stack of its own,
+        /// or shows the tabs' shared stack.
+        case routerInAnotherTree
+
+        /// A tab's child coordinator pushed or presented on its own router before it joined, and
+        /// the tab's stack was kept instead: the tabs' shared stack, or a tab stack that already
+        /// had screens. Its calls go to that stack from now on, and those screens are dropped.
+        case tabChildRouterMerged
     }
 
     /// What went wrong.
