@@ -202,7 +202,8 @@ extension RouterTable {
     }
 
     /// Settles `child` on `stack`, with no report, when it stores the stack its own tab
-    /// coordinator handed it: that is the router the table would give it.
+    /// coordinator handed it: that is the router the table would give it. A shared stack another
+    /// tab's child already brought stays with that child, and gets this child's destinations.
     private func acceptStoredTabStack<Child: StackCoordinating>(
         of child: Child,
         _ stack: StackRouter,
@@ -212,7 +213,12 @@ extension RouterTable {
         guard entry(for: ObjectIdentifier(child)) == nil, child.router === stack else {
             return
         }
-        settle(stack, of: child, as: ObjectIdentifier(child), from: .made, file: file, line: line)
+        guard liveOwner(of: stack, other: child) != nil else {
+            settle(stack, of: child, as: ObjectIdentifier(child), from: .made, file: file, line: line)
+            return
+        }
+        store(Entry(coordinator: child, router: stack, ownsRouter: false), as: ObjectIdentifier(child))
+        child.registerDestinations(on: stack)
     }
 
     /// Gives `child`, kept by the app and returned again for a tab added back, the tab's new

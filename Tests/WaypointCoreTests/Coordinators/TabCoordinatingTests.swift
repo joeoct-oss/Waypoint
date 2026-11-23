@@ -613,10 +613,13 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.values.isEmpty)
     }
 
-    @Test
-    func tabChildStoringItsOwnTabRouterIsAccepted() {
-        let tabs = MainTabsCoordinator { tab, parent in
-            StoredRouterCoordinator(router: parent.router.router(for: tab))
+    @Test(arguments: Self.bothLayouts)
+    func tabChildStoringItsOwnTabRouterIsAccepted(stacks: TabStacks) {
+        let children = Recorder<StoredRouterCoordinator>()
+        let tabs = MainTabsCoordinator(stacks: stacks) { tab, parent in
+            let child = StoredRouterCoordinator(router: parent.router.router(for: tab))
+            children.record(child)
+            return child
         }
 
         let router = tabs.router
@@ -625,6 +628,10 @@ struct TabCoordinatingTests {
         #expect(stack.isActive)
         #expect(stack.coordinatorName == "StoredRouterCoordinator")
         #expect(tabs.reported.values.isEmpty)
+        for child in children.values {
+            #expect(child.registrations.last === child.router)
+            #expect(child.navigator.push(ProductRoute(id: 1)) == .applied)
+        }
     }
 
     @Test

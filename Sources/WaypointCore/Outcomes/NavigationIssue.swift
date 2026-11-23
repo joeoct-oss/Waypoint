@@ -79,11 +79,13 @@ public struct NavigationIssue: NavigationRecord {
         case releasedRouterReturned
 
         /// A tab coordinator returned one child coordinator for two tabs. The second tab keeps a
-        /// stack of its own, with none of the child's destinations.
+        /// stack of its own, with none of the child's destinations, or shows the tabs' shared
+        /// stack.
         case coordinatorDrawnTwice
 
         /// A tab's child coordinator brought a router that is already in another tree, such as a
-        /// presented flow's, so it can't become the tab's stack. The tab keeps a stack of its own.
+        /// presented flow's, so it can't become the tab's stack. The tab keeps a stack of its own,
+        /// or shows the tabs' shared stack.
         case routerInAnotherTree
 
         /// A tab's child coordinator pushed or presented on its own router before it joined, and
