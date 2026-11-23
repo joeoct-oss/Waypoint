@@ -113,8 +113,9 @@ extension StackRouter {
     /// router changes its own path: a push, a pop or a `popTo` here ends the child on top first.
     /// `finish(with:)` and `dismissFlow()` in the child pop back to the screen below its root
     /// screen. Under ``DuplicatePushRule/skipWhileInFlight``, a push of the same coordinator type
-    /// while its push is still animating returns `.alreadyThere`. A child that needs a stack of its own is presented with
-    /// ``present(_:style:trigger:else:file:line:onFinish:)``. Refusals are as for a present.
+    /// while its push is still animating returns `.alreadyThere`. A child that needs a stack of
+    /// its own is presented with ``present(_:style:trigger:else:file:line:onFinish:)``. Refusals
+    /// are as for a present.
     ///
     /// - Parameters:
     ///   - child: The coordinator of the pushed flow.
