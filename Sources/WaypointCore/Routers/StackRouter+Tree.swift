@@ -16,7 +16,7 @@ extension StackRouter: TreeNode {
 
     /// The pushed child flow, then the presented flow, if any.
     var childNodes: [any TreeNode] {
-        [pushed, presented].compactMap { $0 }
+        [pushedFlow, presented].compactMap { $0 }
     }
 
     /// The path as it is in the current transaction, or the committed one.
@@ -48,7 +48,7 @@ extension StackRouter: TreeNode {
         )
         let detail = ReadableLog.stackText(stack, naming: naming, shortens: false)
         let style = current.state.presentation?.style
-        let pushedChild = pushed.map { child in
+        let pushedChild = pushedFlow.map { child in
             child.readableTree(naming)
         }
         let presentedChild = presented.map { child in

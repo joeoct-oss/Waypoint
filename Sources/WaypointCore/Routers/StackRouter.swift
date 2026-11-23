@@ -220,8 +220,8 @@ public final class StackRouter: NavigationRouter {
 
     /// The router of the child flow pushed on top of this stack, if any. Its root screen is the
     /// last route of the path, and its own screens follow on screen.
-    package var pushed: StackRouter? {
-        forwardTarget.map(\.pushed) ?? committed.pushed
+    package var pushedFlow: StackRouter? {
+        forwardTarget.map(\.pushedFlow) ?? committed.pushed
     }
 
     /// The router that presented or contains this one, or `nil` for the root.
@@ -878,7 +878,7 @@ extension StackRouter {
         self.tree = tree
         flowID = tree.claimFlowName(flowID.name)
         presented?.moveSubtree(into: tree, from: previous)
-        pushed?.moveSubtree(into: tree, from: previous)
+        pushedFlow?.moveSubtree(into: tree, from: previous)
     }
 
     /// Moves this router, made on its own or for a lazy start, with every flow it presents, into

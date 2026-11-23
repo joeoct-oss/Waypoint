@@ -27,7 +27,7 @@ struct PushedChildFlowTests {
         let outcome = parent.push(child) { _ in }
 
         #expect(outcome == .applied)
-        #expect(parent.pushed === child.router)
+        #expect(parent.pushedFlow === child.router)
         #expect(parent.children.contains { $0 === child.router })
         #expect(child.router.parent === parent)
         #expect(child.router.isActive)
@@ -68,7 +68,7 @@ struct PushedChildFlowTests {
         let expected: [FlowResult<String>] = [.cancelled]
         #expect(results.values == expected)
         #expect(parent.state.path.isEmpty)
-        #expect(parent.pushed == nil)
+        #expect(parent.pushedFlow == nil)
         #expect(weakChild == nil)
         #expect(weakRouter == nil)
     }
@@ -123,7 +123,7 @@ struct PushedChildFlowTests {
 
         let expected: [FlowResult<String>] = [.cancelled]
         #expect(results.values == expected)
-        #expect(parent.pushed == nil)
+        #expect(parent.pushedFlow == nil)
     }
 
     @Test
@@ -142,7 +142,7 @@ struct PushedChildFlowTests {
         #expect(results.values == expected)
         let path = [AnyRoute(SettingsRoute())]
         #expect(parent.state.path == path)
-        #expect(parent.pushed == nil)
+        #expect(parent.pushedFlow == nil)
     }
 
     @Test
@@ -162,7 +162,7 @@ struct PushedChildFlowTests {
         let cancelled: [FlowResult<String>] = [.cancelled]
         #expect(first.values == cancelled)
         #expect(second.values.isEmpty)
-        #expect(parent.pushed === child.router)
+        #expect(parent.pushedFlow === child.router)
         #expect(parent.state.path.count == 1)
     }
 
@@ -216,9 +216,9 @@ struct PushedChildFlowTests {
         let pushedPath = [marker]
         #expect(pushing.state.path == pushedPath)
         #expect(pushing.presented == nil)
-        #expect(pushing.pushed === pushed.router)
+        #expect(pushing.pushedFlow === pushed.router)
         #expect(presenting.state.path.isEmpty)
         #expect(presenting.presented === presented.router)
-        #expect(presenting.pushed == nil)
+        #expect(presenting.pushedFlow == nil)
     }
 }
