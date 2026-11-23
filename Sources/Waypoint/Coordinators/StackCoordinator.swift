@@ -10,7 +10,7 @@
 ///
 /// Conforming fills in the router, as `StackCoordinating` describes: made the
 /// first time it is read, named after the coordinator, and released once the coordinator is
-/// gone. Draw it with `WaypointStack(router: coordinator.router)` for now; the coordinator's own
+/// gone. Draw it with `WaypointStack(coordinator.router) { … }` for now; the coordinator's own
 /// `root`, `destinations` and `view` come later in #59.
 ///
 /// ```swift

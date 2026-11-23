@@ -45,15 +45,16 @@ final class ShopCoordinator: StackCoordinator {
 
 `ProductView` is a SwiftUI view and `ScannerViewController` is a `UIViewController`. Both work in either renderer: the SwiftUI renderer shows a controller through a representable, and the UIKit renderer shows a SwiftUI view in a `UIHostingController`.
 
-A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made the first time it is read, and released when the flow ends; the app coordinator and a tab coordinator declare theirs, because only the app knows its first root or tab), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer.
+A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made with `makeRouter()` the first time it is read, and released when the flow ends; `StackCoordinating` in `WaypointCore` holds it, and `StackCoordinator` with only the router is built so far in #59; the app coordinator and a tab coordinator declare theirs, because only the app knows its first root or tab), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer.
 
 ```swift
 /// App code that owns one stack flow, with its screens.
 ///
 /// Conformances:
-/// - `AnyObject`, because a coordinator is one shared object that owns its router.
+/// - `StackCoordinating`, the core protocol in `WaypointCore` with the router, `makeRouter()`,
+///   `rootName` and `registerDestinations(on:)`, which has no UI.
 @MainActor
-public protocol StackCoordinator: AnyObject {
+public protocol StackCoordinator: StackCoordinating {
     /// Conformances:
     /// - `Screen`: the flow's first screen, a SwiftUI view or a view controller.
     associatedtype RootScreen: Screen
@@ -64,8 +65,6 @@ public protocol StackCoordinator: AnyObject {
     /// - `StackRenderer`: what draws this coordinator. Default: `DefaultStackRenderer`.
     associatedtype Renderer: StackRenderer = DefaultStackRenderer
 
-    /// The router this coordinator owns. Default: made on first read.
-    var router: StackRouter { get }
     /// The flow's first screen.
     @ScreenBuilder var root: RootScreen { get }
     /// The flow's screens, by route type.
