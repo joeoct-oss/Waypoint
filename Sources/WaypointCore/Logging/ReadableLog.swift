@@ -193,7 +193,7 @@ enum ReadableLog {
         case .routerInAnotherTree:
             return "this tab's coordinator brought a router from another tree"
         case .tabChildRouterMerged:
-            return "this tab's coordinator now drives the shared stack"
+            return "this tab's coordinator's early screens were dropped"
         }
     }
 

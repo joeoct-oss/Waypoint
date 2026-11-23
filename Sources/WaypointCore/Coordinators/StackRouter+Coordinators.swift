@@ -65,9 +65,13 @@ extension StackRouter {
     ) {
         let name = ViewTypeName.of(type(of: child))
         let tabName = DescriptionFormat.name(of: tab)
+        let isShared = parentNode?.sharedStackTabName != nil
+        let result = isShared
+            ? "\(tabName) keeps no coordinator of its own and shows the tabs' shared stack"
+            : "\(tabName) keeps a stack of its own, with none of \(name)'s destinations"
         let message = "The tab coordinator returned the same \(name) for the \(tabName) tab as for "
-            + "an earlier tab. One coordinator drives one tab, so \(tabName) keeps a stack of its "
-            + "own, with none of \(name)'s destinations. Return a new coordinator for each tab."
+            + "an earlier tab. One coordinator drives one tab, so \(result). Return a different "
+            + "coordinator for each tab."
         report(.coordinatorDrawnTwice, message, file: file, line: line)
     }
 
@@ -81,10 +85,13 @@ extension StackRouter {
     ) {
         let name = ViewTypeName.of(type(of: child))
         let tabName = DescriptionFormat.name(of: tab)
+        let isShared = parentNode?.sharedStackTabName != nil
+        let result = isShared
+            ? "The tab shows the tabs' shared stack, with none of \(name)'s destinations"
+            : "The tab keeps a stack of its own, with none of \(name)'s destinations"
         let message = "\(name), the \(tabName) tab's coordinator, has a router that is already in "
             + "another tree, such as a presented flow's or another tab's, so it can't be the "
-            + "\(tabName) tab's stack. The tab keeps a stack of its own, with none of \(name)'s "
-            + "destinations. Make a new router in \(name).makeRouter()."
+            + "\(tabName) tab's stack. \(result). Make a new router in \(name).makeRouter()."
         report(.routerInAnotherTree, message, file: file, line: line)
     }
 

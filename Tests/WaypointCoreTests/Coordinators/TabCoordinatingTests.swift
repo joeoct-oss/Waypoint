@@ -550,6 +550,8 @@ struct TabCoordinatingTests {
         let issue = try #require(tabs.reported.last)
         #expect(issue.message.contains("TabChildCoordinator"))
         #expect(issue.message.contains("shop"))
+        let wording = stacks == .shared ? "shared stack" : "a stack of its own"
+        #expect(issue.message.contains(wording))
     }
 
     @Test
