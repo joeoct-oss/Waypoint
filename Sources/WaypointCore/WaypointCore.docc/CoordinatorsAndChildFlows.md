@@ -30,7 +30,7 @@ A stack or flow coordinator doesn't declare its router. Waypoint makes it the fi
 
 > Warning: Don't read a coordinator's router in `deinit`. A coordinator going away gets an inert router: its calls return `.ignored` and log `staleNavigator`. A coordinator that subclasses `NSObject` traps there instead.
 
-Built so far in #59: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`. The rest of this article is still planned.
+Built so far in #59: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`; and `TabCoordinating` in `WaypointCore` and `TabCoordinator` in `Waypoint`, with the router, `makeRouter()`, each tab's coordinator and `navigator(for:)`. The rest of this article is still planned.
 
 There is one coordinator protocol for each kind, and it is the same in SwiftUI and UIKit apps. The `Waypoint` product adds the screens: `root` and `destinations`, which take SwiftUI views or UIKit view controllers, and `view`, the whole flow drawn by a renderer you can choose. See "Coordinators and renderers" in the `Waypoint` catalog. The parts below have no UI, so a coordinator's logic is tested on Linux.
 
@@ -64,14 +64,21 @@ public protocol StackCoordinating: AnyObject {
 /// Conformances:
 /// - `AnyObject`, because a coordinator is one shared object that owns its router.
 @MainActor
-public protocol TabCoordinator: AnyObject {
-    /// Conformances:
-    /// - `NavigationTab`, the app's tab type.
+public protocol TabCoordinating: AnyObject {
+    /// The app's tab type, usually an enum.
     associatedtype Tab: NavigationTab
 
-    /// The router this coordinator owns. No default, because only the app knows which tab
-    /// is selected first, such as `let router = TabRouter(selection: MainTab.home)`.
+    /// The router of the tab container. Default: made with `makeRouter()` the first time it
+    /// is read, with each tab's coordinator asked for then.
     var router: TabRouter<Tab> { get }
+
+    /// Makes the router. No default, because only the app knows its tabs and which one is
+    /// selected first, such as `TabRouter(tabs: MainTab.allCases, selection: .home)`.
+    func makeRouter() -> TabRouter<Tab>
+
+    /// The stack coordinator of `tab`, asked once per tab. `TabCoordinator` in `Waypoint` fills
+    /// it in from its `tabCoordinator(for:)`, which returns `any StackCoordinator`.
+    func coordinator(for tab: Tab) -> any StackCoordinating
 }
 
 /// App code that owns a child flow, presented or pushed, that ends with a value for whoever
@@ -123,7 +130,30 @@ The `Waypoint` product adds `makeFlow(for:)`, which returns the coordinator of e
 
 ### Joining the tree
 
-A child coordinator's router joins its parent's tree before any call or link reaches the parent: a tab's stack coordinator joins the tab router as soon as the tab coordinator joins the tree, so the tab router's `router(for:)` returns that same router from the start, and a presented or pushed child joins when it starts. A router read earlier, such as in a test, works on its own and keeps its screens when it joins. Waypoint has to know which stack coordinator belongs to which tab before the tabs are drawn. How the tab coordinator tells it, a requirement that maps each tab to its coordinator or a rule over `makeTabFlow(for:)`, is designed in #59.
+A child coordinator's router joins its parent's tree before any call or link reaches the parent: a tab's stack coordinator joins the tab router as soon as the tab coordinator joins the tree, so the tab router's `router(for:)` returns that same router from the start, and a presented or pushed child joins when it starts. A router read earlier, such as in a test, works on its own and keeps its screens when it joins. A tab coordinator names each tab's coordinator with `tabCoordinator(for:)`, asked once per tab when its router is first read, and again for a tab `setTabs` adds later; a removed tab's coordinator is let go. Return a new coordinator for each tab: one returned for two tabs is reported as `coordinatorDrawnTwice`, and a child whose router another coordinator owns, or that is already in another tree, is reported as `routerOwnedByAnotherCoordinator` or `routerInAnotherTree`. Each of those tabs keeps a stack of its own.
+
+```swift
+// Conformances:
+// - `TabCoordinator`, so Waypoint makes its router and gives each tab its coordinator's stack.
+final class MainTabsCoordinator: TabCoordinator {
+    func makeRouter() -> TabRouter<MainTab> {
+        TabRouter(tabs: MainTab.allCases, selection: .home)
+    }
+
+    func tabCoordinator(for tab: MainTab) -> any StackCoordinator {
+        switch tab {
+        case .home:
+            HomeCoordinator()
+        case .shop:
+            ShopCoordinator()
+        }
+    }
+}
+```
+
+With `TabRouter(stacks: .shared)`, the selected tab's coordinator is asked first and its router becomes the shared stack. Every other tab's coordinator drives that same stack: its router's calls go to the shared stack, and screens it pushed before it joined are dropped and reported as `tabChildRouterMerged`. The journey names the shared stack after the selected tab's coordinator.
+
+> Warning: A tab's coordinator that holds its tab coordinator strongly makes a cycle, so neither is freed. Give children what they need through their dependencies.
 
 Create child coordinators once and keep them in their parent coordinator, not inside a view's `body`, so a flow keeps its state while the screen redraws.
 

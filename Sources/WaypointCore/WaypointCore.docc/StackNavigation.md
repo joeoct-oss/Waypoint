@@ -408,6 +408,9 @@ public struct NavigationIssue: NavigationRecord {
         case routerOwnedByAnotherCoordinator
         case rootNameReplaced
         case releasedRouterReturned
+        case coordinatorDrawnTwice
+        case routerInAnotherTree
+        case tabChildRouterMerged
     }
     /// What went wrong.
     public let kind: Kind

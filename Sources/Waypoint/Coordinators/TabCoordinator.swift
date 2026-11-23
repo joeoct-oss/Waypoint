@@ -1,0 +1,49 @@
+//
+//  TabCoordinator.swift
+//  Waypoint
+//
+//  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
+//  Copyright © 2026 Yousef Mohamed. MIT License.
+//
+
+/// App code that owns a tab container and a stack coordinator for each tab.
+///
+/// Conforming fills in the router, as `TabCoordinating` describes: made with `makeRouter()` the
+/// first time it is read, with each tab's coordinator asked for then, so `router.router(for:)`
+/// returns that coordinator's router from the start. Draw it with
+/// `WaypointTabs(coordinator.router) { … }` for now; the coordinator's own `view` comes later in
+/// #59.
+///
+/// ```swift
+/// final class MainCoordinator: TabCoordinator {
+///     func makeRouter() -> TabRouter<MainTab> {
+///         TabRouter(tabs: MainTab.allCases, selection: .shop)
+///     }
+///
+///     func tabCoordinator(for tab: MainTab) -> any StackCoordinator {
+///         switch tab {
+///         case .shop:
+///             ShopCoordinator()
+///         case .cart:
+///             CartCoordinator()
+///         }
+///     }
+/// }
+/// ```
+///
+/// Conformances:
+/// - `TabCoordinating`, the core protocol with the router and its defaults, which has no UI so
+///   a coordinator's logic is tested on Linux.
+@MainActor
+public protocol TabCoordinator: TabCoordinating {
+    /// The stack coordinator of `tab`. Asked once per tab, when the router is made or the tab is
+    /// added. Return a new coordinator for each tab.
+    func tabCoordinator(for tab: Tab) -> any StackCoordinator
+}
+
+extension TabCoordinator {
+    /// The tab's stack coordinator, from ``tabCoordinator(for:)``.
+    public func coordinator(for tab: Tab) -> any StackCoordinating {
+        tabCoordinator(for: tab)
+    }
+}

@@ -173,6 +173,30 @@ final class NavigationTreeContext {
         return FlowID(name)
     }
 
+    /// Takes over what `other`, the tree of a router joining this one, knew: its registered
+    /// route types and view names, and its screen ids, so ids stay unique on a moved stack.
+    func takeOver(_ other: NavigationTreeContext) {
+        guard other !== self else {
+            return
+        }
+        for type in other.registry.registeredTypes {
+            registerOpened(type)
+        }
+        viewNames.merge(other.viewNames) { mine, _ in
+            mine
+        }
+        namesViews = namesViews || other.namesViews
+        screenCount = max(screenCount, other.screenCount)
+    }
+
+    /// Registers `type`, opened from an existential.
+    private func registerOpened<R: Route>(_ type: R.Type) {
+        guard !registry.isRegistered(type) else {
+            return
+        }
+        register(type)
+    }
+
     /// Frees a flow name when its router leaves the tree.
     func releaseFlowName(_ flow: FlowID) {
         flowNames.remove(flow.name)

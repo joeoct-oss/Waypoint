@@ -104,6 +104,20 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// ``setCoordinator(_:)`` and ``setCoordinatorName(_:)`` change it.
     @ObservationIgnored private var ownerName: String?
 
+    /// The name of each tab's child coordinator, so the shared stack is named after the
+    /// selected tab's coordinator.
+    ///
+    /// `var` because tab coordinators name their children as they join. Only
+    /// `nameTabCoordinator(_:for:)` and `forgetTabCoordinator(for:)` change it.
+    @ObservationIgnored private var tabCoordinatorNames: [Tab: String] = [:]
+
+    /// What the tab coordinator runs when tabs are added or removed, so it asks for the new
+    /// tabs' children and lets the removed ones go, or `nil` without a tab coordinator.
+    ///
+    /// `var` because the tab coordinator sets it once it joins. Only `onTabsChanged(_:)`
+    /// changes it.
+    @ObservationIgnored private var tabsChanged: ((_ added: [Tab], _ removed: [Tab]) -> Void)?
+
     /// The current state. Change it through the navigation methods below.
     public var state: TabState<Tab> {
         committed.state
@@ -191,6 +205,12 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
     /// sees, such as `Shop`, rather than the shared stack.
     var sharedStackTabName: String? {
         stacks == .shared ? DescriptionFormat.name(of: current.state.selection) : nil
+    }
+
+    /// The selected tab's child coordinator's name with ``TabStacks/shared``, so the shared
+    /// stack is named after the coordinator of the tab the reader sees.
+    var sharedStackCoordinatorName: String? {
+        stacks == .shared ? tabCoordinatorNames[current.state.selection] : nil
     }
 
     /// The working copy during a transaction, or the committed snapshot.
@@ -439,6 +459,42 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
         tree.register(type)
     }
 
+    /// Makes `router`, the own router of `tab`'s child coordinator, the stack of `tab`. It joins
+    /// this tree with its screens, and the stack it replaces forwards to it, so a navigator of
+    /// that stack's root screen keeps working. With ``TabStacks/shared`` it becomes the stack of
+    /// every tab.
+    func adoptTabRouter(_ router: StackRouter, for tab: Tab) {
+        guard let replaced = current.tabRouters[tab], replaced !== router else {
+            return
+        }
+        let name = stacks == .shared ? replaced.flowID.name : DescriptionFormat.name(of: tab)
+        tree.releaseFlowName(replaced.flowID)
+        router.join(tabOf: self, named: name)
+        replaced.forward(to: router)
+        let swap = { (snapshot: Snapshot) in
+            snapshot.withTabRouters(snapshot.tabRouters.mapValues { $0 === replaced ? router : $0 })
+        }
+        updateWorkingCopy(swap)
+        withMutation(keyPath: \.committed) {
+            committed = swap(committed)
+        }
+    }
+
+    /// Names the child coordinator of `tab`, for the shared stack's name.
+    func nameTabCoordinator(_ name: String, for tab: Tab) {
+        tabCoordinatorNames[tab] = name
+    }
+
+    /// Forgets the child coordinator of a removed tab.
+    func forgetTabCoordinator(for tab: Tab) {
+        tabCoordinatorNames.removeValue(forKey: tab)
+    }
+
+    /// Sets what runs after a change adds or removes tabs.
+    func onTabsChanged(_ handler: @escaping (_ added: [Tab], _ removed: [Tab]) -> Void) {
+        tabsChanged = handler
+    }
+
     /// Creates the one stack the tabs share with ``TabStacks/shared``.
     private func makeSharedRouter() -> StackRouter {
         StackRouter(tabOf: self, flow: tree.claimFlowName("stack"), isAttached: true)
@@ -513,6 +569,7 @@ extension TabRouter: TransactionParticipant {
         }
         commitTabRouters(from: previous.tabRouters, to: next.tabRouters)
         commitPresented(from: previous.presented, to: next.presented)
+        reportTabsChanged(from: previous.state.tabs, to: next.state.tabs)
     }
 
     /// Drops the working copy, and frees the names of routers that never joined.
@@ -549,6 +606,19 @@ extension TabRouter: TransactionParticipant {
         for router in next.values {
             router.markAttached()
         }
+    }
+
+    /// Tells the tab coordinator which tabs a change added and removed.
+    private func reportTabsChanged(from previous: [Tab], to next: [Tab]) {
+        guard let tabsChanged, previous != next else {
+            return
+        }
+        let added = next.filter { !previous.contains($0) }
+        let removed = previous.filter { !next.contains($0) }
+        guard !added.isEmpty || !removed.isEmpty else {
+            return
+        }
+        tabsChanged(added, removed)
     }
 
     /// Detaches the old presented router and attaches the new one, if it changed.

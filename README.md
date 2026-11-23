@@ -26,7 +26,7 @@ Waypoint is a navigation library for iOS apps. Every screen is named by a small 
 | SwiftUI stacks: `WaypointStack`, `destination(_:_:)`, swipe-back sync | ✅ Built in `Waypoint` |
 | `WaypointLink`, navigators and property wrappers for views and view models | ✅ Built in `Waypoint` |
 | SwiftUI sheets, tabs and the app coordinator | 🛰️ Next |
-| Stack coordinators: `StackCoordinator` (and `StackCoordinating` in `WaypointCore`) with the router made, named and released for you | ✅ Built in #59 (first part) |
+| Stack and tab coordinators: `StackCoordinator` and `TabCoordinator` (and `StackCoordinating` and `TabCoordinating` in `WaypointCore`) with the router made, named and released for you, and each tab's stack its coordinator's router | ✅ Built in #59 (first parts) |
 | The other coordinator kinds, a coordinator's screens and `view`, swappable renderers, child flows, root switching, deep links | 📐 Designed in DocC |
 | Events, guards, restoration, `WaypointTesting` | 📐 Designed in DocC |
 

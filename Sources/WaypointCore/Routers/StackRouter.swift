@@ -49,16 +49,40 @@ public final class StackRouter: NavigationRouter {
     }
 
     /// The flow this router drives.
-    @ObservationIgnored public let flowID: FlowID
+    ///
+    /// `var` because a router that joins another tree takes a name that is free there, such as
+    /// its tab's. Only `join(tabOf:named:)` and `moveSubtree(into:)` change it.
+    @ObservationIgnored public private(set) var flowID: FlowID
 
     /// The route of the stack's root screen, if it has one. `popTo` this route pops to root.
     @ObservationIgnored public let rootRoute: AnyRoute?
 
     /// The tree this router belongs to.
-    @ObservationIgnored let tree: NavigationTreeContext
+    ///
+    /// `var` because a router made on its own joins another tree once, such as a tab child's
+    /// router becoming the tab's stack. Only `join(tabOf:named:)` and `moveSubtree(into:)` change
+    /// it.
+    @ObservationIgnored private(set) var tree: NavigationTreeContext
 
     /// The router that presented or contains this one.
-    @ObservationIgnored weak let parentNode: (any TreeNode)?
+    ///
+    /// `var` because a router made on its own gets a parent when it joins another tree. Only
+    /// `join(tabOf:named:)` changes it.
+    @ObservationIgnored private(set) weak var parentNode: (any TreeNode)?
+
+    /// The router every call goes to once a tab container took this router's place with another,
+    /// or `nil`. Held weakly: the target keeps this router, so a navigator of its root screen
+    /// keeps working as long as the target does.
+    ///
+    /// `var` because a router starts forwarding when it is replaced. Only `forward(to:)` changes
+    /// it.
+    @ObservationIgnored private(set) weak var forwardTarget: StackRouter?
+
+    /// The routers that forward to this one, kept so their navigators keep working.
+    ///
+    /// `var` because routers start forwarding to this one as they are replaced. Only
+    /// `forward(to:)` changes it.
+    @ObservationIgnored private(set) var forwarders: [StackRouter] = []
 
     /// The committed state and presented router, which renderers observe.
     ///
@@ -100,7 +124,7 @@ public final class StackRouter: NavigationRouter {
     /// The name of the stack's root screen when it has no root route, or `nil`.
     ///
     /// `var` because a renderer or coordinator names it after the router exists. Only
-    /// ``setRootName(_:)`` changes it.
+    /// ``setRootName(_:)`` and `clearRootScreenName()` change it.
     @ObservationIgnored private(set) var rootScreenName: String?
 
     /// The name of the view that draws the stack's root screen, such as `ProductListView`, or
@@ -136,12 +160,12 @@ public final class StackRouter: NavigationRouter {
 
     /// The current state. Change it through the navigation methods below.
     public var state: StackState {
-        committed.state
+        forwardTarget?.state ?? committed.state
     }
 
     /// The router of the presented flow, if any.
     public var presented: StackRouter? {
-        committed.presented
+        forwardTarget.map(\.presented) ?? committed.presented
     }
 
     /// The router that presented or contains this one, or `nil` for the root.
@@ -161,7 +185,7 @@ public final class StackRouter: NavigationRouter {
 
     /// Whether this router is still in the tree. When it isn't, every call returns `.ignored`.
     public var isActive: Bool {
-        isAttached
+        forwardTarget?.isActive ?? isAttached
     }
 
     /// The flow this stack was declared for with ``declareFlow(_:)``, or `nil`.
@@ -180,8 +204,12 @@ public final class StackRouter: NavigationRouter {
     /// The name of the coordinator that owns this stack, such as `ProductsCoordinator`, shown in
     /// the journey box. Named with ``setCoordinator(_:)`` or ``setCoordinatorName(_:)``; a
     /// presented flow that isn't named takes the name of the coordinator that presented it,
-    /// which runs it until it gets its own. `nil` when none is named.
+    /// which runs it until it gets its own. Tabs that share one stack name it after the selected
+    /// tab's coordinator. `nil` when none is named.
     public var coordinatorName: String? {
+        if let shared = parentNode?.sharedStackCoordinatorName {
+            return shared
+        }
         guard ownerName == nil, let parentNode, parentNode.presentedNode === self else {
             return ownerName
         }
@@ -536,6 +564,12 @@ public final class StackRouter: NavigationRouter {
         rootScreenName = name
     }
 
+    /// Forgets the root screen's name. The router table calls this for a tab's child that keeps
+    /// the default root name, so the journey names the root screen after its tab.
+    func clearRootScreenName() {
+        rootScreenName = nil
+    }
+
     /// Names the coordinator that owns this stack in the journey box, by its type.
     ///
     /// ```swift
@@ -608,6 +642,20 @@ public final class StackRouter: NavigationRouter {
             line: line
         )
         let screen = takeCallingScreen()
+        if let forwardTarget {
+            guard screen == .root else {
+                return tree.ignoreStale(flowID, file: file, line: line)
+            }
+            return forwardTarget.perform(
+                file: file,
+                line: line,
+                fallback: fallback,
+                route: route,
+                presentation: presentation,
+                trigger: trigger,
+                step
+            )
+        }
         let isLive = { [weak self] in
             self?.isOnStack(screen) ?? false
         }
@@ -694,5 +742,43 @@ extension StackRouter: TransactionParticipant {
     /// Marks this router as gone from the tree. Its calls return `.ignored` from now on.
     func markDetached() {
         isAttached = false
+    }
+}
+
+/// Joining another tree, for routers made on their own.
+extension StackRouter {
+    /// Whether this router can join another tree: it was made on its own, so it is the root of
+    /// a tree of its own, and it is still in that tree.
+    var canJoinAnotherTree: Bool {
+        parentNode == nil && isAttached && forwardTarget == nil
+    }
+
+    /// Moves this router, made on its own, with every flow it presents, into `parent`'s tree as
+    /// a tab's stack named `name`.
+    ///
+    /// Its path, screens and registered routes are kept. The tree's settings apply from now on.
+    func join(tabOf parent: any TreeNode, named name: String) {
+        let previous = tree
+        moveSubtree(into: parent.tree, from: previous)
+        parentNode = parent
+        parent.tree.releaseFlowName(flowID)
+        flowID = parent.tree.claimFlowName(name)
+    }
+
+    /// Moves this router and the flows it presents into `tree`, carrying over the route types and
+    /// view names `previous` knows, and taking flow names free in `tree`.
+    func moveSubtree(into tree: NavigationTreeContext, from previous: NavigationTreeContext) {
+        tree.takeOver(previous)
+        self.tree = tree
+        flowID = tree.claimFlowName(flowID.name)
+        presented?.moveSubtree(into: tree, from: previous)
+    }
+
+    /// Sends every call from now on to `target`, which took this router's place and keeps it. A
+    /// navigator of the root screen keeps working; one of a pushed screen is stale.
+    func forward(to target: StackRouter) {
+        forwardTarget = target
+        target.forwarders.append(self)
+        markDetached()
     }
 }

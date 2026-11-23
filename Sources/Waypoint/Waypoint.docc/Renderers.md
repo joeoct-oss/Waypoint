@@ -45,7 +45,7 @@ final class ShopCoordinator: StackCoordinator {
 
 `ProductView` is a SwiftUI view and `ScannerViewController` is a `UIViewController`. Both work in either renderer: the SwiftUI renderer shows a controller through a representable, and the UIKit renderer shows a SwiftUI view in a `UIHostingController`.
 
-A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made with `makeRouter()` the first time it is read, and released when the flow ends; `StackCoordinating` in `WaypointCore` holds it, and `StackCoordinator` with only the router is built so far in #59; the app coordinator and a tab coordinator declare theirs, because only the app knows its first root or tab), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer.
+A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made with `makeRouter()` the first time it is read, and released when the flow ends; `StackCoordinating` in `WaypointCore` holds it, and `StackCoordinator` with only the router is built so far in #59; a tab coordinator's router is made with its `makeRouter()` too, which has no default because only the app knows its first tab, and `TabCoordinator` with its router and `tabCoordinator(for:)` is built so far in #59; the app coordinator declares its router, because only the app knows its first root), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer.
 
 ```swift
 /// App code that owns one stack flow, with its screens.
@@ -130,12 +130,16 @@ public struct Destination<R: Route, Content: Screen>: Destinations {
 A tab coordinator adds the screen for each tab:
 
 ```swift
-// What `Waypoint` adds to `TabCoordinator`. The tab type and the router are in the core.
+// What `Waypoint` adds to `TabCoordinator`. The tab type, the router and `makeRouter()` are in
+// the core's `TabCoordinating`. `tabCoordinator(for:)` is built; the rest comes with #13.
 //
 // Conformances:
-// - `AnyObject`, because a coordinator is one shared object that owns its router.
+// - `TabCoordinating`, the core protocol with the router and its defaults.
 @MainActor
-public protocol TabCoordinator: AnyObject {
+public protocol TabCoordinator: TabCoordinating {
+    /// The stack coordinator of `tab`, asked once per tab, whose router becomes the tab's stack.
+    func tabCoordinator(for tab: Tab) -> any StackCoordinator
+
     /// Conformances:
     /// - `View`: a tab's stack coordinator's `view`, with its label.
     associatedtype TabContent: View
@@ -146,8 +150,7 @@ public protocol TabCoordinator: AnyObject {
     /// The tabs, drawn by `Renderer`. Default: filled in by Waypoint.
     var view: Renderer { get }
 
-    /// The screen for one tab, usually one of the coordinator's stack coordinators' `view`.
-    /// How Waypoint learns each tab's coordinator before drawing is designed in #59.
+    /// The screen for one tab, usually its stack coordinator's `view`, with its label.
     @ViewBuilder func makeTabFlow(for tab: Tab) -> TabContent
 }
 ```

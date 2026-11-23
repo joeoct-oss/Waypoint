@@ -307,9 +307,21 @@ A tab coordinator owns a `TabRouter` and one stack coordinator for each tab. Its
 // Conformances:
 // - `TabCoordinator`, so Waypoint can draw its tabs.
 final class MainTabsCoordinator: TabCoordinator {
-    let router = TabRouter(selection: MainTab.home)
     let home = HomeCoordinator()
     let shop = ShopCoordinator()
+
+    func makeRouter() -> TabRouter<MainTab> {
+        TabRouter(tabs: MainTab.allCases, selection: .home)
+    }
+
+    func tabCoordinator(for tab: MainTab) -> any StackCoordinator {
+        switch tab {
+        case .home:
+            home
+        case .shop:
+            shop
+        }
+    }
 
     @ViewBuilder
     func makeTabFlow(for tab: MainTab) -> some View {
@@ -333,7 +345,7 @@ final class MainTabsCoordinator: TabCoordinator {
 }
 ```
 
-No router is passed by hand: how each tab's stack router joins the tab router, before any call or link reaches it, is in "Joining the tree" in the core's coordinators article. `makeTabFlow(for:)` has a `switch` over your tab enum, one `make…Flow()` call per case. That is fine here: it lists the tabs once, in one place, not every screen. Apps draw their own tab labels. See <doc:ExampleFlows>.
+No router is passed by hand: `tabCoordinator(for:)` names each tab's coordinator, whose router becomes the tab's stack as soon as the tab coordinator's router is first read; see "Joining the tree" in the core's coordinators article. `makeTabFlow(for:)` has a `switch` over your tab enum, one `make…Flow()` call per case. That is fine here: it lists the tabs once, in one place, not every screen. Apps draw their own tab labels. See <doc:ExampleFlows>.
 
 The lower-level view draws a `TabRouter` with a closure, for tabs that no coordinator runs:
 

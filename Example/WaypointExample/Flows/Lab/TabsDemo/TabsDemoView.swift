@@ -14,8 +14,8 @@ struct TabsDemoFlowView: View {
     let demo: TabsDemoCoordinator
 
     var body: some View {
-        TabView(selection: Binding(reading: demo.tabs.selection, writing: demo.selectTab)) {
-            ForEach(demo.tabs.state.tabs, id: \.self) { tab in
+        TabView(selection: Binding(reading: demo.router.selection, writing: demo.selectTab)) {
+            ForEach(demo.router.state.tabs, id: \.self) { tab in
                 demo.makeTabFlow(for: tab)
                     .tabItem { Label(tab.title, systemImage: tab.symbolName) }
                     .tag(tab)
