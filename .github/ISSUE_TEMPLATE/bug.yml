@@ -83,7 +83,7 @@ body:
         - [ ] Tests written first, seen failing, now passing
         - [ ] Plan status set to Done, status log updated
         - [ ] Docs in sync (articles, README, CODE_STYLE where touched)
-        - [ ] PR merged (squash), PR body free of attribution
+        - [ ] PR merged (squash, or a merge commit when its history explains why), PR body free of attribution
         - [ ] Board item moved to Done
     validations:
       required: true
