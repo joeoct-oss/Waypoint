@@ -156,7 +156,7 @@ final class RouterTable {
     ) {
         if let owner = liveOwner(of: router, other: coordinator) {
             store(Entry(coordinator: coordinator, router: router, ownsRouter: false), as: id)
-            router.reportRouterOwned(by: owner, storedIn: coordinator, file: file, line: line)
+            router.reportRouterOwned(by: owner, heldBy: coordinator, from: source, file: file, line: line)
             return
         }
         store(Entry(coordinator: coordinator, router: router, ownsRouter: true), as: id)

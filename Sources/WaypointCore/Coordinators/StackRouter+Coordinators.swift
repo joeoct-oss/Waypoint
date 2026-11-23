@@ -26,18 +26,29 @@ extension StackRouter {
         tree.report(issue, level: .error)
     }
 
-    /// Reports `routerOwnedByAnotherCoordinator`: `coordinator` stores this router, which `owner`
-    /// owns. Waypoint leaves it as it is: not adopted, renamed or registered on.
-    func reportRouterOwned(by owner: AnyObject, storedIn coordinator: AnyObject, file: StaticString, line: UInt) {
+    /// Reports `routerOwnedByAnotherCoordinator`: `coordinator` stores this router, or its
+    /// `makeRouter()` returns it, and `owner` owns it. Waypoint leaves it as it is: not adopted,
+    /// renamed or registered on, so the coordinator's own routes stay unregistered.
+    func reportRouterOwned(
+        by owner: AnyObject,
+        heldBy coordinator: AnyObject,
+        from source: RouterTable.Source,
+        file: StaticString,
+        line: UInt
+    ) {
         let name = ViewTypeName.of(type(of: coordinator))
         let ownerName = ViewTypeName.of(type(of: owner))
-        let message = "\(name) stores the router of \(ownerName), so both drive one stack. Waypoint "
-            + "leaves it with \(ownerName). Give \(name) a router of its own: remove the stored "
-            + "router, or implement makeRouter()."
+        let how = source == .made ? "makeRouter() returns" : "stores"
+        let fix = source == .made
+            ? "make a new router in makeRouter()"
+            : "remove the stored router, or implement makeRouter()"
+        let text = "\(name) \(how) the router of \(ownerName), so both drive one stack. Waypoint "
+            + "leaves it with \(ownerName) and registers none of \(name)'s destinations on it. Give "
+            + "\(name) a router of its own: \(fix)."
         let issue = NavigationIssue(
             kind: .routerOwnedByAnotherCoordinator,
             flow: flowID,
-            message: message,
+            message: text,
             file: file,
             line: line
         )

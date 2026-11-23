@@ -107,6 +107,29 @@ struct StackCoordinatingTests {
     }
 
     @Test
+    func madeRouterOfAnotherCoordinatorIsNotAdopted() throws {
+        let owner = ShopListCoordinator()
+        let shared = owner.router
+        let reported = Recorder<NavigationIssue>()
+        shared.tree.onReported { issue in
+            reported.record(issue)
+        }
+        let borrower = GivenRouterCoordinator(given: shared)
+
+        let router = borrower.router
+        _ = borrower.router
+
+        let kinds = reported.values.map(\.kind)
+        let expectedKinds: [NavigationIssue.Kind] = [.routerOwnedByAnotherCoordinator]
+        #expect(kinds == expectedKinds)
+        let issue = try #require(reported.last)
+        #expect(issue.message.contains("GivenRouterCoordinator makeRouter() returns"))
+        #expect(!issue.message.contains("stored"))
+        #expect(router === shared)
+        #expect(shared.coordinatorName == "ShopListCoordinator")
+    }
+
+    @Test
     func freedCoordinatorLeavesNoRouter() {
         weak let released = makeAndDropCoordinatorRouter()
 

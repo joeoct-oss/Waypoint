@@ -116,3 +116,23 @@ final class DeinitReadingCoordinator: StackCoordinating {
         madeRouter ?? StackRouter(configuration: .permissive)
     }
 }
+
+/// A stack coordinator whose `makeRouter()` returns a router it was given, such as a parent's.
+///
+/// Conformances:
+/// - `StackCoordinating`, so the core checks the router `makeRouter()` returns.
+@MainActor
+final class GivenRouterCoordinator: StackCoordinating {
+    /// The router `makeRouter()` returns.
+    let given: StackRouter
+
+    /// Creates a coordinator whose `makeRouter()` returns `given`.
+    init(given: StackRouter) {
+        self.given = given
+    }
+
+    /// The router it was given.
+    func makeRouter() -> StackRouter {
+        given
+    }
+}
