@@ -178,6 +178,13 @@ public final class StackRouter: NavigationRouter {
     /// `join(presentedBy:named:flow:)`, `markAttached()` and `undoJoin()` change it.
     @ObservationIgnored private var joinedFrom: NavigationTreeContext?
 
+    /// The flow name this router had before it joined a parent's tree, kept with `joinedFrom` so
+    /// a rolled-back start gives it back.
+    ///
+    /// `var` because it is set by a join and cleared by its commit or roll back. Only
+    /// `join(presentedBy:named:flow:)`, `markAttached()` and `undoJoin()` change it.
+    @ObservationIgnored private var nameBeforeJoin: String?
+
     /// The current state. Change it through the navigation methods below.
     public var state: StackState {
         forwardTarget?.state ?? committed.state
@@ -774,6 +781,7 @@ extension StackRouter: TransactionParticipant {
     func markAttached() {
         isAttached = true
         joinedFrom = nil
+        nameBeforeJoin = nil
     }
 
     /// Starts the child flow this router runs, once the start that presented it commits, and
@@ -821,12 +829,21 @@ extension StackRouter {
     /// Moves this router and the flows it presents into `tree`, carrying over the route types and
     /// view names `previous` knows, and taking flow names free in `tree` in place of theirs in
     /// `previous`.
-    func moveSubtree(into tree: NavigationTreeContext, from previous: NavigationTreeContext) {
-        tree.takeOver(previous)
+    ///
+    /// Without `carryingOver`, `tree` takes nothing from `previous`: a router going back to its
+    /// own tree after a rolled-back start keeps that tree's route types and view names only.
+    func moveSubtree(
+        into tree: NavigationTreeContext,
+        from previous: NavigationTreeContext,
+        carryingOver: Bool = true
+    ) {
+        if carryingOver {
+            tree.takeOver(previous)
+        }
         previous.releaseFlowName(flowID)
         self.tree = tree
         flowID = tree.claimFlowName(flowID.name)
-        presented?.moveSubtree(into: tree, from: previous)
+        presented?.moveSubtree(into: tree, from: previous, carryingOver: carryingOver)
     }
 
     /// Moves this router, made on its own or for a lazy start, with every flow it presents, into
@@ -834,6 +851,7 @@ extension StackRouter {
     /// keeps `flow` until it ends. It stays out of the tree until the start commits.
     func join(presentedBy parent: any TreeNode, named name: String, flow: any ChildFlowRecord) {
         joinedFrom = tree
+        nameBeforeJoin = flowID.name
         if tree !== parent.tree {
             moveSubtree(into: parent.tree, from: tree)
         }
@@ -851,11 +869,16 @@ extension StackRouter {
             return false
         }
         let parentTree = tree
-        let home = previous === parentTree ? NavigationTreeContext(configuration: parentTree.configuration) : previous
+        let returnsHome = previous !== parentTree
+        let home = returnsHome ? previous : NavigationTreeContext(configuration: parentTree.configuration)
+        let name = nameBeforeJoin ?? flowID.name
         joinedFrom = nil
+        nameBeforeJoin = nil
         childFlow = nil
         parentNode = nil
-        moveSubtree(into: home, from: parentTree)
+        moveSubtree(into: home, from: parentTree, carryingOver: !returnsHome)
+        home.releaseFlowName(flowID)
+        flowID = home.claimFlowName(name)
         isAttached = true
         return true
     }

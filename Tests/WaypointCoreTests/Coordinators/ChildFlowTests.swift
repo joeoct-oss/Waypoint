@@ -732,6 +732,7 @@ struct ChildFlowTests {
     @Test
     func rolledBackStartLeavesChildAsItWas() {
         let parent = StackRouter()
+        parent.register(SettingsRoute.self)
         let child = CheckoutFlowCoordinator()
         child.router.push(ProductRoute(id: 3))
         let childTree = child.router.tree
@@ -754,6 +755,8 @@ struct ChildFlowTests {
         #expect(parent.presented == nil)
         #expect(child.router.parent == nil)
         #expect(child.router.tree === childTree)
+        #expect(child.router.flowID == FlowID("main"))
+        #expect(!child.router.registry.isRegistered(SettingsRoute.self))
         #expect(child.router.isActive)
         let path = [AnyRoute(ProductRoute(id: 3))]
         #expect(child.router.state.path == path)
