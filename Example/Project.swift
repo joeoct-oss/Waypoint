@@ -129,10 +129,32 @@ let schemeTestTargets: [TestableTarget] = [
     "WaypointExampleUITests",
 ]
 
+// After every build, in Xcode or a script, `tuist inspect build` sends the build's timings to the
+// project's Tuist dashboard (Build Insights, #312). It runs Tuist through mise, which pins its
+// version, and never fails a build: a Mac that isn't signed in to Tuist just sends nothing.
+let buildInsightsScript = """
+MISE="$(command -v mise || echo "$HOME/.local/bin/mise")"
+if [ -x "$MISE" ]; then
+    eval "$("$MISE" activate -C "$SRCROOT" bash --shims)"
+fi
+if command -v tuist >/dev/null; then
+    tuist inspect build || true
+fi
+"""
+
+let buildInsights = ExecutionAction.executionAction(
+    title: "Tuist build insights",
+    scriptText: buildInsightsScript
+)
+
 let scheme = Scheme.scheme(
     name: "WaypointExample",
     shared: true,
-    buildAction: .buildAction(targets: schemeBuildTargets),
+    buildAction: .buildAction(
+        targets: schemeBuildTargets,
+        postActions: [buildInsights],
+        runPostActionsOnFailure: true
+    ),
     testAction: .targets(schemeTestTargets),
     runAction: .runAction(executable: "WaypointExample")
 )
