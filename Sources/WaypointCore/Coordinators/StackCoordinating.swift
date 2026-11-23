@@ -40,7 +40,7 @@ public protocol StackCoordinating: AnyObject {
     /// The name of the stack's root screen in the journey, when the root screen has no route.
     /// Default: the type's name without `Coordinator`, such as `Shop` for `ShopCoordinator`.
     /// It replaces a root name the router came with, so name the root here, not in
-    /// ``makeRouter()``.
+    /// ``makeRouter()``: a different name set there is reported as `invalidSetting`.
     var rootName: String { get }
 
     /// Makes the router, the first time ``router`` is read. Default: `StackRouter()`.

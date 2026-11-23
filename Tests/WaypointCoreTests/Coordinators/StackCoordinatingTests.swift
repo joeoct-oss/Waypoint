@@ -157,10 +157,20 @@ struct StackCoordinatingTests {
     }
 
     @Test
-    func defaultRootNameReplacesTheNameMakeRouterSet() {
+    func defaultRootNameReplacesTheNameMakeRouterSet() throws {
         let coordinator = NamedRouterCoordinator()
+        let reported = Recorder<NavigationIssue>()
+        coordinator.made.tree.onReported { issue in
+            reported.record(issue)
+        }
 
-        #expect(coordinator.router.rootName == "NamedRouter")
+        let router = coordinator.router
+
+        #expect(router.rootName == "NamedRouter")
+        let issue = try #require(reported.last)
+        #expect(issue.kind == .invalidSetting)
+        #expect(issue.message.contains("\"Made list\""))
+        #expect(issue.message.contains("rootName"))
     }
 
     @Test

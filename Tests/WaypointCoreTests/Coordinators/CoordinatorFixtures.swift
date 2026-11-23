@@ -151,11 +151,18 @@ final class GivenRouterCoordinator: StackCoordinating {
 /// - `StackCoordinating`, so the core keeps the name its router came with.
 @MainActor
 final class NamedRouterCoordinator: StackCoordinating {
-    /// A router whose root screen is named `Made list`.
+    /// The router `makeRouter()` returns, made before it is read so a test can observe its tree.
+    let made: StackRouter
+
+    /// Creates the router, with its root screen named `Made list`.
+    init() {
+        made = StackRouter()
+        made.setRootName("Made list")
+    }
+
+    /// The router made in `init`.
     func makeRouter() -> StackRouter {
-        let router = StackRouter()
-        router.setRootName("Made list")
-        return router
+        made
     }
 }
 

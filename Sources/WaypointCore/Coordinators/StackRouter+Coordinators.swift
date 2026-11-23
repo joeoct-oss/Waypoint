@@ -33,6 +33,22 @@ extension StackRouter {
         tree.report(issue, level: .error)
     }
 
+    /// Reports `invalidSetting`: the root name `makeRouter()` gave this router, `earlier`, is
+    /// replaced by the coordinator's `rootName`.
+    func reportRootNameReplaced(
+        _ earlier: String,
+        by rootName: String,
+        of coordinator: AnyObject,
+        file: StaticString,
+        line: UInt
+    ) {
+        let name = ViewTypeName.of(type(of: coordinator))
+        let message = "\(name).makeRouter() named the root screen \"\(earlier)\", and \(name).rootName "
+            + "names it \"\(rootName)\" instead. Name the root screen with rootName, not in makeRouter()."
+        let issue = NavigationIssue(kind: .invalidSetting, flow: flowID, message: message, file: file, line: line)
+        tree.report(issue, level: .error)
+    }
+
     /// Reports `routerOwnedByAnotherCoordinator`: `coordinator` stores this router, or its
     /// `makeRouter()` returns it, and `owner` owns it. Waypoint leaves it as it is: not adopted,
     /// renamed or registered on, so the coordinator's own routes stay unregistered.

@@ -165,7 +165,7 @@ final class RouterTable {
 
     /// Keeps `router` as the router of `coordinator`, names it and registers the coordinator's
     /// destinations on it. The coordinator's `rootName`, declared or the default, replaces any
-    /// root name the router came with.
+    /// root name the router came with; a different name `makeRouter()` set is reported.
     /// When another coordinator owns the router, it reports that and leaves it.
     private func settle<Coordinator: StackCoordinating>(
         _ router: StackRouter,
@@ -186,7 +186,11 @@ final class RouterTable {
             router.reportRouterNotFromWaypoint(storedIn: coordinator, file: file, line: line)
         }
         router.setCoordinator(coordinator)
-        router.setRootName(coordinator.rootName)
+        let rootName = coordinator.rootName
+        if source == .made, let earlier = router.rootName, earlier != rootName {
+            router.reportRootNameReplaced(earlier, by: rootName, of: coordinator, file: file, line: line)
+        }
+        router.setRootName(rootName)
         coordinator.registerDestinations(on: router)
     }
 
