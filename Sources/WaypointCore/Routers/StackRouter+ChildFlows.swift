@@ -97,4 +97,117 @@ extension StackRouter {
             request.step(router, store)
         }
     }
+
+    /// Pushes the flow of `child`, a coordinator, on this stack. The child's screens follow on
+    /// the same stack: the child's root screen first, then each screen its router pushes. The
+    /// child's router joins this router's tree, and the parent gets the flow's result in
+    /// `onFinish` exactly once.
+    ///
+    /// ```swift
+    /// router.push(ReviewCoordinator(product: product)) { result in
+    ///     // .finished(review), or .cancelled when the user went back past its first screen
+    /// }
+    /// ```
+    ///
+    /// The flow ends with `.cancelled` when the user goes back past its root screen, or when this
+    /// router changes its own path: a push, a pop or a `popTo` here ends the child on top first.
+    /// `finish(with:)` and `dismissFlow()` in the child pop back to the screen below its root
+    /// screen. A child that needs a stack of its own is presented with
+    /// ``present(_:style:trigger:else:file:line:onFinish:)``. Refusals are as for a present.
+    ///
+    /// - Parameters:
+    ///   - child: The coordinator of the pushed flow.
+    ///   - trigger: What in the screen started it, written in the journey box. Default: `nil`.
+    ///   - fallback: What to do if the push fails. Default: the flow's policy.
+    ///   - file: The calling file, where an issue points. Leave the default.
+    ///   - line: The calling line, where an issue points. Leave the default.
+    ///   - onFinish: Gets the flow's result, once.
+    @discardableResult
+    public func push<Child: FlowCoordinating>(
+        _ child: Child,
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line,
+        onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void
+    ) -> NavigationOutcome {
+        push(trigger: trigger, else: fallback, file: file, line: line, onFinish: onFinish) {
+            child
+        }
+    }
+
+    /// Pushes the flow of the coordinator `makeChild` returns on this stack, building it only when
+    /// the push happens. Otherwise this behaves as ``push(_:trigger:else:file:line:onFinish:)``,
+    /// and `makeChild` runs as in ``present(style:trigger:else:file:line:onFinish:_:)``.
+    ///
+    /// - Parameters:
+    ///   - trigger: What in the screen started it, written in the journey box. Default: `nil`.
+    ///   - fallback: What to do if the push fails. Default: the flow's policy.
+    ///   - file: The calling file, where an issue points. Leave the default.
+    ///   - line: The calling line, where an issue points. Leave the default.
+    ///   - onFinish: Gets the flow's result, once.
+    ///   - makeChild: Builds the coordinator of the pushed flow.
+    @discardableResult
+    public func push<Child: FlowCoordinating>(
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line,
+        onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void,
+        _ makeChild: @escaping @MainActor () -> Child
+    ) -> NavigationOutcome {
+        perform(file: file, line: line, fallback: fallback, trigger: trigger) { router, store in
+            router.pushChildStep(file: file, line: line, in: store, onFinish: onFinish, makeChild)
+        }
+    }
+
+    /// Pushes the marker of the child flow `makeChild` returns, whose router joins this router's
+    /// tree as the flow on top of this stack. A child flow already on top ends first.
+    func pushChildStep<Child: FlowCoordinating>(
+        file: StaticString,
+        line: UInt,
+        in store: TransactionStore,
+        onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void,
+        _ makeChild: () -> Child
+    ) -> StepResult {
+        store.enlist(self)
+        let table = RouterTable.shared
+        let child = table.build(makeChild, joining: tree, file: file, line: line)
+        let router = table.checkedRouter(of: child, file: file, line: line)
+        if let refusal = refusal(toStart: router, of: child, ownsRouter: table.ownsRouter(of: child)) {
+            return .failed(refusal)
+        }
+        let flow = ChildFlow(coordinator: child, onFinish: onFinish)
+        let name = FlowNaming.childFlowName(of: router, for: child)
+        router.join(startedBy: self, named: name, flow: flow, pushed: true)
+        guard let marker = router.marker else {
+            return undoingJoin(of: router, result: .unchanged)
+        }
+        let below = current.state.path.filter { route in
+            route != current.pushed?.marker
+        }
+        switch StackReducer.reduce(current.state.withPath(below), .push(marker), rootRoute: rootRoute) {
+        case .changed(let next, let changes):
+            updateWorkingCopy { snapshot in
+                snapshot.pushing(router, state: next)
+            }
+            store.record(changes, in: flowID)
+            return .changed
+        case .unchanged:
+            return undoingJoin(of: router, result: .unchanged)
+        case .rejected(let rejection):
+            return undoingJoin(of: router, result: .failed(draft(rejection)))
+        }
+    }
+
+    /// Pops this stack back to the screen below the marker of `child`, the child flow on top,
+    /// which ends it.
+    func popPushedChildStep(_ child: StackRouter, in store: TransactionStore) -> StepResult {
+        store.enlist(self)
+        let path = current.state.path
+        guard let marker = child.marker, let index = path.lastIndex(of: marker) else {
+            return .unchanged
+        }
+        return stackStep(.pop(count: path.count - index), in: store)
+    }
 }

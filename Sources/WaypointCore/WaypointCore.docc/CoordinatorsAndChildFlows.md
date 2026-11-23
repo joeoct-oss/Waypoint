@@ -244,20 +244,44 @@ extension StackRouter {
 }
 ```
 
-Like every navigation method, these take a file and line, left out here. Still planned: pushing a child flow, which shares its parent's stack but has its own router for its own routes (#59), and `await router.present(child, style:)`, which returns the `FlowResult` (#60):
+Like every navigation method, these take a file and line, left out here.
+
+### Pushing a child flow
+
+Pushing a child flow shows its screens on the parent's stack: the child's root screen first, then every screen the child's router pushes. The child's router is a child of the parent in the tree, with its own path of its own routes, and joins the tree as a presented child does. The parent's path holds one route for the whole child flow, so the parent's path never holds the child's routes:
+
+```swift
+router.push(ReviewCoordinator(product: product)) { result in
+    // .finished(review), or .cancelled when the user went back past its first screen
+}
+```
+
+The flow ends with `.cancelled` when the user goes back past the child's root screen, or when the parent changes its own path: a push, a pop or a `popTo` on the parent ends the child on top first, then does what was asked. Pushing a second child flow ends the first. `finish(with:)` and `dismissFlow()` in the child pop back to the screen below the child's root screen. A child flow that needs a stack of its own is presented. The lazy form, `router.push(onFinish:) { child }`, builds the child only when the push happens, as the lazy present does. Drawing a pushed child's screens comes with the coordinator's `root` and `destinations` (#59, its next part).
+
+```swift
+extension StackRouter {
+    @discardableResult
+    public func push<Child: FlowCoordinating>(
+        _ child: Child,
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil,
+        onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void
+    ) -> NavigationOutcome
+
+    @discardableResult
+    public func push<Child: FlowCoordinating>(
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil,
+        onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void,
+        _ makeChild: @escaping @MainActor () -> Child
+    ) -> NavigationOutcome
+}
+```
+
+Still planned: `await router.present(child, style:)`, which returns the `FlowResult` (#60):
 
 ```swift
 let result = await router.present(AddressPickerCoordinator(), style: .sheet)
-
-extension StackRouter {
-    /// Pushes a child flow's first screen onto this stack.
-    @discardableResult
-    public func push<C: FlowCoordinator>(
-        _ child: C,
-        else fallback: NavigationFallback? = nil,
-        onFinish: @escaping @MainActor (FlowResult<C.Output>) -> Void
-    ) -> NavigationOutcome
-}
 ```
 
 To start a flow without passing its coordinator, give it a `Flow(...)` entry and call `router.show(_:)`.
