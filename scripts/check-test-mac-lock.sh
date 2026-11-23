@@ -130,7 +130,7 @@ else
     fail "the stand-in tuist ran, never the real one"
 fi
 # The example app's tests run through `tuist test` (#312): on the project simulator, into a
-# result bundle, with two parallel workers. A quick run keeps Tuist's selective testing on.
+# result bundle, with two parallel workers.
 TUIST_CALL=$(grep "^tuist test WaypointExample" "$CALLS" | head -1)
 for part in "--path Example" "--device waypoint-01" "--os 27.2" "--skip-quarantine" "-T .build/results/example-only.xcresult" \
     "--test-targets WaypointExampleUITests/StackTests/testPushAndBack" \
@@ -141,10 +141,10 @@ for part in "--path Example" "--device waypoint-01" "--os 27.2" "--skip-quaranti
         fail "tuist test gets $part (call: $TUIST_CALL)"
     fi
 done
-if [[ "$TUIST_CALL" != *"--no-selective-testing"* ]]; then
-    pass "a quick run keeps selective testing on"
+if [[ "$TUIST_CALL" == *"--no-selective-testing"* ]]; then
+    pass "a test asked for with --only always runs: selective testing is off"
 else
-    fail "a quick run keeps selective testing on (call: $TUIST_CALL)"
+    fail "a test asked for with --only always runs: selective testing is off (call: $TUIST_CALL)"
 fi
 : >"$CALLS"
 if run_script WAYPOINT_TUIST_OFFLINE=1 >"$WORK/1b.log" 2>&1 &&

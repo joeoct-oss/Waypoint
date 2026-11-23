@@ -433,9 +433,9 @@ simulator_os() {
 #
 # Tuist's binary cache is on in every tier, and every run's results go to the project's Tuist
 # dashboard (Test Insights: run times and flaky tests). Selective testing, which skips test
-# targets nothing changed since their last pass, is on in `quick` only: a merge gate runs every
-# test. Tuist's quarantine is never applied (`--skip-quarantine`): a flaky test still runs and
-# still fails the run. All of it uses the Tuist server project in `Example/Tuist.swift`;
+# targets nothing changed since their last pass, is on only in a `quick` run that chose its parts
+# itself: a merge gate, `--only` and `--ui` run every test they name. Tuist's quarantine is never
+# applied (`--skip-quarantine`): a flaky test still runs and still fails the run. All of it uses the Tuist server project in `Example/Tuist.swift`;
 # WAYPOINT_TUIST_OFFLINE=1 turns every server feature off, for a Mac that isn't signed in.
 example_tests_on() {
     local udid="$1" simulator="$2" bundle_name="$3"
@@ -448,7 +448,8 @@ example_tests_on() {
         tuist_flags=(--no-selective-testing --no-binary-cache --no-upload --inspect-mode off)
         # The build's post-action reads it too, so it sends no build timings.
         offline_settings=(WAYPOINT_TUIST_OFFLINE=1)
-    elif [[ "$TIER" != quick ]]; then
+    elif [[ "$TIER" != quick || -n "$ONLY_TEST" ]] || $WITH_UI; then
+        # A test asked for by name or with --ui always runs, even when it passed before.
         tuist_flags=(--no-selective-testing --skip-quarantine)
     else
         tuist_flags=(--skip-quarantine)
