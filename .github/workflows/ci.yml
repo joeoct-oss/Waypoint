@@ -1,5 +1,6 @@
 # Runs the Linux checks (scripts/test-linux.sh) on pull requests to main.
-# Built to stay inside the account's included Actions minutes:
+# Both jobs run on Tuist Runners (`tuist-linux`: Ubuntu 24.04, 2 vCPU, 8 GB; 2,500 free Linux minutes a month),
+# not GitHub-hosted runners, so they use no GitHub Actions minutes. Built to stay inside those free minutes:
 # - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
 # - a newer push cancels the run still going for the same PR,
 # - the SwiftPM build folder is cached between runs.
@@ -25,7 +26,7 @@ jobs:
   linux:
     name: Linux checks
     if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
-    runs-on: ubuntu-latest
+    runs-on: tuist-linux
     timeout-minutes: 20
     container:
       image: swift:6.4
@@ -65,7 +66,7 @@ jobs:
   minimum-swift:
     name: Builds with Swift 6.2
     if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
-    runs-on: ubuntu-latest
+    runs-on: tuist-linux
     timeout-minutes: 15
     container: swift:6.2
     steps:
