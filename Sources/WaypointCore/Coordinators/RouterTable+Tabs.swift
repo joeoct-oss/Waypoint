@@ -81,13 +81,13 @@ extension RouterTable {
         let tabs = router.state.tabs
         let selected = router.stacks == .shared ? tabs.filter { $0 == router.selection } : []
         let rest = tabs.filter { !selected.contains($0) }
-        attachChildren(of: coordinator, for: selected + rest, to: router, in: entry)
+        attachChildren(of: coordinator, for: selected + rest, to: router, in: entry, file: file, line: line)
         router.onTabsChanged { [weak self, weak coordinator, weak entry, weak router] added, removed in
             guard let self, let coordinator, let entry, let router else {
                 return
             }
             self.detachChildren(of: removed, from: router, in: entry)
-            self.attachChildren(of: coordinator, for: added, to: router, in: entry)
+            self.attachChildren(of: coordinator, for: added, to: router, in: entry, file: file, line: line)
         }
     }
 
@@ -97,24 +97,32 @@ extension RouterTable {
         of coordinator: Coordinator,
         for tabs: [Coordinator.Tab],
         to router: TabRouter<Coordinator.Tab>,
-        in entry: Entry
+        in entry: Entry,
+        file: StaticString,
+        line: UInt
     ) {
         for tab in tabs {
             let child = coordinator.coordinator(for: tab)
             if entry.children.values.contains(where: { $0 === child }) {
-                router.router(for: tab).reportCoordinatorDrawnTwice(child, for: tab)
+                router.router(for: tab).reportCoordinatorDrawnTwice(child, for: tab, file: file, line: line)
                 continue
             }
             entry.keepChild(child, for: AnyHashable(tab))
-            attach(child, as: tab, to: router)
+            attach(child, as: tab, to: router, file: file, line: line)
         }
     }
 
     /// Makes the router of `child` the stack of `tab`: adopted when it can join, merged into a
     /// shared stack another tab already brought, or into a tab stack that already has screens,
     /// such as one the child pushed on in `init`, or refused and reported.
-    private func attach<Tab: NavigationTab>(_ child: any StackCoordinating, as tab: Tab, to router: TabRouter<Tab>) {
-        let childRouter = checkedRouter(of: child, file: #fileID, line: #line)
+    private func attach<Tab: NavigationTab>(
+        _ child: any StackCoordinating,
+        as tab: Tab,
+        to router: TabRouter<Tab>,
+        file: StaticString,
+        line: UInt
+    ) {
+        let childRouter = checkedRouter(of: child, file: file, line: line)
         let tabStack = router.router(for: tab)
         router.nameTabCoordinator(ViewTypeName.of(type(of: child)), for: tab)
         if childRouter.parentNode === router, !childRouter.isActive {
@@ -128,12 +136,12 @@ extension RouterTable {
             return
         }
         guard childRouter.canJoinAnotherTree else {
-            tabStack.reportRouterInAnotherTree(of: child, for: tab)
+            tabStack.reportRouterInAnotherTree(of: child, for: tab, file: file, line: line)
             return
         }
         let standInHasScreens = !tabStack.state.path.isEmpty || tabStack.presented != nil
         if standInHasScreens || (router.stacks == .shared && liveOwner(of: tabStack, other: child) != nil) {
-            merge(child, router: childRouter, into: tabStack, for: tab)
+            merge(child, router: childRouter, into: tabStack, for: tab, file: file, line: line)
             if router.stacks == .perTab {
                 tabStack.setCoordinator(child)
             }
@@ -149,11 +157,13 @@ extension RouterTable {
         _ child: any StackCoordinating,
         router childRouter: StackRouter,
         into shared: StackRouter,
-        for tab: Tab
+        for tab: Tab,
+        file: StaticString,
+        line: UInt
     ) {
         shared.tree.takeOver(childRouter.tree)
         if !childRouter.state.path.isEmpty || childRouter.presented != nil {
-            shared.reportTabChildRouterMerged(child, for: tab)
+            shared.reportTabChildRouterMerged(child, for: tab, file: file, line: line)
         }
         childRouter.forward(to: shared)
         store(Entry(coordinator: child, router: shared, ownsRouter: false), as: ObjectIdentifier(child))

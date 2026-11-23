@@ -60,8 +60,8 @@ public final class StackRouter: NavigationRouter {
     /// The tree this router belongs to.
     ///
     /// `var` because a router made on its own joins another tree once, such as a tab child's
-    /// router becoming the tab's stack. Only `join(tabOf:named:)` and `moveSubtree(into:from:)` change
-    /// it.
+    /// router becoming the tab's stack. Only `join(tabOf:named:)` and `moveSubtree(into:from:)`
+    /// change it.
     @ObservationIgnored private(set) var tree: NavigationTreeContext
 
     /// The router that presented or contains this one.

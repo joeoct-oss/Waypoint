@@ -86,9 +86,9 @@ public struct NavigationIssue: NavigationRecord {
         /// presented flow's, so it can't become the tab's stack. The tab keeps a stack of its own.
         case routerInAnotherTree
 
-        /// A tab's child coordinator pushed or presented on its own router before it joined tabs
-        /// that share one stack. Its calls go to the shared stack from now on, and those screens
-        /// are dropped.
+        /// A tab's child coordinator pushed or presented on its own router before it joined, and
+        /// the tab's stack was kept instead: the tabs' shared stack, or a tab stack that already
+        /// had screens. Its calls go to that stack from now on, and those screens are dropped.
         case tabChildRouterMerged
     }
 

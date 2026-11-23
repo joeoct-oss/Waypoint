@@ -38,6 +38,11 @@ final class MainTabsCoordinator: TabCoordinating {
     /// Makes each tab's child.
     private let makeChild: ChildMaker
 
+    /// The kinds of the issues its tree reported.
+    var reportedKinds: [NavigationIssue.Kind] {
+        reported.values.map(\.kind)
+    }
+
     /// Creates a tab coordinator. Default: every tab, `home` selected, a stack per tab, and a
     /// plain child for each tab.
     init(
@@ -78,11 +83,6 @@ final class MainTabsCoordinator: TabCoordinating {
     func coordinator(for tab: MainTab) -> any StackCoordinating {
         asked.record(tab)
         return makeChild(tab, self)
-    }
-
-    /// The kinds of the issues its tree reported.
-    var reportedKinds: [NavigationIssue.Kind] {
-        reported.values.map(\.kind)
     }
 }
 

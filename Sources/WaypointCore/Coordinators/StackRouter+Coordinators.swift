@@ -57,42 +57,59 @@ extension StackRouter {
 
     /// Reports `coordinatorDrawnTwice`: the tab coordinator returned `child` for `tab` too, after
     /// another tab. This tab, whose stack this router is, keeps a stack of its own.
-    func reportCoordinatorDrawnTwice<Tab: NavigationTab>(_ child: AnyObject, for tab: Tab) {
+    func reportCoordinatorDrawnTwice<Tab: NavigationTab>(
+        _ child: AnyObject,
+        for tab: Tab,
+        file: StaticString,
+        line: UInt
+    ) {
         let name = ViewTypeName.of(type(of: child))
         let tabName = DescriptionFormat.name(of: tab)
         let message = "The tab coordinator returned the same \(name) for the \(tabName) tab as for "
             + "an earlier tab. One coordinator drives one tab, so \(tabName) keeps a stack of its "
             + "own, with none of \(name)'s destinations. Return a new coordinator for each tab."
-        report(.coordinatorDrawnTwice, message)
+        report(.coordinatorDrawnTwice, message, file: file, line: line)
     }
 
     /// Reports `routerInAnotherTree`: `child`'s router is already in another tree, so it can't
     /// become the stack of `tab`, which keeps this router.
-    func reportRouterInAnotherTree<Tab: NavigationTab>(of child: AnyObject, for tab: Tab) {
+    func reportRouterInAnotherTree<Tab: NavigationTab>(
+        of child: AnyObject,
+        for tab: Tab,
+        file: StaticString,
+        line: UInt
+    ) {
         let name = ViewTypeName.of(type(of: child))
         let tabName = DescriptionFormat.name(of: tab)
         let message = "\(name), the \(tabName) tab's coordinator, has a router that is already in "
             + "another tree, such as a presented flow's or another tab's, so it can't be the "
             + "\(tabName) tab's stack. The tab keeps a stack of its own, with none of \(name)'s "
             + "destinations. Make a new router in \(name).makeRouter()."
-        report(.routerInAnotherTree, message)
+        report(.routerInAnotherTree, message, file: file, line: line)
     }
 
     /// Reports `tabChildRouterMerged`: `child`, the coordinator of `tab`, pushed or presented on
-    /// its own router before it joined tabs that share this stack. Those screens are dropped.
-    func reportTabChildRouterMerged<Tab: NavigationTab>(_ child: AnyObject, for tab: Tab) {
+    /// its own router before it joined, and the tab's stack, this router, is kept instead: the
+    /// tabs' shared stack, or a tab stack that already had screens. Those screens are dropped.
+    func reportTabChildRouterMerged<Tab: NavigationTab>(
+        _ child: AnyObject,
+        for tab: Tab,
+        file: StaticString,
+        line: UInt
+    ) {
         let name = ViewTypeName.of(type(of: child))
         let tabName = DescriptionFormat.name(of: tab)
+        let isShared = parentNode?.sharedStackTabName != nil
+        let stack = isShared ? "the tabs' shared stack" : "the \(tabName) tab's stack, which already had screens"
         let message = "\(name), the \(tabName) tab's coordinator, pushed or presented on its own "
-            + "router before it joined the tabs' shared stack. Its calls go to the shared stack "
-            + "from now on, and those screens are dropped. Navigate after the tab coordinator's "
-            + "router is read, not in init."
-        report(.tabChildRouterMerged, message)
+            + "router before it joined \(stack). Its calls go to that stack from now on, and those "
+            + "screens are dropped. Navigate after the tab coordinator's router is read, not in init."
+        report(.tabChildRouterMerged, message, file: file, line: line)
     }
 
     /// Reports an issue of `kind` on this router's flow, as an error.
-    private func report(_ kind: NavigationIssue.Kind, _ message: String) {
-        let issue = NavigationIssue(kind: kind, flow: flowID, message: message, file: #fileID, line: #line)
+    private func report(_ kind: NavigationIssue.Kind, _ message: String, file: StaticString, line: UInt) {
+        let issue = NavigationIssue(kind: kind, flow: flowID, message: message, file: file, line: line)
         tree.report(issue, level: .error)
     }
 }
