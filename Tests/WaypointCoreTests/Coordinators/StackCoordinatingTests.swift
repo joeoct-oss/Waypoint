@@ -252,6 +252,31 @@ struct StackCoordinatingTests {
         #expect(live.state.path.isEmpty)
     }
 
+    @Test
+    func coordinatorDeinitDuringSweepDoesNotCrash() throws {
+        let outcomes = Recorder<(NavigationOutcome, StackRouter)>()
+        keepDeinitReaderInFreedCoordinatorsTree(outcomes: outcomes)
+
+        _ = ShopListCoordinator().router
+
+        let (outcome, read) = try #require(outcomes.last)
+        #expect(outcome == .ignored)
+        #expect(!read.isActive)
+    }
+
+    /// Makes a coordinator whose router's tree is the only holder of a coordinator that reads
+    /// its router in `deinit`, then drops the first one. The sweep that lets that router go
+    /// frees the second coordinator, whose `deinit` reads the table.
+    private func keepDeinitReaderInFreedCoordinatorsTree(
+        outcomes: Recorder<(NavigationOutcome, StackRouter)>
+    ) {
+        let owner = ShopListCoordinator()
+        let reader = DeinitReadingCoordinator(outcomes: outcomes)
+        owner.router.tree.onReported { _ in
+            _ = reader
+        }
+    }
+
     /// Makes a coordinator, reads its router and drops the coordinator, keeping the router.
     private func makeAndDropCoordinatorRouter() -> StackRouter {
         ShopListCoordinator().router
