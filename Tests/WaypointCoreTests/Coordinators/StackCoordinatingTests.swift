@@ -76,6 +76,7 @@ struct StackCoordinatingTests {
         let issue = try #require(reported.last)
         #expect(issue.message.contains("StoredRouterCoordinator"))
         #expect(issue.message.contains("makeRouter()"))
+        #expect(issue.message.contains("rootName"))
         #expect(stored.coordinatorName == "StoredRouterCoordinator")
         #expect(coordinator.registrations.count == 1)
         #expect(coordinator.router.push(ProductRoute(id: 1)) == .applied)

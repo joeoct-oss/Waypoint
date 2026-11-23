@@ -20,8 +20,9 @@ extension StackRouter {
     func reportRouterNotFromWaypoint(storedIn coordinator: AnyObject, file: StaticString, line: UInt) {
         let name = ViewTypeName.of(type(of: coordinator))
         let message = "\(name) stores its router instead of taking the one Waypoint makes. Waypoint "
-            + "uses it from now on, but calls made before now could fail with unregisteredRoute. "
-            + "Remove the stored router, and implement makeRouter() to make one of your own."
+            + "uses it from now on, but calls made before now could fail with unregisteredRoute, and "
+            + "its root screen is now named by rootName. Remove the stored router, implement "
+            + "makeRouter() to make one of your own, and name the root with rootName."
         let issue = NavigationIssue(
             kind: .routerNotFromWaypoint,
             flow: flowID,
