@@ -620,6 +620,90 @@ struct ChildFlowTests {
     }
 
     @Test
+    func tabsKeepTheirChildUntilItFinishes() {
+        let tabs = TabRouter(selection: MainTab.home)
+        let results = Recorder<FlowResult<String>>()
+        weak var weakChild: CheckoutFlowCoordinator?
+        do {
+            let child = CheckoutFlowCoordinator()
+            weakChild = child
+            tabs.present(child) { result in
+                results.record(result)
+            }
+        }
+        RouterTable.shared.sweep()
+        #expect(weakChild != nil)
+
+        weakChild?.finish(with: Self.order)
+        RouterTable.shared.sweep()
+
+        #expect(weakChild == nil)
+        let expected: [FlowResult<String>] = [.finished(Self.order)]
+        #expect(results.values == expected)
+    }
+
+    @Test
+    func userDismissOverTabsDeliversCancelled() {
+        let tabs = TabRouter(selection: MainTab.home)
+        let results = Recorder<FlowResult<String>>()
+        tabs.present(CheckoutFlowCoordinator()) { result in
+            results.record(result)
+        }
+
+        tabs.rendererDidDismiss()
+
+        let expected: [FlowResult<String>] = [.cancelled]
+        #expect(results.values == expected)
+    }
+
+    @Test
+    func droppedTabsReleaseAndCancelTheirChild() {
+        let results = Recorder<FlowResult<String>>()
+        weak var weakChild: CheckoutFlowCoordinator?
+        do {
+            let tabs = TabRouter(selection: MainTab.home)
+            let child = CheckoutFlowCoordinator()
+            weakChild = child
+            tabs.present(child) { result in
+                results.record(result)
+            }
+        }
+
+        RouterTable.shared.sweep()
+
+        #expect(weakChild == nil)
+        let expected: [FlowResult<String>] = [.cancelled]
+        #expect(results.values == expected)
+    }
+
+    @Test
+    func rolledBackStartOverTabsLeavesChildAsItWas() {
+        let tabs = TabRouter(selection: MainTab.home)
+        let child = CheckoutFlowCoordinator()
+        let childTree = child.router.tree
+        let results = Recorder<FlowResult<String>>()
+        let draft = IssueDraft(kind: .denied, flow: tabs.flowID, message: "Denied after the start.")
+        let context = FallbackContext(explicit: nil, file: #fileID, line: #line)
+        let onFinish: @MainActor (FlowResult<String>) -> Void = { result in
+            results.record(result)
+        }
+
+        let outcome = tabs.tree.perform(on: tabs, file: #fileID, line: #line) { store in
+            _ = tabs.presentChildStep(style: .sheet, file: #fileID, line: #line, in: store, onFinish: onFinish) {
+                child
+            }
+            return store.resolve(.failed(draft), on: tabs, context)
+        }
+
+        #expect(outcome.failure?.issue.kind == .denied)
+        #expect(tabs.presented == nil)
+        #expect(child.router.parent == nil)
+        #expect(child.router.tree === childTree)
+        #expect(child.router.isActive)
+        #expect(results.values.isEmpty)
+    }
+
+    @Test
     func finishOutsideAFlowIsReported() {
         let child = CheckoutFlowCoordinator()
         let reported = Recorder<NavigationIssue>()
