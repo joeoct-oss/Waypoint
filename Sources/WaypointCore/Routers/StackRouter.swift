@@ -207,7 +207,7 @@ public final class StackRouter: NavigationRouter {
     /// which runs it until it gets its own. Tabs that share one stack name it after the selected
     /// tab's coordinator. `nil` when none is named.
     public var coordinatorName: String? {
-        if let shared = parentNode?.sharedStackCoordinatorName {
+        if parentNode?.presentedNode !== self, let shared = parentNode?.sharedStackCoordinatorName {
             return shared
         }
         guard ownerName == nil, let parentNode, parentNode.presentedNode === self else {

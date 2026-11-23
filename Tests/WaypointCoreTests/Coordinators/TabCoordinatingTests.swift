@@ -380,6 +380,17 @@ struct TabCoordinatingTests {
     }
 
     @Test
+    func flowPresentedOverSharedTabsIsNamedAfterTabCoordinator() throws {
+        let tabs = MainTabsCoordinator(stacks: .shared)
+        let router = tabs.router
+
+        router.present(CartRoute())
+
+        let presented = try #require(router.presented)
+        #expect(presented.coordinatorName == "MainTabsCoordinator")
+    }
+
+    @Test
     func removingSharedStackOwnerTabKeepsStack() {
         let tabs = MainTabsCoordinator(stacks: .shared)
         let router = tabs.router
