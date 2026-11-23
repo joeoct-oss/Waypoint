@@ -108,7 +108,7 @@ extension RouterTable {
                 continue
             }
             entry.keepChild(child, for: AnyHashable(tab))
-            attach(child, as: tab, to: router, file: file, line: line)
+            attach(child, as: tab, to: router, of: coordinator, file: file, line: line)
         }
     }
 
@@ -119,10 +119,14 @@ extension RouterTable {
         _ child: any StackCoordinating,
         as tab: Tab,
         to router: TabRouter<Tab>,
+        of owner: AnyObject,
         file: StaticString,
         line: UInt
     ) {
         let tabStack = router.router(for: tab)
+        if refuseSiblingStack(of: child, for: tab, in: router, ownedBy: owner, file: file, line: line) {
+            return
+        }
         acceptStoredTabStack(of: child, tabStack, file: file, line: line)
         let childRouter = checkedRouter(of: child, file: file, line: line)
         router.nameTabCoordinator(ViewTypeName.of(type(of: child)), for: tab)
@@ -169,6 +173,32 @@ extension RouterTable {
         childRouter.forward(to: shared)
         store(Entry(coordinator: child, router: shared, ownsRouter: false), as: ObjectIdentifier(child))
         child.registerDestinations(on: shared)
+    }
+
+    /// Refuses `child` when it stores the stack of another tab of `router`, whichever tab was
+    /// attached first: it reports `routerOwnedByAnotherCoordinator` and leaves that stack to its
+    /// tab. Returns whether it refused.
+    private func refuseSiblingStack<Child: StackCoordinating, Tab: NavigationTab>(
+        of child: Child,
+        for tab: Tab,
+        in router: TabRouter<Tab>,
+        ownedBy owner: AnyObject,
+        file: StaticString,
+        line: UInt
+    ) -> Bool {
+        guard entry(for: ObjectIdentifier(child)) == nil, router.stacks == .perTab else {
+            return false
+        }
+        let stored = child.router
+        let isSibling = router.state.tabs.contains { other in
+            other != tab && router.router(for: other) === stored
+        }
+        guard isSibling else {
+            return false
+        }
+        store(Entry(coordinator: child, router: stored, ownsRouter: false), as: ObjectIdentifier(child))
+        stored.reportRouterOwned(by: owner, heldBy: child, from: .stored, file: file, line: line)
+        return true
     }
 
     /// Settles `child` on `stack`, with no report, when it stores the stack its own tab

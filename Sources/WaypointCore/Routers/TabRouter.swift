@@ -76,7 +76,8 @@ public final class TabRouter<Tab: NavigationTab>: NavigationRouter {
 
     /// The committed state, presented router and tab routers, which renderers observe.
     ///
-    /// `var` because it is the router's current value. Only `commitWorkingCopy()` replaces it.
+    /// `var` because it is the router's current value. Only `commitWorkingCopy()` and
+    /// `adoptTabRouter(_:for:)` replace it.
     private var committed: Snapshot
 
     /// The copy a transaction changes, or `nil` between transactions.

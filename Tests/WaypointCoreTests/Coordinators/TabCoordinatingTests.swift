@@ -661,6 +661,27 @@ struct TabCoordinatingTests {
     }
 
     @Test
+    func tabChildWithLaterSiblingTabRouterIsRefused() throws {
+        let tabs = MainTabsCoordinator { tab, parent in
+            guard tab == .home else {
+                return TabChildCoordinator()
+            }
+            return StoredRouterCoordinator(router: parent.router.router(for: .shop))
+        }
+
+        let router = tabs.router
+
+        let shop = router.router(for: .shop)
+        #expect(shop !== router.router(for: .home))
+        #expect(shop.isActive)
+        #expect(shop.coordinatorName == "TabChildCoordinator")
+        let expected: [NavigationIssue.Kind] = [.routerOwnedByAnotherCoordinator]
+        #expect(tabs.reportedKinds == expected)
+        let issue = try #require(tabs.reported.last)
+        #expect(issue.message.contains("StoredRouterCoordinator"))
+    }
+
+    @Test
     func tabChildWithAnotherCoordinatorsRouterGetsItsOwn() {
         let owner = ShopListCoordinator()
         let taken = owner.router
