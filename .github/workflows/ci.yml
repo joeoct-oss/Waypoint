@@ -81,7 +81,9 @@ jobs:
       image: swift:6.4
       # The thread sanitizer turns off address randomization for itself, which Docker's default
       # seccomp profile forbids; without this it stops with "incompatible memory layout".
-      options: --security-opt seccomp=unconfined
+      # --init runs a small init process as PID 1, which reaps the processes the run lock check
+      # stops; without it they stay as zombies and that check waits on them.
+      options: --security-opt seccomp=unconfined --init
     steps:
       - name: Check out
         uses: actions/checkout@v4
