@@ -26,7 +26,11 @@ final class ShopCoordinator: StackCoordinator {
 }
 ```
 
-A stack or flow coordinator doesn't declare its router. Waypoint makes it the first time it is read, names it after the coordinator, and releases it when the flow ends. A coordinator that declares `let router = StackRouter()` uses its own, as tests do.
+A stack or flow coordinator doesn't declare its router. Waypoint makes it the first time it is read, names it after the coordinator, gives it the coordinator's destinations, and releases it when the coordinator is gone. A coordinator that wants a router of its own, such as one with the app's configuration, as tests and previews do, implements `makeRouter()`. A stored `let router` goes around Waypoint: the first time Waypoint touches the coordinator, such as when it hands out a navigator, it reports `routerNotFromWaypoint` and adopts that router, and a stored router another coordinator owns is reported as `routerOwnedByAnotherCoordinator` and left with its owner.
+
+> Warning: Don't read a coordinator's router in `deinit`. A coordinator going away gets an inert router: its calls return `.ignored` and log `staleNavigator`. A coordinator that subclasses `NSObject` traps there instead.
+
+Built so far in #59: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`. The rest of this article is still planned.
 
 There is one coordinator protocol for each kind, and it is the same in SwiftUI and UIKit apps. The `Waypoint` product adds the screens: `root` and `destinations`, which take SwiftUI views or UIKit view controllers, and `view`, the whole flow drawn by a renderer you can choose. See "Coordinators and renderers" in the `Waypoint` catalog. The parts below have no UI, so a coordinator's logic is tested on Linux.
 
@@ -38,9 +42,21 @@ There is one coordinator protocol for each kind, and it is the same in SwiftUI a
 /// Conformances:
 /// - `AnyObject`, because a coordinator is one shared object that owns its router.
 @MainActor
-public protocol StackCoordinator: AnyObject {
-    /// The router this coordinator owns. Default: made the first time it is read.
+public protocol StackCoordinating: AnyObject {
+    /// The router of this coordinator's stack. Default: made with `makeRouter()` the first
+    /// time it is read, and kept until the coordinator is gone.
     var router: StackRouter { get }
+
+    /// The name of the stack's root screen in the journey. Default: the type's name without
+    /// `Coordinator`, such as `Shop` for `ShopCoordinator`.
+    var rootName: String { get }
+
+    /// Makes the router, the first time `router` is read. Default: `StackRouter()`.
+    func makeRouter() -> StackRouter
+
+    /// Registers the route types the screens show, once per router. Default: registers
+    /// nothing; `StackCoordinator` in `Waypoint` registers its `destinations`.
+    func registerDestinations(on router: StackRouter)
 }
 
 /// App code that owns a tab container, with one stack coordinator for each tab.

@@ -1,0 +1,118 @@
+//
+//  CoordinatorFixtures.swift
+//  Waypoint
+//
+//  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
+//  Copyright © 2026 Yousef Mohamed. MIT License.
+//
+
+import WaypointCore
+import WaypointTestSupport
+
+/// A stack coordinator that takes every default.
+///
+/// Conformances:
+/// - `StackCoordinating`, so the core makes, names and keeps its router.
+@MainActor
+final class ShopListCoordinator: StackCoordinating { }
+
+/// A stack coordinator that makes its own router and registers the product route on it.
+///
+/// Conformances:
+/// - `StackCoordinating`, so the core keeps the router `makeRouter()` makes.
+@MainActor
+final class OwnRouterCoordinator: StackCoordinating {
+    /// The flow its router drives.
+    static let flow = FlowID("ownRouter")
+
+    /// The root name it declares, instead of its type's.
+    var rootName: String {
+        "Own list"
+    }
+
+    /// A router of the app's own, with a strict registry.
+    func makeRouter() -> StackRouter {
+        StackRouter(flow: Self.flow)
+    }
+
+    /// Registers the product route, so a push of one is applied.
+    func registerDestinations(on router: StackRouter) {
+        router.register(ProductRoute.self)
+    }
+}
+
+/// A stack coordinator that stores the router it was given, as coordinators did before the
+/// router table, and counts how often its destinations are registered.
+///
+/// Conformances:
+/// - `StackCoordinating`, so the core checks the stored router when it touches the coordinator.
+@MainActor
+final class StoredRouterCoordinator: StackCoordinating {
+    /// The router it was given.
+    let router: StackRouter
+
+    /// Each router its destinations were registered on.
+    let registrations = Recorder<StackRouter>()
+
+    /// Creates a coordinator that keeps `router`.
+    init(router: StackRouter) {
+        self.router = router
+    }
+
+    /// Registers the product route, and records the router.
+    func registerDestinations(on router: StackRouter) {
+        registrations.record(router)
+        router.register(ProductRoute.self)
+    }
+}
+
+/// A stack coordinator whose `init` makes another coordinator and reads both routers.
+///
+/// Conformances:
+/// - `StackCoordinating`, so the core makes its router.
+@MainActor
+final class OuterCoordinator: StackCoordinating {
+    /// The coordinator it made in `init`.
+    let inner: ShopListCoordinator
+
+    /// The inner coordinator's router, read in `init`.
+    let innerRouter: StackRouter
+
+    /// Creates the inner coordinator and reads its router, then this one's.
+    init() {
+        let inner = ShopListCoordinator()
+        self.inner = inner
+        self.innerRouter = inner.router
+        _ = router
+    }
+}
+
+/// A stack coordinator that reads its router in `deinit` and records what a push there did.
+///
+/// Conformances:
+/// - `StackCoordinating`, so the core makes its router, or stands in for it in `deinit`.
+@MainActor
+final class DeinitReadingCoordinator: StackCoordinating {
+    /// What the push in `deinit` returned, and the router it went to.
+    let outcomes: Recorder<(NavigationOutcome, StackRouter)>
+
+    /// The router `makeRouter()` returns, or `nil` for a new one.
+    let madeRouter: StackRouter?
+
+    /// Creates a coordinator that records into `outcomes`.
+    init(outcomes: Recorder<(NavigationOutcome, StackRouter)>, madeRouter: StackRouter? = nil) {
+        self.outcomes = outcomes
+        self.madeRouter = madeRouter
+    }
+
+    /// Pushes from `deinit`, where the coordinator is going away.
+    isolated deinit {
+        let router = router
+        outcomes.record((router.push(ProductRoute(id: 1)), router))
+    }
+
+    /// The given router, or a permissive one.
+    func makeRouter() -> StackRouter {
+        madeRouter ?? StackRouter(configuration: .permissive)
+    }
+}

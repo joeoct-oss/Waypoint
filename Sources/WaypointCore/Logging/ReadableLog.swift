@@ -180,6 +180,10 @@ enum ReadableLog {
             return "the screen showed something the router can't match"
         case .missingDestination:
             return "this stack has no destination for this screen"
+        case .routerNotFromWaypoint:
+            return "this coordinator stores its own router"
+        case .routerOwnedByAnotherCoordinator:
+            return "this coordinator stores another coordinator's router"
         }
     }
 

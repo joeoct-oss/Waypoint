@@ -15,25 +15,39 @@ import Waypoint
 // recovers with `.popToRoot`. In debug builds the recovered outcome shows a toast with its one-line
 // description; release builds stay quiet, as the event log and the console still have the line.
 //
+//
+// It stores no router: `StackCoordinator` makes one with `makeRouter()` the first time it is read,
+// names it after this coordinator, roots it at the shop tab's name, and drops it once the Lab lets
+// this coordinator go.
+//
 // Conformances:
+// - `StackCoordinator`, so Waypoint makes, names and keeps its router.
 // - `Observable` (from `@Observable`), so the demo redraws when a toast appears or goes.
 @Observable
-final class DetailPushCoordinator {
+final class DetailPushCoordinator: StackCoordinator {
+    private static let flowID = FlowID("detailPush")
     private static let toastDuration = Duration.seconds(4)
     private static let missingCartTitle = "Cart wasn't in the stack"
 
-    let router: StackRouter
+    private let navigation: NavigationConfiguration
     // `var` because `backToCart()` shows a toast for a recovered pop, and the toast's timer hides
     // it.
     private(set) var toast: RecoveredToastContent?
     // `var` because each toast replaces the timer of the one before it.
     private var toastTimer: Task<Void, Never>?
 
-    init(router: StackRouter) {
-        self.router = router
-        router.setRootName(MainTab.shop.title)
+    var rootName: String {
+        MainTab.shop.title
+    }
+
+    init(navigation: NavigationConfiguration) {
+        self.navigation = navigation
         toast = nil
         toastTimer = nil
+    }
+
+    func makeRouter() -> StackRouter {
+        StackRouter(flow: Self.flowID, configuration: navigation)
     }
 
     func makeListFlow() -> some View {

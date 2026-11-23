@@ -60,6 +60,14 @@ public struct NavigationIssue: NavigationRecord {
         /// registered a destination for it, such as a type registered only in another stack or
         /// only in the configuration's registry. The router keeps its state.
         case missingDestination
+
+        /// A coordinator stores its router instead of taking the one Waypoint makes. Waypoint
+        /// adopts the stored router; implement `makeRouter()` for a router of the app's own.
+        case routerNotFromWaypoint
+
+        /// A coordinator stores a router another coordinator owns, so both drive one stack.
+        /// Waypoint leaves the router with its owner.
+        case routerOwnedByAnotherCoordinator
     }
 
     /// What went wrong.

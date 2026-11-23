@@ -1,0 +1,254 @@
+//
+//  StackCoordinatingTests.swift
+//  Waypoint
+//
+//  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
+//  Copyright © 2026 Yousef Mohamed. MIT License.
+//
+
+import Testing
+import WaypointTestSupport
+
+@testable import WaypointCore
+
+/// `StackCoordinating` and the router table: a coordinator's router is made on the first read,
+/// named, registered and released with the coordinator (#59).
+@Suite("Stack coordinators and the router table")
+@MainActor
+struct StackCoordinatingTests {
+    @Test
+    func routerMadeOnFirstRead() {
+        let coordinator = ShopListCoordinator()
+
+        let router = coordinator.router
+
+        #expect(router.isActive)
+        #expect(router.state.path.isEmpty)
+    }
+
+    @Test
+    func sameCoordinatorGetsSameRouter() {
+        let coordinator = ShopListCoordinator()
+        let other = ShopListCoordinator()
+
+        let first = coordinator.router
+
+        #expect(coordinator.router === first)
+        #expect(other.router !== first)
+    }
+
+    @Test
+    func declaredRouterWinsOverDefault() {
+        let coordinator = OwnRouterCoordinator()
+
+        let router = coordinator.router
+
+        #expect(router.flowID == OwnRouterCoordinator.flow)
+        #expect(coordinator.router === router)
+    }
+
+    @Test
+    func ownRouterFromMakeRouterIsRegistered() {
+        let coordinator = OwnRouterCoordinator()
+
+        let outcome = coordinator.router.push(ProductRoute(id: 1))
+
+        #expect(outcome == .applied)
+    }
+
+    @Test
+    func storedRouterIsReportedAndAdopted() throws {
+        let stored = StackRouter(flow: FlowID("stored"))
+        let reported = Recorder<NavigationIssue>()
+        stored.tree.onReported { issue in
+            reported.record(issue)
+        }
+        let coordinator = StoredRouterCoordinator(router: stored)
+        let pushBeforeTouch = coordinator.router.push(ProductRoute(id: 1))
+
+        _ = coordinator.navigator
+        _ = coordinator.navigator
+
+        #expect(pushBeforeTouch.failure?.issue.kind == .unregisteredRoute)
+        let kinds = reported.values.map(\.kind)
+        let expectedKinds: [NavigationIssue.Kind] = [.unregisteredRoute, .routerNotFromWaypoint]
+        #expect(kinds == expectedKinds)
+        let issue = try #require(reported.last)
+        #expect(issue.message.contains("StoredRouterCoordinator"))
+        #expect(issue.message.contains("makeRouter()"))
+        #expect(stored.coordinatorName == "StoredRouterCoordinator")
+        #expect(coordinator.registrations.count == 1)
+        #expect(coordinator.router.push(ProductRoute(id: 1)) == .applied)
+    }
+
+    @Test
+    func storedRouterOfAnotherCoordinatorIsNotAdopted() throws {
+        let owner = ShopListCoordinator()
+        let shared = owner.router
+        let reported = Recorder<NavigationIssue>()
+        shared.tree.onReported { issue in
+            reported.record(issue)
+        }
+        let borrower = StoredRouterCoordinator(router: shared)
+
+        _ = borrower.navigator
+        _ = borrower.navigator
+
+        let kinds = reported.values.map(\.kind)
+        let expectedKinds: [NavigationIssue.Kind] = [.routerOwnedByAnotherCoordinator]
+        #expect(kinds == expectedKinds)
+        let issue = try #require(reported.last)
+        #expect(issue.message.contains("StoredRouterCoordinator"))
+        #expect(issue.message.contains("ShopListCoordinator"))
+        #expect(shared.coordinatorName == "ShopListCoordinator")
+        #expect(shared.rootName == "ShopList")
+        #expect(borrower.registrations.count == 0)
+        #expect(owner.router === shared)
+    }
+
+    @Test
+    func freedCoordinatorLeavesNoRouter() {
+        weak let released = makeAndDropCoordinatorRouter()
+
+        _ = ShopListCoordinator().router
+
+        #expect(released == nil)
+    }
+
+    @Test
+    func conformingCoordinatorNamesItsRouter() {
+        let coordinator = ShopListCoordinator()
+
+        #expect(coordinator.router.coordinatorName == "ShopListCoordinator")
+    }
+
+    @Test
+    func defaultRootNameComesFromType() {
+        let plain = ShopListCoordinator()
+        let declared = OwnRouterCoordinator()
+
+        #expect(plain.rootName == "ShopList")
+        #expect(plain.router.rootName == "ShopList")
+        #expect(declared.router.rootName == "Own list")
+    }
+
+    @Test
+    func rootNameSetByMakeRouterIsKept() {
+        let router = StackRouter()
+        router.setRootName("Kept")
+        let coordinator = StoredRouterCoordinator(router: router)
+
+        _ = coordinator.navigator
+
+        #expect(router.rootName == "Kept")
+    }
+
+    @Test
+    func defaultNavigatorUsesRouter() {
+        let coordinator = OwnRouterCoordinator()
+
+        let outcome = coordinator.navigator.push(ProductRoute(id: 2))
+        let scoped = coordinator.navigator(for: ShopFlow.self)
+
+        #expect(outcome == .applied)
+        let expectedPath = [AnyRoute(ProductRoute(id: 2))]
+        #expect(coordinator.router.state.path == expectedPath)
+        #expect(scoped.isActive)
+    }
+
+    @Test
+    func innerCoordinatorKeepsItsOwnRouter() {
+        let outer = OuterCoordinator()
+
+        #expect(outer.inner.router === outer.innerRouter)
+        #expect(outer.router !== outer.innerRouter)
+        #expect(outer.innerRouter.coordinatorName == "ShopListCoordinator")
+        #expect(outer.router.coordinatorName == "OuterCoordinator")
+    }
+
+    @Test
+    func sweptRouterCallsAreIgnored() {
+        let router = makeAndDropCoordinatorRouter()
+        let other = StackRouter(configuration: .permissive)
+
+        other.push(ProductRoute(id: 1))
+
+        #expect(!router.isActive)
+        #expect(router.push(ProductRoute(id: 1)) == .ignored)
+        #expect(router.state.path.isEmpty)
+    }
+
+    @Test
+    func reusedIdentifierGetsAFreshEntry() throws {
+        let table = RouterTable()
+        let freedID = try #require(makeAndDropEntry(in: table))
+        let oldRouter = try #require(table.entryRouter(for: freedID))
+        let newcomer = ShopListCoordinator()
+
+        let router = table.router(of: newcomer, identifiedAs: freedID)
+
+        #expect(router !== oldRouter)
+        #expect(router.isActive)
+        #expect(!oldRouter.isActive)
+        #expect(table.router(of: newcomer, identifiedAs: freedID) === router)
+    }
+
+    @Test
+    func readInDeinitOfACoordinatorWithARouterGetsItInert() throws {
+        let outcomes = Recorder<(NavigationOutcome, StackRouter)>()
+        let router = makeAndDropDeinitReader(outcomes: outcomes, readsFirst: true)
+
+        let (outcome, read) = try #require(outcomes.last)
+        #expect(outcome == .ignored)
+        #expect(read === router)
+        #expect(!router.isActive)
+        #expect(router.state.path.isEmpty)
+    }
+
+    @Test
+    func firstReadInDeinitGetsAnInertRouter() throws {
+        let outcomes = Recorder<(NavigationOutcome, StackRouter)>()
+        _ = makeAndDropDeinitReader(outcomes: outcomes, readsFirst: false)
+
+        let (outcome, read) = try #require(outcomes.last)
+        #expect(outcome == .ignored)
+        #expect(!read.isActive)
+    }
+
+    @Test
+    func firstReadInDeinitKeepsARouterStillInUseLive() throws {
+        let owner = ShopListCoordinator()
+        let live = owner.router
+        let outcomes = Recorder<(NavigationOutcome, StackRouter)>()
+        _ = makeAndDropDeinitReader(outcomes: outcomes, readsFirst: false, madeRouter: live)
+
+        let (outcome, read) = try #require(outcomes.last)
+        #expect(outcome == .ignored)
+        #expect(read !== live)
+        #expect(live.isActive)
+        #expect(live.state.path.isEmpty)
+    }
+
+    /// Makes a coordinator, reads its router and drops the coordinator, keeping the router.
+    private func makeAndDropCoordinatorRouter() -> StackRouter {
+        ShopListCoordinator().router
+    }
+
+    /// Makes an entry in `table` for a coordinator that is then freed, and returns its id.
+    private func makeAndDropEntry(in table: RouterTable) -> ObjectIdentifier? {
+        let coordinator = ShopListCoordinator()
+        _ = table.router(of: coordinator, identifiedAs: ObjectIdentifier(coordinator))
+        return ObjectIdentifier(coordinator)
+    }
+
+    /// Makes a coordinator that pushes in `deinit`, reading its router first when `readsFirst`,
+    /// and drops it. Returns the router it read first, or a new one.
+    private func makeAndDropDeinitReader(
+        outcomes: Recorder<(NavigationOutcome, StackRouter)>,
+        readsFirst: Bool,
+        madeRouter: StackRouter? = nil
+    ) -> StackRouter {
+        let coordinator = DeinitReadingCoordinator(outcomes: outcomes, madeRouter: madeRouter)
+        return readsFirst ? coordinator.router : StackRouter()
+    }
+}

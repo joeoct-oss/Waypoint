@@ -228,6 +228,7 @@ final class NavigationTreeContext {
         }
         let outcome = apply(on: router, file: file, line: line, trigger: trigger, body)
         drainQueue()
+        RouterTable.shared.sweep()
         return outcome
     }
 
