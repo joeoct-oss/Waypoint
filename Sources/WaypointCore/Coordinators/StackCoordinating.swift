@@ -38,7 +38,8 @@ public protocol StackCoordinating: AnyObject {
     var router: StackRouter { get }
 
     /// The name of the stack's root screen in the journey, when the root screen has no route.
-    /// Default: the type's name without `Coordinator`, such as `Shop` for `ShopCoordinator`.
+    /// Default: the type's name without `Coordinator`, such as `Shop` for `ShopCoordinator`,
+    /// which never replaces a name ``makeRouter()`` set. A name you declare does.
     var rootName: String { get }
 
     /// Makes the router, the first time ``router`` is read. Default: `StackRouter()`.
@@ -64,12 +65,7 @@ extension StackCoordinating {
 
     /// The type's name without `Coordinator`.
     public var rootName: String {
-        let name = ViewTypeName.of(Self.self)
-        let suffix = "Coordinator"
-        guard name.hasSuffix(suffix), name.count > suffix.count else {
-            return name
-        }
-        return String(name.dropLast(suffix.count))
+        RouterTable.typeRootName(of: Self.self)
     }
 
     /// A navigator for the screen on top of the stack, taking any route. Hand it to that

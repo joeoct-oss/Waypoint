@@ -137,6 +137,16 @@ final class RouterTable {
         withExtendedLifetime(removed) { }
     }
 
+    /// The root name a coordinator type gets by default: its name without `Coordinator`.
+    static func typeRootName(of type: Any.Type) -> String {
+        let name = ViewTypeName.of(type)
+        let suffix = "Coordinator"
+        guard name.hasSuffix(suffix), name.count > suffix.count else {
+            return name
+        }
+        return String(name.dropLast(suffix.count))
+    }
+
     /// Whether a new weak reference to `object` reads it back. One formed while `object` is in
     /// its `deinit` reads `nil`.
     private static func isAlive(_ object: AnyObject) -> Bool {
@@ -145,7 +155,9 @@ final class RouterTable {
     }
 
     /// Keeps `router` as the router of `coordinator`, names it and registers the coordinator's
-    /// destinations on it, or, when another coordinator owns it, reports that and leaves it.
+    /// destinations on it. A root name the coordinator declares wins; the type's default name is
+    /// set only on a router with no root name yet, so a name its `makeRouter()` set is kept.
+    /// When another coordinator owns the router, it reports that and leaves it.
     private func settle<Coordinator: StackCoordinating>(
         _ router: StackRouter,
         of coordinator: Coordinator,
@@ -164,8 +176,10 @@ final class RouterTable {
             router.reportRouterNotFromWaypoint(storedIn: coordinator, file: file, line: line)
         }
         router.setCoordinator(coordinator)
-        if router.rootName == nil {
-            router.setRootName(coordinator.rootName)
+        let rootName = coordinator.rootName
+        let isDeclared = rootName != Self.typeRootName(of: Coordinator.self)
+        if isDeclared || router.rootName == nil {
+            router.setRootName(rootName)
         }
         coordinator.registerDestinations(on: router)
     }

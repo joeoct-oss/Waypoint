@@ -30,9 +30,12 @@ final class OwnRouterCoordinator: StackCoordinating {
         "Own list"
     }
 
-    /// A router of the app's own, with a strict registry.
+    /// A router of the app's own, with a strict registry and a root name of its own, which the
+    /// declared `rootName` replaces.
     func makeRouter() -> StackRouter {
-        StackRouter(flow: Self.flow)
+        let router = StackRouter(flow: Self.flow)
+        router.setRootName("Made list")
+        return router
     }
 
     /// Registers the product route, so a push of one is applied.
