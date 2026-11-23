@@ -170,3 +170,22 @@ final class PermissiveCoordinator: StackCoordinating {
         StackRouter(configuration: .permissive)
     }
 }
+
+/// Keeps a coordinator until a test lets it go, so an observer can free it mid-call.
+@MainActor
+final class CoordinatorHolder {
+    /// The coordinator, or `nil` once released.
+    ///
+    /// `var` because the test frees the coordinator. Only ``release()`` changes it.
+    private(set) var coordinator: PermissiveCoordinator?
+
+    /// Creates a holder of a new coordinator.
+    init() {
+        coordinator = PermissiveCoordinator()
+    }
+
+    /// Lets the coordinator go.
+    func release() {
+        coordinator = nil
+    }
+}

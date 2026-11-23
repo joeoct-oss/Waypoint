@@ -242,6 +242,29 @@ struct StackCoordinatingTests {
     }
 
     @Test
+    func queuedCallReplayedAfterCoordinatorIsGoneIsIgnored() throws {
+        let holder = CoordinatorHolder()
+        let router = try #require(holder.coordinator).router
+        let navigation = router.navigator
+        let once = Once()
+        let queued = Recorder<NavigationOutcome>()
+        router.tree.onApplied { _ in
+            guard once.claim() else {
+                return
+            }
+            queued.record(navigation.push(ProductRoute(id: 2)))
+            holder.release()
+        }
+
+        router.push(ProductRoute(id: 1))
+
+        let expectedPath = [AnyRoute(ProductRoute(id: 1))]
+        #expect(queued.last == .queued)
+        #expect(router.state.path == expectedPath)
+        #expect(!router.isActive)
+    }
+
+    @Test
     func reusedIdentifierGetsAFreshEntry() throws {
         let table = RouterTable()
         let freedID = try #require(makeAndDropEntry(in: table))
