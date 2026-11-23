@@ -9,8 +9,8 @@
 /// How a child flow ended: with the value it finished with, or cancelled.
 ///
 /// A parent gets it exactly once for each child flow it started, in the `onFinish:` of
-/// ``StackRouter/present(_:style:trigger:else:file:line:onFinish:)``, or of `push(_:onFinish:)`
-/// for a flow pushed on the parent's stack.
+/// ``StackRouter/present(_:style:trigger:else:file:line:onFinish:)``. Pushing a flow on the
+/// parent's stack comes once renderers draw pushed flows.
 ///
 /// `Value` is `Sendable` because the result is `Sendable`, so the value it carries must be too.
 ///
@@ -20,8 +20,7 @@ public enum FlowResult<Value: Sendable>: Sendable {
     /// The flow called `finish(with:)` with this value.
     case finished(Value)
     /// The flow ended without a value: the user swiped it away, a parent dismissed it, or another
-    /// flow replaced it. A pushed flow is also cancelled when the user goes back past its first
-    /// screen, or when the parent pushes, pops or pops to a screen on its own path.
+    /// flow replaced it.
     case cancelled
 }
 

@@ -241,7 +241,7 @@ public final class StackRouter: NavigationRouter {
         rootNode
     }
 
-    /// The presented flow's router, if any.
+    /// The pushed child flow's router, then the presented flow's, if any.
     public var children: [any NavigationRouter] {
         childNodes
     }
