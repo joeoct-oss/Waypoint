@@ -16,6 +16,8 @@
 ///
 /// ```swift
 /// final class CheckoutCoordinator: FlowCoordinator {
+///     typealias Output = Order
+///
 ///     func placeOrder(_ order: Order) {
 ///         finish(with: order)
 ///     }

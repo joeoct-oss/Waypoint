@@ -33,6 +33,8 @@ extension FlowResult: Equatable where Value: Equatable { }
 ///
 /// ```swift
 /// final class CheckoutCoordinator: FlowCoordinating {
+///     typealias Output = Order
+///
 ///     func placeOrder(_ order: Order) {
 ///         finish(with: order)
 ///     }

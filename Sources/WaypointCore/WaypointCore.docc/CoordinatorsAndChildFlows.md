@@ -195,6 +195,8 @@ router.present(AddressPickerCoordinator(), style: .sheet) { result in
 }
 ```
 
+> Warning: Waypoint keeps `onFinish:` with the child's flow until the flow ends. When it captures the parent coordinator, as a call to a named method does, the parent stays alive while the child is presented, even after the app lets it go. End the flow first, such as by dismissing it, or capture `[weak self]`.
+
 The child ends the flow with `finish(with:)`, and the parent gets `.finished(value)`. Every other end is `.cancelled`: the user swipes the sheet away, the child calls `router.dismissFlow()`, a parent dismisses it or a flow above it, or the `.replacePresentation` fallback replaces it. A second `finish(with:)`, or a dismiss after it, delivers nothing more.
 
 The lazy form builds the child only when the present happens, so a present that is refused, such as over a sheet already up, or ignored, on a router that left the tree, builds nothing, and a queued one builds it when it runs:
