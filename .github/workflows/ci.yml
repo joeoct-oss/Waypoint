@@ -2,8 +2,8 @@
 # Built to stay inside the account's included Actions minutes:
 # - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
 # - a newer push cancels the run still going for the same PR,
-# - a PR that changes only docs finishes in seconds without building,
 # - the SwiftPM build folder is cached between runs.
+# A second job builds the package with Swift 6.0, the minimum Package.swift declares (build only, no tests).
 # The Mac stays the full test gate (scripts/test-mac.sh, see TESTING.md); there is no macOS job here.
 # Switched off unless the repository variable CI_ENABLED is "true".
 name: CI
@@ -34,29 +34,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Find what changed
-        id: changes
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      - name: Install the tools the check scripts use
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          if [ -z "$BASE_SHA" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          code_files="$(git diff --name-only "$BASE_SHA"...HEAD \
-            | grep -vE '(\.md$|\.docc/|^docs-theme/|^\.github/ISSUE_TEMPLATE/|^\.github/pull_request_template\.md$)' \
-            || true)"
-          if [ -n "$code_files" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "code=false" >> "$GITHUB_OUTPUT"
-            echo "Docs-only change: the Linux checks are not needed."
-          fi
-
-      - name: Install the tools the check scripts use
-        if: steps.changes.outputs.code == 'true'
-        run: |
           missing=""
           command -v pgrep >/dev/null && command -v pkill >/dev/null && command -v ps >/dev/null \
             || missing="$missing procps"
@@ -68,7 +48,6 @@ jobs:
           fi
 
       - name: Restore the build cache
-        if: steps.changes.outputs.code == 'true'
         uses: actions/cache@v4
         with:
           path: .build
@@ -77,5 +56,25 @@ jobs:
             linux-swift-6.4-${{ hashFiles('Package.swift', 'Package.resolved') }}-
 
       - name: Run the Linux checks
-        if: steps.changes.outputs.code == 'true'
         run: scripts/test-linux.sh
+
+  minimum-swift:
+    name: Builds with Swift 6.0
+    if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: swift:6.0
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Restore the build cache
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: linux-swift-6.0-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ github.sha }}
+          restore-keys: |
+            linux-swift-6.0-${{ hashFiles('Package.swift', 'Package.resolved') }}-
+
+      - name: swift build
+        run: swift build

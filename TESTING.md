@@ -155,7 +155,7 @@ Nothing to tear down. Leave `.build` in place: the next run reuses it.
 
 ### On pull requests (CI)
 
-When the repository variable `CI_ENABLED` is `true`, GitHub Actions runs this suite on every pull request to `main` that is ready for review (`.github/workflows/ci.yml`, #5): on opening, on every push and when a draft is marked ready. Draft pull requests are skipped, a newer push cancels the older run, and a docs only change (by the same file rule as the merge gate) finishes without building. Its check is called **Linux checks**, and `main` only takes pull requests where it passed. A green **Linux checks** on the pull request's head is the Linux gate, so a merge needs no separate cloud run. Runs use the account's included Actions minutes; there is no macOS job, so the Mac tiers below stay the Mac gate.
+When the repository variable `CI_ENABLED` is `true`, GitHub Actions runs this suite on every pull request to `main` that is ready for review (`.github/workflows/ci.yml`, #5): on opening, on every push and when a draft is marked ready. Draft pull requests are skipped and a newer push cancels the older run. It runs the whole suite on every change, docs only included. Its check is called **Linux checks**; a second check, **Builds with Swift 6.0**, builds the package with the minimum Swift that `Package.swift` declares. `main` only takes pull requests where both passed. A green **Linux checks** on the pull request's head is the Linux gate, so a merge needs no separate cloud run. Runs use the account's included Actions minutes; there is no macOS job, so the Mac tiers below stay the Mac gate.
 
 ## 5. Run a Mac tier
 
