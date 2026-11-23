@@ -153,6 +153,10 @@ Run it as one command that is allowed to take 15 minutes; don't let a shorter to
 
 Nothing to tear down. Leave `.build` in place: the next run reuses it.
 
+### On pull requests (CI)
+
+When the repository variable `CI_ENABLED` is `true`, GitHub Actions runs this suite on every pull request to `main` that is ready for review (`.github/workflows/ci.yml`, #5): on opening, on every push and when a draft is marked ready. Draft pull requests are skipped, a newer push cancels the older run, and a docs only change (by the same file rule as the merge gate) finishes without building. Its check is called **Linux checks**, and `main` only takes pull requests where it passed. A green **Linux checks** on the pull request's head is the Linux gate, so a merge needs no separate cloud run. Runs use the account's included Actions minutes; there is no macOS job, so the Mac tiers below stay the Mac gate.
+
 ## 5. Run a Mac tier
 
 Every step runs on the Mac, from the root of the Waypoint package clone, which this section calls `<clone>`. Write down the answer of every check: the report needs them.
