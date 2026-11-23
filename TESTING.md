@@ -86,7 +86,7 @@ One `full` run covers up to four ready pull requests at once. A pull request is 
    Pass: it prints `batch <sha> tree <tree> main <main sha> branches <branch>@<sha> ...`. Write the whole line down: the report needs it. When it prints `error: <branch> doesn't merge cleanly`, leave that branch out (it must take `main` first) and build the batch again. When it prints `error: a Mac test run ... holds the run lock`, another run is going: wait for your turn.
 2. **Run `full`** on the batch, exactly as [Run a Mac tier](#5-run-a-mac-tier) says. The report goes in every batch pull request's **Tests** section, with the batch line.
 3. **Red batch:** nothing in it merges. Find the pull request the failure belongs to from [When a run fails](#6-when-a-run-fails); it is fixed, or left out, and the new batch runs `full` again.
-4. **Green batch:** the pull requests merge one at a time, squash, in the batch's order. Right before each merge:
+4. **Green batch:** the pull requests merge one at a time, in the batch's order (squash, or a merge commit when the branch's history explains why; see [CONTRIBUTING.md](CONTRIBUTING.md)). Right before each merge:
 
    ```sh
    scripts/merge-batch.sh --before-merge <branch> <its tested sha> <expected main>
