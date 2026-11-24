@@ -98,8 +98,8 @@ extension StackRouter {
         }
     }
 
-    /// Pushes the flow of `child`, a coordinator, on this stack. `package` until renderers draw a
-    /// pushed flow's screens (#59, its next part), then public.
+    /// Pushes the flow of `child`, a coordinator, on this stack. `package`: apps push with
+    /// `Waypoint`'s forms, which take a `FlowCoordinator`, whose screens a renderer can draw.
     ///
     /// The child's screens follow on
     /// the same stack: the child's root screen first, then each screen its router pushes. The
@@ -158,6 +158,21 @@ extension StackRouter {
         else fallback: NavigationFallback? = nil,
         file: StaticString = #fileID,
         line: UInt = #line,
+        onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void,
+        _ makeChild: @escaping @MainActor () -> Child
+    ) -> NavigationOutcome {
+        pushFlow(trigger: trigger, else: fallback, file: file, line: line, onFinish: onFinish, makeChild)
+    }
+
+    /// Pushes the flow of the coordinator `makeChild` returns, as the lazy
+    /// ``push(trigger:else:file:line:onFinish:_:)`` does. `Waypoint`'s public push forms, which
+    /// take a coordinator whose screens can be drawn, call it.
+    @discardableResult
+    package func pushFlow<Child: FlowCoordinating>(
+        trigger: String?,
+        else fallback: NavigationFallback?,
+        file: StaticString,
+        line: UInt,
         onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void,
         _ makeChild: @escaping @MainActor () -> Child
     ) -> NavigationOutcome {

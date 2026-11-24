@@ -14,6 +14,8 @@ import XCTest
 @MainActor
 final class LabTests: XCTestCase {
     private static let lampID = 1
+    private static let reviewStars = 4
+    private static let postedReview = "4 stars"
     private static let missingRouteName = "ProductReviewsRoute"
     // How the tree names the route of the screen it is shown on: the account flow, then the
     // route's case, with its private value folded.
@@ -116,6 +118,35 @@ final class LabTests: XCTestCase {
         app.goBack()
         XCTAssertTrue(cart.waitForNonExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(product.exists, "back should pop the cart only")
+    }
+
+    // Write a review pushes a child flow on the Detail push stack: its screens follow the
+    // product, Post review pops back to the product with the stars, and Back from the rating
+    // leaves the flow without a review.
+    func testPushedReviewFlowFinishesOnTheSameStack() {
+        let app = openDetailPush()
+        app.buttons[Identifiers.product(id: Self.lampID)].tap()
+        let product = app.descendants(matching: .any)[Identifiers.detailProduct]
+        XCTAssertTrue(product.waitForExistence(timeout: UITestSteps.timeout))
+        let writeReview = app.buttons[Identifiers.detailWriteReview]
+
+        XCTAssertTrue(app.reveal(writeReview))
+        writeReview.tap()
+        let rating = app.descendants(matching: .any)[Identifiers.detailReviewRating]
+        XCTAssertTrue(rating.waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+        XCTAssertTrue(rating.waitForNonExistence(timeout: UITestSteps.timeout))
+        XCTAssertFalse(app.staticTexts[Identifiers.detailReviewPosted].exists, "Back posts no review")
+
+        XCTAssertTrue(app.reveal(writeReview))
+        writeReview.tap()
+        app.buttons[Identifiers.detailReviewStars(Self.reviewStars)].tapWhenReady()
+        app.buttons[Identifiers.detailReviewPost].tapWhenReady()
+
+        let posted = app.staticTexts[Identifiers.detailReviewPosted]
+        XCTAssertTrue(posted.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(posted.label.contains(Self.postedReview), "product says \(posted.label)")
+        XCTAssertTrue(product.exists, "Post review should pop back to the product")
     }
 
     // TX-04: the Tabs story's tabs change at run time. Search stays selected when it stays, and

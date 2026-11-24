@@ -8,8 +8,8 @@
 
 /// App code that owns one stack flow that ends with a result, such as checkout or sign in.
 ///
-/// A parent starts it with `router.present(child) { result in … }` (pushing it on the parent's
-/// stack comes once renderers draw pushed flows), and the flow ends it with `finish(with:)`.
+/// A parent starts it with `router.present(child) { result in … }`, or pushes it on its own stack
+/// with `router.push(child) { result in … }`, and the flow ends it with `finish(with:)`.
 /// Conforming fills in the router, as `StackCoordinator` does, and `finish(with:)`, as
 /// `FlowCoordinating` describes: the parent gets `.finished(value)`, the flow is dismissed, and
 /// Waypoint lets the coordinator go. Like a `StackCoordinator`, it writes its `root` and

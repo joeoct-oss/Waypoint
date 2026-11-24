@@ -34,3 +34,12 @@ struct DetailCartRoute: Route {
 
     let productID: Int
 }
+
+// The review's note in the Write a review flow, pushed by the rating screen with the stars picked.
+// It names no flow, so the review flow's own stack router pushes it.
+//
+// Conformances:
+// - `Route`, so the review flow's router can push it and find its destination.
+struct DetailReviewNoteRoute: Route {
+    let rating: Int
+}

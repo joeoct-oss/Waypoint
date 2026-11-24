@@ -36,8 +36,11 @@ struct DetailPushListView: View {
 // the cart, and Add to cart at the bottom. The view only reports taps.
 struct DetailPushProductView: View {
     let product: Product
+    // The stars of the review posted for this product, or `nil` before one is.
+    let postedReview: Int?
     let onAddToCart: () -> Void
     let onBackToCart: () -> Void
+    let onWriteReview: () -> Void
 
     var body: some View {
         ScrollView {
@@ -45,6 +48,7 @@ struct DetailPushProductView: View {
                 picture
                 titles
                 backToCartBanner
+                reviewBanner
             }
             .padding(Spacing.large)
         }
@@ -86,6 +90,25 @@ struct DetailPushProductView: View {
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.capsule)
                 .accessibilityIdentifier(Identifiers.detailBackToCart)
+        }
+    }
+
+    private var reviewBanner: some View {
+        VStack(alignment: .leading, spacing: Spacing.small) {
+            LabNote(
+                title: "Write a review",
+                detail: "Pushes a child flow on this stack with push(_:onFinish:). Its result comes "
+                    + "back here once."
+            )
+            if let postedReview {
+                Text("Your review: \(DetailReviewText.stars(postedReview))")
+                    .font(Typography.headline)
+                    .accessibilityIdentifier(Identifiers.detailReviewPosted)
+            }
+            Button("Write a review", systemImage: "star", action: onWriteReview)
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .accessibilityIdentifier(Identifiers.detailWriteReview)
         }
     }
 

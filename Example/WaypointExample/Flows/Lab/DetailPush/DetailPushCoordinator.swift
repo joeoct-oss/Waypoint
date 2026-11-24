@@ -14,7 +14,8 @@ import Waypoint
 // product's Back to cart banner pops to a cart that is usually not in the stack, so the call
 // recovers with `.popToRoot`. In debug builds the recovered outcome shows a toast with its one-line
 // description; release builds stay quiet, as the event log and the console still have the line.
-//
+// The product's Write a review pushes `DetailReviewCoordinator`'s flow on this stack, and the
+// product then shows the stars it finished with.
 //
 // It stores no router: `StackCoordinator` makes one with `makeRouter()` the first time it is read,
 // names it after this coordinator, roots it at the shop tab's name, registers its destinations, and
@@ -36,6 +37,9 @@ final class DetailPushCoordinator: StackCoordinator {
     private(set) var toast: RecoveredToastContent?
     // `var` because each toast replaces the timer of the one before it.
     private var toastTimer: Task<Void, Never>?
+    // `var` because the review flow finishes with the stars posted for each product. Only
+    // `reviewEnded(_:for:)` changes it.
+    private(set) var postedReviews: [Int: Int]
 
     var rootName: String {
         MainTab.shop.title
@@ -67,6 +71,7 @@ final class DetailPushCoordinator: StackCoordinator {
         self.onClose = onClose
         toast = nil
         toastTimer = nil
+        postedReviews = [:]
     }
 
     func makeRouter() -> StackRouter {
@@ -80,8 +85,10 @@ final class DetailPushCoordinator: StackCoordinator {
         if let product = Product.find(id: route.productID) {
             DetailPushProductView(
                 product: product,
+                postedReview: postedReviews[product.id],
                 onAddToCart: { self.showCart(for: product) },
-                onBackToCart: { self.backToCart() }
+                onBackToCart: { self.backToCart() },
+                onWriteReview: { self.writeReview(for: product) }
             )
             .screenChrome(
                 title: product.name,
@@ -115,6 +122,21 @@ final class DetailPushCoordinator: StackCoordinator {
 
     func showCart(for product: Product) {
         router.push(DetailCartRoute(productID: product.id))
+    }
+
+    // Pushes the review flow above the product; its result comes back once.
+    func writeReview(for product: Product) {
+        router.push(DetailReviewCoordinator(product: product)) { result in
+            self.reviewEnded(result, for: product)
+        }
+    }
+
+    // Keeps the stars a posted review gave; a review left with Back changes nothing.
+    func reviewEnded(_ result: FlowResult<Int>, for product: Product) {
+        guard case .finished(let rating) = result else {
+            return
+        }
+        postedReviews[product.id] = rating
     }
 
     // Pops to the cart, or back to the shop list when the cart isn't in the stack.

@@ -239,6 +239,12 @@ public final class StackRouter: NavigationRouter {
         forwardTarget.map(\.pushedFlow) ?? committed.pushed
     }
 
+    /// The coordinator of the child flow pushed on top of this stack, which a renderer draws
+    /// after this stack's path, or `nil` when no child flow is pushed.
+    package var pushedFlowCoordinator: AnyObject? {
+        forwardTarget.map(\.pushedFlowCoordinator) ?? pushedCoordinator
+    }
+
     /// The router that presented or contains this one, or `nil` for the root.
     public var parent: (any NavigationRouter)? {
         parentNode

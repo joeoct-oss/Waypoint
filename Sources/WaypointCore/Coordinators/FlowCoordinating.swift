@@ -9,8 +9,8 @@
 /// How a child flow ended: with the value it finished with, or cancelled.
 ///
 /// A parent gets it exactly once for each child flow it started, in the `onFinish:` of
-/// ``StackRouter/present(_:style:trigger:else:file:line:onFinish:)``. Pushing a flow on the
-/// parent's stack comes once renderers draw pushed flows.
+/// ``StackRouter/present(_:style:trigger:else:file:line:onFinish:)``, or of `push(_:onFinish:)`
+/// in `Waypoint`, which pushes a `FlowCoordinator`'s flow on the parent's stack.
 ///
 /// `Value` is `Sendable` because the result is `Sendable`, so the value it carries must be too.
 ///
