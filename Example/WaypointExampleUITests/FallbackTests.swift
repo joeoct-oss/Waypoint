@@ -23,7 +23,7 @@ final class FallbackTests: XCTestCase {
     private static let switchOn = "1"
     private static let recovered = "recovered"
     private static let oneFailure = "1"
-    // How the log words the two recoveries.
+    // How the log and the banner word the two recoveries.
     private static let missingRoute = NSPredicate(format: "label CONTAINS \"isn't in the stack\"")
     private static let alreadyPresenting = NSPredicate(format: "label CONTAINS 'already presents'")
 
@@ -61,6 +61,11 @@ final class FallbackTests: XCTestCase {
         missingPop.tap()
         XCTAssertTrue(app.navigationBars[Self.accountTitle].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertFalse(app.navigationBars[Self.settingsTitle].exists, "the fallback left Settings open")
+        // The banner may still show the unrecovered call, so this waits for the popTo's own issue.
+        let popToIssue = expectation(for: Self.missingRoute, evaluatedWith: banner)
+        let popToWaits = [popToIssue]
+        let shown = XCTWaiter.wait(for: popToWaits, timeout: UITestSteps.timeout)
+        XCTAssertEqual(shown, .completed, "the banner didn't show the issue: \(banner.label)")
 
         app.openLabTool(.eventLog)
         let replaced = recoveredEntries(in: app).matching(Self.alreadyPresenting).firstMatch
