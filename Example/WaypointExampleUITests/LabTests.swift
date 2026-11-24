@@ -31,8 +31,8 @@ final class LabTests: XCTestCase {
 
     // The launch arguments open an entry directly: the UIKit branch's SwiftUI sheet placeholder.
     // Back walks to the Lab, which shows both branches, and on each branch the first entry that
-    // isn't built yet opens its placeholder from a tap. That every unbuilt entry has a placeholder and only the
-    // runnable ones have a demo is `FlowEntryCatalogTests`.
+    // isn't built yet opens its placeholder from a tap. That every unbuilt entry has a placeholder
+    // and only the runnable ones have a demo is `FlowEntryCatalogTests`.
     func testBranchesOpenTheirPlaceholders() throws {
         let entry = FlowEntry(
             branch: .uiKit,
