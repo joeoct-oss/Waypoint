@@ -276,8 +276,8 @@ else
     fail "a full run's release reports step never skips its tests (plan: ${got:-none})"
 fi
 
-# 1c2. Tuist's binary cache (planning #441): quick and full runs may use it; release, coverage and
-# offline runs build from source; green full and coverage runs warm it; the release reports step
+# 1c2. Tuist's binary cache (planning #441): quick and full runs may use it; release, coverage,
+# offline runs and runs for a pull request build from source; green full and coverage runs warm it; the release reports step
 # never uses it.
 expect_cache() {
     local name="$1" want="$2" got
@@ -300,6 +300,9 @@ expect_cache "a coverage run builds from source and warms" \
     "binary cache off, warm binary cache true" coverage
 expect_cache "an offline full run builds from source and doesn't warm" \
     "binary cache off, warm binary cache false" full WAYPOINT_TUIST_OFFLINE=1
+# A pull request's run report shows its coverage, which cached package modules would leave out.
+expect_cache "a full run for a pull request builds from source and warms" \
+    "binary cache off, warm binary cache true" full WAYPOINT_PULL_REQUEST=42 STUB_PR_BRANCH=main
 if grep -q "local BINARY_CACHE=off" scripts/test-mac.sh &&
     grep -A3 "^release_reports_on()" scripts/test-mac.sh | grep -q "local BINARY_CACHE=off"; then
     pass "the release reports step never uses the binary cache"

@@ -734,10 +734,13 @@ echo "selective testing: $SELECTIVE_TESTING, release reports selective testing $
 # Whether the example app's test step may take the package's modules from Tuist's binary cache
 # (planning #441), and whether a green run warms the cache for its tree. A binary is keyed by its
 # sources, build settings (warnings as errors included), configuration and Xcode, so it is never
-# stale. Release runs build everything from source; coverage runs too, because Tuist caches a
-# package without coverage counters and `main`'s coverage must measure the package. The release
-# reports step always builds from source (Release isn't warmed).
-if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 || "$TIER" == release || "$TIER" == coverage ]]; then
+# stale. Release runs build everything from source. So do runs whose coverage someone reads: Tuist
+# caches a package without coverage counters, so a cached module's lines could read as uncovered.
+# That is the `coverage` run, which charts `main`, and a run for a pull request, whose Tuist run
+# report shows its coverage. The release reports step always builds from source (Release isn't
+# warmed).
+if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 || "$TIER" == release || "$TIER" == coverage ||
+    -n "$TUIST_PULL_REQUEST" ]]; then
     BINARY_CACHE=off
 else
     BINARY_CACHE=on

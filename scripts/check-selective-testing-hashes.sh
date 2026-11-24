@@ -99,18 +99,22 @@ hashes() {
 
 # Prints `module key` for each package module, or fails when Tuist lists no key for one.
 cache_keys() {
-    local out module key
+    local out module key lines
     out=$(tuist_cmd hash cache --path "$TREE/Example" 2>&1) || {
         echo "$out" >&2
         return 1
     }
     for module in "${CACHED_MODULES[@]}"; do
-        key=$(grep -w -- "$module" <<<"$out" | grep -oE '[0-9a-f]{16,}' | head -1 || true)
-        if [[ -z "$key" ]]; then
-            echo "error: tuist hash cache lists no key for $module" >&2
+        # One line per target, the name first and then its key, such as `Waypoint - 6c2dc13f…`.
+        # The name must be the line's whole first word, so `Waypoint` never matches
+        # `WaypointCore`, `Waypoint-Package` or a path, and exactly one line may match.
+        lines=$(grep -E "^[[:space:]*•-]*${module}[[:space:]]*[:-]?[[:space:]]+[0-9a-f]{16,}" <<<"$out" || true)
+        if [[ -z "$lines" || $(wc -l <<<"$lines") -ne 1 ]]; then
+            echo "error: tuist hash cache lists ${lines:+more than one key}${lines:-no key} for $module" >&2
             echo "$out" >&2
             return 1
         fi
+        key=$(grep -oE '[0-9a-f]{16,}' <<<"$lines" | head -1)
         echo "$module $key"
     done
 }
