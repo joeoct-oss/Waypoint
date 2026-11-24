@@ -18,7 +18,10 @@ struct DetailPushCoordinatorTests {
 
     @Test
     func routerIsMadeForTheDetailPushFlow() {
-        let coordinator = DetailPushCoordinator(navigation: .default)
+        let coordinator = DetailPushCoordinator(
+            navigation: .default,
+            onClose: { }
+        )
 
         let router = coordinator.router
 
@@ -26,6 +29,24 @@ struct DetailPushCoordinatorTests {
         #expect(router.coordinatorName == "DetailPushCoordinator")
         #expect(router.rootName == MainTab.shop.title)
         #expect(coordinator.router === router)
+    }
+
+    // Its `destinations` are registered when the router is made, with no `register` call, so a
+    // push before the stack is drawn is applied.
+    @Test
+    func destinationsRegisteredWithoutRegisterCalls() {
+        let coordinator = DetailPushCoordinator(
+            navigation: .default,
+            onClose: { }
+        )
+
+        let outcome = coordinator.router.push(DetailProductRoute(productID: 1))
+
+        #expect(outcome == .applied)
+        #expect(coordinator.router.registry.isRegistered(DetailProductRoute.self))
+        #expect(coordinator.router.registry.isRegistered(DetailCartRoute.self))
+        let declared = coordinator.router.declaredFlow.map(ObjectIdentifier.init)
+        #expect(declared == ObjectIdentifier(DetailPushFlow.self))
     }
 
     @Test

@@ -78,9 +78,10 @@ public struct NavigationIssue: NavigationRecord {
         /// coordinator it belonged to, so every call on it returns `.ignored`.
         case releasedRouterReturned
 
-        /// A tab coordinator returned one child coordinator for two tabs. The second tab keeps a
-        /// stack of its own, with none of the child's destinations, or shows the tabs' shared
-        /// stack.
+        /// One coordinator is drawn in two places: a tab coordinator returned one child
+        /// coordinator for two tabs, so the second tab keeps a stack of its own, with none of the
+        /// child's destinations, or shows the tabs' shared stack; or a coordinator's `view` is on
+        /// screen twice at once, so both places drive its one router.
         case coordinatorDrawnTwice
 
         /// A coordinator brought a router that is already in another tree, such as a presented
