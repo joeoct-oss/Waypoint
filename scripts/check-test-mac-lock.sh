@@ -183,7 +183,7 @@ expect_plan() {
     local name="$1" want="$2" got
     shift 2
     got=$(plan_of "$@" || true)
-    if [[ "$got" == *"selective testing $want"* ]]; then
+    if [[ "$got" == *", selective testing $want,"* ]]; then
         pass "$name"
     else
         fail "$name (plan: ${got:-none})"
@@ -224,6 +224,15 @@ expect_plan_with Package.swift \
     "a full run that changes Package.swift runs every test" off full
 expect_plan_with Sources/WaypointCore/SelectiveProbe.swift \
     "a release run never skips a test" off release
+# The release reports step runs right after its target passed in Debug, so it never skips.
+touch "$TREE/Sources/WaypointCore/SelectiveProbe.swift"
+got=$(plan_of full || true)
+rm "$TREE/Sources/WaypointCore/SelectiveProbe.swift"
+if [[ "$got" == *"selective testing on, release reports selective testing off"* ]]; then
+    pass "a full run's release reports step never skips its tests"
+else
+    fail "a full run's release reports step never skips its tests (plan: ${got:-none})"
+fi
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
 : >"$CALLS"

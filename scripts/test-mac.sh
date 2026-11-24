@@ -554,10 +554,15 @@ elif [[ "$TIER" == release || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CHA
 else
     SELECTIVE_TESTING=on
 fi
+# The release reports step never skips: offline stays offline, and on becomes off.
+RELEASE_REPORTS_SELECTIVE_TESTING="$SELECTIVE_TESTING"
+if [[ "$SELECTIVE_TESTING" == on ]]; then
+    RELEASE_REPORTS_SELECTIVE_TESTING=off
+fi
 # The report says whether a passed target could have been skipped (TESTING.md, Report the result).
-echo "selective testing: $SELECTIVE_TESTING"
+echo "selective testing: $SELECTIVE_TESTING, release reports $RELEASE_REPORTS_SELECTIVE_TESTING"
 if $PLAN_ONLY; then
-    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING"
+    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING"
     trap - EXIT
     exit 0
 fi
@@ -612,10 +617,15 @@ fi
 
 # A system link (#147) and a route with no destination in its stack (#166) must be reported in
 # release builds too, so their UI tests run again with the app and the tests built in the release
-# configuration.
+# configuration. They always run: the Debug step just passed their target, and nothing shows that
+# Tuist's hash tells the two configurations apart (#324).
+release_reports_on() {
+    local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
+    example_tests_on "$@"
+}
 if $RUN_RELEASE_REPORTS; then
     step "tuist test release reports (Release) on $SIMULATOR_NAME" \
-        example_tests_on "$UDID" "$SIMULATOR_NAME" release-reports \
+        release_reports_on "$UDID" "$SIMULATOR_NAME" release-reports \
         --configuration Release \
         --test-targets WaypointExampleUITests/SystemLinkTests \
         --test-targets WaypointExampleUITests/MissingDestinationTests
