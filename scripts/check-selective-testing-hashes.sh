@@ -54,7 +54,14 @@ trap cleanup EXIT
 # runs from the clone, where mise trusts .mise.toml, and reads the copy through `--path`.
 TREE="$WORK/tree"
 mkdir -p "$TREE"
-git ls-files -z --cached --others --exclude-standard | tar --null -T - -cf - 2>/dev/null | tar -xf - -C "$TREE"
+# A tracked file deleted but not committed is listed too, so only files that exist are copied.
+git ls-files -z --cached --others --exclude-standard |
+    while IFS= read -r -d '' file; do
+        if [[ -e "$file" ]]; then
+            printf '%s\0' "$file"
+        fi
+    done |
+    tar --null -T - -cf - | tar -xf - -C "$TREE"
 
 # Prints `target hash` for each hashed target, or fails when Tuist lists no hash for one.
 hashes() {

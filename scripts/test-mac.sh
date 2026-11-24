@@ -48,8 +48,8 @@
 #   WAYPOINT_JOBS             build jobs (default half the performance cores, at least 2).
 #   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 2;
 #                             1 runs them on the simulator itself).
-#   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing, the binary
-#                             cache and uploads (default 0).
+#   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing and uploads
+#                             (default 0).
 #   WAYPOINT_BASE             what the branch is compared with (default origin/main), for what
 #                             quick runs and whether selective testing is on.
 #   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
@@ -497,8 +497,10 @@ simulator_os() {
 # report reads its slowest tests from (#312). Extra arguments go to `tuist test`, such as
 # `--test-targets` or `--configuration`.
 #
-# Tuist's binary cache is on in every tier, and every run's results go to the project's Tuist
-# dashboard (Test Insights: run times and flaky tests). Selective testing, which skips a test
+# Tuist's binary cache is off (#324): with the package in Tuist's graph it could swap the
+# package's targets for cached binaries, and every run builds the package from source with its
+# warnings as errors. Every run's results go to the project's Tuist dashboard (Test Insights: run
+# times and flaky tests). Selective testing, which skips a test
 # target that already passed with the same hash, is on in quick and full runs unless the branch
 # changes a file the hashes don't cover; release, `--only`, `--ui` and `--all` run every test
 # they name. A run narrowed to a class or a test never records a pass, so only whole targets are
@@ -519,8 +521,8 @@ example_tests_on() {
             # The build's post-action reads it too, so it sends no build timings.
             offline_settings=(WAYPOINT_TUIST_OFFLINE=1)
             ;;
-        off) tuist_flags=(--no-selective-testing --skip-quarantine) ;;
-        on) tuist_flags=(--skip-quarantine) ;;
+        off) tuist_flags=(--no-selective-testing --no-binary-cache --skip-quarantine) ;;
+        on) tuist_flags=(--no-binary-cache --skip-quarantine) ;;
     esac
     mkdir -p "$RESULTS_DIR"
     # The package comes through Tuist's package integration, which `tuist install` resolves.
