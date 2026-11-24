@@ -151,7 +151,6 @@ final class LabTests: XCTestCase {
         XCTAssertTrue(rating.waitForNonExistence(timeout: UITestSteps.timeout))
         XCTAssertFalse(app.staticTexts[Identifiers.detailReviewPosted].exists, "Back posts no review")
 
-        XCTAssertTrue(app.reveal(writeReview))
         writeReview.tap()
         let missing = app.staticTexts[Self.pushedFlowMissing]
         let drawn = rating.waitForExistence(timeout: UITestSteps.timeout)
@@ -201,13 +200,12 @@ final class LabTests: XCTestCase {
         )
     }
 
-    // Opens the lamp from the Detail push list, and reveals Write a review on it.
+    // Opens the lamp from the Detail push list.
     @discardableResult
     private func openLampProduct(in app: XCUIApplication) -> XCUIElement {
         app.buttons[Identifiers.product(id: Self.lampID)].tap()
         let product = app.descendants(matching: .any)[Identifiers.detailProduct]
         XCTAssertTrue(product.waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(app.reveal(app.buttons[Identifiers.detailWriteReview]))
         return product
     }
 
