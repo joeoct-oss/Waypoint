@@ -54,8 +54,8 @@ final class JourneyTests: XCTestCase {
     private static let newAddressCity = "Springfield"
     private static let newAddressPostcode = "40233"
 
-    // A guest's first launch shows the splash, then Shop with every tab, and Account offers Sign in;
-    // a signed-in reader's Account shows their name.
+    // A guest's first launch shows the splash, then Shop with every tab, and Account offers Sign
+    // in; a signed-in reader's Account shows their name.
     func testLaunchOpensShopForEveryone() {
         let firstLaunch = ExampleApp.launch(splashSeconds: Self.splashSeconds)
         let splash = firstLaunch.descendants(matching: .any)[Identifiers.splash]
@@ -126,8 +126,8 @@ final class JourneyTests: XCTestCase {
 
     // MA-01: a recent search fills the field and lists its results under a count, a result opens
     // the product on the Search stack from the search's view model, and Back returns to the
-    // results (planning #417). Save shows the small saved sheet, and View wish list swaps it for the
-    // wish list.
+    // results (planning #417). Save shows the small saved sheet, and View wish list swaps it for
+    // the wish list.
     func testSearchOpenAndSave() {
         let app = ExampleApp.launch(signedIn: true)
 
@@ -145,11 +145,11 @@ final class JourneyTests: XCTestCase {
         XCTAssertFalse(app.descendants(matching: .any)[Identifiers.savedSheet].exists)
     }
 
-    // MA-02 and the cart's checkout (planning #416): an empty cart says so and Browse the shop opens
-    // Shop. With the lamp added, checkout walks address, payment and review, and placing the order
-    // replaces the steps with Order placed in one `setPath`, which the event log shows as one line
-    // with no Review left. Continue shopping closes checkout and opens Shop at its root, since the
-    // tabs share one stack and Add to cart's switch to Cart popped it.
+    // MA-02 and the cart's checkout (planning #416): an empty cart says so and Browse the shop
+    // opens Shop. With the lamp added, checkout walks address, payment and review, and placing the
+    // order replaces the steps with Order placed in one `setPath`, which the event log shows as one
+    // line with no Review left. Continue shopping closes checkout and opens Shop at its root, since
+    // the tabs share one stack and Add to cart's switch to Cart popped it.
     func testCheckoutPlacesOrder() {
         let app = ExampleApp.launch(signedIn: true)
         app.openTab(Self.cartTitle)

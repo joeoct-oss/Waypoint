@@ -54,7 +54,8 @@ final class SheetTests: XCTestCase {
     // Sign in from Account, the sheet Reset password opens over. A wrong password shows the error
     // and keeps the sheet up. Forgot password presents Reset password as a bare `.sheet`, which
     // takes the app's defaults: it opens at medium and can grow to large. Sending the link shows
-    // it was sent, Done goes back to sign in, and Cancel closes sign in, leaving Account as a guest.
+    // it was sent, Done goes back to sign in, and Cancel closes sign in, leaving Account as a
+    // guest.
     func testSignInSheetFromAccount() {
         let app = ExampleApp.launch()
         app.openTab(Self.accountTitle)
