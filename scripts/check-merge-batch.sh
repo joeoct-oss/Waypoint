@@ -11,7 +11,8 @@
 #
 # - two branches that merge cleanly make a batch with both and `main`;
 # - squash-merging the batch's branches one at a time, in its order, gives the batch's tree, and
-#   `--after-merge` tells that tree from another;
+#   so does merging them with merge commits (`--no-ff`); `--after-merge` passes after either and
+#   tells that tree from another;
 # - `--before-merge` stops the batch when a branch or `main` moved;
 # - a branch that conflicts stops the batch, names the branch, and leaves the clone as it was;
 # - a clone with changes, or one a Mac test run holds the run lock for, is refused;
@@ -87,12 +88,33 @@ git checkout -q main
 # 2. Squash-merging in the batch's order gives the batch's tree.
 git checkout -q -b squashed origin/main
 for branch in one two; do
-    git merge -q --squash "origin/$branch" >/dev/null 2>&1 && git commit -q -m "squash $branch"
+    if ! { git merge -q --squash "origin/$branch" >/dev/null 2>&1 &&
+        git commit -q -m "squash $branch"; }; then
+        fail "squash-merging $branch"
+        git reset -q --hard
+        break
+    fi
 done
 if [[ -n "${tree:-}" && "$(git rev-parse HEAD^{tree})" == "$tree" ]]; then
     pass "squash-merging the batch's branches in order gives the batch's tree"
 else
     fail "squash-merging the batch's branches in order gives the batch's tree"
+fi
+git checkout -q main
+
+# 2-merge. Merging in the batch's order with merge commits gives the batch's tree too.
+git checkout -q -b merged origin/main
+for branch in one two; do
+    if ! git merge -q --no-ff -m "merge $branch" "origin/$branch" >/dev/null 2>&1; then
+        fail "merging $branch with a merge commit"
+        git merge --abort 2>/dev/null || git reset -q --hard
+        break
+    fi
+done
+if [[ -n "${tree:-}" && "$(git rev-parse HEAD^{tree})" == "$tree" ]]; then
+    pass "merging the batch's branches in order with merge commits gives the batch's tree"
+else
+    fail "merging the batch's branches in order with merge commits gives the batch's tree"
 fi
 git checkout -q main
 
@@ -114,6 +136,20 @@ elif [[ "$out" == *"main holds untested code"* ]]; then
 else
     fail "--after-merge says main holds untested code ($out)"
 fi
+git fetch -q origin
+git checkout -q main
+git reset -q --hard origin/main
+
+# 2a-merge. --after-merge also passes when main took the branches as merge commits.
+(cd "$WORK/seed" && git checkout -q main && git fetch -q origin &&
+    for branch in one two; do git merge -q --no-ff -m "merge $branch" "origin/$branch" >/dev/null 2>&1;
+    done && git push -q origin main 2>/dev/null)
+if scripts/merge-batch.sh --after-merge "$tree" >/dev/null 2>&1; then
+    pass "--after-merge passes when main took the batch as merge commits"
+else
+    fail "--after-merge passes when main took the batch as merge commits"
+fi
+(cd "$WORK/seed" && git reset -q --hard HEAD~2 && git push -q -f origin main 2>/dev/null)
 git fetch -q origin
 git checkout -q main
 git reset -q --hard origin/main

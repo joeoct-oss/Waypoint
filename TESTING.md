@@ -19,7 +19,7 @@ Follow the steps in order and word for word. Each step says what to run, what a 
 
 There are two places a test can run:
 
-- **Linux**: a Linux machine with a Swift 6 toolchain, such as a cloud container. `WaypointCore` is pure Swift, so the core builds and tests here. The renderer targets compile empty on Linux, so nothing here touches SwiftUI or UIKit.
+- **Linux**: a Linux machine with a Swift 6.2 or later toolchain, such as a cloud container. `WaypointCore` is pure Swift, so the core builds and tests here. The renderer targets compile empty on Linux, so nothing here touches SwiftUI or UIKit.
 - **The Mac**: a Mac with Xcode 26 or later (the example app needs Swift 6.2), and the tools from `scripts/bootstrap.sh` ([setup](CONTRIBUTING.md#setup)). Everything that needs Apple's frameworks, Xcode or a simulator runs here.
 
 | Layer | Where it lives | Linux | Mac |
@@ -30,28 +30,30 @@ There are two places a test can run:
 | Example app isolation check (no `@MainActor` in the app or its unit tests) | `scripts/check-example-isolation.sh` | ✅ | ✅ every tier |
 | One import check (no app file or docs snippet imports both `Waypoint` and `WaypointCore`) | `scripts/check-single-import.sh` | ✅ | ✅ every tier |
 | Mac test script's run lock | `scripts/check-test-mac-lock.sh` | ✅ | |
+| The package's xcodebuild wrapper (moves Tuist's package project aside and back, #324) | `scripts/check-package-xcodebuild.sh` | ✅ | |
+| Tuist's test hashes see every part of the package (#324) | `scripts/check-selective-testing-hashes.sh` | | ✅ `full` and `release` |
 | Merge batches and the slowest-test list | `scripts/check-merge-batch.sh` | ✅ | |
 | Compile fixtures (must fail, must build) | `Tests/CompileFailures`, `Tests/CompileSuccesses`, checked by `scripts/check-compile-failures.sh` | ✅ | ✅ |
 | Core unit tests | `Tests/WaypointCoreTests` | ✅ plain and thread sanitizer | ✅ macOS host and simulator |
 | Renderer unit tests | `Tests/WaypointTests`, `Tests/WaypointUIKitTests` (the parts not behind `canImport(SwiftUI)` or `canImport(UIKit)` also run on Linux) | partly | ✅ macOS host and simulator |
 | Unified log tests | `Tests/WaypointOSLogTests` | | ✅ thread sanitizer in `full` and `release` |
 | Example app unit tests (Swift Testing: view models, the services container and the store) | `Example/WaypointExampleTests` | | ✅ simulator, with the UI tests |
-| Example app UI tests (XCUITest) | `Example/WaypointExampleUITests` | | ✅ simulator |
+| Example app UI tests (XCUITest) | `Example/WaypointExampleUITests`, run through `tuist test` on 2 simulator copies at once | | ✅ simulator |
 | iOS device build | `Waypoint-Package` for `generic/platform=iOS` | | ✅ `release` only |
 
 The tests in `Tests/WaypointCoreTests/LinuxBehaviourTests.swift` pin the Observation, main actor and `Sendable` behaviour the core relies on, so a difference between Linux and Apple platforms shows up there first.
 
 Two scripts run every layer. Nothing else counts as a test run:
 
-- `scripts/test-linux.sh` runs, in order: the core imports check, the comment width check, the concurrency guard rail, the Mac test script's run lock check (`scripts/check-test-mac-lock.sh`, which uses stand-in tools), the merge batch check (`scripts/check-merge-batch.sh`), `swift build`, `swift build --build-tests` with warnings as errors, the compile fixtures, `swift test`, and `swift test` under the thread sanitizer. Extra arguments go to both `swift test` runs.
-- `scripts/test-mac.sh [quick|full|release]` runs the Mac layers in tiers. What each tier runs is in the script's header comment and in the table below. Every tier that runs the example app's tests ends its log with the 10 slowest of them (`scripts/slowest-tests.py`).
+- `scripts/test-linux.sh` runs, in order: the core imports check, the comment width check, the concurrency guard rail, the example app's isolation check, the one import check, the Mac test script's run lock check (`scripts/check-test-mac-lock.sh`, which uses stand-in tools), the package's xcodebuild wrapper check (`scripts/check-package-xcodebuild.sh`, with a stand-in xcodebuild), the merge batch check (`scripts/check-merge-batch.sh`), one `swift build --build-tests` with warnings as errors, then the compile fixtures and `swift test` reusing that build, and `swift test` under the thread sanitizer. Extra arguments go to both `swift test` runs.
+- `scripts/test-mac.sh [quick|full|release]` runs the Mac layers in tiers. What each tier runs is in the script's header comment and in the table below. The example app's unit and UI tests run through `tuist test`, which generates the project first, on `WAYPOINT_UI_WORKERS` temporary copies of the simulator at once (default 2, #312; measured on 2026-11-24 for the 65 example tests: 2 copies 859 s, 3 copies 767 s, 4 copies 717 s, all green, with about 20 GB of swap at 4). Xcode makes the copies and removes them when the step ends; the package's tests never use copies. The project is linked to the Tuist server project `joeoct91/waypoint` (`Example/Tuist.swift`), so `tuist test` uses Tuist's selective testing, which skips a test target that already passed with the same hash, in `quick` and `full` runs (#324). The hash covers the package's sources: the example app takes the package through Tuist's package integration (`Example/Tuist/Package.swift`, with `.external` dependencies in `Example/Project.swift`), so the package's modules are targets in Tuist's graph. Selective testing is off in a `release` run, with `--only`, `--ui` or `--all`, and when the branch changes a file the hashes don't cover: anything outside `Sources/`, `Tests/` and `Example/`, the example app's manifests (`Example/Project.swift`, `Example/Tuist.swift`, `Example/Tuist/`), or when there are no changes to judge; Markdown and DocC files never count. Tuist records a pass only for a whole test target, never for a run narrowed to a class or a test, so `--only` and the release reports step never make a later run skip anything; the release reports step itself always runs its tests, since the Debug step just passed their target and nothing shows that Tuist's hash tells the two configurations apart. `scripts/check-selective-testing-hashes.sh` (part of `full` and `release`) proves the hashes in a copy of the working tree: an edit in each package module and in the example app must change the hashes of the app and its unit tests, and a docs edit must change none. `tuist hash selective-testing` takes no destination, so it lists no hash for the UI tests; Tuist hashes them only in a run with a destination, which `--device` gives it. Measured on 2026-11-24, before the change: an edit in `Sources/WaypointCore` or `Sources/Waypoint` left every hash as it was, since the app took the package with `.package(product:)`, which Tuist hashes by product name. After it: an edit in any of the four modules changed the app's and its unit tests' hashes, and the whole UI test target ran in 975 s, was skipped in 18 s with nothing changed, and ran again in 935 s after a `WaypointCore` edit. Two settings make the package build as SwiftPM builds it: `SWIFT_PACKAGE_NAME` gives its modules one package name, so `package` symbols reach across them, and its own warnings come back on as errors, since Tuist silences a package's warnings. Tuist writes the package's project, `Waypoint.xcodeproj` and `Derived/`, into the package root (ignored by git); while it is there, xcodebuild finds no `Waypoint-Package` scheme, so the package steps (and `scripts/build-docs.sh`) run xcodebuild through `scripts/package-xcodebuild.sh`, which moves both into `.build/tuist-package-project` and puts them back after. The example app builds into its own derived data folder, `.build/example-derived-data` (`--derived-data-path`): on 2026-11-24 the first build after the package moved into Tuist's graph failed in Xcode's shared derived data with `package` symbols "inaccessible", from module state older builds had left, and the same build in a fresh folder was clean. Tuist's binary cache stays off (`--no-binary-cache`): with the package in Tuist's graph it could swap the package's targets for cached binaries, and every run builds the package from source with its warnings as errors. Every run's results also go to the project's Tuist dashboard (Test Insights: run times and flaky tests), and every build of the example app, in Xcode or a script, sends its timings there (Build Insights, a scheme post-action). Tuist's quarantine is never applied (`--skip-quarantine`): a flaky test still runs and still fails the run. The generated project also uses Xcode's compilation cache, backed by Tuist's remote cache (`enableCaching` in `Example/Tuist.swift`), so a build reuses what an earlier build of the same sources compiled. The Mac signs in once with `mise exec -- tuist auth login` and installs the cache's local proxy once with `mise exec -- tuist setup cache` (a login item, `tuist.cas-proxy`); `WAYPOINT_TUIST_OFFLINE=1` turns every server feature off except the compilation cache, which goes through the proxy whenever it runs. Every tier ends its log with the 10 slowest tests of each simulator test step, the package's included (`scripts/slowest-tests.py`, from each step's result bundle in `.build/results`).
 - `scripts/merge-batch.sh` builds a [merge batch](#merge-batches) in the Mac clone and checks it before each merge.
 
-| Tier | Runs | Simulators | Time on the Mac (2026-11-20) | Stop it after |
+| Tier | Runs | Simulators | Time on the Mac | Stop it after |
 |---|---|---|---|---|
-| `quick` (default) | The guard rail, the compile fixtures, the host and simulator package tests (each built once with warnings as errors), and the example app's unit and UI tests when the branch changes `Example/` or a renderer. It skips parts the branch can't affect: a branch with only docs changes runs the guard rail alone. `--ui` adds the example app's tests, `--all` runs every part, `--only <Target/Class[/test]>` runs the guard rail and that one UI test. | `WAYPOINT_SIMULATOR` | about 12 min with the UI tests | 30 min |
-| `full` | Every part, whatever changed: the guard rail, the compile fixtures, host and simulator package tests, the unified log tests under the thread sanitizer, the example app's unit tests and all UI tests, then the system link and missing destination UI tests again in the Release configuration. | `WAYPOINT_SIMULATOR` | about 14 min | 35 min |
-| `release` | `full`, then the iOS device build, then the package tests and the example app's unit and UI tests again on the iOS 17 simulator. | `WAYPOINT_SIMULATOR` and `WAYPOINT_IOS17_SIMULATOR` | about 23 min | 50 min |
+| `quick` (default) | The guard rail, the compile fixtures, the host and simulator package tests (each built once with warnings as errors), and the example app's unit and UI tests when the branch changes `Example/` or a renderer. It skips parts the branch can't affect: a branch with only docs changes runs the guard rail alone. `--ui` adds the example app's tests, `--all` runs every part, `--only <Target/Class[/test]>` runs the guard rail and that one UI test. Any tier with `--plan` prints what it would run, and whether selective testing is on, without running anything. | `WAYPOINT_SIMULATOR` | about 12 min with the UI tests (2026-11-20, before `tuist test`) | 30 min |
+| `full` | Every part, whatever changed: the guard rail, the compile fixtures, host and simulator package tests, the check that Tuist's test hashes see the package, the unified log tests under the thread sanitizer, the example app's unit tests and all UI tests (a target that already passed with the same hash is skipped, see above), then the system link and missing destination UI tests again in the Release configuration. | `WAYPOINT_SIMULATOR` | about 18 to 22 min through `tuist test` on 2 simulator copies (1069 s on 2026-11-24; about 26 min before 2026-11-23) | 35 min |
+| `release` | `full`, then the iOS device build, then the package tests and the example app's unit and UI tests again on the iOS 17 simulator. | `WAYPOINT_SIMULATOR` and `WAYPOINT_IOS17_SIMULATOR` | about 23 min (2026-11-20, before `tuist test`; not measured since) | 50 min |
 
 `scripts/test-linux.sh` takes about 3 minutes in a cloud container from a clean checkout (2026-11-21); stop it after 15 minutes.
 
@@ -63,8 +65,8 @@ Find the row for the moment you are at. Run every command in its row, Linux firs
 |---|---|---|
 | While working, after a change to anything but docs | `scripts/test-linux.sh` | `scripts/test-mac.sh quick` when the change touches `Sources/Waypoint`, `Sources/WaypointUIKit`, `Sources/WaypointOSLog`, `Example/` or a `Tests/` folder other than `WaypointCoreTests`; otherwise none |
 | While working on one UI test | none | `scripts/test-mac.sh quick --only WaypointExampleUITests/<Class>/<test>` |
-| **Before a pull request merges**, docs only | `scripts/test-linux.sh` | none |
-| **Before a pull request merges**, anything else | `scripts/test-linux.sh` on the pull request | `scripts/test-mac.sh full` on its [merge batch](#merge-batches) |
+| **Before a pull request merges**, docs only | the pull request's CI checks; while `CI_ENABLED` is not `true`, `scripts/test-linux.sh` by hand | none |
+| **Before a pull request merges**, anything else | the pull request's CI checks; while `CI_ENABLED` is not `true`, `scripts/test-linux.sh` by hand | `scripts/test-mac.sh full` on its [merge batch](#merge-batches) |
 | Before a tag | `scripts/test-linux.sh` | `scripts/test-mac.sh release` |
 | The issue's tests name iOS 17 | as above | as above, plus `WAYPOINT_SIMULATOR=waypoint-02 scripts/test-mac.sh quick --all` |
 | The issue's tests name iPad | as above | as above, plus `WAYPOINT_SIMULATOR=waypoint-03 scripts/test-mac.sh quick --all` |
@@ -86,16 +88,18 @@ One `full` run covers up to four ready pull requests at once. A pull request is 
    Pass: it prints `batch <sha> tree <tree> main <main sha> branches <branch>@<sha> ...`. Write the whole line down: the report needs it. When it prints `error: <branch> doesn't merge cleanly`, leave that branch out (it must take `main` first) and build the batch again. When it prints `error: a Mac test run ... holds the run lock`, another run is going: wait for your turn.
 2. **Run `full`** on the batch, exactly as [Run a Mac tier](#5-run-a-mac-tier) says. The report goes in every batch pull request's **Tests** section, with the batch line.
 3. **Red batch:** nothing in it merges. Find the pull request the failure belongs to from [When a run fails](#6-when-a-run-fails); it is fixed, or left out, and the new batch runs `full` again.
-4. **Green batch:** the pull requests merge one at a time, squash, in the batch's order. Right before each merge:
+4. **Green batch:** the pull requests merge one at a time, in the batch's order (squash, or a merge commit when the branch's history explains why; see [CONTRIBUTING.md](CONTRIBUTING.md)). Right before each merge:
 
    ```sh
    scripts/merge-batch.sh --before-merge <branch> <its tested sha> <expected main>
    ```
 
+   For each pull request after the first, its **Linux checks** ran against the old `main`, so first run `scripts/test-linux.sh` on the branch merged locally with the new `main`, without pushing that merge (see [On pull requests (CI)](#on-pull-requests-ci)).
+
    The expected `main` is the batch's `main sha` for the first pull request, and the commit the pull request before it merged as for each later one. Pass: it prints `ok:`. When it prints `error:`, the branch or `main` moved since the run: stop. Nothing more from this batch merges. When some of the batch already merged, `main` holds a part of the batch no run tested: run `full` on `main` at once, as step 5 says for a tree mismatch, with the same revert rule. What's left goes in a new batch.
 5. **After the last merge**, `scripts/merge-batch.sh --after-merge <the batch's tree>` must print `ok:`. When it prints `error:`, `main` holds code no `full` run tested: stop merging anything, run `full` on `main` at once (preflight step 4 with `origin/main` in place of the branch), and report it. When that run is red, the batch's pull requests are reverted, newest first, before anything else merges.
 
-A result belongs to one commit. For a merge, that commit is the batch: the gate holds only while each pull request's head is the one the batch tested and `main` is the batch's `main` or the commits of the batch's earlier pull requests, which `--before-merge` checks. When the branch gets a new commit after the run (including a merge of `main`), run the gate again. The one exception: when every file changed since the tested commit is docs only, `scripts/test-linux.sh` alone is enough.
+A result belongs to one commit. For a merge, that commit is the batch: the gate holds only while each pull request's head is the one the batch tested and `main` is the batch's `main` or the commits of the batch's earlier pull requests, which `--before-merge` checks. When the branch gets a new commit after the run (including a merge of `main`), run the gate again. The one exception: when every file changed since the tested commit is docs only, the CI checks alone are enough (or, while `CI_ENABLED` is not `true`, `scripts/test-linux.sh` by hand).
 
 ## 3. The simulators
 
@@ -108,7 +112,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
 | `waypoint-03` | iPad | 27.2 | iPad checks only |
 
 - **Mac runs are queued, one at a time.** Runs go in the order they ask. The first run takes the simulators it needs (`release` uses `waypoint-01` and `waypoint-02`). Every later run waits until that run has finished its teardown. Then it checks out its own commit, and the script builds and installs that version on the simulator. There is only one clone on the Mac, so a second run at the same time would change the first run's checkout under it, even on another simulator. Ask whoever keeps the queue for your turn before preflight, and say when your teardown is done. The script backs the queue up with a **run lock**: its first step takes `/tmp/waypoint-test-mac.lock`, a link to its process id that every clone and checkout on the Mac shares, and a second run stops at once with `error: another Mac test run holds the run lock` and runs nothing. The script clears a lock whose run has ended (a crash, a stop, a reboot) by itself, and never removes the lock of a run that is still going. A run that still holds it past its tier's **Stop it after** time is hung: stop it as [Run a Mac tier](#run-1) says, which also releases the lock. The script also locks each simulator it uses (`${TMPDIR:-/tmp}/waypoint-test-<name>.lock`) from the moment it reaches the simulator. Neither lock protects the clone before the script starts, so the queue still comes first.
-- **Never create a simulator.** `scripts/test-mac.sh` creates `WAYPOINT_SIMULATOR` when it is missing, so preflight step 3 checks it exists first and the script never gets the chance.
+- **Never create a simulator.** `scripts/test-mac.sh` creates `WAYPOINT_SIMULATOR` when it is missing, so preflight step 3 checks it exists first and the script never gets the chance. The temporary copies Xcode makes for parallel testing (#312) are the one exception: Xcode makes and removes them itself, and they never join the pool.
 - **Never delete, erase or rename a simulator**, and never shut down one you don't hold. Shut down only your own, by name: `xcrun simctl shutdown waypoint-01`. Never `xcrun simctl shutdown all`.
 
 ## 4. Run the Linux suite
@@ -121,7 +125,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
    swift --version
    ```
 
-   Pass: it prints `Swift version 6.` followed by a minor version. The run lock check also needs `ps`, `pgrep`, `pkill` and `/usr/bin/python3`: `command -v ps pgrep pkill /usr/bin/python3` prints four lines. When one is missing, install it (on Debian or Ubuntu: `procps` and `python3`). When `swift` is missing, install a Swift 6 toolchain (<https://www.swift.org/install/linux/>, or the machine's own setup script), then check again. Any other answer: stop and report it.
+   Pass: it prints `Swift version 6.` followed by a minor version of 2 or more. The run lock check also needs `ps`, `pgrep`, `pkill` and `/usr/bin/python3`: `command -v ps pgrep pkill /usr/bin/python3` prints four lines. When one is missing, install it (on Debian or Ubuntu: `procps` and `python3`). When `swift` is missing, install a Swift 6.2 or later toolchain (<https://www.swift.org/install/linux/>, or the machine's own setup script), then check again. Any other answer: stop and report it.
 
 2. Get the exact commit to test, in a clean clone:
 
@@ -152,6 +156,10 @@ Run it as one command that is allowed to take 15 minutes; don't let a shorter to
 ### Teardown
 
 Nothing to tear down. Leave `.build` in place: the next run reuses it.
+
+### On pull requests (CI)
+
+When the repository variable `CI_ENABLED` is `true`, GitHub Actions runs this suite on every pull request to `main` that is ready for review (`.github/workflows/ci.yml`, #5): on opening, on every push and when a draft is marked ready. Draft pull requests are skipped and a newer push cancels the older run. A first check, **Changed files and docs checks**, lists the changed files and runs the two checks that read Markdown (comment width, one import in docs snippets). Then **Linux checks** runs the whole suite, and **Builds with Swift 6.2** builds the package with the minimum Swift that `Package.swift` declares (#316); a docs only pull request (see [Which run is needed](#2-which-run-is-needed)) skips these two, which GitHub counts as passed, since nothing they build changed. If the first check fails, the two run anyway. `main` only takes pull requests where all three passed (all three are required checks). While `CI_ENABLED` is not `true` the jobs show as skipped, which GitHub lets through; a skipped check is not a pass, so run `scripts/test-linux.sh` by hand as below before merging. A pull request's run tests its merge with `main` as `main` was when the run started. A green **Linux checks** is the Linux gate while `main` hasn't moved since that run; when it has (an earlier pull request merged), run `scripts/test-linux.sh` by hand on the branch merged locally with the new `main`, without pushing that merge (a re-run of the check tests the old merge again, and a pushed commit needs a new Mac run, see [Merge batches](#merge-batches)). Apart from that case, while `CI_ENABLED` is `true`, don't also run `scripts/test-linux.sh` by hand for a pull request: CI is the Linux gate, and the hand run is for while you work, before a push. The hand run doesn't cover **Builds with Swift 6.2**; to check that by hand, run `swift build` with a Swift 6.2 toolchain (for example in the `swift:6.2` container). Runs use the account's included Actions minutes; there is no macOS job, so the Mac tiers below stay the Mac gate.
 
 ## 5. Run a Mac tier
 
@@ -220,7 +228,7 @@ wait "$(cat .build/test-mac.pid)"; echo "exit=$?"
 
 - Run these lines as one background command that is allowed to run past the tier's **Stop it after** time, and wait for it to end. Never start a second Mac run while it runs.
 - When it is still running at the **Stop it after** time, it is hung. Stop the step it is stuck in with `pkill -TERM -P "$(cat .build/test-mac.pid)"`. The script then fails that step, and its exit step shuts down its simulators and removes its locks. When the script is still running two minutes later, run `kill -TERM "$(cat .build/test-mac.pid)"`. Use `TERM`, not `INT`: a script started in the background ignores `INT`. Never `kill -9`. Then go to [When a run fails](#6-when-a-run-fails).
-- `WAYPOINT_JOBS` and `WAYPOINT_BASE` stay unset unless the person who asked for the run names a value.
+- `WAYPOINT_JOBS`, `WAYPOINT_BASE`, `WAYPOINT_UI_WORKERS` and `WAYPOINT_TUIST_OFFLINE` stay unset unless the person who asked for the run names a value.
 
 ### Pass or fail
 
@@ -294,6 +302,7 @@ Simulators: waypoint-01 (iOS 27.2) [, waypoint-02 (iOS 17.5)] | none
 Time: <total seconds>
 Failures: none | <test or step>: <first failure line>, one per line
 Retry: none | <what ran again and what it did>
+Selective testing: off | on: <the targets `tuist test` listed under "Testing the following targets", or "none: no tests to run">
 Batch: none | <the merge-batch.sh line>
 Step times: <the table from the end of the log, Mac only>
 Slowest tests: <the slowest-test lists from the end of the log, Mac only>
@@ -305,7 +314,7 @@ Teardown: simulators shut down, locks gone, clone back on main | <what is left>
 - Never skip, disable, comment out or delete a test, a check or a fixture to get a pass, and never change a timeout, a filter or a flag the command above doesn't name.
 - Never edit code, tests or scripts during a run. A run reports; the fix is separate work.
 - Never call a run passed when it didn't print its pass line, when only a retry passed, or when it ran on another commit.
-- Never create, delete, erase or rename a simulator, never shut down one you don't hold, and never run `xcrun simctl shutdown all`.
+- Never create, delete, erase or rename a simulator (Xcode's own temporary copies for parallel testing aside, #312), never shut down one you don't hold, and never run `xcrun simctl shutdown all`.
 - Never remove another run's lock, the run lock included, and never `kill -9` a test run (stop a hung one with `TERM`, as in [Run](#run-1)).
 - Never start a Mac run before the run ahead of it in the queue has finished its teardown.
 - Never stash, reset or delete changes in the Mac clone that aren't yours.

@@ -7,8 +7,9 @@
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
 # Runs the WaypointCore checks that must pass on Linux: the import check, the concurrency guard
-# rail, the Mac test script's run lock check (#294), the merge batch check (#295), a build with warnings as errors, the
-# compile-fixture check, the unit tests, and the unit tests again under the thread sanitizer (#24).
+# rail, the Mac test script's run lock check (#294), the merge batch check (#295), one build with
+# warnings as errors that the compile-fixture check and the unit tests reuse, and the unit tests
+# again under the thread sanitizer (#24).
 # The renderer targets compile empty on Linux, so this covers the core only.
 #
 # Usage: scripts/test-linux.sh [extra swift test arguments]
@@ -35,20 +36,24 @@ scripts/check-single-import.sh
 echo "==> Checking the Mac test script's run lock"
 scripts/check-test-mac-lock.sh
 
+echo "==> Checking the package's xcodebuild wrapper"
+scripts/check-package-xcodebuild.sh
+
 echo "==> Checking merge batches"
 scripts/check-merge-batch.sh
 
-echo "==> swift build"
-swift build
+# One build with warnings as errors serves the build check, the fixture check and the tests, as in
+# scripts/test-mac.sh: a plain `swift build` first would only build the same code a second time.
+SWIFT_FLAGS=(-Xswiftc -warnings-as-errors)
 
 echo "==> swift build --build-tests with warnings as errors"
-swift build --build-tests -Xswiftc -warnings-as-errors --scratch-path .build/warnings-as-errors
+swift build --build-tests "${SWIFT_FLAGS[@]}"
 
 echo "==> Checking compile fixtures"
-scripts/check-compile-failures.sh
+WAYPOINT_SWIFT_BUILD_FLAGS="${SWIFT_FLAGS[*]}" scripts/check-compile-failures.sh
 
-echo "==> swift test"
-swift test "$@"
+echo "==> swift test with warnings as errors"
+swift test "${SWIFT_FLAGS[@]}" "$@"
 
 echo "==> swift test under the thread sanitizer"
 swift test --sanitize=thread --scratch-path .build/thread-sanitizer "$@"
