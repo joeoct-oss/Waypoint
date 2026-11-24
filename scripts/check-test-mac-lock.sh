@@ -374,6 +374,14 @@ else
 fi
 : >"$CALLS"
 
+# 1g. The release reports step collects no coverage (#327): the Debug step measured its tests.
+if sed -n '/^release_reports_on() {/,/^}/p' scripts/test-mac.sh |
+    grep -q 'TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 example_tests_on'; then
+    pass "the release reports step runs with coverage off"
+else
+    fail "the release reports step runs with coverage off"
+fi
+
 # 1f. The Build Insights post-action runs the Tuist that mise pins (#327), not one on the PATH.
 if grep -q '"$MISE" exec -C "$SRCROOT" -- tuist inspect build' Example/Project.swift &&
     ! grep -q 'activate -C "$SRCROOT"' Example/Project.swift; then

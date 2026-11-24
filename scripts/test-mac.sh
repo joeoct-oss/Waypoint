@@ -731,9 +731,13 @@ fi
 # release builds too, so their UI tests run again with the app and the tests built in the release
 # configuration. They always run: the Debug step just passed their target, and nothing shows that
 # Tuist's hash tells the two configurations apart (#324).
+#
+# It collects no coverage (#327): it tests two classes again in Release, after the Debug step
+# measured them, so it would add about a minute and nothing new. It always runs every test it
+# names, so the different hash costs no reuse.
 release_reports_on() {
     local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
-    example_tests_on "$@"
+    TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 example_tests_on "$@"
 }
 if $RUN_RELEASE_REPORTS; then
     step "tuist test release reports (Release) on $SIMULATOR_NAME" \
