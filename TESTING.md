@@ -14,6 +14,7 @@ Follow the steps in order and word for word. Each step says what to run, what a 
 6. [When a run fails](#6-when-a-run-fails)
 7. [Report the result](#7-report-the-result)
 8. [Never do this](#8-never-do-this)
+9. [What a clean test suite means](#9-what-a-clean-test-suite-means)
 
 ## 1. Where each test runs
 
@@ -330,3 +331,15 @@ Teardown: simulators shut down, locks gone, clone back on main | <what is left>
 - Never remove another run's lock, the run lock included, and never `kill -9` a test run (stop a hung one with `TERM`, as in [Run](#run-1)).
 - Never start a Mac run before the run ahead of it in the queue has finished its teardown.
 - Never stash, reset or delete changes in the Mac clone that aren't yours.
+
+## 9. What a clean test suite means
+
+A test is judged by what it really tests, never by how many tests there are (Yousef, 2026-11-24). Cleaning the tests means making them solid and efficient. It never means dropping tests to cut the count, and coverage never drops.
+
+- **Remove a test that tests nothing:** one whose assertions would pass with the behaviour broken, or that only repeats what the compiler or another test already proves.
+- **Remove or rewrite a test that tests implementation** (private state, call order, internal types or exact log text where a business outcome would do): remove it when another test already pins the behaviour, otherwise rewrite it to pin the behaviour a person or a caller sees.
+- **UI tests check what a person sees, without excess or double work:** a UI test covers a real interaction (a push, a sheet, a swipe, a tab switch, a link). Logic behind the screen is a unit test, and two UI tests that walk the same path become one.
+- **One journey, one test:** separate tests that each set up the same screens to check one step are merged into one test that walks the journey and checks each step, when that covers it better.
+- **Nothing is lost:** every removed, rewritten or merged test names the test that now pins its behaviour, and each module's coverage is the same or higher after the change.
+
+Planning #447 (UI tests) and planning #451 (unit tests) apply this to the existing tests; every new test follows it.

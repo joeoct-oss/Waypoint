@@ -20,24 +20,12 @@ struct SearchView: View {
         "star print",
     ]
 
-    // Every category in the shop, once each, in the shop's order.
-    private static var categories: [String] {
-        Product.all.reduce(into: [String]()) { categories, product in
-            if !categories.contains(product.category) {
-                categories.append(product.category)
-            }
-        }
-    }
-
     let model: SearchModel
 
     @State private var query = ""
 
     private var results: [Product] {
-        let words = query.split(separator: " ").map(String.init)
-        return Product.all.filter { product in
-            words.allSatisfy { Self.product(product, matches: $0) }
-        }
+        model.results(for: query)
     }
 
     private var resultCount: String {
@@ -79,7 +67,7 @@ struct SearchView: View {
             }
         }
         Section("Categories") {
-            ForEach(Self.categories, id: \.self) { category in
+            ForEach(model.categories, id: \.self) { category in
                 makeSuggestion(category, symbolName: "square.grid.2x2")
             }
         }
@@ -94,11 +82,6 @@ struct SearchView: View {
             Text(resultCount)
                 .accessibilityIdentifier(Identifiers.searchResultCount)
         }
-    }
-
-    private static func product(_ product: Product, matches word: String) -> Bool {
-        product.name.localizedCaseInsensitiveContains(word)
-            || product.category.localizedCaseInsensitiveContains(word)
     }
 
     private func makeSuggestion(_ term: String, symbolName: String) -> some View {

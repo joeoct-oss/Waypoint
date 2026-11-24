@@ -38,12 +38,12 @@ import Waypoint
 final class ProductsCoordinator {
     private static let followUpDelay = Duration.milliseconds(150)
     private static let linkedProductID = 4
-    private static let suggestionCount = 3
 
     let router: StackRouter
     private let start: ProductsStart
     private let store: LocalStore
-    private let gate: AccountGate
+    private let gate: any SheetAccountGating
+    private let factory: ProductsFactory
     private let launchSteps: ShopLaunchSteps
     private let navigation: ProductsNavigation
     private let onAddToCart: (Product) -> Void
@@ -77,23 +77,23 @@ final class ProductsCoordinator {
     init(
         start: ProductsStart,
         router: StackRouter,
-        store: LocalStore,
-        gate: AccountGate,
+        dependencies: ProductsDependencies,
+        factory: ProductsFactory,
         launchSteps: ShopLaunchSteps,
-        navigation: ProductsNavigation,
         onAddToCart: @escaping (Product) -> Void,
         cart: ProductsCart
     ) {
         self.start = start
-        self.store = store
-        self.gate = gate
+        store = dependencies.store
+        gate = dependencies.gate
+        self.factory = factory
         self.launchSteps = launchSteps
-        self.navigation = navigation
+        navigation = dependencies.navigation
         self.onAddToCart = onAddToCart
         self.cart = cart
         self.router = router
         router.setRootName(start.rootName)
-        searchModel = SearchModel.onShopStack(router)
+        searchModel = factory.makeSearchModel(on: router)
         router.register(FilterRoute.self)
         router.register(SavedRoute.self)
         router.register(WishlistRoute.self)
@@ -119,10 +119,12 @@ final class ProductsCoordinator {
     // restore.
     @ViewBuilder
     func makeProductFlow(for route: ProductRoute) -> some View {
-        if let product = route.preview ?? Product.find(id: route.id) {
-            makeProductFlow(
-                product,
-                route: route
+        if let detail = makeProductDetail(for: route) {
+            detail.screenChrome(
+                title: detail.product.name,
+                kind: nil,
+                router: router,
+                route: AnyRoute(route)
             )
         }
     }
@@ -130,12 +132,24 @@ final class ProductsCoordinator {
     // Shows the collection the banner handed over, or looks it up by id after a restore.
     @ViewBuilder
     func makeCollectionFlow(for route: CollectionRoute) -> some View {
-        if let collection = route.preview ?? ProductCollection.find(id: route.id) {
-            makeCollectionFlow(
-                collection,
-                route: route
+        if let collection = factory.makeCollection(for: route, onSelect: { self.showProduct($0) }) {
+            collection.screenChrome(
+                title: collection.collection.name,
+                kind: nil,
+                router: router,
+                route: AnyRoute(route)
             )
         }
+    }
+
+    // The product page for `route`, or `nil` when the catalog has no such product.
+    private func makeProductDetail(for route: ProductRoute) -> ProductDetailView<some View>? {
+        factory.makeProductDetail(
+            for: route,
+            onAddToCart: { self.addToCart($0) },
+            onSave: { self.save($0) },
+            related: { self.makeRelatedLink(to: $0.related) }
+        )
     }
 
     // The cart Go to cart pushes above a product. Check out and Keep shopping report like the Cart
@@ -377,7 +391,7 @@ final class ProductsCoordinator {
     }
 
     private func makeShopFlow() -> some View {
-        ProductListView(
+        factory.makeProductList(
             cart: cart.products(),
             onGoToCart: { self.goToCart() },
             onSelect: { self.showProduct($0) },
@@ -392,7 +406,7 @@ final class ProductsCoordinator {
     }
 
     private func makeSearchFlow() -> some View {
-        SearchView(model: searchModel)
+        factory.makeSearch(model: searchModel)
             .screenChrome(
                 title: MainTab.search.title,
                 kind: nil,
@@ -401,37 +415,17 @@ final class ProductsCoordinator {
             )
     }
 
-    private func makeCollectionFlow(
-        _ collection: ProductCollection,
-        route: CollectionRoute
-    ) -> some View {
-        CollectionView(
-            collection: collection,
-            onSelect: { self.showProduct($0) }
-        )
-        .screenChrome(
-            title: collection.name,
-            kind: nil,
-            router: router,
-            route: AnyRoute(route)
-        )
-    }
-
     private func makeFiltersFlow() -> some View {
-        FilterView(onApply: { self.dismissSheet() })
+        factory.makeFilters(onApply: { self.dismissSheet() })
     }
 
     private func makeSavedFlow() -> some View {
-        SavedView(onViewWishlist: { self.showWishlist() })
+        factory.makeSaved(onViewWishlist: { self.showWishlist() })
     }
 
     private func makeWishlistFlow() -> some View {
-        let suggestions = Product.all
-            .filter { !wishlistProductIDs.contains($0.id) }
-            .prefix(Self.suggestionCount)
-        return WishlistView(
-            products: Product.products(withIDs: wishlistProductIDs),
-            suggestions: Array(suggestions),
+        factory.makeWishlist(
+            productIDs: wishlistProductIDs,
             onSave: { self.saveFromWishlist($0) },
             onDone: { self.closeWishlist() }
         )
@@ -443,24 +437,6 @@ final class ProductsCoordinator {
             AuthFlowView(auth: auth)
                 .sheetOptions(gate.authSheetOptions)
         }
-    }
-
-    private func makeProductFlow(
-        _ product: Product,
-        route: ProductRoute
-    ) -> some View {
-        ProductDetailView(
-            product: product,
-            onAddToCart: { self.addToCart(product) },
-            onSave: { self.save(product) },
-            related: { self.makeRelatedLink(to: product.related) }
-        )
-        .screenChrome(
-            title: product.name,
-            kind: nil,
-            router: router,
-            route: AnyRoute(route)
-        )
     }
 
     // Links to `product` with `WaypointLink`, which pushes through `router`. When a UI test passes

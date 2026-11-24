@@ -13,17 +13,41 @@ import WaypointCore
 
 // Search's view model navigates on its own (planning #417): a tapped result pushes the product
 // through the stack's navigator scoped to the shop, on a real router with no screen. Each test
-// wires the model through `SearchModel.onShopStack(_:)`, as the shop's coordinator does, so a stack
-// that stops declaring `ShopFlow` fails here: the declared flow is checked, and a navigator scoped
-// to another flow is no longer reported.
+// builds the model with `ProductsFactory`, as the shop's coordinator does, so a stack that stops
+// declaring `ShopFlow` fails here: the declared flow is checked, and a navigator scoped to another
+// flow is no longer reported. The results come from the catalog the factory was given (planning
+// #424).
 struct SearchModelTests {
     private static let lampID = 1
+    private static let mugID = 2
+    private static let throwID = 3
     private static let shopFlowID = FlowID("search")
 
     @Test
+    func searchFindsOnlyMatchingProducts() {
+        let store = TestStore.make()
+        defer {
+            store.clearAll()
+        }
+        let catalog = FixedCatalog(products: SampleCatalog().products(withIDs: catalogIDs()))
+        let model = makeModel(store: store, catalog: catalog, on: makeShopRouter(logging: .default))
+
+        let results = model.results(for: "mug")
+
+        let expected = [
+            Self.mugID,
+        ]
+        #expect(results.map(\.id) == expected)
+    }
+
+    @Test
     func searchModelPushesProduct() throws {
+        let store = TestStore.make()
+        defer {
+            store.clearAll()
+        }
         let router = makeShopRouter(logging: .default)
-        let model = SearchModel.onShopStack(router)
+        let model = makeModel(store: store, catalog: SampleCatalog(), on: router)
         let lamp = try #require(Product.find(id: Self.lampID))
 
         let outcome = model.select(lamp)
@@ -39,16 +63,41 @@ struct SearchModelTests {
 
     @Test
     func scopedNavigatorRefusesOtherFlow() {
+        let store = TestStore.make()
+        defer {
+            store.clearAll()
+        }
         let handler = IssueRecorder()
         let router = makeShopRouter(logging: LogConfiguration(handler: handler))
-        _ = SearchModel.onShopStack(router)
+        _ = makeModel(store: store, catalog: SampleCatalog(), on: router)
 
         _ = router.navigator.scoped(to: OtherFlow.self)
 
         #expect(handler.messages.contains { $0.contains(OtherFlow.mismatch) })
     }
 
-    // A stack like Search's: it knows the product route. `onShopStack(_:)` declares the shop.
+    private func catalogIDs() -> [Int] {
+        [
+            Self.lampID,
+            Self.mugID,
+            Self.throwID,
+        ]
+    }
+
+    private func makeModel(
+        store: LocalStore,
+        catalog: any ProductCatalog,
+        on router: StackRouter
+    ) -> SearchModel {
+        let factory = TestProducts.makeFactory(
+            store: store,
+            gate: FakeAccountGate(isSignedIn: false),
+            catalog: catalog
+        )
+        return factory.makeSearchModel(on: router)
+    }
+
+    // A stack like Search's: it knows the product route. The factory's model declares the shop.
     private func makeShopRouter(logging: LogConfiguration) -> StackRouter {
         let configuration = NavigationConfiguration(logging: logging)
         let router = StackRouter(
