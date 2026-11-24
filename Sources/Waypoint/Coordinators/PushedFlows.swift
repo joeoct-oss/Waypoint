@@ -27,7 +27,10 @@ extension StackRouter {
     /// router changes its own path: a push, a pop or a `popTo` here ends the child on top first.
     /// `finish(with:)` and `dismissFlow()` in the child pop back to the screen below its root
     /// screen. Under `DuplicatePushRule.skipWhileInFlight`, a second push of the same coordinator
-    /// type while its push is still animating returns `.alreadyThere`. The child's own `Renderer`
+    /// type while its push is still animating returns `.alreadyThere`. Give the child route types
+    /// of its own: the screens below it share one stack, and SwiftUI draws a route type with the
+    /// destination nearest the stack's root, so a type the parent also shows draws the parent's
+    /// screen, on the parent's router. The child's own `Renderer`
     /// is not used: its parent's stack draws it. A child that needs a stack of its own is
     /// presented with `present(_:style:onFinish:)`. Refusals are as for a
     /// present.
