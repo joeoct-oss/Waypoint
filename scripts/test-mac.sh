@@ -476,6 +476,14 @@ simulator_os() {
 # still runs and still fails the run. All of it uses the Tuist server project in
 # `Example/Tuist.swift`; WAYPOINT_TUIST_OFFLINE=1 turns every server feature off, for a Mac that
 # isn't signed in.
+# The example app builds into a derived data folder of its own in the clone, not Xcode's shared
+# one. On 2026-11-24 the app failed to build in the shared folder after the package moved into
+# Tuist's graph (#324): `package` symbols were "inaccessible", although the generated targets set
+# the package name, and the same build in a fresh folder was clean. Older builds of the same
+# workspace had left module state the new settings didn't invalidate. A folder only these runs
+# use starts clean on every Mac and still builds incrementally from one run to the next.
+EXAMPLE_DERIVED_DATA="$PWD/.build/example-derived-data"
+
 example_tests_on() {
     local udid="$1" simulator="$2" bundle_name="$3"
     shift 3
@@ -497,6 +505,7 @@ example_tests_on() {
     tuist_cmd install --path Example
     tuist_cmd test WaypointExample \
         --path Example \
+        --derived-data-path "$EXAMPLE_DERIVED_DATA" \
         --device "$simulator" \
         ${os:+--os "$os"} \
         ${tuist_flags[@]+"${tuist_flags[@]}"} \

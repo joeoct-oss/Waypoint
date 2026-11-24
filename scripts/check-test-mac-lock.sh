@@ -132,7 +132,8 @@ fi
 # The example app's tests run through `tuist test` (#312): on the project simulator, into a
 # result bundle, with two parallel workers.
 TUIST_CALL=$(grep "^tuist test WaypointExample" "$CALLS" | head -1)
-for part in "--path Example" "--device waypoint-01" "--os 27.2" "--no-binary-cache" "--skip-quarantine" \
+for part in "--path Example" "--derived-data-path $PWD/.build/example-derived-data" "--device waypoint-01" \
+    "--os 27.2" "--no-binary-cache" "--skip-quarantine" \
     "-T .build/results/example-only.xcresult" \
     "--test-targets WaypointExampleUITests/StackTests/testPushAndBack" \
     "-parallel-testing-enabled YES" "-parallel-testing-worker-count 2"; do
