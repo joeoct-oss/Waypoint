@@ -199,8 +199,11 @@ finish() {
     local status=$?
     local udid lock index
     stop_step_tools
-    # A run stopped during a package step may leave Tuist's project aside (#324).
-    scripts/package-xcodebuild.sh --restore || true
+    # A run stopped during a package step may leave Tuist's project aside (#324). A run turned
+    # away at the run lock leaves it alone: the run holding the lock may be in that step.
+    if $OWNS_RUN_LOCK; then
+        scripts/package-xcodebuild.sh --restore || true
+    fi
     for udid in ${BOOTED_UDIDS[@]+"${BOOTED_UDIDS[@]}"}; do
         xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true
     done
