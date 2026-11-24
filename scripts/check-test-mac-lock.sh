@@ -374,6 +374,50 @@ else
 fi
 : >"$CALLS"
 
+# 1i. The Tuist version check (#334) compares the pin with Tuist's latest stable release, ignores
+# canaries and release candidates, tells a new major version apart, and never fails. The daily
+# coverage run prints it.
+TAGS="$WORK/tuist-tags"
+PINNED=$(sed -n 's/^tuist *= *"\([^"]*\)".*/\1/p' .mise.toml | head -1)
+IFS=. read -r PIN_MAJOR PIN_MINOR PIN_PATCH <<<"$PINNED"
+tuist_check() {
+    printf '%s\n' "$@" >"$TAGS"
+    WAYPOINT_TUIST_TAGS_FILE="$TAGS" scripts/check-tuist-version.sh 2>&1
+}
+expect_tuist_check() {
+    local name="$1" want="$2" got status=0
+    shift 2
+    got=$(tuist_check "$@") || status=$?
+    if [[ $status -eq 0 && "$got" == *"$want"* ]]; then
+        pass "$name"
+    else
+        fail "$name (exit $status: ${got:-nothing})"
+    fi
+}
+expect_tuist_check "the Tuist check says when the pin is the latest stable Tuist" \
+    "pinned $PINNED is the latest stable Tuist" \
+    "$PINNED" "$PIN_MAJOR.$PIN_MINOR.$((PIN_PATCH + 1))-rc.1" \
+    "$PIN_MAJOR.$((PIN_MINOR + 1)).0-canary.3" "$PIN_MAJOR.$PIN_MINOR.0"
+expect_tuist_check "the Tuist check asks for a bump when a newer patch version is out" \
+    "Tuist $PIN_MAJOR.$PIN_MINOR.$((PIN_PATCH + 2)) is out: open a pull request" \
+    "$PINNED" "$PIN_MAJOR.$PIN_MINOR.$((PIN_PATCH + 2))" "$PIN_MAJOR.$PIN_MINOR.$((PIN_PATCH + 1))"
+expect_tuist_check "the Tuist check reads tags with a leading v and minor versions" \
+    "Tuist $PIN_MAJOR.$((PIN_MINOR + 1)).0 is out: open a pull request" \
+    "$PINNED" "v$PIN_MAJOR.$((PIN_MINOR + 1)).0"
+expect_tuist_check "the Tuist check sends a new major version to Yousef" \
+    "Tuist $((PIN_MAJOR + 1)).0.0 is out, a new major version: ask Yousef" \
+    "$PINNED" "$((PIN_MAJOR + 1)).0.0"
+expect_tuist_check "the Tuist check never fails when it can't read Tuist's releases" \
+    "couldn't read Tuist's releases"
+: >"$CALLS"
+if coverage_run WAYPOINT_TUIST_TAGS_FILE="$TAGS" >"$WORK/1i.log" 2>&1 &&
+    grep -q "^Tuist version check: pinned $PINNED" "$WORK/1i.log"; then
+    pass "a coverage run prints the Tuist version check"
+else
+    fail "a coverage run prints the Tuist version check (log: $(tail -3 "$WORK/1i.log"))"
+fi
+: >"$CALLS"
+
 # 1g. The release reports step collects no coverage (#327): the Debug step measured its tests.
 if sed -n '/^release_reports_on() {/,/^}/p' scripts/test-mac.sh |
     grep -q 'TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 example_tests_on'; then
