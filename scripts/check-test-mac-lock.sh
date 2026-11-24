@@ -132,7 +132,9 @@ fi
 # The example app's tests run through `tuist test` (#312): on the project simulator, into a
 # result bundle, with two parallel workers.
 TUIST_CALL=$(grep "^tuist test WaypointExample" "$CALLS" | head -1)
-for part in "--path Example" "--device waypoint-01" "--os 27.2" "--skip-quarantine" "-T .build/results/example-only.xcresult" \
+for part in "--path Example" "--derived-data-path $PWD/.build/example-derived-data" "--device waypoint-01" \
+    "--os 27.2" "--no-binary-cache" "--skip-quarantine" \
+    "-T .build/results/example-only.xcresult" \
     "--test-targets WaypointExampleUITests/StackTests/testPushAndBack" \
     "-parallel-testing-enabled YES" "-parallel-testing-worker-count 2"; do
     if [[ "$TUIST_CALL" == *" $part"* ]]; then
@@ -141,6 +143,15 @@ for part in "--path Example" "--device waypoint-01" "--os 27.2" "--skip-quaranti
         fail "tuist test gets $part (call: $TUIST_CALL)"
     fi
 done
+# The package comes through Tuist's package integration, which `tuist install` resolves first
+# (#324).
+INSTALL_LINE=$(grep -m1 -n "^tuist install --path Example" "$CALLS" | cut -d: -f1 || true)
+TEST_LINE=$(grep -m1 -n "^tuist test" "$CALLS" | cut -d: -f1 || true)
+if [[ -n "$INSTALL_LINE" && -n "$TEST_LINE" && "$INSTALL_LINE" -lt "$TEST_LINE" ]]; then
+    pass "tuist install runs before tuist test"
+else
+    fail "tuist install runs before tuist test ($(grep '^tuist' "$CALLS" | tr '\n' ';'))"
+fi
 if [[ "$TUIST_CALL" == *"--no-selective-testing"* ]]; then
     pass "a test asked for with --only always runs: selective testing is off"
 else
@@ -155,9 +166,10 @@ else
     fail "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
 fi
 
-# 1c. Tuist's selective testing is off in a merge gate and after any change outside `Example/`,
-# and on only in a quick run that changes nothing but `Example/`. `--plan` prints the decision
-# without a run, in a copy of the working tree with its own one-commit history.
+# 1c. Tuist's selective testing (#324) is on in quick and full runs whose changes Tuist's test
+# hashes cover (the package's and the example app's sources), and off in a release run, after a
+# change to a file the hashes don't cover, and when there are no changes to judge. `--plan` prints
+# the decision without a run, in a copy of the working tree with its own one-commit history.
 TREE="$WORK/tree"
 mkdir -p "$TREE"
 git ls-files -z | tar --null -T - -cf - | tar -xf - -C "$TREE"
@@ -172,20 +184,56 @@ expect_plan() {
     local name="$1" want="$2" got
     shift 2
     got=$(plan_of "$@" || true)
-    if [[ "$got" == *"selective testing $want"* ]]; then
+    if [[ "$got" == *", selective testing $want,"* ]]; then
         pass "$name"
     else
         fail "$name (plan: ${got:-none})"
     fi
 }
-expect_plan "a full run never skips a test: selective testing is off" off full
-touch "$TREE/Example/SelectiveProbe.swift"
-expect_plan "a quick run that changes only Example/ may skip passed tests" on quick
-rm "$TREE/Example/SelectiveProbe.swift"
-touch "$TREE/Sources/SelectiveProbe.swift"
-expect_plan "a quick run that changes the package runs every test" off quick
-rm "$TREE/Sources/SelectiveProbe.swift"
-expect_plan "a quick run with no changes runs every test" off quick
+# Each probe file is made, judged and removed again, so the next case starts from no changes.
+expect_plan_with() {
+    local probe="$1"
+    shift
+    mkdir -p "$(dirname "$TREE/$probe")"
+    if [[ -e "$TREE/$probe" ]]; then
+        echo "// probe" >>"$TREE/$probe"
+        expect_plan "$@"
+        git -C "$TREE" checkout -q -- "$probe"
+    else
+        touch "$TREE/$probe"
+        expect_plan "$@"
+        rm "$TREE/$probe"
+    fi
+}
+expect_plan "a full run with no changes to judge runs every test" off full
+expect_plan "a quick run with no changes to judge runs every test" off quick
+expect_plan_with Sources/WaypointCore/SelectiveProbe.swift \
+    "a full run that changes the package may skip passed tests" on full
+expect_plan_with Sources/WaypointCore/SelectiveProbe.swift \
+    "a quick run that changes the package may skip passed tests" on quick
+expect_plan_with Example/WaypointExample/SelectiveProbe.swift \
+    "a quick run that changes only Example/ may skip passed tests" on quick
+expect_plan_with Tests/WaypointCoreTests/SelectiveProbe.swift \
+    "a full run that changes only the package's tests may skip passed tests" on full
+expect_plan_with scripts/test-mac.sh \
+    "a full run that changes a script runs every test" off full
+expect_plan_with Example/Project.swift \
+    "a full run that changes the example app's manifest runs every test" off full
+expect_plan_with Example/Tuist/Package.swift \
+    "a full run that changes the package integration runs every test" off full
+expect_plan_with Package.swift \
+    "a full run that changes Package.swift runs every test" off full
+expect_plan_with Sources/WaypointCore/SelectiveProbe.swift \
+    "a release run never skips a test" off release
+# The release reports step runs right after its target passed in Debug, so it never skips.
+touch "$TREE/Sources/WaypointCore/SelectiveProbe.swift"
+got=$(plan_of full || true)
+rm "$TREE/Sources/WaypointCore/SelectiveProbe.swift"
+if [[ "$got" == *"selective testing on, release reports selective testing off"* ]]; then
+    pass "a full run's release reports step never skips its tests"
+else
+    fail "a full run's release reports step never skips its tests (plan: ${got:-none})"
+fi
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
 : >"$CALLS"
@@ -209,6 +257,31 @@ if [[ "$(grep -c '^tuist test' "$CALLS")" == 1 ]] && lock_gone; then
 else
     fail "the second run ran nothing, and the first released the lock ($(grep -c '^tuist test' "$CALLS") tuist test calls)"
 fi
+
+# 2b. A run turned away at the run lock leaves Tuist's package project where the run holding the
+# lock put it, since that run may be in a package step (#324); the holder puts it back when it
+# ends. Both runs go in the copy of the working tree, so the clone's own folders are never touched.
+ASIDE="$TREE/.build/tuist-package-project"
+(cd "$TREE" && run_script STUB_SECONDS=4) >"$WORK/2c.log" 2>&1 &
+first=$!
+for _ in $(seq 1 40); do
+    [[ -L "$LOCK" ]] && break
+    sleep 0.1
+done
+mkdir -p "$ASIDE/Derived"
+(cd "$TREE" && run_script) >"$WORK/2d.log" 2>&1 || true
+if [[ -d "$ASIDE/Derived" && ! -e "$TREE/Derived" ]]; then
+    pass "a run turned away at the run lock leaves Tuist's package project aside"
+else
+    fail "a run turned away at the run lock leaves Tuist's package project aside"
+fi
+wait "$first" || fail "the first run passes while a second one is turned away (log: $(tail -3 "$WORK/2c.log"))"
+if [[ -d "$TREE/Derived" && ! -e "$ASIDE/Derived" ]]; then
+    pass "the run holding the lock puts Tuist's package project back when it ends"
+else
+    fail "the run holding the lock puts Tuist's package project back when it ends"
+fi
+rm -rf "$TREE/Derived"
 
 # 3. A lock left by a run that has ended is cleared.
 sleep 0 &
