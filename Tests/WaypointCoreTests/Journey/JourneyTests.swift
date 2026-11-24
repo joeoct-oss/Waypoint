@@ -522,6 +522,10 @@ struct JourneyTests {
         #expect(ViewTypeName.simplified(nested) == "CartView")
         #expect(ViewTypeName.simplified("Optional<HomeView>") == "HomeView")
         #expect(ViewTypeName.simplified("ListView<Item>") == "ListView")
+        #expect(ViewTypeName.simplified("EitherScreen<Shop.HomeView, Shop.SignInView>") == "HomeView")
+        #expect(ViewTypeName.simplified("ControllerScreen<Scan.ScannerViewController>") == "ScannerViewController")
+        let screen = "ModifiedContent<EitherScreen<Optional<CartView>, EmptyView>, _PaddingLayout>"
+        #expect(ViewTypeName.simplified(screen) == "CartView")
         #expect(ViewTypeName.of(JourneyFixtures.ShopCoordinator.self) == "ShopCoordinator")
     }
 

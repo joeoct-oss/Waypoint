@@ -49,7 +49,7 @@ The login screen can be a view controller. Only the login coordinator's `root` c
 final class LoginCoordinator: StackCoordinator {
     let onLoggedIn: () -> Void
 
-    var root: some Screen {
+    var root: some View {
         LoginViewController(onLoggedIn: onLoggedIn)
     }
 
@@ -78,7 +78,7 @@ final class ShopCoordinator: StackCoordinator, NavigationFlow {
 
     private static let filterDetents: [SheetDetent] = [.medium, .large]
 
-    var root: some Screen {
+    var root: some View {
         ProductListViewController(
             onSelect: { [weak self] in self?.showProduct(id: $0) },
             onFilter: { [weak self] in self?.showFilters() }

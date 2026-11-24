@@ -55,7 +55,7 @@ public protocol StackCoordinating: AnyObject {
     func makeRouter() -> StackRouter
 
     /// Registers the route types the screens show, once per router. Default: registers
-    /// nothing. Later in #59, `StackCoordinator` in `Waypoint` registers its `destinations`.
+    /// nothing. `StackCoordinator` in `Waypoint` registers its `destinations`.
     func registerDestinations(on router: StackRouter)
 }
 

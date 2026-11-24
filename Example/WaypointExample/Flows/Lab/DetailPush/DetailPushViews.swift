@@ -11,6 +11,14 @@ import SwiftUI
 // The Detail push flow's shop list: every product, and a tap reports the one picked.
 struct DetailPushListView: View {
     let onSelect: (Product) -> Void
+    let onClose: () -> Void
+
+    private var closeItem: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Close", systemImage: "xmark", action: onClose)
+                .accessibilityIdentifier(Identifiers.labDemoClose)
+        }
+    }
 
     var body: some View {
         List {
@@ -20,6 +28,7 @@ struct DetailPushListView: View {
         }
         .exampleList()
         .accessibilityIdentifier(Identifiers.detailList)
+        .toolbar { closeItem }
     }
 }
 

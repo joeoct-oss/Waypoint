@@ -7,7 +7,8 @@
 //
 
 /// The name of a screen's view type as people read it: `ProductDetailView`, also for a view
-/// wrapped in modifiers, such as `ModifiedContent<ProductDetailView, _PaddingLayout>`.
+/// wrapped in modifiers, such as `ModifiedContent<ProductDetailView, _PaddingLayout>`, or a view
+/// controller shown as a coordinator's screen, `ControllerScreen<ScannerViewController>`.
 package enum ViewTypeName {
     /// The wrappers whose first generic argument is the view that matters.
     private static let wrappers: Set<String> = [
@@ -17,6 +18,8 @@ package enum ViewTypeName {
         "AnyView",
         "Group",
         "TupleView",
+        "EitherScreen",
+        "ControllerScreen",
     ]
 
     /// The readable name of `type`.

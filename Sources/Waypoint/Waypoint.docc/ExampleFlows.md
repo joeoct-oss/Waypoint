@@ -88,7 +88,7 @@ final class AppCoordinator: RootCoordinator {
 final class LoginCoordinator: StackCoordinator {
     let onLoggedIn: () -> Void
 
-    var root: some Screen {
+    var root: some View {
         LoginView(onLoggedIn: onLoggedIn)
     }
 
@@ -204,7 +204,7 @@ struct FilterRoute: Route {
 final class ShopCoordinator: StackCoordinator, NavigationFlow {
     private static let filterDetents: [SheetDetent] = [.medium, .large]
 
-    var root: some Screen {
+    var root: some View {
         ProductListView(
             onSelect: { self.showProduct(id: $0) },
             onFilter: { self.showFilters() }
@@ -243,7 +243,7 @@ The filter flow ends with a value. The user can also swipe it away, which gives 
 final class FilterCoordinator: FlowCoordinator {
     typealias Output = ProductFilter
 
-    var root: some Screen {
+    var root: some View {
         FilterView(onApply: { self.finish(with: $0) })
     }
 
