@@ -1,6 +1,7 @@
-# Moves issues and pull requests on the Waypoint project board.
-# Test-driven flow: an assigned issue goes to "Tests first", a draft PR to
-# "In progress", and a PR ready for review to "In review".
+# Moves pull requests on the Waypoint project board.
+# A draft PR goes to "In progress", and a PR ready for review to "In review".
+# Issues live in the planning repo, whose own copy of this workflow moves an
+# assigned issue to "Tests first".
 # Switched off unless the repository variable BOARD_AUTOMATION is "true".
 # Needs the WAYPOINT_PROJECT_TOKEN secret: a classic token with the
 # project and repo scopes, because GITHUB_TOKEN cannot write to a
@@ -8,8 +9,6 @@
 name: Board automation
 
 on:
-  issues:
-    types: [assigned]
   pull_request:
     types: [opened, reopened, ready_for_review]
 
@@ -19,7 +18,6 @@ env:
   PROJECT_URL: https://github.com/users/JoeOCT91/projects/3
   PROJECT_ID: PVT_kwHOAyL-xM4Br2PN
   STATUS_FIELD_ID: PVTSSF_lAHOAyL-xM4Br2PNzhqG_sI
-  STATUS_TESTS_FIRST: 93686c59
   STATUS_IN_PROGRESS: 023a83b6
   STATUS_IN_REVIEW: 37348c6d
 
@@ -39,12 +37,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.WAYPOINT_PROJECT_TOKEN }}
           ITEM_ID: ${{ steps.add.outputs.itemId }}
-          EVENT_NAME: ${{ github.event_name }}
           IS_DRAFT: ${{ github.event.pull_request.draft }}
         run: |
-          if [ "$EVENT_NAME" = "issues" ]; then
-            status_option="$STATUS_TESTS_FIRST"
-          elif [ "$IS_DRAFT" = "true" ]; then
+          if [ "$IS_DRAFT" = "true" ]; then
             status_option="$STATUS_IN_PROGRESS"
           else
             status_option="$STATUS_IN_REVIEW"

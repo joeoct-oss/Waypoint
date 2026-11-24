@@ -1,6 +1,6 @@
-Closes #
+Closes joeoct-oss/Waypoint-planning#
 
-**Plan:** <link to plans/<issue>-<slug>.md in Waypoint-planning, or "not needed">
+**Plan:** <link to plans/planning-<issue>-<slug>.md in Waypoint-planning, or "not needed">
 
 ## What changed
 
