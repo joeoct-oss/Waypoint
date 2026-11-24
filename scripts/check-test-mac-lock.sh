@@ -16,7 +16,8 @@
 #
 # It also checks what the script hands Tuist: selective testing per tier (#324), the derived data
 # folder after `--` (#326), the branch through GITHUB_HEAD_REF and the `coverage` tier on `main`
-# (#327), and that the Build Insights post-action runs the Tuist mise pins (#327).
+# (#327), the pull request through GITHUB_REF, and that the Build Insights
+# post-action runs the Tuist mise pins (#327).
 #
 # Each case runs `test-mac.sh quick --only` with its own lock path and temporary folder, so a
 # real run on the Mac is never touched.
@@ -75,6 +76,7 @@ cat >"$STUBS/tuist" <<'EOF'
 #!/usr/bin/env bash
 echo "tuist $*" >>"$STUB_CALLS"
 if [[ "$1" == test ]]; then
+    echo "GITHUB_REF seen by tuist test: ${GITHUB_REF:-}" >>"$STUB_CALLS"
     "$(dirname "$0")/stub-grandchild" "${STUB_SECONDS:-0}"
     exit "${STUB_STATUS:-0}"
 fi
@@ -254,12 +256,12 @@ fi
 
 # 1d. Tuist is told the branch each run tests (#327), through GITHUB_HEAD_REF: the branch the clone
 # is on; on a merge batch's detached commit, the batch's branches in merge order; on any other
-# detached commit, nothing. GITHUB_REF and GITHUB_SHA are never set, so no pull request comment.
+# detached commit, nothing.
 expect_branch() {
     local name="$1" want="$2" got
     shift 2
     got=$(plan_of "$@" || true)
-    if [[ "$got" == *", tuist branch $want" ]]; then
+    if [[ "$got" == *", tuist branch $want, "* ]]; then
         pass "$name"
     else
         fail "$name (plan: ${got:-none})"
@@ -299,16 +301,67 @@ expect_branch "a detached commit no branch points at tells Tuist no branch" none
 batch_commit checkout -q main
 got=$(cd "$TREE" && env PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
     GITHUB_HEAD_REF=chosen/by-hand scripts/test-mac.sh quick --plan 2>/dev/null | grep '^plan:' || true)
-if [[ "$got" == *", tuist branch chosen/by-hand" ]]; then
+if [[ "$got" == *", tuist branch chosen/by-hand, "* ]]; then
     pass "a GITHUB_HEAD_REF already set wins"
 else
     fail "a GITHUB_HEAD_REF already set wins (plan: ${got:-none})"
 fi
-if grep -Eq '(export|^[[:space:]]*)GITHUB_(REF|SHA)=' scripts/test-mac.sh; then
-    fail "the script never sets GITHUB_REF or GITHUB_SHA"
+
+# 1j. A run for one pull request tells Tuist that pull request, through
+# GITHUB_REF=refs/pull/<n>/head, so Tuist's GitHub app posts its run report there. A coverage run,
+# an offline run and a merge batch of several branches name none, a GITHUB_REF left in the shell
+# never reaches Tuist, and a value that isn't a number stops the run.
+expect_pull_request() {
+    local name="$1" want="$2" got
+    shift 2
+    got=$(cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+        "${@:2}" scripts/test-mac.sh "$1" --plan 2>/dev/null | grep '^plan:' || true)
+    if [[ "$got" == *", tuist pull request $want" ]]; then
+        pass "$name"
+    else
+        fail "$name (plan: ${got:-none})"
+    fi
+}
+batch_commit checkout -q feature/first-part
+expect_pull_request "a run for a pull request tells Tuist that pull request" 42 \
+    full WAYPOINT_PULL_REQUEST=42
+expect_pull_request "a run without a pull request number tells Tuist none" none \
+    full GITHUB_REF=refs/pull/7/head
+expect_pull_request "an offline run tells Tuist no pull request" none \
+    full WAYPOINT_PULL_REQUEST=42 WAYPOINT_TUIST_OFFLINE=1
+batch_commit checkout -q --detach main
+for branch in feature/first-part fix/second-part; do
+    git -C "$TREE" -c user.name="Merge batch" -c user.email="merge-batch@localhost" \
+        merge -q --no-ff --no-edit "$branch"
+done
+expect_pull_request "a merge batch of several branches tells Tuist no pull request" none \
+    full WAYPOINT_PULL_REQUEST=42
+batch_commit checkout -q --detach main
+expect_pull_request "a coverage run tells Tuist no pull request" none \
+    coverage WAYPOINT_PULL_REQUEST=42
+batch_commit checkout -q feature/first-part
+if (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+    WAYPOINT_PULL_REQUEST=fix/second-part scripts/test-mac.sh full --plan >/dev/null 2>&1); then
+    fail "a pull request that isn't a number stops the run"
 else
-    pass "the script never sets GITHUB_REF or GITHUB_SHA"
+    pass "a pull request that isn't a number stops the run"
 fi
+batch_commit checkout -q main
+: >"$CALLS"
+if run_script WAYPOINT_PULL_REQUEST=42 >"$WORK/1j.log" 2>&1 &&
+    grep -qx "GITHUB_REF seen by tuist test: refs/pull/42/head" "$CALLS"; then
+    pass "tuist test gets the pull request's ref"
+else
+    fail "tuist test gets the pull request's ref (calls: $(grep 'GITHUB_REF' "$CALLS" | tr '\n' ';'))"
+fi
+: >"$CALLS"
+if run_script GITHUB_REF=refs/pull/7/head >"$WORK/1j.log" 2>&1 &&
+    grep -qx "GITHUB_REF seen by tuist test: " "$CALLS"; then
+    pass "a GITHUB_REF left in the shell never reaches tuist test"
+else
+    fail "a GITHUB_REF left in the shell never reaches tuist test (calls: $(grep 'GITHUB_REF' "$CALLS" | tr '\n' ';'))"
+fi
+: >"$CALLS"
 
 # 1e. A coverage run (#327) runs on `main`'s own unchanged commit only, runs every example test,
 # and marks the commit complete only after they pass.
@@ -324,7 +377,7 @@ expect_branch "a coverage run on main's commit, detached as the preflight leaves
     main coverage
 got=$(cd "$TREE" && env PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
     GITHUB_HEAD_REF=chosen/by-hand scripts/test-mac.sh coverage --plan 2>/dev/null | grep '^plan:' || true)
-if [[ "$got" == *", tuist branch main" ]]; then
+if [[ "$got" == *", tuist branch main, "* ]]; then
     pass "a coverage run always tells Tuist main, whatever GITHUB_HEAD_REF says"
 else
     fail "a coverage run always tells Tuist main, whatever GITHUB_HEAD_REF says (plan: ${got:-none})"
