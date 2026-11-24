@@ -200,7 +200,7 @@ Waypoint is not released yet. When it is, add it with Swift Package Manager:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/JoeOCT91/Waypoint.git", from: "0.1.0"),
+    .package(url: "https://github.com/joeoct-oss/Waypoint.git", from: "0.1.0"),
 ],
 targets: [
     .target(

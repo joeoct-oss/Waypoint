@@ -32,7 +32,7 @@ body:
     attributes:
       label: Plan
       description: Link to the plan file, plans/<issue-number>-<slug>.md in Waypoint-planning. Every issue has one; write a stub plan first if needed.
-      placeholder: "[Plan: Example](https://github.com/JoeOCT91/Waypoint-planning/blob/HEAD/plans/12-example.md)"
+      placeholder: "[Plan: Example](https://github.com/joeoct-oss/Waypoint-planning/blob/HEAD/plans/12-example.md)"
     validations:
       required: true
   - type: dropdown
