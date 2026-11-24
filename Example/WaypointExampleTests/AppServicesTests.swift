@@ -66,14 +66,14 @@ struct AppServicesTests {
             gate: gate,
             launch: TestStore.launchOptions()
         )
-        let cart = services.cartDependencies(gate: gate)
+        let cartFactory = CartFactory(dependencies: services.cartDependencies(gate: gate))
 
         products.store.cartProductIDs = [Self.lampID]
 
-        let inCart = cart.catalog.products(withIDs: cart.store.cartProductIDs)
+        let cart = cartFactory.makeCoordinator(router: StackRouter(), onShopMore: { })
         let expected = [
             Self.lampID,
         ]
-        #expect(inCart.map(\.id) == expected)
+        #expect(cart.products.map(\.id) == expected)
     }
 }

@@ -27,8 +27,10 @@ import WaypointCore
 // Conformances:
 // - `Observable` (from `@Observable`), so `MainTabView` presents and dismisses the accounts sheet,
 //   and shows the notice.
+// - `AccountGating`, so a feature that only needs an account for an action takes any gate, and its
+//   tests a fake.
 @Observable
-final class AccountGate {
+final class AccountGate: AccountGating {
     private static let noticeDuration = Duration.seconds(3)
     private static let signInTrigger = "sign_in"
 
