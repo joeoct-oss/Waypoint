@@ -11,7 +11,8 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The `StackNavigator` handle: it navigates its router and owns nothing (#25, decision 0004).
+/// The `StackNavigator` handle: it navigates its router and owns nothing (planning #279, decision
+/// 0004).
 @Suite("Stack navigator")
 @MainActor
 struct StackNavigatorTests {

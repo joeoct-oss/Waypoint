@@ -4,7 +4,7 @@ Group screens into flows, nest them, and get a result back when a flow ends.
 
 ## Overview
 
-> Note: Draft until #59. The API in this article is planned, not built, and can still change: coordinators (#59), flow results (#60) and flow routes (#152).
+> Note: Draft until planning #313. The API in this article is planned, not built, and can still change: coordinators (planning #313), flow results (planning #314) and flow routes (planning #353).
 
 A coordinator is your own object that owns one router, the flow's dependencies and its logic. Screens report what happened through outputs, closures you pass in, and the coordinator decides where to go next. Screens never import Waypoint.
 
@@ -30,7 +30,7 @@ A stack or flow coordinator doesn't declare its router. Waypoint makes it the fi
 
 > Warning: Don't read a coordinator's router in `deinit`. A coordinator going away gets an inert router: its calls return `.ignored` and log `staleNavigator`. A coordinator that subclasses `NSObject` traps there instead.
 
-Built so far in #59: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`; `TabCoordinating` in `WaypointCore` and `TabCoordinator` in `Waypoint`, with the router, `makeRouter()`, each tab's coordinator and `navigator(for:)`; and `FlowCoordinating` in `WaypointCore` and `FlowCoordinator` in `Waypoint`, with `finish(with:)`, presenting a child flow with `onFinish:` in both forms, and `FlowResult`. The rest of this article is still planned.
+Built so far in planning #313: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`; `TabCoordinating` in `WaypointCore` and `TabCoordinator` in `Waypoint`, with the router, `makeRouter()`, each tab's coordinator and `navigator(for:)`; and `FlowCoordinating` in `WaypointCore` and `FlowCoordinator` in `Waypoint`, with `finish(with:)`, presenting a child flow with `onFinish:` in both forms, and `FlowResult`. The rest of this article is still planned.
 
 There is one coordinator protocol for each kind, and it is the same in SwiftUI and UIKit apps. The `Waypoint` product adds the screens: `root` and `destinations`, which take SwiftUI views or UIKit view controllers, and `view`, the whole flow drawn by a renderer you can choose. See "Coordinators and renderers" in the `Waypoint` catalog. The parts below have no UI, so a coordinator's logic is tested on Linux.
 
@@ -154,7 +154,7 @@ With `TabRouter(stacks: .shared)`, the selected tab's coordinator is asked first
 
 Create child coordinators once and keep them in their parent coordinator, not inside a view's `body`, so a flow keeps its state while the screen redraws.
 
-A coordinator's closures, such as a screen's output or a `Flow(...)` entry's `onResult:` handler, may capture `self`. Waypoint keeps them with the flow's router and drops them when the flow ends, and for the window's own flows when the window's scene goes away, so no cycle outlives the flow. `[weak self]`, as UIKit code often writes, works too. A leak test for each kind of flow is part of #59.
+A coordinator's closures, such as a screen's output or a `Flow(...)` entry's `onResult:` handler, may capture `self`. Waypoint keeps them with the flow's router and drops them when the flow ends, and for the window's own flows when the window's scene goes away, so no cycle outlives the flow. `[weak self]`, as UIKit code often writes, works too. A leak test for each kind of flow is part of planning #313.
 
 ### A coordinator as its own flow type
 
@@ -279,7 +279,7 @@ extension StackRouter {
 }
 ```
 
-Still planned: `await router.present(child, style:)`, which returns the `FlowResult` (#60):
+Still planned: `await router.present(child, style:)`, which returns the `FlowResult` (planning #314):
 
 ```swift
 let result = await router.present(AddressPickerCoordinator(), style: .sheet)
@@ -307,7 +307,7 @@ func showFilters() {
 }
 ```
 
-Leaving out `presentation:` pushes the flow. A pushed child flow shares its parent's stack and is drawn by its parent's renderer, and only a coordinator that starts a new stack gets one of its own. The `Flow(...)` entry and result delivery are built in #60, its factories in #152, and `show` in #12. See "Declared presentation" in <doc:PresentingFlows>.
+Leaving out `presentation:` pushes the flow. A pushed child flow shares its parent's stack and is drawn by its parent's renderer, and only a coordinator that starts a new stack gets one of its own. The `Flow(...)` entry and result delivery are built in planning #314, its factories in planning #353, and `show` in planning #266. See "Declared presentation" in <doc:PresentingFlows>.
 
 ### Finding coordinators in the tree
 

@@ -7,7 +7,7 @@
 //
 
 // Must compile: the failure handler runs on the main actor, so it may touch main-actor state
-// without `await` (#24, P6).
+// without `await` (planning #278, P6).
 
 import WaypointCore
 

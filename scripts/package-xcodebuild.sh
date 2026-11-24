@@ -6,8 +6,8 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Runs xcodebuild on the package's own `Waypoint-Package` scheme (#324). The example app takes the
-# package through Tuist's package integration, so Tuist writes the package's project,
+# Runs xcodebuild on the package's own `Waypoint-Package` scheme (planning #429). The example app
+# takes the package through Tuist's package integration, so Tuist writes the package's project,
 # `Waypoint.xcodeproj` and `Derived/`, into the package root whenever it generates the app. While
 # that project sits next to `Package.swift`, xcodebuild opens it and finds no `Waypoint-Package`
 # scheme. This moves both into `.build/tuist-package-project`, runs xcodebuild with the arguments

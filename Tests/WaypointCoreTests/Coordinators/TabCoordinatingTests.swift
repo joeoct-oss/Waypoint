@@ -12,7 +12,7 @@ import WaypointTestSupport
 @testable import WaypointCore
 
 /// `TabCoordinating`: each tab's child coordinator's router becomes its tab's stack, adopted with
-/// its screens, merged into a shared stack, or refused (#59).
+/// its screens, merged into a shared stack, or refused (planning #313).
 @Suite("Tab coordinators and their children")
 @MainActor
 struct TabCoordinatingTests {

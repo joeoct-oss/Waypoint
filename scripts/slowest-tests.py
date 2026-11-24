@@ -6,7 +6,7 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Prints the slowest tests of a test run (#295), slowest first, from the JSON that
+# Prints the slowest tests of a test run (planning #421), slowest first, from the JSON that
 # `xcrun xcresulttool get test-results tests --path <bundle>` writes, read from standard input.
 # It only reports: any input it can't read prints a note and exits 0, so it never fails a run.
 #

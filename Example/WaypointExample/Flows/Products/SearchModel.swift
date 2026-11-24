@@ -8,12 +8,12 @@
 
 import WaypointCore
 
-// Search's view model (#282): a tapped result pushes the product itself, through a navigator its
-// coordinator hands it, instead of reporting the tap. The navigator is the stack's, scoped to the
-// shop (`scoped(to: ShopFlow.self)`), so the model can push only shop routes, which the compiler
-// checks. It imports only `WaypointCore`, never SwiftUI, so a unit test drives it with a real
-// router and no screen. `onShopStack(_:)` is the one place that wires it: the coordinator and the
-// unit tests both call it.
+// Search's view model (planning #417): a tapped result pushes the product itself, through a
+// navigator its coordinator hands it, instead of reporting the tap. The navigator is the stack's,
+// scoped to the shop (`scoped(to: ShopFlow.self)`), so the model can push only shop routes, which
+// the compiler checks. It imports only `WaypointCore`, never SwiftUI, so a unit test drives it with
+// a real router and no screen. `onShopStack(_:)` is the one place that wires it: the coordinator
+// and the unit tests both call it.
 final class SearchModel {
     private let navigation: FlowNavigator<ShopFlow>
 

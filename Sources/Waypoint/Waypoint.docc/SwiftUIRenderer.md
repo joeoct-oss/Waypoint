@@ -4,11 +4,11 @@ Draw stacks, sheets, tabs and roots with SwiftUI.
 
 ## Overview
 
-> Note: Stacks are built (#11): `WaypointStack`, `destination(_:_:)`, swipe-back sync and the Waypoint link (#147), the missing-destination screen (#166), hiding the tab bar on pushed screens (#207) and the journey line for each screen the user sees (#216). So are the flow initializer, the navigator destination and previews (#25), and coordinators that draw their own stack with `root`, `destinations` and `view`, through `SwiftUIStackRenderer`, with child flows pushed on it (#59). The rest of this article is planned, not built, and can still change: sheets and full-screen covers (#12), tabs (#13), roots (#37, #148) and incoming links (#15).
+> Note: Stacks are built (planning #265): `WaypointStack`, `destination(_:_:)`, swipe-back sync and the Waypoint link (planning #349), the missing-destination screen (planning #361), hiding the tab bar on pushed screens (planning #374) and the journey line for each screen the user sees (planning #379). So are the flow initializer, the navigator destination and previews (planning #279), and coordinators that draw their own stack with `root`, `destinations` and `view`, through `SwiftUIStackRenderer`, with child flows pushed on it (planning #313). The rest of this article is planned, not built, and can still change: sheets and full-screen covers (planning #266), tabs (planning #267), roots (planning #290, planning #350) and incoming links (planning #269).
 
 The SwiftUI renderers draw a coordinator's router with SwiftUI's own containers: `NavigationStack`, sheets, `TabView`. They are the default for every kind of coordinator, and the UIKit ones can replace them: see <doc:Renderers>. The views in this article are also usable on their own. Each takes a router, or makes one for you, and draws its state. Screens are registered by route type. SwiftUI applies one `navigationDestination(for:)` per registered type, so screens are never wrapped in `AnyView`.
 
-The renderer keeps no navigation state of its own. It mirrors the router's path into a `NavigationPath` and reports user pops back to the router. Sheet dismissals, sheet size changes and tab taps are reported the same way once sheets (#12) and tabs (#13) are built.
+The renderer keeps no navigation state of its own. It mirrors the router's path into a `NavigationPath` and reports user pops back to the router. Sheet dismissals, sheet size changes and tab taps are reported the same way once sheets (planning #266) and tabs (planning #267) are built.
 
 ### Stacks
 
@@ -173,7 +173,7 @@ The tab roots then sit inside the stack's root, so put what the navigation bar s
 - **Search.** `searchable` shows no field with a `TabView` as the stack's root, wherever it's applied. Draw the field in the screen, as the example app's Search tab does.
 - **Sheets and covers.** A sheet or cover attached to a tab root doesn't present while a pushed screen covers that root. Attach them around the `TabView`, inside the stack.
 
-> Note: Apps show a coordinator's `view` and never create or wire a stack themselves. Waypoint makes one wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code (#151). A pushed child coordinator shares its parent's stack. A destination may return a SwiftUI view or a UIKit view controller, in either renderer. Apps still push routes, never views. See <doc:Renderers>.
+> Note: Apps show a coordinator's `view` and never create or wire a stack themselves. Waypoint makes one wherever a coordinator starts a new stack: the app's root, a presented flow, a tab's root, or a flow shown from existing app code (planning #352). A pushed child coordinator shares its parent's stack. A destination may return a SwiftUI view or a UIKit view controller, in either renderer. Apps still push routes, never views. See <doc:Renderers>.
 
 ### The Waypoint link
 
@@ -273,7 +273,7 @@ final class ShopCoordinator: StackCoordinator {
 
 ### Sheets and full-screen covers
 
-> Note: Draft until #12.
+> Note: Draft until planning #266.
 
 Presentations are drawn from router state. A presented route uses the destination registered for its type, and a presented coordinator is drawn by its own renderer inside the sheet or cover this renderer makes. A destination can declare how its route is shown, so `router.show(_:)` presents it without repeating the style: see "Declared presentation" in the core's presentation article. Sheet sizes come from the presentation's `SheetOptions` and map to `PresentationDetent`:
 
@@ -297,7 +297,7 @@ WaypointStack { HomeView() }
 
 ### Tabs
 
-> Note: Draft until #13.
+> Note: Draft until planning #267.
 
 A tab coordinator owns a `TabRouter` and one stack coordinator for each tab. Its `view` is drawn by `SwiftUITabRenderer`, a `TabView`, and each tab shows its stack coordinator's `view`:
 
@@ -360,7 +360,7 @@ public struct WaypointTabs<Tab: NavigationTab, Content: View>: View {
 
 ### Roots
 
-> Note: Draft until #37 and #148.
+> Note: Draft until planning #290 and planning #350.
 
 An app coordinator returns the coordinator of each root's flow from `makeFlow(for:)`, and Waypoint draws that coordinator's `view`. `WaypointRoot` makes the app coordinator and draws its `view`, and the `App` holds nothing else:
 
@@ -378,7 +378,7 @@ extension WaypointRoot {
 }
 ```
 
-App-wide things, such as the signed-in session and the app's services, stay in the `App` and are passed to the coordinator when it is created. Only the navigation is per window. The per-window initializer is built in #148.
+App-wide things, such as the signed-in session and the app's services, stay in the `App` and are passed to the coordinator when it is created. Only the navigation is per window. The per-window initializer is built in planning #350.
 
 ```swift
 @main

@@ -8,10 +8,10 @@
 
 import XCTest
 
-// The app's sheets take their sizes and swipe-to-close from Waypoint's `SheetOptions` (#277): the
-// filters are presented with their own sizes, which the event log shows, a bare `.sheet` takes the
-// app's defaults and can grow to large, and the terms can't be swiped away. A sheet's size is read
-// from where its navigation bar sits on the screen.
+// The app's sheets take their sizes and swipe-to-close from Waypoint's `SheetOptions`
+// (planning #412): the filters are presented with their own sizes, which the event log shows, a
+// bare `.sheet` takes the app's defaults and can grow to large, and the terms can't be swiped away.
+// A sheet's size is read from where its navigation bar sits on the screen.
 @MainActor
 final class SheetTests: XCTestCase {
     private static let accountTitle = "Account"
@@ -103,8 +103,9 @@ final class SheetTests: XCTestCase {
     }
 
     // Drags a medium sheet up by its grabber until its top sits above `largeTopShare`, at most
-    // `maxTaps` times, and says whether it got there (#307). On iOS 27.2 one `swipeUp()` on the
-    // sheet's navigation bar often leaves the sheet at medium, since the bar takes the swipe.
+    // `maxTaps` times, and says whether it got there (planning #426). On iOS 27.2 one `swipeUp()`
+    // on the sheet's navigation bar often leaves the sheet at medium, since the bar takes the
+    // swipe.
     private func growToLarge(
         _ bar: XCUIElement,
         in app: XCUIApplication

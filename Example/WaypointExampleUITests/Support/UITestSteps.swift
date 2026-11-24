@@ -33,8 +33,9 @@ enum UITestSteps {
 }
 
 extension XCUIApplication {
-    // Closes iOS's "Save Password?" offer when it shows after a sign in (#299). The offer is the
-    // system's, not the app's, and it covers the app, so every tap after it misses until it goes.
+    // Closes iOS's "Save Password?" offer when it shows after a sign in (planning #422). The offer
+    // is the system's, not the app's, and it covers the app, so every tap after it misses until it
+    // goes.
     @MainActor
     func closeSavePasswordOffer() {
         guard UITestSteps.offersToSavePassword else {

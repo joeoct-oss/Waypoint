@@ -12,7 +12,7 @@ import WaypointTestSupport
 @testable import WaypointCore
 
 /// Flow scoping: `FlowNavigator<Flow>` takes only its flow's routes, and a stack can declare its
-/// flow (#25, decisions 0004 and 0007).
+/// flow (planning #279, decisions 0004 and 0007).
 @Suite("Flow navigator")
 @MainActor
 struct FlowNavigatorTests {

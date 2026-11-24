@@ -14,7 +14,7 @@ import WaypointTestSupport
 @testable import Waypoint
 @testable import WaypointCore
 
-/// How a stack finds a route it shows with no destination of its own (#166).
+/// How a stack finds a route it shows with no destination of its own (planning #361).
 @Suite("Missing destinations")
 @MainActor
 struct MissingDestinationTests {

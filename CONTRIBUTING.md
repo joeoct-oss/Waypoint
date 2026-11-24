@@ -42,7 +42,7 @@ The deploy reads a Cloudflare API token (Account, Cloudflare Pages, Edit) and th
 
 ## Code style
 
-The code style lives in [CODE_STYLE.md](CODE_STYLE.md): braces and bodies, member order, wrapping, naming, conformance comments and `let` by default, each with an example and how it is checked. Once the lint setup lands (#70), `scripts/lint.sh` must pass before a pull request is reviewed.
+The code style lives in [CODE_STYLE.md](CODE_STYLE.md): braces and bodies, member order, wrapping, naming, conformance comments and `let` by default, each with an example and how it is checked. Once the lint setup lands (planning #324), `scripts/lint.sh` must pass before a pull request is reviewed.
 
 Public symbols are documented in DocC. A change to the public API updates its article in the same pull request.
 

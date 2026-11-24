@@ -8,8 +8,8 @@
 
 import XCTest
 
-// Search's results push from its view model (#282): a tapped result opens the product on the
-// Search stack, and Back returns to the results, so the push went through the stack's router.
+// Search's results push from its view model (planning #417): a tapped result opens the product on
+// the Search stack, and Back returns to the results, so the push went through the stack's router.
 @MainActor
 final class SearchTests: XCTestCase {
     private static let searchTitle = "Search"

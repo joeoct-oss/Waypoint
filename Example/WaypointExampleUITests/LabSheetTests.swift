@@ -8,10 +8,10 @@
 
 import XCTest
 
-// The Lab's Sheet story runs on Waypoint (#279): each button changes the story's router as it is
-// named, which the story's tree and the Lab's event log show, and a full-screen cover opens and
-// closes. A level's buttons are found inside that level, because a sheet under another one stays
-// in the accessibility tree.
+// The Lab's Sheet story runs on Waypoint (planning #414): each button changes the story's router as
+// it is named, which the story's tree and the Lab's event log show, and a full-screen cover opens
+// and closes. A level's buttons are found inside that level, because a sheet under another one
+// stays in the accessibility tree.
 @MainActor
 final class LabSheetTests: XCTestCase {
     private static let largeTitle = "Large"

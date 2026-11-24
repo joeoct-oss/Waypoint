@@ -10,7 +10,7 @@ import Testing
 import Waypoint
 @testable import WaypointExample
 
-// Reset password is a child flow (#59): the accounts flow starts it, its router joins the
+// Reset password is a child flow (planning #313): the accounts flow starts it, its router joins the
 // accounts flow's tree, and the accounts flow gets the email the link went to, or `.cancelled`.
 struct ResetPasswordCoordinatorTests {
     private static let email = "reader@example.com"

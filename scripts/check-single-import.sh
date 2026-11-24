@@ -7,10 +7,10 @@
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
 # Fails when app-facing code imports both `Waypoint` and `WaypointCore`, or imports
-# `WaypointCore` next to SwiftUI or UIKit (#304). `Waypoint` re-exports the core, so a file
-# imports `Waypoint`, or `WaypointCore` alone when it draws nothing. Checks every Swift file in the example app and every Swift code block in the README
-# files, the DocC catalogs and docs/. The package's own sources and tests are not checked: they
-# name each module they use.
+# `WaypointCore` next to SwiftUI or UIKit (planning #425). `Waypoint` re-exports the core, so a file
+# imports `Waypoint`, or `WaypointCore` alone when it draws nothing. Checks every Swift file in the
+# example app and every Swift code block in the README files, the DocC catalogs and docs/. The
+# package's own sources and tests are not checked: they name each module they use.
 #
 # Usage: scripts/check-single-import.sh
 

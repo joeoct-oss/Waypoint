@@ -6,10 +6,10 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Says whether a newer stable Tuist than the one `.mise.toml` pins is out (#334). The project runs
-# the latest stable Tuist unless the new version is breaking: a newer minor or patch version gets a
-# bump pull request with the usual Mac gate, and a new major version goes to Yousef first
-# (TESTING.md). Canaries and release candidates never count.
+# Says whether a newer stable Tuist than the one `.mise.toml` pins is out (planning #434). The
+# project runs the latest stable Tuist unless the new version is breaking: a newer minor or patch
+# version gets a bump pull request with the usual Mac gate, and a new major version goes to Yousef
+# first (TESTING.md). Canaries and release candidates never count.
 #
 # It only reports: it exits 0 whatever it finds, and when it can't reach GitHub. The daily
 # `scripts/test-mac.sh coverage` run prints its answer.
