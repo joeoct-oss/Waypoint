@@ -54,10 +54,10 @@ struct CheckoutPaymentView: View {
 struct PaymentCardLabel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("Card ending 4242")
+            Text("Card ending \(PaymentCard.saved.lastDigits)")
                 .font(Typography.headline)
                 .foregroundStyle(Palette.text.color)
-            Text("Expires 08/29")
+            Text("Expires \(PaymentCard.saved.expiry)")
                 .font(Typography.footnote)
                 .foregroundStyle(Palette.textTertiary.color)
         }

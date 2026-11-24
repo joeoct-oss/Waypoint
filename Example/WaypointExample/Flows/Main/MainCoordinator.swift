@@ -67,11 +67,9 @@ final class MainCoordinator {
             factory: AuthFactory(dependencies: services.authDependencies()),
             tabs: tabs
         )
-        let cart = CartCoordinator(
+        let cartFactory = CartFactory(dependencies: services.cartDependencies(gate: gate))
+        let cart = cartFactory.makeCoordinator(
             router: tabs.router(for: .cart),
-            store: services.store,
-            addressBook: services.addresses,
-            gate: gate,
             onShopMore: { tabs.select(.shop, trigger: "keep_shopping") }
         )
         let addToCart = { (product: Product) in

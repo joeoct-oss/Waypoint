@@ -13,5 +13,5 @@ struct CartDependencies {
     let catalog: any ProductCatalog
     let store: LocalStore
     let addresses: AddressBook
-    let gate: AccountGate
+    let gate: any AccountGating
 }

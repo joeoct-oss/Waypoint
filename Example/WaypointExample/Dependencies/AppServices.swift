@@ -106,7 +106,7 @@ final class AppServices {
     }
 
     // What the Cart tab and checkout use.
-    func cartDependencies(gate: AccountGate) -> CartDependencies {
+    func cartDependencies(gate: any AccountGating) -> CartDependencies {
         CartDependencies(
             catalog: catalog,
             store: store,
