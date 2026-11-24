@@ -36,6 +36,9 @@ scripts/check-single-import.sh
 echo "==> Checking the Mac test script's run lock"
 scripts/check-test-mac-lock.sh
 
+echo "==> Checking the package's xcodebuild wrapper"
+scripts/check-package-xcodebuild.sh
+
 echo "==> Checking merge batches"
 scripts/check-merge-batch.sh
 

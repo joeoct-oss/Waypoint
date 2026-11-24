@@ -257,6 +257,31 @@ else
     fail "the second run ran nothing, and the first released the lock ($(grep -c '^tuist test' "$CALLS") tuist test calls)"
 fi
 
+# 2b. A run turned away at the run lock leaves Tuist's package project where the run holding the
+# lock put it, since that run may be in a package step (#324); the holder puts it back when it
+# ends. Both runs go in the copy of the working tree, so the clone's own folders are never touched.
+ASIDE="$TREE/.build/tuist-package-project"
+(cd "$TREE" && run_script STUB_SECONDS=4) >"$WORK/2c.log" 2>&1 &
+first=$!
+for _ in $(seq 1 40); do
+    [[ -L "$LOCK" ]] && break
+    sleep 0.1
+done
+mkdir -p "$ASIDE/Derived"
+(cd "$TREE" && run_script) >"$WORK/2d.log" 2>&1 || true
+if [[ -d "$ASIDE/Derived" && ! -e "$TREE/Derived" ]]; then
+    pass "a run turned away at the run lock leaves Tuist's package project aside"
+else
+    fail "a run turned away at the run lock leaves Tuist's package project aside"
+fi
+wait "$first" || fail "the first run passes while a second one is turned away (log: $(tail -3 "$WORK/2c.log"))"
+if [[ -d "$TREE/Derived" && ! -e "$ASIDE/Derived" ]]; then
+    pass "the run holding the lock puts Tuist's package project back when it ends"
+else
+    fail "the run holding the lock puts Tuist's package project back when it ends"
+fi
+rm -rf "$TREE/Derived"
+
 # 3. A lock left by a run that has ended is cleared.
 sleep 0 &
 dead=$!
