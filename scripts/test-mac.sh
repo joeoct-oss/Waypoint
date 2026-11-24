@@ -569,6 +569,11 @@ simulator_os() {
 # workspace had left module state the new settings didn't invalidate. A folder only these runs
 # use starts clean on every Mac and still builds incrementally from one run to the next.
 EXAMPLE_DERIVED_DATA="$PWD/.build/example-derived-data"
+# The release reports step builds into a folder of its own (#327). Tuist reads a run's coverage
+# from one products folder of the derived data, the one holding most of the run's test bundles and
+# the newest on a tie, whatever the configuration: with Release products beside the Debug ones,
+# it read the uninstrumented Release builds and uploaded no covered file (measured 2026-11-24).
+RELEASE_REPORTS_DERIVED_DATA="$PWD/.build/release-reports-derived-data"
 
 example_tests_on() {
     local udid="$1" simulator="$2" bundle_name="$3"
@@ -587,6 +592,10 @@ example_tests_on() {
         on) tuist_flags=(--no-binary-cache --skip-quarantine) ;;
     esac
     mkdir -p "$RESULTS_DIR"
+    # Release products an older run left beside the Debug ones would be read for coverage instead.
+    if [[ "$EXAMPLE_DERIVED_DATA" != "$RELEASE_REPORTS_DERIVED_DATA" ]]; then
+        rm -rf "$EXAMPLE_DERIVED_DATA/Build/Products/Release-iphonesimulator"
+    fi
     # The package comes through Tuist's package integration, which `tuist install` resolves.
     tuist_cmd install --path Example
     tuist_cmd test WaypointExample \
@@ -735,8 +744,10 @@ fi
 # It collects no coverage (#327): it tests two classes again in Release, after the Debug step
 # measured them, so it would add about a minute and nothing new. It always runs every test it
 # names, so the different hash costs no reuse.
+# It builds into its own derived data folder, so the example step's coverage is read from Debug.
 release_reports_on() {
     local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
+    local EXAMPLE_DERIVED_DATA="$RELEASE_REPORTS_DERIVED_DATA"
     TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 example_tests_on "$@"
 }
 if $RUN_RELEASE_REPORTS; then

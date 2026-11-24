@@ -382,6 +382,27 @@ else
     fail "the release reports step runs with coverage off"
 fi
 
+# 1h. The release reports step builds into its own derived data (#327): Tuist reads coverage from
+# one products folder and took the Release one when both sat in the example app's derived data.
+# An example run removes Release products an older run left there.
+if sed -n '/^release_reports_on() {/,/^}/p' scripts/test-mac.sh |
+    grep -q 'local EXAMPLE_DERIVED_DATA="$RELEASE_REPORTS_DERIVED_DATA"' &&
+    grep -q '^RELEASE_REPORTS_DERIVED_DATA="$PWD/.build/release-reports-derived-data"$' scripts/test-mac.sh; then
+    pass "the release reports step builds into its own derived data"
+else
+    fail "the release reports step builds into its own derived data"
+fi
+STALE_RELEASE="$TREE/.build/example-derived-data/Build/Products/Release-iphonesimulator"
+mkdir -p "$STALE_RELEASE"
+: >"$CALLS"
+(cd "$TREE" && run_script) >"$WORK/1h.log" 2>&1 || true
+if [[ ! -e "$STALE_RELEASE" ]] && grep -q "^tuist test" "$CALLS"; then
+    pass "an example run removes Release products left in its derived data"
+else
+    fail "an example run removes Release products left in its derived data (log: $(tail -3 "$WORK/1h.log"))"
+fi
+: >"$CALLS"
+
 # 1f. The Build Insights post-action runs the Tuist that mise pins (#327), not one on the PATH.
 if grep -q '"$MISE" exec -C "$SRCROOT" -- tuist inspect build' Example/Project.swift &&
     ! grep -q 'activate -C "$SRCROOT"' Example/Project.swift; then
