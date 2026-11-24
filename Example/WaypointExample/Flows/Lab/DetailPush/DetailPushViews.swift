@@ -32,24 +32,30 @@ struct DetailPushListView: View {
     }
 }
 
-// A product in the Detail push flow: its picture and details, a banner whose button pops back to
-// the cart, and Add to cart at the bottom. The view only reports taps.
+// A product in the Detail push flow: its picture and details, the review it got, a banner whose
+// button pops back to the cart, Write a review in the navigation bar, and Add to cart at the
+// bottom. The view only reports taps.
 struct DetailPushProductView: View {
     let product: Product
+    // The stars of the review posted for this product, or `nil` before one is.
+    let postedReview: Int?
     let onAddToCart: () -> Void
     let onBackToCart: () -> Void
+    let onWriteReview: () -> Void
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 picture
                 titles
+                reviewBanner
                 backToCartBanner
             }
             .padding(Spacing.large)
         }
         .background(Palette.background.color)
         .accessibilityIdentifier(Identifiers.detailProduct)
+        .toolbar { writeReviewItem }
         .bottomActionBar { addToCartButton }
     }
 
@@ -86,6 +92,29 @@ struct DetailPushProductView: View {
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.capsule)
                 .accessibilityIdentifier(Identifiers.detailBackToCart)
+        }
+    }
+
+    // In the navigation bar, so Add to cart's bar never covers it.
+    private var writeReviewItem: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button("Write a review", systemImage: "star", action: onWriteReview)
+                .accessibilityIdentifier(Identifiers.detailWriteReview)
+        }
+    }
+
+    private var reviewBanner: some View {
+        VStack(alignment: .leading, spacing: Spacing.small) {
+            LabNote(
+                title: "Write a review",
+                detail: "The star in the bar pushes a child flow on this stack with "
+                    + "push(_:onFinish:). Its result comes back here once."
+            )
+            if let postedReview {
+                Text("Your review: \(DetailReviewText.stars(postedReview))")
+                    .font(Typography.headline)
+                    .accessibilityIdentifier(Identifiers.detailReviewPosted)
+            }
         }
     }
 

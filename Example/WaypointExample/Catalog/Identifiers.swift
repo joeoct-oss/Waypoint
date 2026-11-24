@@ -117,6 +117,11 @@ nonisolated enum Identifiers {
     static let detailAddToCart = "lab.detail.addToCart"
     static let detailBackToCart = "lab.detail.backToCart"
     static let detailCart = "lab.detail.cart"
+    static let detailWriteReview = "lab.detail.writeReview"
+    static let detailReviewPosted = "lab.detail.reviewPosted"
+    static let detailReviewRating = "lab.detail.review.rating"
+    static let detailReviewNote = "lab.detail.review.note"
+    static let detailReviewPost = "lab.detail.review.post"
     static let tabsDemo = "lab.tabs"
     static let sheetDemoSize = "lab.sheet.size"
     static let sheetDemoSwipe = "lab.sheet.swipe"
@@ -141,6 +146,10 @@ nonisolated enum Identifiers {
 
     static func sheetDemoLevel(_ level: Int) -> String {
         "lab.sheet.level.\(level)"
+    }
+
+    static func detailReviewStars(_ rating: Int) -> String {
+        "lab.detail.review.stars.\(rating)"
     }
 
     static func wishlistSave(id: Int) -> String {

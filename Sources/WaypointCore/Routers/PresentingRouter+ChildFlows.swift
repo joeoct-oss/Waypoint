@@ -32,7 +32,7 @@ extension PresentingRouter {
             return .failed(refusal)
         }
         let flow = ChildFlow(coordinator: child, onFinish: onFinish)
-        router.join(presentedBy: self, named: FlowNaming.childFlowName(of: router, for: child), flow: flow)
+        router.join(startedBy: self, named: FlowNaming.childFlowName(of: router, for: child), flow: flow)
         let presentation = Presentation(style: style, flow: router.flowID)
         switch PresentationReducer.reduce(state, .present(presentation)) {
         case .changed(_, let changes):
@@ -56,7 +56,7 @@ extension PresentingRouter {
     /// Why `router`, the router of `child`, can't start as a child flow of this router, or `nil`
     /// when it can: it is this router or one above it, or it already has a parent, belongs to
     /// another coordinator or has ended.
-    private func refusal(toStart router: StackRouter, of child: AnyObject, ownsRouter: Bool) -> IssueDraft? {
+    func refusal(toStart router: StackRouter, of child: AnyObject, ownsRouter: Bool) -> IssueDraft? {
         let name = ViewTypeName.of(type(of: child))
         let isAncestor = sequence(first: self as any TreeNode, next: \.parentNode).contains { node in
             node === router
@@ -78,7 +78,7 @@ extension PresentingRouter {
     }
 
     /// Puts `router` back where it was before it joined, and returns `result`.
-    private func undoingJoin(of router: StackRouter, result: StepResult) -> StepResult {
+    func undoingJoin(of router: StackRouter, result: StepResult) -> StepResult {
         _ = router.undoJoin()
         return result
     }

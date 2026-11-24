@@ -59,11 +59,12 @@
         }
 
         #if canImport(UIKit)
-            /// A view controller, shown through a representable.
+            /// A view controller, shown through a representable. The controller is made when
+            /// SwiftUI first shows the screen, once, never on a redraw.
             public static func buildExpression<Controller: UIViewController>(
-                _ controller: Controller
+                _ controller: @autoclosure @escaping () -> Controller
             ) -> ControllerScreen<Controller> {
-                ControllerScreen(controller: controller)
+                ControllerScreen(makeController: controller)
             }
         #endif
     }
@@ -97,12 +98,14 @@
         /// - `UIViewControllerRepresentable`, so SwiftUI shows the controller.
         /// - `Controller: UIViewController`: the controller it shows.
         public struct ControllerScreen<Controller: UIViewController>: UIViewControllerRepresentable {
-            /// The controller it shows, made once by the coordinator.
-            let controller: Controller
+            /// Makes the controller it shows. SwiftUI calls it once for each place the screen is
+            /// shown, so a coordinator's `root`, read again on each redraw, makes no new
+            /// controller.
+            let makeController: () -> Controller
 
-            /// The controller, as it was made.
+            /// The controller, made the first time the screen is shown.
             public func makeUIViewController(context: Context) -> Controller {
-                controller
+                makeController()
             }
 
             /// Nothing to update: the controller keeps its own state.

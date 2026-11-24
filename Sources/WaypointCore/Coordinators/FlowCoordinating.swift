@@ -9,7 +9,8 @@
 /// How a child flow ended: with the value it finished with, or cancelled.
 ///
 /// A parent gets it exactly once for each child flow it started, in the `onFinish:` of
-/// ``StackRouter/present(_:style:trigger:else:file:line:onFinish:)``.
+/// ``StackRouter/present(_:style:trigger:else:file:line:onFinish:)``, or of `push(_:onFinish:)`
+/// in `Waypoint`, which pushes a `FlowCoordinator`'s flow on the parent's stack.
 ///
 /// `Value` is `Sendable` because the result is `Sendable`, so the value it carries must be too.
 ///
@@ -30,8 +31,9 @@ extension FlowResult: Equatable where Value: Equatable { }
 /// Code that owns one stack flow that ends with a result, without its screens.
 ///
 /// Apps write `FlowCoordinator` from the `Waypoint` product, which refines this protocol. A parent
-/// starts the flow with `router.present(child, onFinish:)`; the child's router joins the parent's
-/// tree, and the child ends the flow with ``finish(with:)``:
+/// starts the flow with `router.present(child, onFinish:)` (or pushes it on its stack, once
+/// renderers draw pushed flows); the child's router joins the parent's tree, and the child ends
+/// the flow with ``finish(with:)``:
 ///
 /// ```swift
 /// final class CheckoutCoordinator: FlowCoordinating {

@@ -37,14 +37,30 @@ public final class StackRouter: NavigationRouter {
         /// The router of the presented flow, if any.
         let presented: StackRouter?
 
+        /// The router of the child flow pushed on top of this stack, if any. Its marker is the
+        /// last route of the path.
+        let pushed: StackRouter?
+
+        /// A snapshot of `state`, presenting `presented` and with `pushed` on top.
+        init(state: StackState, presented: StackRouter?, pushed: StackRouter? = nil) {
+            self.state = state
+            self.presented = presented
+            self.pushed = pushed
+        }
+
         /// The same snapshot with another state.
         func withState(_ state: StackState) -> Snapshot {
-            Snapshot(state: state, presented: presented)
+            Snapshot(state: state, presented: presented, pushed: pushed)
         }
 
         /// The same snapshot presenting another flow, or none.
         func presenting(_ presentation: Presentation?, by router: StackRouter?) -> Snapshot {
-            Snapshot(state: state.withPresentation(presentation), presented: router)
+            Snapshot(state: state.withPresentation(presentation), presented: router, pushed: pushed)
+        }
+
+        /// The same snapshot with another state and another pushed child flow, or none.
+        func pushing(_ router: StackRouter?, state: StackState) -> Snapshot {
+            Snapshot(state: state, presented: presented, pushed: router)
         }
     }
 
@@ -98,7 +114,7 @@ public final class StackRouter: NavigationRouter {
     ///
     /// `var` because a router joins the tree when the transaction that creates it commits, and
     /// leaves when its flow is dismissed. Only `markAttached()`, `markDetached()`,
-    /// `join(presentedBy:named:flow:)` and `undoJoin()` change it.
+    /// `join(startedBy:named:flow:)` and `undoJoin()` change it.
     @ObservationIgnored private(set) var isAttached: Bool
 
     /// Presentation defaults and fallbacks set on this router.
@@ -168,7 +184,7 @@ public final class StackRouter: NavigationRouter {
 
     /// The child flow this router runs for a coordinator a parent started, or `nil`.
     ///
-    /// `var` because a flow starts and ends. Only `join(presentedBy:named:flow:)`,
+    /// `var` because a flow starts and ends. Only `join(startedBy:named:flow:pushed:)`,
     /// `markDetached()` and `undoJoin()` change it.
     @ObservationIgnored private(set) var childFlow: (any ChildFlowRecord)?
 
@@ -179,18 +195,32 @@ public final class StackRouter: NavigationRouter {
     /// `markDetached()` change it.
     @ObservationIgnored private var presentedCoordinator: AnyObject?
 
+    /// The coordinator of the child flow pushed on top of this stack, kept while the flow is on
+    /// the stack, so a parent needn't keep it. `nil` when no child flow is pushed.
+    ///
+    /// `var` because child flows are pushed and popped. Only `commitWorkingCopy(around:)` and
+    /// `markDetached()` change it.
+    @ObservationIgnored private var pushedCoordinator: AnyObject?
+
+    /// The route on the parent's path where this router's flow starts, when a parent pushed it,
+    /// else `nil`. Kept from the push, so it still matches after the flow is renamed.
+    ///
+    /// `var` because a child flow is pushed after its router is made. Only
+    /// `join(startedBy:named:flow:pushed:)` and `undoJoin()` change it.
+    @ObservationIgnored private(set) var marker: AnyRoute?
+
     /// The tree this router left to join a parent's, kept until the start that joined it
     /// commits, so a rolled-back start can put it back. `nil` otherwise.
     ///
     /// `var` because it is set by a join and cleared by its commit or roll back. Only
-    /// `join(presentedBy:named:flow:)`, `markAttached()` and `undoJoin()` change it.
+    /// `join(startedBy:named:flow:)`, `markAttached()` and `undoJoin()` change it.
     @ObservationIgnored private var joinedFrom: NavigationTreeContext?
 
     /// The flow name this router had before it joined a parent's tree, kept with `joinedFrom` so
     /// a rolled-back start gives it back.
     ///
     /// `var` because it is set by a join and cleared by its commit or roll back. Only
-    /// `join(presentedBy:named:flow:)`, `markAttached()` and `undoJoin()` change it.
+    /// `join(startedBy:named:flow:pushed:)`, `markAttached()` and `undoJoin()` change it.
     @ObservationIgnored private var nameBeforeJoin: String?
 
     /// The current state. Change it through the navigation methods below.
@@ -203,6 +233,18 @@ public final class StackRouter: NavigationRouter {
         forwardTarget.map(\.presented) ?? committed.presented
     }
 
+    /// The router of the child flow pushed on top of this stack, if any. Its root screen is the
+    /// last route of the path, and its own screens follow on screen.
+    package var pushedFlow: StackRouter? {
+        forwardTarget.map(\.pushedFlow) ?? committed.pushed
+    }
+
+    /// The coordinator of the child flow pushed on top of this stack, which a renderer draws
+    /// after this stack's path, or `nil` when no child flow is pushed.
+    package var pushedFlowCoordinator: AnyObject? {
+        forwardTarget.map(\.pushedFlowCoordinator) ?? pushedCoordinator
+    }
+
     /// The router that presented or contains this one, or `nil` for the root.
     public var parent: (any NavigationRouter)? {
         parentNode
@@ -213,7 +255,7 @@ public final class StackRouter: NavigationRouter {
         rootNode
     }
 
-    /// The presented flow's router, if any.
+    /// The pushed child flow's router, then the presented flow's, if any.
     public var children: [any NavigationRouter] {
         childNodes
     }
@@ -755,7 +797,9 @@ extension StackRouter: TransactionParticipant {
         }
         working = nil
         let previous = committed
-        guard next.state != previous.state || next.presented !== previous.presented else {
+        let swapsPresented = next.presented !== previous.presented
+        let swapsPushed = next.pushed !== previous.pushed
+        guard next.state != previous.state || swapsPresented || swapsPushed else {
             others()
             return
         }
@@ -766,20 +810,31 @@ extension StackRouter: TransactionParticipant {
         screenIDs = ScreenBinding.ids(screenIDs, from: previous.state.path, to: next.state.path) {
             tree.claimScreenID()
         }
-        guard next.presented !== previous.presented else {
-            return
+        if swapsPushed {
+            pushedCoordinator = swap(previous.pushed, for: next.pushed, keeping: pushedCoordinator)
         }
-        previous.presented?.detachSubtree()
-        next.presented?.markAttached()
-        let started = next.presented?.startChildFlow()
-        tree.releaseWhenIdle(presentedCoordinator)
-        presentedCoordinator = started
+        if swapsPresented {
+            presentedCoordinator = swap(previous.presented, for: next.presented, keeping: presentedCoordinator)
+        }
+    }
+
+    /// Takes `old` out of the tree and puts `new` in, starting the child flow it runs, and
+    /// returns the coordinator to keep from now on, letting `kept` go.
+    private func swap(_ old: StackRouter?, for new: StackRouter?, keeping kept: AnyObject?) -> AnyObject? {
+        old?.detachSubtree()
+        new?.markAttached()
+        let started = new?.startChildFlow()
+        tree.releaseWhenIdle(kept)
+        return started
     }
 
     /// Drops the working copy, and frees the name of a presented router that never joined, or
     /// puts a child's router that joined back where it was.
     func discardWorkingCopy() {
         if let created = working?.presented, created !== committed.presented {
+            releaseUncommitted(created)
+        }
+        if let created = working?.pushed, created !== committed.pushed {
             releaseUncommitted(created)
         }
         working = nil
@@ -804,6 +859,8 @@ extension StackRouter: TransactionParticipant {
         isAttached = false
         tree.releaseWhenIdle(presentedCoordinator)
         presentedCoordinator = nil
+        tree.releaseWhenIdle(pushedCoordinator)
+        pushedCoordinator = nil
         guard let flow = childFlow, flow.isStarted else {
             return
         }
@@ -852,12 +909,15 @@ extension StackRouter {
         self.tree = tree
         flowID = tree.claimFlowName(flowID.name)
         presented?.moveSubtree(into: tree, from: previous, carryingOver: carryingOver)
+        pushedFlow?.moveSubtree(into: tree, from: previous, carryingOver: carryingOver)
     }
 
     /// Moves this router, made on its own or for a lazy start, with every flow it presents, into
-    /// `parent`'s tree as the flow `parent` presents for a child coordinator, named `name`, and
-    /// keeps `flow` until it ends. It stays out of the tree until the start commits.
-    func join(presentedBy parent: any TreeNode, named name: String, flow: any ChildFlowRecord) {
+    /// `parent`'s tree as the flow `parent` presents or pushes for a child coordinator, named
+    /// `name`, and keeps `flow` until it ends. It stays out of the tree until the start commits.
+    ///
+    /// With `pushed`, it also gets the marker the parent pushes on its path for it.
+    func join(startedBy parent: any TreeNode, named name: String, flow: any ChildFlowRecord, pushed: Bool = false) {
         joinedFrom = tree
         nameBeforeJoin = flowID.name
         if tree !== parent.tree {
@@ -868,6 +928,7 @@ extension StackRouter {
         flowID = parent.tree.claimFlowName(name)
         isAttached = false
         childFlow = flow
+        marker = pushed ? AnyRoute(ChildFlowRoute(flow: flowID.name, pushID: tree.claimFlowPushID())) : nil
     }
 
     /// Puts a router whose join was rolled back where it was: the root of its own tree again,
@@ -883,6 +944,7 @@ extension StackRouter {
         joinedFrom = nil
         nameBeforeJoin = nil
         childFlow = nil
+        marker = nil
         parentNode = nil
         moveSubtree(into: home, from: parentTree, carryingOver: !returnsHome)
         home.releaseFlowName(flowID)

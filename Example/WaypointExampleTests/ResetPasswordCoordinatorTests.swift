@@ -23,7 +23,7 @@ struct ResetPasswordCoordinatorTests {
         }
         let parent = StackRouter()
         let reset = ResetPasswordCoordinator(service: MockAuthService(store: store))
-        let results = ResultLog()
+        let results = ResultLog<String>()
         parent.present(reset) { result in
             results.record(result)
         }
@@ -44,7 +44,7 @@ struct ResetPasswordCoordinatorTests {
         }
         let parent = StackRouter()
         let reset = ResetPasswordCoordinator(service: MockAuthService(store: store))
-        let results = ResultLog()
+        let results = ResultLog<String>()
         parent.present(reset) { result in
             results.record(result)
         }
@@ -83,12 +83,12 @@ struct ResetPasswordCoordinatorTests {
     }
 }
 
-// The results the accounts flow got, oldest first.
-final class ResultLog {
+// The results a parent flow got from its child flow, oldest first.
+final class ResultLog<Value: Sendable> {
     // `var` because each ended flow adds its result. Only `record(_:)` changes it.
-    private(set) var values: [FlowResult<String>] = []
+    private(set) var values: [FlowResult<Value>] = []
 
-    func record(_ result: FlowResult<String>) {
+    func record(_ result: FlowResult<Value>) {
         values.append(result)
     }
 }
