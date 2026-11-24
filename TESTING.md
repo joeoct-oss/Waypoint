@@ -79,7 +79,7 @@ A pull request is **docs only** when every file it changes matches `*.md`, `*.do
 
 ### Merge batches
 
-One `full` run covers up to four ready pull requests at once. A pull request is ready when its review is clean, it contains the latest `main`, and its Linux gate passed. A single ready pull request is a batch of one. A docs only pull request needs no batch: its Linux gate is enough.
+One `full` run covers up to four ready pull requests at once. A pull request is ready when its review is clean, it contains the latest `main`, and its Linux gate passed. A single ready pull request is a batch of one: since it already contains the latest `main`, its batch is its own head, not a merge commit, so the run tests a commit GitHub has and the commit links in Tuist's run report open. A docs only pull request needs no batch: its Linux gate is enough.
 
 1. **Build the batch** on the Mac, in your queue turn, as preflight step 4 of [Run a Mac tier](#5-run-a-mac-tier) but with this instead of the checkout:
 

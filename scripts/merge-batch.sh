@@ -8,7 +8,7 @@
 #
 # Builds a merge batch (planning #421): the latest `main` with each branch merged in, in the order given,
 # checked out detached in this clone, so one `scripts/test-mac.sh full` run covers every pull
-# request in it. Nothing is pushed. It prints the batch's commit and tree; after the batch's pull
+# request in it. A batch of one branch that already contains `main` is the branch's own head. Nothing is pushed. It prints the batch's commit and tree; after the batch's pull
 # requests merge, `main`'s tree must equal that tree (TESTING.md, Merge batches).
 #
 # It stops on the first branch that doesn't merge cleanly, names it, and puts the clone back on
@@ -91,15 +91,22 @@ git fetch -q "$REMOTE" main "$@"
 git checkout -q --detach "$REMOTE/main"
 MAIN=$(git rev-parse --short HEAD)
 
-for branch in "$@"; do
-    if ! git -c user.name="Merge batch" -c user.email="merge-batch@localhost" \
-        merge -q --no-ff --no-edit "$REMOTE/$branch" >/dev/null 2>&1; then
-        git merge --abort 2>/dev/null || true
-        git checkout -q "$START"
-        echo "error: $branch doesn't merge cleanly into the batch; nothing else was merged" >&2
-        exit 1
-    fi
-done
+# A batch of one branch that already contains `main` is that branch's own head, not a merge
+# commit on top of it: the run then tests, and reports to Tuist, a commit GitHub has, so the
+# commit links in Tuist's run report on the pull request open.
+if [[ $# -eq 1 ]] && git merge-base --is-ancestor "$REMOTE/main" "$REMOTE/$1"; then
+    git checkout -q --detach "$REMOTE/$1"
+else
+    for branch in "$@"; do
+        if ! git -c user.name="Merge batch" -c user.email="merge-batch@localhost" \
+            merge -q --no-ff --no-edit "$REMOTE/$branch" >/dev/null 2>&1; then
+            git merge --abort 2>/dev/null || true
+            git checkout -q "$START"
+            echo "error: $branch doesn't merge cleanly into the batch; nothing else was merged" >&2
+            exit 1
+        fi
+    done
+fi
 
 heads=()
 for branch in "$@"; do

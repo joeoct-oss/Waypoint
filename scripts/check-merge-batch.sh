@@ -10,6 +10,8 @@
 # it runs on Linux and on the Mac without touching this clone:
 #
 # - two branches that merge cleanly make a batch with both and `main`;
+# - a batch of one branch that contains `main` is the branch's own head; one behind `main` is
+#   merged into it;
 # - squash-merging the batch's branches one at a time, in its order, gives the batch's tree, and
 #   so does merging them with merge commits (`--no-ff`); `--after-merge` passes after either and
 #   tells that tree from another;
@@ -183,6 +185,35 @@ else
     fail "--before-merge names the moved main ($out)"
 fi
 git fetch -q origin
+
+# 1b. A batch of one branch that contains `main` is that branch's head, so the run tests a commit
+# GitHub has; one behind `main` gets a merge commit on the latest `main`.
+(
+    cd "$WORK/seed"
+    git fetch -q origin && git checkout -q -B fresh origin/main
+    printf 'fresh\n' >fresh.txt && git add fresh.txt && git commit -qm fresh && git push -q origin fresh 2>/dev/null
+)
+git fetch -q origin
+if out=$(scripts/merge-batch.sh fresh 2>&1) && [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/fresh)" &&
+    "$out" == "batch $(git rev-parse --short origin/fresh) "* ]]; then
+    pass "a batch of one branch that contains main is the branch's own head"
+else
+    fail "a batch of one branch that contains main is the branch's own head ($out)"
+fi
+git checkout -q main
+(
+    cd "$WORK/seed"
+    git checkout -q -B main origin/main
+    printf 'c\n' >c.txt && git add c.txt && git commit -qm "main moves" && git push -q origin main 2>/dev/null
+)
+git fetch -q origin
+if out=$(scripts/merge-batch.sh fresh 2>&1) && [[ "$(git rev-parse HEAD^1)" == "$(git rev-parse origin/main)" &&
+    "$(git rev-parse HEAD^2)" == "$(git rev-parse origin/fresh)" ]]; then
+    pass "a batch of one branch behind main merges it into the latest main"
+else
+    fail "a batch of one branch behind main merges it into the latest main ($out)"
+fi
+git checkout -q main
 
 # 3. A conflicting branch stops the batch and leaves the clone as it was.
 before=$(git rev-parse HEAD)
