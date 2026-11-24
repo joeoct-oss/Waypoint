@@ -928,7 +928,7 @@ extension StackRouter {
         flowID = parent.tree.claimFlowName(name)
         isAttached = false
         childFlow = flow
-        marker = pushed ? AnyRoute(ChildFlowRoute(flow: flowID.name)) : nil
+        marker = pushed ? AnyRoute(ChildFlowRoute(flow: flowID.name, pushID: tree.claimFlowPushID())) : nil
     }
 
     /// Puts a router whose join was rolled back where it was: the root of its own tree again,

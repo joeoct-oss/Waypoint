@@ -55,6 +55,13 @@ final class NavigationTreeContext {
     /// `takeOver(_:)` change it.
     private var screenCount: UInt64 = 0
 
+    /// How many child flows were pushed in this tree, so each push's marker differs from every
+    /// other, also from one of the same flow pushed again after it ended.
+    ///
+    /// `var` because each pushed child flow takes the next number. Only ``claimFlowPushID()``
+    /// and `takeOver(_:)` change it.
+    private var flowPushCount: UInt64 = 0
+
     /// The time on the tree's clock, for the journey's durations and duplicate window.
     ///
     /// `var` because tests set a clock they move by hand. Only tests change it.
@@ -196,6 +203,7 @@ final class NavigationTreeContext {
         }
         namesViews = namesViews || other.namesViews
         screenCount = max(screenCount, other.screenCount)
+        flowPushCount = max(flowPushCount, other.flowPushCount)
     }
 
     /// Registers `type`, opened from an existential.
@@ -215,6 +223,12 @@ final class NavigationTreeContext {
     func claimScreenID() -> UInt64 {
         screenCount += 1
         return screenCount
+    }
+
+    /// The number of the next pushed child flow. Numbers start at 1.
+    func claimFlowPushID() -> UInt64 {
+        flowPushCount += 1
+        return flowPushCount
     }
 
     /// The id of the next measured interval.

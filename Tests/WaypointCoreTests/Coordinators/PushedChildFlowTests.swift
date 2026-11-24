@@ -32,7 +32,7 @@ struct PushedChildFlowTests {
         #expect(child.router.parent === parent)
         #expect(child.router.isActive)
         #expect(child.router.flowID == FlowID("checkoutFlow"))
-        let marker = AnyRoute(ChildFlowRoute(flow: "checkoutFlow"))
+        let marker = AnyRoute(ChildFlowRoute(flow: "checkoutFlow", pushID: 1))
         let parentPath = [marker]
         #expect(parent.state.path == parentPath)
         #expect(parent.state.presentation == nil)
@@ -212,7 +212,7 @@ struct PushedChildFlowTests {
         pushing.push(pushed) { _ in }
         presenting.present(presented) { _ in }
 
-        let marker = AnyRoute(ChildFlowRoute(flow: pushed.router.flowID.name))
+        let marker = AnyRoute(ChildFlowRoute(flow: pushed.router.flowID.name, pushID: 1))
         let pushedPath = [marker]
         #expect(pushing.state.path == pushedPath)
         #expect(pushing.presented == nil)

@@ -107,6 +107,24 @@ struct DrawnPathTests {
     }
 
     @Test
+    func theSameFlowPushedAgainGetsANewMarker() throws {
+        let parent = StackRouter(configuration: .permissive)
+        let first = CheckoutFlowCoordinator()
+        parent.push(first) { _ in }
+        let firstMarker = try #require(first.router.marker)
+        parent.rendererDidPopDrawn(toCount: 0)
+
+        let second = CheckoutFlowCoordinator()
+        parent.push(second) { _ in }
+
+        let secondMarker = try #require(second.router.marker)
+        #expect(second.router.flowID == first.router.flowID)
+        #expect(secondMarker != firstMarker)
+        let expected = [secondMarker]
+        #expect(parent.drawnPath == expected)
+    }
+
+    @Test
     func drawnCountPastTheEndIsAMismatch() {
         let parent = StackRouter(configuration: .permissive)
         let reported = Recorder<NavigationIssue>()
