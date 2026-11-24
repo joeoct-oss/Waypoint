@@ -26,9 +26,10 @@
 #
 # Every run that uses Tuist collects code coverage (`Example/Tuist.swift`, #327) and tells Tuist
 # the branch it tests through GITHUB_HEAD_REF, which Tuist reads on any machine: the branch the
-# clone is on, or, on a merge batch's detached commit, the batch's branches joined with `+`. It
-# never sets GITHUB_REF or GITHUB_SHA, so Tuist posts no pull request comment and reports the
-# commit that ran.
+# clone is on, or, on a merge batch's detached commit, the batch's branches joined with `+`. A run
+# for one pull request (WAYPOINT_PULL_REQUEST) also tells Tuist that pull request through
+# GITHUB_REF, so Tuist posts its run report on it: the tests run and skipped, and links to the
+# runs. Tuist takes the commit from the checkout, so GITHUB_SHA is never set.
 #
 # Each build is made once: the host build with warnings as errors is the build `swift test` runs,
 # and the simulator build with warnings as errors is the build its tests run. Builds use at most
@@ -59,6 +60,8 @@
 #                             1 runs them on the simulator itself).
 #   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing and uploads
 #                             (default 0).
+#   WAYPOINT_PULL_REQUEST     the number of the pull request this run tests, whose page gets
+#                             Tuist's run report; unset for a merge batch of several branches.
 #   WAYPOINT_BASE             what the branch is compared with (default origin/main), for what
 #                             quick runs and whether selective testing is on.
 #   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
@@ -182,6 +185,39 @@ if [[ -z "${GITHUB_HEAD_REF:-}" ]]; then
     TUIST_BRANCH=$(tuist_branch)
     if [[ -n "$TUIST_BRANCH" ]]; then
         export GITHUB_HEAD_REF="$TUIST_BRANCH"
+    fi
+fi
+
+# The pull request Tuist posts its run report on. Tuist reads GITHUB_REF on any
+# machine, and its GitHub app comments on the pull request a `refs/pull/<n>/...` ref names, with
+# the commit the checkout is on. The script sets GITHUB_REF itself or clears it, so a value left in
+# the shell never sends a report to the wrong pull request, and stops when the pull request's
+# branch (read with `gh`, read-only) isn't the branch under test; when `gh` can't answer, no report. None for a coverage run (it tests
+# `main`), an offline run (it uploads nothing), or a merge batch of several branches (one report
+# can't name them all).
+TUIST_PULL_REQUEST=""
+unset GITHUB_REF
+if [[ -n "${WAYPOINT_PULL_REQUEST:-}" ]]; then
+    if [[ ! "$WAYPOINT_PULL_REQUEST" =~ ^[1-9][0-9]*$ ]]; then
+        echo "error: WAYPOINT_PULL_REQUEST must be a pull request number, not '$WAYPOINT_PULL_REQUEST'" >&2
+        exit 2
+    fi
+    if [[ "$TIER" == coverage ]]; then
+        echo "note: a coverage run tests main, so it posts no run report on pull request $WAYPOINT_PULL_REQUEST" >&2
+    elif [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
+        echo "note: an offline run uploads nothing, so it posts no run report on pull request $WAYPOINT_PULL_REQUEST" >&2
+    elif [[ "${GITHUB_HEAD_REF:-}" == *+* ]]; then
+        echo "note: a merge batch tests several branches, so it posts no run report on pull request $WAYPOINT_PULL_REQUEST" >&2
+    elif ! pr_branch=$(gh pr view "$WAYPOINT_PULL_REQUEST" --repo joeoct-oss/Waypoint \
+        --json headRefName --jq .headRefName 2>/dev/null) || [[ -z "$pr_branch" ]]; then
+        echo "note: gh couldn't say which branch pull request $WAYPOINT_PULL_REQUEST is, so this run posts no run report" >&2
+    elif [[ "$pr_branch" != "${GITHUB_HEAD_REF:-}" ]]; then
+        # A wrong number would post this run's report on another pull request.
+        echo "error: pull request $WAYPOINT_PULL_REQUEST is $pr_branch, but this run tests ${GITHUB_HEAD_REF:-no branch}" >&2
+        exit 2
+    else
+        TUIST_PULL_REQUEST="$WAYPOINT_PULL_REQUEST"
+        export GITHUB_REF="refs/pull/$TUIST_PULL_REQUEST/head"
     fi
 fi
 # How long each tier may run before TESTING.md calls it hung, in minutes.
@@ -676,8 +712,9 @@ fi
 # The report says whether a passed target could have been skipped (TESTING.md, Report the result).
 echo "selective testing: $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING"
 echo "tuist branch: ${GITHUB_HEAD_REF:-none}"
+echo "tuist pull request: ${TUIST_PULL_REQUEST:-none}"
 if $PLAN_ONLY; then
-    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, tuist branch ${GITHUB_HEAD_REF:-none}"
+    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}"
     trap - EXIT
     exit 0
 fi
