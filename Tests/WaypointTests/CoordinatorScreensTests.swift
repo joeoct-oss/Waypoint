@@ -96,6 +96,7 @@
         /// The product shown.
         let id: Int
 
+        /// The product's name.
         var body: some View {
             Text("Product \(id)")
         }
@@ -106,6 +107,7 @@
     /// Conformances:
     /// - `View`, so it can be a coordinator's screen.
     private struct ScreensCartView: View {
+        /// The cart's title.
         var body: some View {
             Text("Cart")
         }
@@ -116,10 +118,12 @@
     /// Conformances:
     /// - `StackCoordinator`, so Waypoint registers its destinations and draws its view.
     private final class ScreensShopCoordinator: StackCoordinator {
+        /// The cart.
         var root: some View {
             ScreensCartView()
         }
 
+        /// A product, and the cart again with the navigator.
         var destinations: some Destinations {
             Destination(ProductRoute.self) { route in
                 ScreensProductView(id: route.id)
@@ -135,6 +139,7 @@
     /// Conformances:
     /// - `StackCoordinator`, so Waypoint fills in its destinations.
     private final class ScreensRootOnlyCoordinator: StackCoordinator {
+        /// The cart.
         var root: some View {
             ScreensCartView()
         }
@@ -148,17 +153,18 @@
         /// Picks the root's branch.
         let signedIn: Bool
 
-        /// Creates a coordinator whose root shows the product when `signedIn`.
-        init(signedIn: Bool) {
-            self.signedIn = signedIn
-        }
-
+        /// The product when signed in, else the cart.
         var root: some View {
             if signedIn {
                 ScreensProductView(id: 1)
             } else {
                 ScreensCartView()
             }
+        }
+
+        /// Creates a coordinator whose root shows the product when `signedIn`.
+        init(signedIn: Bool) {
+            self.signedIn = signedIn
         }
     }
 
@@ -170,6 +176,7 @@
         /// Whether the root shows the cart.
         let showsCart = true
 
+        /// The cart, when `showsCart`.
         var root: some View {
             if showsCart {
                 ScreensCartView()
@@ -186,10 +193,12 @@
         /// Conformances:
         /// - `StackCoordinator`, so its view controllers are wrapped as screens.
         private final class ScreensControllerCoordinator: StackCoordinator {
+            /// A view controller.
             var root: some View {
                 ScreensViewController()
             }
 
+            /// A view controller for each product.
             var destinations: some Destinations {
                 Destination(ProductRoute.self) { _ in
                     ScreensViewController()

@@ -16,8 +16,9 @@ import Waypoint
 //
 // It stores no router: `TabCoordinator` makes one with `makeRouter()` the first time it is read,
 // and asks `tabCoordinator(for:)` for each tab's coordinator then, so each tab's stack is that
-// coordinator's router. A tab added later gets its coordinator when it is added, and a removed
-// tab's coordinator is let go.
+// coordinator's router. A tab added later gets its coordinator when it is added. A removed tab's
+// coordinator is kept for the life of the demo, and gets the tab's new stack when the tab is added
+// back.
 //
 // The tab bar is still SwiftUI's, bound to the tab router, until Waypoint draws tabs.
 //
