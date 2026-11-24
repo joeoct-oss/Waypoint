@@ -175,7 +175,7 @@ stop_step_tools() {
     done
 }
 
-# This run's result bundles, one per example app test step, whose slowest tests the report lists.
+# This run's result bundles, one per simulator test step, whose slowest tests the report lists.
 RESULTS_DIR=.build/results
 SLOWEST_TEST_COUNT=10
 
@@ -417,12 +417,17 @@ tuist_cmd() {
     fi
 }
 
-# The package's unit tests on a simulator, built with warnings as errors: the one simulator build
-# checks the warnings and runs the tests.
+# The package's unit tests on the simulator `udid`, built with warnings as errors: the one
+# simulator build checks the warnings and runs the tests. The result bundle `bundle_name` in
+# `.build/results` puts the step's test count and slowest tests in the report, as the example app's
+# steps do.
 package_tests_on() {
+    local udid="$1" bundle_name="$2"
+    mkdir -p "$RESULTS_DIR"
     xcodebuild test "${XCODE_TEST_FLAGS[@]}" \
         -scheme Waypoint-Package \
-        -destination "platform=iOS Simulator,id=$1" \
+        -destination "platform=iOS Simulator,id=$udid" \
+        -resultBundlePath "$RESULTS_DIR/$bundle_name.xcresult" \
         SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
 }
 
@@ -554,7 +559,7 @@ if $RUN_SIMULATOR || $RUN_UI; then
 fi
 
 if $RUN_SIMULATOR; then
-    step "xcodebuild test Waypoint-Package with warnings as errors on $SIMULATOR_NAME" package_tests_on "$UDID"
+    step "xcodebuild test Waypoint-Package with warnings as errors on $SIMULATOR_NAME" package_tests_on "$UDID" package
 fi
 
 if $RUN_UI; then
@@ -586,7 +591,7 @@ if $RUN_IOS17; then
         exit 1
     fi
     claim_simulator "$IOS17_SIMULATOR_NAME" "$IOS17_UDID"
-    step "xcodebuild test Waypoint-Package on $IOS17_SIMULATOR_NAME" package_tests_on "$IOS17_UDID"
+    step "xcodebuild test Waypoint-Package on $IOS17_SIMULATOR_NAME" package_tests_on "$IOS17_UDID" package-ios17
     step "tuist test example app on $IOS17_SIMULATOR_NAME" \
         example_tests_on "$IOS17_UDID" "$IOS17_SIMULATOR_NAME" example-ios17
 fi
