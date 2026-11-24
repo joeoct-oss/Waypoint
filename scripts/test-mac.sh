@@ -24,8 +24,9 @@
 # WAYPOINT_JOBS jobs, only one run uses a simulator at a time, and the script shuts down each
 # simulator it booted. The example app's tests run through `tuist test`, which also generates the
 # project, on WAYPOINT_UI_WORKERS temporary copies of the simulator at once (#312); Xcode makes the
-# copies and removes them, and the package's tests never use copies. It ends with the time each step took and
-# the 10 slowest example app tests of each run (#295), read from its result bundle.
+# copies and removes them, and the package's tests never use copies. It ends with the time each
+# step took and the 10 slowest tests of each simulator test step, the package's included (#295),
+# read from its result bundle.
 #
 # One run at a time: the script first takes a run lock that every clone of the repo shares
 # (#294). A second run stops at once and names the run that holds it. A lock left by a run that
