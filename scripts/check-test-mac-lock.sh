@@ -303,6 +303,29 @@ expect_cache "an offline full run builds from source and doesn't warm" \
 # A pull request's run report shows its coverage, which cached package modules would leave out.
 expect_cache "a full run for a pull request builds from source and warms" \
     "binary cache off, warm binary cache true" full WAYPOINT_PULL_REQUEST=42 STUB_PR_BRANCH=main
+# The package's own test steps send their result bundles to Tuist's Test Insights (planning #457),
+# except offline, and a failed send never fails the step.
+expect_package_insights() {
+    local name="$1" want="$2" got
+    shift 2
+    got=$(cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+        "${@:2}" scripts/test-mac.sh "$1" --plan 2>/dev/null | grep '^plan:' || true)
+    if [[ "$got" == *", package test insights $want, "* ]]; then
+        pass "$name"
+    else
+        fail "$name (plan: ${got:-none})"
+    fi
+}
+expect_package_insights "a quick run sends the package's test results to Tuist" on quick
+expect_package_insights "a release run sends the package's test results to Tuist" on release
+expect_package_insights "an offline run sends the package's results nowhere" off full WAYPOINT_TUIST_OFFLINE=1
+if grep -A16 "^package_tests_on()" scripts/test-mac.sh | grep -q 'send_package_test_results "$bundle" || true' &&
+    grep -A8 "^send_package_test_results()" scripts/test-mac.sh |
+    grep -q 'tuist_cmd inspect test --path Example --result-bundle-path "$1"'; then
+    pass "each package test step sends its result bundle, and a failed send doesn't fail it"
+else
+    fail "each package test step sends its result bundle, and a failed send doesn't fail it"
+fi
 if grep -q "local BINARY_CACHE=off" scripts/test-mac.sh &&
     grep -A3 "^release_reports_on()" scripts/test-mac.sh | grep -q "local BINARY_CACHE=off"; then
     pass "the release reports step never uses the binary cache"
