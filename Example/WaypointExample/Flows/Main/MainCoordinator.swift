@@ -81,32 +81,24 @@ final class MainCoordinator {
             onGoToCart: { Self.goToCart(tabs: tabs, cart: cart) },
             onCheckout: { Self.checkOut(tabs: tabs, cart: cart) }
         )
-        let navigation = ProductsNavigation(
-            configuration: services.navigation,
-            usesSystemLinks: launch.usesSystemLinks,
-            linksToMissingDestination: launch.linksToMissingDestination
+        let productsFactory = ProductsFactory(
+            dependencies: services.productsDependencies(gate: gate, launch: launch)
         )
         self.gate = gate
         self.tabs = tabs
         issues = services.issues
         self.cart = cart
-        shop = ProductsCoordinator(
+        shop = productsFactory.makeCoordinator(
             start: .browse,
             router: tabs.router(for: .shop),
-            store: services.store,
-            gate: gate,
             launchSteps: launch.shopSteps,
-            navigation: navigation,
             onAddToCart: addToCart,
             cart: productsCart
         )
-        search = ProductsCoordinator(
+        search = productsFactory.makeCoordinator(
             start: .search,
             router: tabs.router(for: .search),
-            store: services.store,
-            gate: gate,
             launchSteps: .none,
-            navigation: navigation,
             onAddToCart: addToCart,
             cart: productsCart
         )

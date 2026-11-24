@@ -12,6 +12,6 @@
 struct ProductsDependencies {
     let catalog: any ProductCatalog
     let store: LocalStore
-    let gate: AccountGate
+    let gate: any SheetAccountGating
     let navigation: ProductsNavigation
 }
