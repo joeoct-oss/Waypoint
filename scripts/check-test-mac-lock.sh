@@ -310,10 +310,14 @@ else
     pass "a coverage run refuses a branch other than main"
 fi
 batch_commit checkout -q --detach main
-if plan_of coverage >/dev/null; then
-    fail "a coverage run refuses a detached commit"
+expect_branch "a coverage run on main's commit, detached as the preflight leaves it, tells Tuist main" \
+    main coverage
+batch_commit checkout -q --detach feature/first-part
+if (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=main \
+    scripts/test-mac.sh coverage --plan >/dev/null 2>&1); then
+    fail "a coverage run refuses a detached commit that isn't main's"
 else
-    pass "a coverage run refuses a detached commit"
+    pass "a coverage run refuses a detached commit that isn't main's"
 fi
 batch_commit checkout -q main
 touch "$TREE/Sources/WaypointCore/CoverageProbe.swift"

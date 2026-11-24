@@ -110,12 +110,13 @@ BASE_REF="${WAYPOINT_BASE:-origin/main}"
 RUN_LOCK="${WAYPOINT_RUN_LOCK:-/tmp/waypoint-test-mac.lock}"
 
 # A coverage run marks `main`'s commit complete on the Tuist dashboard (#327), so it runs only on
-# `main`'s own commit, unchanged, which is BASE_REF's: never on a branch or a merge batch, whose
-# commits never land on `main` (merges squash).
+# `main`'s own commit, unchanged, which is BASE_REF's: checked out as `main`, or detached there, as
+# the preflight's checkout leaves it. Never on another branch or a merge batch, whose commits never
+# land on `main` (merges squash). Tuist is told the branch is `main` either way.
 if [[ "$TIER" == coverage ]]; then
     current_branch=$(git symbolic-ref -q --short HEAD || true)
-    if [[ "$current_branch" != main ]]; then
-        echo "error: a coverage run runs on main only, not on ${current_branch:-a detached commit}" >&2
+    if [[ -n "$current_branch" && "$current_branch" != main ]]; then
+        echo "error: a coverage run runs on main only, not on $current_branch" >&2
         exit 2
     fi
     if [[ -n "$(git status --porcelain)" ]]; then
@@ -123,9 +124,10 @@ if [[ "$TIER" == coverage ]]; then
         exit 2
     fi
     if [[ "$(git rev-parse HEAD)" != "$(git rev-parse -q --verify "$BASE_REF^{commit}" || true)" ]]; then
-        echo "error: main isn't $BASE_REF; pull main first" >&2
+        echo "error: a coverage run runs on $BASE_REF's commit only; check it out first" >&2
         exit 2
     fi
+    export GITHUB_HEAD_REF="${GITHUB_HEAD_REF:-main}"
     if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
         echo "error: a coverage run uploads to Tuist, so it can't run with WAYPOINT_TUIST_OFFLINE=1" >&2
         exit 2
