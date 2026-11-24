@@ -17,12 +17,12 @@ import WaypointCore
 // (`SignInReason`), and a toast over the tabs says "Signed in as" with the action that carries on,
 // or "Signed out" after Sign out.
 //
-// The main tab router presents the accounts flow (`SignInRoute`), so it joins the app's one
-// navigation tree, and the flow's coordinator runs on the presented router. An action inside a
+// The main tab router presents the accounts flow, a child flow `AuthFactory` builds, so it joins
+// the app's one navigation tree and the gate gets the account it finishes with. An action inside a
 // sheet can open the flow over that sheet instead (`requireAccount(for:over:then:done:)`), two
 // levels deep: the sheet's router presents it, the action runs as soon as the reader signs in, and
 // the flow shows Signed in, whose Done the caller runs to close both sheets. The sheet itself is
-// still SwiftUI's, bound to the router, until Waypoint draws sheets.
+// still SwiftUI's, bound to the router, until Waypoint draws presented flows.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `MainTabView` presents and dismisses the accounts sheet,
@@ -33,7 +33,7 @@ final class AccountGate {
     private static let signInTrigger = "sign_in"
 
     private let session: Session
-    private let service: any AuthService
+    private let factory: AuthFactory
     private let tabs: TabRouter<MainTab>
     // `var` because `requireAccount(for:then:)` holds the action until the reader signs in or
     // cancels.
@@ -49,9 +49,6 @@ final class AccountGate {
     // `var` for the same reason as `presentedAuth`: the sheet's router the flow opened over, or
     // `nil` when it opened over the tabs.
     private var authPresenter: StackRouter?
-    // `var` because `requireAccount(for:over:then:done:)` keeps what Done on Signed in runs until
-    // the flow closes.
-    private var onSignedInDone: (() -> Void)?
     // `var` because `showSignIn(for:then:)` keeps why the sheet opened until the reader signs in.
     private var reason: SignInReason
     // `var` because signing in and out set it, and its timer clears it.
@@ -71,19 +68,17 @@ final class AccountGate {
 
     init(
         session: Session,
-        service: any AuthService,
+        factory: AuthFactory,
         tabs: TabRouter<MainTab>
     ) {
         self.session = session
-        self.service = service
+        self.factory = factory
         self.tabs = tabs
-        tabs.register(SignInRoute.self)
         heldAction = nil
         didSignIn = false
         presentedAuth = nil
         authSheetOptions = nil
         authPresenter = nil
-        onSignedInDone = nil
         reason = .account
         notice = nil
         noticeTimer = nil
@@ -105,12 +100,15 @@ final class AccountGate {
         then action: (() -> Void)? = nil
     ) {
         hold(action, for: reason)
-        tabs.present(SignInRoute(), style: AppSheets.large, trigger: Self.signInTrigger)
-        guard let router = tabs.presented else {
+        let auth = factory.makeAuth(reason: reason)
+        let outcome = tabs.present(auth, style: AppSheets.large, trigger: Self.signInTrigger) { result in
+            self.authEnded(with: result)
+        }
+        guard outcome.didChange else {
             return
         }
         authSheetOptions = tabs.state.presentation.map { tabs.sheetOptions(for: $0) }
-        presentedAuth = makeAuth(on: router, reason: reason)
+        presentedAuth = auth
     }
 
     // Like `requireAccount(for:then:)`, but a guest gets the accounts flow over `presenter`, the
@@ -127,15 +125,20 @@ final class AccountGate {
             return
         }
         hold(action, for: reason)
-        presenter.register(SignInRoute.self)
-        presenter.present(SignInRoute(), style: AppSheets.large, trigger: Self.signInTrigger)
-        guard let router = presenter.presented else {
+        let step = SignedInStep(
+            onSignedIn: { _ in self.signedInOverSheet() },
+            onDone: done
+        )
+        let auth = factory.makeAuth(reason: reason, signedInStep: step)
+        let outcome = presenter.present(auth, style: AppSheets.large, trigger: Self.signInTrigger) { result in
+            self.authEnded(with: result)
+        }
+        guard outcome.didChange else {
             return
         }
         authPresenter = presenter
-        onSignedInDone = done
         authSheetOptions = presenter.state.presentation.map { presenter.sheetOptions(for: $0) }
-        presentedAuth = makeAuth(on: router, reason: reason)
+        presentedAuth = auth
     }
 
     // Whether the accounts flow is presented over the sheet `router` draws.
@@ -175,7 +178,6 @@ final class AccountGate {
         presentedAuth = nil
         authSheetOptions = nil
         authPresenter = nil
-        onSignedInDone = nil
         runHeldAction()
     }
 
@@ -196,19 +198,6 @@ final class AccountGate {
         self.reason = reason
     }
 
-    private func makeAuth(
-        on router: StackRouter,
-        reason: SignInReason
-    ) -> AuthCoordinator {
-        AuthCoordinator(
-            router: router,
-            reason: reason,
-            service: service,
-            onSignedIn: { self.finishSigningIn(as: $0) },
-            onCancel: { self.dismissAuth() }
-        )
-    }
-
     private func runHeldAction() {
         let action = didSignIn ? heldAction : nil
         heldAction = nil
@@ -216,18 +205,20 @@ final class AccountGate {
         action?()
     }
 
-    // Over the tabs, the sheet closes and the held action runs once it has gone. Over another
-    // sheet, the action runs now and the flow stays to show Signed in.
-    private func finishSigningIn(as account: Account) {
-        session.signIn(account)
-        didSignIn = true
-        guard let onSignedInDone else {
-            show(Notice(title: "Signed in as \(account.name)", detail: reason.resumedAction))
-            dismissAuth()
+    // The flow over the tabs finished with the account: say so, and run the held action once the
+    // sheet has gone. Cancel drops it.
+    private func authEnded(with result: FlowResult<Account>) {
+        guard case .finished(let account) = result else {
             return
         }
+        didSignIn = true
+        show(Notice(title: "Signed in as \(account.name)", detail: reason.resumedAction))
+    }
+
+    // Over another sheet, the action runs now and the flow stays to show Signed in.
+    private func signedInOverSheet() {
+        didSignIn = true
         runHeldAction()
-        presentedAuth?.showSignedIn(as: account, onDone: onSignedInDone)
     }
 
     private func show(_ notice: Notice) {

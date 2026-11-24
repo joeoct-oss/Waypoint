@@ -8,14 +8,6 @@
 
 import WaypointCore
 
-// Sign in, the root of the accounts flow the main tab router presents as a sheet.
-//
-// Conformances:
-// - `TrackableScreen`, a `Route` the journey log names "Sign in".
-struct SignInRoute: TrackableScreen {
-    static let screenName = "Sign in"
-}
-
 // A step of Create account, pushed on the accounts flow's router above Sign in.
 //
 // Conformances:

@@ -24,7 +24,8 @@ final class NestedSheetTests: XCTestCase {
     private static let presentedMark = "sheet"
     private static let wishlistClose = NSPredicate(format: "label CONTAINS 'dismiss' AND label CONTAINS 'wishlist'")
     private static let savedClose = NSPredicate(format: "label CONTAINS 'dismiss' AND label CONTAINS 'saved'")
-    private static let signInClose = NSPredicate(format: "label CONTAINS 'dismiss' AND label CONTAINS 'signIn'")
+    // The accounts flow is `AuthCoordinator`'s, so the log names it `auth`.
+    private static let signInClose = NSPredicate(format: "label CONTAINS 'dismiss' AND label CONTAINS 'auth'")
 
     func testSignInOpensOverWishlist() {
         let app = ExampleApp.launch()
@@ -40,6 +41,14 @@ final class NestedSheetTests: XCTestCase {
         let wishlist = app.descendants(matching: .any)[Identifiers.wishlist]
         XCTAssertTrue(wishlist.waitForExistence(timeout: UITestSteps.timeout), "Cancel closed the wish list too")
         XCTAssertTrue(app.buttons[Identifiers.wishlistSave(id: Self.suggestedID)].exists, "Cancel saved the product")
+
+        // Cancel dismissed the accounts flow on its own, under the name `testDoneClosesAllSheets`
+        // looks for.
+        app.buttons[Identifiers.wishlistDone].tapWhenReady()
+        XCTAssertTrue(wishlist.waitForNonExistence(timeout: UITestSteps.timeout), "Done left the wish list open")
+        app.openLabTool(.eventLog)
+        let signInEntry = app.descendants(matching: .any).matching(Self.signInClose).firstMatch
+        XCTAssertTrue(app.reveal(signInEntry), "the event log doesn't show the accounts flow closing")
     }
 
     func testDoneClosesAllSheets() {

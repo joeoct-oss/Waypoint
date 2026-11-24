@@ -63,16 +63,13 @@ struct ResetPasswordCoordinatorTests {
         defer {
             store.clearAll()
         }
-        // The app's rules replace a presentation that is already up.
-        let router = StackRouter()
-        router.setFallback(.replacePresentation, for: .alreadyPresenting)
-        let auth = AuthCoordinator(
-            router: router,
-            reason: .account,
-            service: MockAuthService(store: store),
-            onSignedIn: { _ in },
-            onCancel: { }
+        let dependencies = AuthDependencies(
+            session: Session(store: store),
+            service: MockAuthService(store: store)
         )
+        let auth = AuthFactory(dependencies: dependencies).makeAuth(reason: .account)
+        // The app's rules replace a presentation that is already up.
+        auth.router.setFallback(.replacePresentation, for: .alreadyPresenting)
         auth.showResetPassword()
         let first = auth.resetPassword
 
