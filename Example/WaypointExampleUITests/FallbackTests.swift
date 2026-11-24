@@ -8,10 +8,10 @@
 
 import XCTest
 
-// What the app does when a navigation call can't happen (#280). The main tab router sets two
-// fallbacks every flow inherits: a `popTo` of a screen that isn't in the stack pops to the root,
-// and a present while a flow is up replaces it. Each recovery shows in the issue banner over the
-// tabs and as a recovered entry in the Lab's event log. Settings' toggle changes the duplicate
+// What the app does when a navigation call can't happen (planning #415). The main tab router sets
+// two fallbacks every flow inherits: a `popTo` of a screen that isn't in the stack pops to the
+// root, and a present while a flow is up replaces it. Each recovery shows in the issue banner over
+// the tabs and as a recovered entry in the Lab's event log. Settings' toggle changes the duplicate
 // push rule, which Open Orders twice tries, and Settings counts a call no fallback covers.
 @MainActor
 final class FallbackTests: XCTestCase {

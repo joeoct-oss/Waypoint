@@ -8,11 +8,11 @@
 
 import XCTest
 
-// A sheet over a sheet, and every way Waypoint closes presentations (#278). Shop's wish list sheet
-// asks a guest to sign in over it, two levels deep: Cancel closes one level, and Done on Signed in
-// closes both in one change with `dismissAll`. The saved sheet's Close uses `@DismissFlow`, and the
-// wish list's Done uses `dismissFlow`. After each close the Lab's navigation tree shows nothing
-// presented, and the event log shows the close.
+// A sheet over a sheet, and every way Waypoint closes presentations (planning #413). Shop's wish
+// list sheet asks a guest to sign in over it, two levels deep: Cancel closes one level, and Done on
+// Signed in closes both in one change with `dismissAll`. The saved sheet's Close uses
+// `@DismissFlow`, and the wish list's Done uses `dismissFlow`. After each close the Lab's
+// navigation tree shows nothing presented, and the event log shows the close.
 @MainActor
 final class NestedSheetTests: XCTestCase {
     private static let shopTitle = "Shop"

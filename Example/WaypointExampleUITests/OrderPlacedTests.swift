@@ -8,10 +8,10 @@
 
 import XCTest
 
-// Order placed runs on checkout's Waypoint stack (#281): placing the order replaces the steps with
-// Order placed in one `setPath`, which the Lab's event log shows as one line with no Review left
-// in the stack. Continue shopping closes checkout and opens Shop at its root, since the tabs share
-// one stack and Add to cart's switch to Cart popped it.
+// Order placed runs on checkout's Waypoint stack (planning #416): placing the order replaces the
+// steps with Order placed in one `setPath`, which the Lab's event log shows as one line with no
+// Review left in the stack. Continue shopping closes checkout and opens Shop at its root, since the
+// tabs share one stack and Add to cart's switch to Cart popped it.
 @MainActor
 final class OrderPlacedTests: XCTestCase {
     private static let shopTitle = "Shop"

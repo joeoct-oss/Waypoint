@@ -53,7 +53,8 @@ let appSettings: SettingsDictionary = [
 ]
 
 // The package comes through Tuist's package integration (`Tuist/Package.swift`), so Tuist hashes
-// its sources and a change in it runs the app's tests again under selective testing (#324).
+// its sources and a change in it runs the app's tests again under selective testing
+// (planning #429).
 let appDependencies: [TargetDependency] = [
     .external(name: "WaypointCore"),
     .external(name: "Waypoint"),
@@ -132,11 +133,11 @@ let schemeTestTargets: [TestableTarget] = [
 ]
 
 // After every build, in Xcode or a script, `tuist inspect build` sends the build's timings to the
-// project's Tuist dashboard (Build Insights, #312). It runs the Tuist that mise pins, through
-// `mise exec`: a Tuist found on the PATH, such as Homebrew's, sent builds from other versions
-// (#327). Without mise it uses whatever Tuist there is. It never fails a build: a Mac that isn't
-// signed in to Tuist just sends nothing, and WAYPOINT_TUIST_OFFLINE=1 sends nothing. It takes the
-// app's build settings, which it reads.
+// project's Tuist dashboard (Build Insights, planning #427). It runs the Tuist that mise pins,
+// through `mise exec`: a Tuist found on the PATH, such as Homebrew's, sent builds from other
+// versions (planning #431). Without mise it uses whatever Tuist there is. It never fails a build: a
+// Mac that isn't signed in to Tuist just sends nothing, and WAYPOINT_TUIST_OFFLINE=1 sends nothing.
+// It takes the app's build settings, which it reads.
 let buildInsightsScript = """
 if [ "${WAYPOINT_TUIST_OFFLINE:-0}" = 1 ]; then
     exit 0

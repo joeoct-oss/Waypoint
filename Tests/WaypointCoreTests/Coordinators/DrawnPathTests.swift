@@ -12,7 +12,7 @@ import WaypointTestSupport
 @testable import WaypointCore
 
 /// What one stack shows when child flows are pushed on it, and which router hears what the user
-/// does to each screen (#59).
+/// does to each screen (planning #313).
 @Suite("Drawn path of pushed child flows")
 @MainActor
 struct DrawnPathTests {

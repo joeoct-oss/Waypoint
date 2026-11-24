@@ -8,8 +8,8 @@
 
 import XCTest
 
-// The Lab's Views and view models stories (#179), one test for each on the design canvas: every
-// navigation style pushes the same cart, a view model's late push after its flow closed is
+// The Lab's Views and view models stories (planning #363), one test for each on the design canvas:
+// every navigation style pushes the same cart, a view model's late push after its flow closed is
 // ignored while one made in time pushes, and a wrapper with no stack above it fails with
 // `noRouterInScope`.
 @MainActor

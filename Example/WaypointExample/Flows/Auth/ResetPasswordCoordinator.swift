@@ -9,10 +9,10 @@
 import SwiftUI
 import Waypoint
 
-// Reset password, the child flow the accounts flow starts as a sheet over Sign in (#59). Waypoint
-// makes its router and joins it to the accounts flow's tree when the sheet opens. Send link asks
-// the auth service to send the link. Done finishes the flow with the email the link went to, and
-// Cancel or a swipe down ends it, which the accounts flow gets as `.cancelled`.
+// Reset password, the child flow the accounts flow starts as a sheet over Sign in (planning #313).
+// Waypoint makes its router and joins it to the accounts flow's tree when the sheet opens. Send
+// link asks the auth service to send the link. Done finishes the flow with the email the link went
+// to, and Cancel or a swipe down ends it, which the accounts flow gets as `.cancelled`.
 //
 // The sheet itself is still SwiftUI's, drawn by the accounts flow, until Waypoint draws presented
 // flows.

@@ -4,7 +4,7 @@ Login, tabs, a detail push, a sheet and a deep link, in a UIKit app with view co
 
 ## Overview
 
-> Note: Draft until #59. The API in this article is planned, not built, and can still change: coordinators (#59), the UIKit stack renderer (#14), and the UIKit half of roots and windows (#220).
+> Note: Draft until planning #313. The API in this article is planned, not built, and can still change: coordinators (planning #313), the UIKit stack renderer (planning #268), and the UIKit half of roots and windows (planning #380).
 
 These are the same five flows as in <doc:ExampleFlows>, in an app with a scene delegate. The routes, the routers and the coordinators don't change. Only two things do: the window comes from the scene delegate, and the screens are view controllers. That is what lets an app move a flow from SwiftUI to UIKit, or back, one screen at a time.
 
@@ -63,7 +63,7 @@ final class LoginCoordinator: StackCoordinator {
 
 ### 2. Tabs, one stack each
 
-`MainTabsCoordinator` is the same as in the SwiftUI example. Its tabs are drawn by the default tab renderer, which is SwiftUI's until the UIKit tab renderer lands (#50). Each tab shows its stack coordinator's `view`, drawn by whichever renderer that coordinator uses. Its tab labels are SwiftUI's `.tabItem`, so they need the SwiftUI tab renderer: how a tab coordinator gives its labels to a `UITabBarController` is designed with the UIKit tab renderer in #50.
+`MainTabsCoordinator` is the same as in the SwiftUI example. Its tabs are drawn by the default tab renderer, which is SwiftUI's until the UIKit tab renderer lands (planning #303). Each tab shows its stack coordinator's `view`, drawn by whichever renderer that coordinator uses. Its tab labels are SwiftUI's `.tabItem`, so they need the SwiftUI tab renderer: how a tab coordinator gives its labels to a `UITabBarController` is designed with the UIKit tab renderer in planning #303.
 
 ### 3. A detail push
 

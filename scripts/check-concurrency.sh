@@ -6,7 +6,7 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# The concurrency guard rail (#24). Fails when:
+# The concurrency guard rail (planning #278). Fails when:
 #
 # - Sources/ uses an unsafe concurrency escape: `@unchecked Sendable`, `nonisolated(unsafe)`,
 #   `@preconcurrency`, `assumeIsolated`, `unsafeBitCast`, `unsafeDowncast`, `Unmanaged`,

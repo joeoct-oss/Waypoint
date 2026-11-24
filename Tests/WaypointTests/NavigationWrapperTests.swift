@@ -19,7 +19,7 @@
     @testable import WaypointCore
 
     /// The navigation property wrappers, the flow stack, the navigator destination and the preview
-    /// helper, read from a real SwiftUI environment (#25, decision 0004).
+    /// helper, read from a real SwiftUI environment (planning #279, decision 0004).
     @Suite("Navigation wrappers")
     @MainActor
     struct NavigationWrapperTests {

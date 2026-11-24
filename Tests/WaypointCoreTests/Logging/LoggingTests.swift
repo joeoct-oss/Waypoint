@@ -11,8 +11,8 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The logging seam: levels, categories, privacy, issues and intervals (#77), checked in the
-/// structured format, whose lines are pinned. `ReadableLogTests` pins the readable format.
+/// The logging seam: levels, categories, privacy, issues and intervals (planning #327), checked in
+/// the structured format, whose lines are pinned. `ReadableLogTests` pins the readable format.
 @Suite("Logging")
 @MainActor
 struct LoggingTests {

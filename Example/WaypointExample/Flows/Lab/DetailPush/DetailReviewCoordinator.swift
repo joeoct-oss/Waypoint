@@ -10,10 +10,10 @@ import SwiftUI
 import Waypoint
 
 // Write a review, the child flow the Lab's Detail push flow pushes on its own stack from a product
-// (#59). Its screens follow the product on the same stack: the rating first, then the note the
-// rating pushes on the review flow's own router. Post review finishes the flow with the stars,
-// which pops back to the product. Back past the rating ends it, which the Detail push flow gets as
-// `.cancelled`.
+// (planning #313). Its screens follow the product on the same stack: the rating first, then the
+// note the rating pushes on the review flow's own router. Post review finishes the flow with the
+// stars, which pops back to the product. Back past the rating ends it, which the Detail push flow
+// gets as `.cancelled`.
 //
 // Conformances:
 // - `FlowCoordinator`, so the Detail push flow pushes it with `push(_:onFinish:)` and gets the

@@ -10,8 +10,8 @@ import Testing
 import Waypoint
 @testable import WaypointExample
 
-// The Lab's Detail push coordinator stores no router (#59): Waypoint makes it from the Lab's
-// configuration the first time it is read, names it after the coordinator, and makes it inert
+// The Lab's Detail push coordinator stores no router (planning #313): Waypoint makes it from the
+// Lab's configuration the first time it is read, names it after the coordinator, and makes it inert
 // once the Lab lets the demo go, so a navigator kept past the demo changes nothing.
 struct DetailPushCoordinatorTests {
     private static let flowID = FlowID("detailPush")

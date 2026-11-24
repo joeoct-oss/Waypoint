@@ -7,7 +7,7 @@
 //
 
 // Must not compile: a log handler can be called from any thread, so it must be `Sendable`
-// (#24, P13).
+// (planning #278, P13).
 // expected-error: stored property 'lines' of 'Sendable'-conforming class 'LineCollector' is mutable
 // swift-5: warns
 

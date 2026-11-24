@@ -11,7 +11,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The duplicate push rule: a double tap pushes one screen (#142).
+/// The duplicate push rule: a double tap pushes one screen (planning #344).
 @Suite("Duplicate push rule")
 @MainActor
 struct DuplicatePushTests {

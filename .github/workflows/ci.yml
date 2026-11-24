@@ -1,5 +1,5 @@
 # Runs the Linux checks (scripts/test-linux.sh) on pull requests to main.
-# Every job runs on Tuist runners (`tuist-linux`, #332), not GitHub-hosted runners, so CI uses the
+# Every job runs on Tuist runners (`tuist-linux`, planning #433), not GitHub-hosted runners, so CI uses the
 # Tuist account's Linux minutes instead of GitHub Actions minutes. Built to use few of them:
 # - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
 # - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**, docs-theme/**)

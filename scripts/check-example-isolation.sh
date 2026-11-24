@@ -10,7 +10,7 @@
 # default (`SWIFT_DEFAULT_ACTOR_ISOLATION` in Example/Project.swift), so code there marks only what
 # runs elsewhere, with `nonisolated` or `@concurrent`. The one allowed form is a task that
 # nonisolated code sends back to the main actor, `Task { @MainActor in`. The package writes every
-# isolation explicitly and isn't checked here. See CODE_STYLE.md. The lint setup (#70) takes this
+# isolation explicitly and isn't checked here. See CODE_STYLE.md. The lint setup (planning #324) takes this
 # over as the custom SwiftLint rule `no_main_actor_in_example`.
 #
 # Usage: scripts/check-example-isolation.sh [example-dir]

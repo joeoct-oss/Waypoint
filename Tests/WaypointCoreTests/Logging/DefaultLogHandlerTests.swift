@@ -11,9 +11,9 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// What the renderers add to logging (#78): the default handler they may replace, the `push`
-/// interval and the held-change line. The unified log handler itself is tested on the Mac, in
-/// `WaypointOSLogTests`.
+/// What the renderers add to logging (planning #328): the default handler they may replace, the
+/// `push` interval and the held-change line. The unified log handler itself is tested on the Mac,
+/// in `WaypointOSLogTests`.
 @Suite("Default log handler")
 @MainActor
 struct DefaultLogHandlerTests {

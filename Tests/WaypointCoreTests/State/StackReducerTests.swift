@@ -11,7 +11,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The pure stack reducer (#45): every command, its changes, and the commands it refuses.
+/// The pure stack reducer (planning #298): every command, its changes, and the commands it refuses.
 @Suite("Stack reducer")
 struct StackReducerTests {
     let home = AnyRoute(HomeRoute())

@@ -18,9 +18,9 @@ import Waypoint
 //
 // Each feature's dependency struct comes from one method here, so a feature's needs are listed in
 // one place and a test passes fakes the same way. The coordinators still take their services one
-// by one until they move onto these structs (#59, #301). Every service here lives as long as the
-// app; what lives for one flow or one screen never goes in here. `clearAll()` removes
-// everything the app keeps, signs the reader out and puts the sample addresses back.
+// by one until they move onto these structs (planning #313, planning #424). Every service here
+// lives as long as the app; what lives for one flow or one screen never goes in here. `clearAll()`
+// removes everything the app keeps, signs the reader out and puts the sample addresses back.
 final class AppServices {
     let catalog: any ProductCatalog
     let store: LocalStore

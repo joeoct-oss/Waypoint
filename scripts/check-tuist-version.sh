@@ -6,7 +6,7 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Says whether a newer stable Tuist than the one `.mise.toml` pins is out (#334). The project runs
+# Says whether a newer stable Tuist than the one `.mise.toml` pins is out (planning #434). The project runs
 # the latest stable Tuist unless the new version is breaking: a newer minor or patch version gets a
 # bump pull request with the usual Mac gate, and a new major version goes to Yousef first
 # (TESTING.md). Canaries and release candidates never count.

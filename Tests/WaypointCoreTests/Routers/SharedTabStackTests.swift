@@ -12,7 +12,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// `TabRouter(stacks: .shared)`: the tabs share one stack above the tab bar (#276).
+/// `TabRouter(stacks: .shared)`: the tabs share one stack above the tab bar (planning #411).
 @Suite("Shared tab stack")
 @MainActor
 struct SharedTabStackTests {

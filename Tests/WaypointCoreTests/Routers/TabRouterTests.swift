@@ -11,7 +11,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// `TabRouter`: selection, one stack per tab, and presenting above the tabs (#46).
+/// `TabRouter`: selection, one stack per tab, and presenting above the tabs (planning #299).
 @Suite("Tab router")
 @MainActor
 struct TabRouterTests {

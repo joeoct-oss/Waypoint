@@ -7,7 +7,7 @@
 //
 
 // Must not compile: a shop navigator refuses a route of no flow; `shop.unscoped` takes it
-// (#25, decision 0004).
+// (planning #279, decision 0004).
 // expected-error: requires the types 'ShopFlow' and 'AnyFlow' be equivalent
 
 import WaypointCore

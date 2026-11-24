@@ -98,6 +98,6 @@ body:
     id: links
     attributes:
       label: Links
-      description: A bullet list, one per line, each a readable link such as "[Flow results between coordinators (#60)](url)". Never a bare #n or a raw URL. Write None if nothing.
+      description: A bullet list, one per line, each a readable link such as "[Flow results between coordinators (planning #314)](url)". Never a bare #n or a raw URL. Write None if nothing.
     validations:
       required: true
