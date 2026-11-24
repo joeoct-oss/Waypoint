@@ -287,6 +287,7 @@ expect_branch "a merge batch tells Tuist its branches in merge order" \
 # The preflight checks out `origin/<branch>` detached: the remote branch names it.
 git -C "$TREE" update-ref refs/remotes/origin/feature/first-part feature/first-part
 git -C "$TREE" update-ref refs/remotes/origin/main main
+git -C "$TREE" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
 batch_commit checkout -q --detach origin/feature/first-part
 expect_branch "a branch checked out detached from origin tells Tuist that branch" \
     feature/first-part full
@@ -321,6 +322,13 @@ fi
 batch_commit checkout -q --detach main
 expect_branch "a coverage run on main's commit, detached as the preflight leaves it, tells Tuist main" \
     main coverage
+got=$(cd "$TREE" && env PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+    GITHUB_HEAD_REF=chosen/by-hand scripts/test-mac.sh coverage --plan 2>/dev/null | grep '^plan:' || true)
+if [[ "$got" == *", tuist branch main" ]]; then
+    pass "a coverage run always tells Tuist main, whatever GITHUB_HEAD_REF says"
+else
+    fail "a coverage run always tells Tuist main, whatever GITHUB_HEAD_REF says (plan: ${got:-none})"
+fi
 batch_commit checkout -q --detach feature/first-part
 if (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=main \
     scripts/test-mac.sh coverage --plan >/dev/null 2>&1); then

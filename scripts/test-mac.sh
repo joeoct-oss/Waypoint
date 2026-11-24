@@ -128,7 +128,7 @@ if [[ "$TIER" == coverage ]]; then
         echo "error: a coverage run runs on $BASE_REF's commit only; check it out first" >&2
         exit 2
     fi
-    export GITHUB_HEAD_REF="${GITHUB_HEAD_REF:-main}"
+    export GITHUB_HEAD_REF=main
     if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
         echo "error: a coverage run uploads to Tuist, so it can't run with WAYPOINT_TUIST_OFFLINE=1" >&2
         exit 2
@@ -139,9 +139,9 @@ fi
 # machine, ahead of `git branch --show-current`, which names nothing on a detached commit. A merge
 # batch (scripts/merge-batch.sh) is a detached chain of merge commits by "Merge batch": its name
 # is the merged branches, in merge order, joined with `+`. Any other detached commit, such as the
-# preflight's `git checkout --detach origin/<branch>`, takes the remote branches that point at it
-# (`main` only when no other does), and none when no branch does. A GITHUB_HEAD_REF already set
-# wins.
+# preflight's `git checkout --detach origin/<branch>`, takes the `origin` branches that point at
+# it (`main` only when no other does), and none when no branch does. A GITHUB_HEAD_REF already set
+# wins, except in a coverage run, which is always `main`.
 tuist_branch() {
     local branch commit subject names=()
     local merge_subject="^Merge (remote-tracking )?branch '([^']+)'"
@@ -160,13 +160,13 @@ tuist_branch() {
     if [[ ${#names[@]} -eq 0 ]]; then
         local ref on_main=false
         while IFS= read -r ref; do
-            ref="${ref#*/}"
+            ref="${ref#refs/remotes/origin/}"
             case "$ref" in
-                HEAD | "") ;;
+                HEAD | refs/*) ;;
                 main) on_main=true ;;
                 *) names+=("$ref") ;;
             esac
-        done < <(git branch -r --points-at HEAD --format='%(refname:short)')
+        done < <(git branch -r --points-at HEAD --format='%(refname)')
         if [[ ${#names[@]} -eq 0 ]] && $on_main; then
             names=(main)
         fi
