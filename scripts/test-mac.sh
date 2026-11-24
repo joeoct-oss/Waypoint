@@ -138,8 +138,10 @@ fi
 # The branch Tuist shows for this run's tests and builds (#327). Tuist reads GITHUB_HEAD_REF on any
 # machine, ahead of `git branch --show-current`, which names nothing on a detached commit. A merge
 # batch (scripts/merge-batch.sh) is a detached chain of merge commits by "Merge batch": its name
-# is the merged branches, in merge order, joined with `+`. Any other detached commit has none. A
-# GITHUB_HEAD_REF already set wins.
+# is the merged branches, in merge order, joined with `+`. Any other detached commit, such as the
+# preflight's `git checkout --detach origin/<branch>`, takes the remote branches that point at it
+# (`main` only when no other does), and none when no branch does. A GITHUB_HEAD_REF already set
+# wins.
 tuist_branch() {
     local branch commit subject names=()
     local merge_subject="^Merge (remote-tracking )?branch '([^']+)'"
@@ -155,6 +157,20 @@ tuist_branch() {
         fi
         commit=$(git rev-parse -q --verify "$commit^1") || break
     done
+    if [[ ${#names[@]} -eq 0 ]]; then
+        local ref on_main=false
+        while IFS= read -r ref; do
+            ref="${ref#*/}"
+            case "$ref" in
+                HEAD | "") ;;
+                main) on_main=true ;;
+                *) names+=("$ref") ;;
+            esac
+        done < <(git branch -r --points-at HEAD --format='%(refname:short)')
+        if [[ ${#names[@]} -eq 0 ]] && $on_main; then
+            names=(main)
+        fi
+    fi
     if [[ ${#names[@]} -gt 0 ]]; then
         (
             IFS=+

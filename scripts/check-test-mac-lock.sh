@@ -284,8 +284,17 @@ for branch in feature/first-part fix/second-part; do
 done
 expect_branch "a merge batch tells Tuist its branches in merge order" \
     "feature/first-part+fix/second-part" full
+# The preflight checks out `origin/<branch>` detached: the remote branch names it.
+git -C "$TREE" update-ref refs/remotes/origin/feature/first-part feature/first-part
+git -C "$TREE" update-ref refs/remotes/origin/main main
+batch_commit checkout -q --detach origin/feature/first-part
+expect_branch "a branch checked out detached from origin tells Tuist that branch" \
+    feature/first-part full
+batch_commit checkout -q --detach origin/main
+expect_branch "main checked out detached from origin tells Tuist main" main full
 batch_commit checkout -q --detach feature/first-part
-expect_branch "another detached commit tells Tuist no branch" none full
+batch_commit commit -q --allow-empty -m "no branch here"
+expect_branch "a detached commit no branch points at tells Tuist no branch" none full
 batch_commit checkout -q main
 got=$(cd "$TREE" && env PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
     GITHUB_HEAD_REF=chosen/by-hand scripts/test-mac.sh quick --plan 2>/dev/null | grep '^plan:' || true)
