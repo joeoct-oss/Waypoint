@@ -22,6 +22,11 @@ final class StackTests: XCTestCase {
     private static let printTitle = "Star Chart Print"
     private static let collectionTitle = "Nebula nights"
     private static let collectionID = "nebula-nights"
+    // The lamp's trail on Shop, in either form: `main › shop › orbit lamp` on the bar, or
+    // `Route trail: main, shop, orbit lamp` on the strip.
+    private static let lampTrail = NSPredicate(
+        format: "label CONTAINS 'main' AND label CONTAINS 'shop' AND label CONTAINS 'orbit lamp'"
+    )
     private static let lampID = 1
     private static let mugID = 2
     private static let throwID = 3
@@ -39,22 +44,21 @@ final class StackTests: XCTestCase {
     // pass.
     private static let launchSettleTimeout: TimeInterval = 20
 
+    // A product pushes on Shop and hides the tab bar, and its route trail comes from the stack
+    // router: main, shop, then the product, on the bar's subtitle from iOS 26 and on the strip
+    // below the bar before that (planning #406). Back shows the tab bar again. The "Nebula nights"
+    // banner pushes its collection on the same stack, and a product in it pushes above the
+    // collection, so Back walks the collection and then the shop.
     func testPushAndBack() {
         let app = ExampleApp.launch(signedIn: true)
-
         app.buttons[Identifiers.product(id: Self.lampID)].tapWhenReady()
         XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(app.waitForTabBar(shown: false), "a pushed screen showed the tab bar")
+        let trail = app.descendants(matching: .any).matching(Self.lampTrail).firstMatch
+        XCTAssertTrue(trail.waitForExistence(timeout: UITestSteps.timeout), "the trail doesn't follow the router")
         app.goBack()
-
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(app.waitForTabBar(shown: true), "the shop hid the tab bar")
-    }
-
-    // The "Nebula nights" banner pushes its collection on the Shop stack, and a product in it
-    // pushes above the collection, so Back walks the collection and then the shop.
-    func testBannerOpensCollection() {
-        let app = ExampleApp.launch(signedIn: true)
 
         app.buttons[Identifiers.collection(id: Self.collectionID)].tapWhenReady()
         XCTAssertTrue(app.navigationBars[Self.collectionTitle].waitForExistence(timeout: UITestSteps.timeout))
@@ -63,7 +67,6 @@ final class StackTests: XCTestCase {
         app.goBack()
         XCTAssertTrue(app.navigationBars[Self.collectionTitle].waitForExistence(timeout: UITestSteps.timeout))
         app.goBack()
-
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
     }
 

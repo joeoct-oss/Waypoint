@@ -65,7 +65,7 @@
 #   WAYPOINT_SIMULATOR        the project simulator (default waypoint-01), created when missing.
 #   WAYPOINT_IOS17_SIMULATOR  the iOS 17 simulator for release (default waypoint-02); must exist.
 #   WAYPOINT_JOBS             build jobs (default half the performance cores, at least 2).
-#   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 2;
+#   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 3;
 #                             1 runs them on the simulator itself).
 #   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing, the binary
 #                             cache and uploads (default 0).
@@ -251,7 +251,7 @@ XCODE_TEST_FLAGS=(-quiet -jobs "$JOBS" -parallel-testing-enabled NO)
 
 # The example app's tests run on this many simulator copies at once (planning #427), so they take about
 # half as long.
-UI_WORKERS="${WAYPOINT_UI_WORKERS:-2}"
+UI_WORKERS="${WAYPOINT_UI_WORKERS:-3}"
 if [[ "$UI_WORKERS" -gt 1 ]]; then
     EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled YES -parallel-testing-worker-count "$UI_WORKERS")
 else

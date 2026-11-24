@@ -8,7 +8,7 @@
 
 import XCTest
 
-// The Navigation Lab's entry points: both branches, every flow of both kinds, the launch arguments
+// The Navigation Lab's entry points: both branches, a placeholder on each, the launch arguments
 // that open an entry directly, the Detail push flow, which runs for real, and the Lab tools: the
 // event log and the navigation tree.
 @MainActor
@@ -29,41 +29,33 @@ final class LabTests: XCTestCase {
     private static let fewTabs = 2
     private static let allTabs = 4
 
-    func testLabShowsBothBranches() {
-        let app = ExampleApp.launch(lab: true)
-
-        for branch in Branch.allCases {
-            let card = app.buttons[Identifiers.branch(branch)]
-            XCTAssertTrue(card.waitForExistence(timeout: UITestSteps.timeout), "missing \(branch.rawValue) branch")
-        }
-    }
-
-    func testEveryEntryOpensItsPlaceholder() {
-        let app = ExampleApp.launch(lab: true)
-
-        for branch in Branch.allCases {
-            open(branch, in: app)
-            for entry in FlowEntry.entries(in: branch) where !entry.isRunnable {
-                assertEntryOpensPlaceholder(entry, in: app)
-            }
-            app.goBack()
-        }
-    }
-
-    func testLaunchHelperOpensFlowDirectly() {
-        let app = ExampleApp.launch(
-            branch: .uiKit,
-            flow: .sheet,
-            kind: .swiftUI
-        )
+    // The launch arguments open an entry directly: the UIKit branch's SwiftUI sheet placeholder.
+    // Back walks to the Lab, which shows both branches, and a SwiftUI branch entry that isn't built
+    // yet opens its placeholder too. That every unbuilt entry has a placeholder and only the
+    // runnable ones have a demo is `FlowEntryCatalogTests`.
+    func testBranchesOpenTheirPlaceholders() throws {
         let entry = FlowEntry(
             branch: .uiKit,
             flow: .sheet,
             kind: .swiftUI
         )
-
+        let app = ExampleApp.launch(
+            branch: entry.branch,
+            flow: entry.flow,
+            kind: entry.kind
+        )
         let placeholder = app.otherElements[Identifiers.placeholder(entry)]
-        XCTAssertTrue(placeholder.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(placeholder.waitForExistence(timeout: UITestSteps.timeout), "the launch opened nothing")
+        app.goBack()
+        app.goBack()
+
+        for branch in Branch.allCases {
+            let card = app.buttons[Identifiers.branch(branch)]
+            XCTAssertTrue(card.waitForExistence(timeout: UITestSteps.timeout), "missing \(branch.rawValue) branch")
+        }
+        open(.swiftUI, in: app)
+        let unbuilt = FlowEntry.entries(in: .swiftUI).first { !$0.isRunnable }
+        assertEntryOpensPlaceholder(try XCTUnwrap(unbuilt), in: app)
     }
 
     func testEventLogListsOutcomes() {
@@ -121,30 +113,15 @@ final class LabTests: XCTestCase {
         XCTAssertTrue(product.exists, "back should pop the cart only")
     }
 
-    // Write a review pushes a child flow on the Detail push stack: its screens follow the
-    // product, and Post review pops back to the product, which shows the stars.
-    func testPushedReviewFlowFinishesOnTheSameStack() {
+    // Write a review pushes a child flow on the Detail push stack, after the product. Back from the
+    // review's first screen leaves the flow without a review, and the flow can be pushed again,
+    // with its first screen drawn. Post review then pops back to the product, which shows the
+    // stars.
+    func testPushedReviewFlowOnTheSameStack() {
         let app = openDetailPush()
         let product = openLampProduct(in: app)
-
-        app.buttons[Identifiers.detailWriteReview].tap()
-        app.buttons[Identifiers.detailReviewStars(Self.reviewStars)].tapWhenReady()
-        app.buttons[Identifiers.detailReviewPost].tapWhenReady()
-
-        let posted = app.staticTexts[Identifiers.detailReviewPosted]
-        XCTAssertTrue(posted.waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(posted.label.contains(Self.postedReview), "product says \(posted.label)")
-        XCTAssertTrue(product.exists, "Post review should pop back to the product")
-    }
-
-    // Back from the review's first screen leaves the flow without a review, and the flow can be
-    // pushed again, with its first screen drawn.
-    func testPushedReviewFlowLeftWithBackCanStartAgain() {
-        let app = openDetailPush()
-        openLampProduct(in: app)
         let writeReview = app.buttons[Identifiers.detailWriteReview]
         let rating = app.descendants(matching: .any)[Identifiers.detailReviewRating]
-
         writeReview.tap()
         XCTAssertTrue(rating.waitForExistence(timeout: UITestSteps.timeout))
         app.goBack()
@@ -155,7 +132,12 @@ final class LabTests: XCTestCase {
         let missing = app.staticTexts[Self.pushedFlowMissing]
         let drawn = rating.waitForExistence(timeout: UITestSteps.timeout)
         XCTAssertTrue(drawn, missing.exists ? missing.label : "no rating and no debug text")
-        XCTAssertTrue(app.buttons[Identifiers.detailReviewStars(Self.reviewStars)].exists)
+        app.buttons[Identifiers.detailReviewStars(Self.reviewStars)].tapWhenReady()
+        app.buttons[Identifiers.detailReviewPost].tapWhenReady()
+        let posted = app.staticTexts[Identifiers.detailReviewPosted]
+        XCTAssertTrue(posted.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(posted.label.contains(Self.postedReview), "product says \(posted.label)")
+        XCTAssertTrue(product.exists, "Post review should pop back to the product")
     }
 
     // TX-04: the Tabs story's tabs change at run time. Search stays selected when it stays, and

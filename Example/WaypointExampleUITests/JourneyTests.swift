@@ -27,7 +27,6 @@ final class JourneyTests: XCTestCase {
     ]
     private static let email = "nova@example.com"
     private static let password = "orbit-2026"
-    private static let wrongPassword = "wrong"
     private static let signUpName = "Nova Reader"
     private static let signUpCode = "204816"
     private static let checkoutReason = "Sign in to check out"
@@ -37,12 +36,12 @@ final class JourneyTests: XCTestCase {
     private static let cartProductTitle = "Orbit Lamp"
     // How many times the wish list test taps Back before it gives up.
     private static let backTapTries = 3
-    // The trail of product 1 on Shop, in either form: `main › shop › orbit lamp` on the bar, or
-    // `Route trail: main, shop, orbit lamp` on the strip.
-    private static let productTrail = NSPredicate(
-        format: "label CONTAINS 'main' AND label CONTAINS 'shop' AND label CONTAINS 'orbit lamp'"
+    // The setPath line: Order placed in the stack, with the steps it replaced gone.
+    private static let replacedPath = NSPredicate(
+        format: "label CONTAINS 'set' AND label CONTAINS 'Order placed' AND NOT (label CONTAINS 'Review')"
     )
     private static let savedProductID = 2
+    private static let savedProductTitle = "Comet Mug"
     private static let savedSearch = "mug"
     private static let savedSearchResultCount = "1 result"
     private static let orderID = 1042
@@ -55,29 +54,25 @@ final class JourneyTests: XCTestCase {
     private static let newAddressCity = "Springfield"
     private static let newAddressPostcode = "40233"
 
+    // A guest's first launch shows the splash, then Shop with every tab, and Account offers Sign in;
+    // a signed-in reader's Account shows their name.
     func testLaunchOpensShopForEveryone() {
         let firstLaunch = ExampleApp.launch(splashSeconds: Self.splashSeconds)
         let splash = firstLaunch.descendants(matching: .any)[Identifiers.splash]
         let shop = firstLaunch.navigationBars[Self.shopTitle]
         XCTAssertTrue(splash.waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(shop.waitForExistence(timeout: UITestSteps.timeout + TimeInterval(Self.splashSeconds)))
+        for title in Self.otherTabTitles {
+            XCTAssertTrue(firstLaunch.tabBars.buttons[title].exists, "missing \(title) tab")
+        }
+        firstLaunch.openTab(Self.accountTitle)
+        XCTAssertTrue(firstLaunch.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
         firstLaunch.terminate()
 
         let signedIn = ExampleApp.launch(signedIn: true)
         signedIn.openTab(Self.accountTitle)
 
         XCTAssertTrue(signedIn.staticTexts[Identifiers.accountName].waitForExistence(timeout: UITestSteps.timeout))
-    }
-
-    func testGuestSeesAllTabs() {
-        let app = ExampleApp.launch()
-
-        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
-        for title in Self.otherTabTitles {
-            XCTAssertTrue(app.tabBars.buttons[title].exists, "missing \(title) tab")
-        }
-        app.openTab(Self.accountTitle)
-        XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
     }
 
     // AU-02 and AU-03: a guest's Check out opens sign in, which says why; after signing in, a toast
@@ -104,24 +99,9 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(addressStep.waitForExistence(timeout: UITestSteps.timeout))
     }
 
-    func testWrongPasswordShowsError() {
-        let app = ExampleApp.launch()
-        app.openTab(Self.accountTitle)
-        app.buttons[Identifiers.accountSignIn].tapWhenReady()
-
-        signIn(
-            password: Self.wrongPassword,
-            in: app
-        )
-        let error = app.descendants(matching: .any)[Identifiers.authError]
-        XCTAssertTrue(error.waitForExistence(timeout: UITestSteps.timeout))
-        app.buttons[Identifiers.authCancel].tapWhenReady()
-
-        XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
-    }
-
     // A guest's Save opens sign in; the three Create account steps keep the typed name on the way
-    // back, the third takes the 6-digit code from the email, and the save carries on.
+    // back, the terms can't be swiped away, the third step takes the 6-digit code from the email,
+    // and the save carries on.
     func testSignUpInSheet() {
         let app = ExampleApp.launch()
         openSavedProduct(in: app)
@@ -144,27 +124,19 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(saved.waitForExistence(timeout: UITestSteps.timeout))
     }
 
-    func testResetPasswordSheet() {
-        let app = ExampleApp.launch()
-        app.openTab(Self.accountTitle)
-        app.buttons[Identifiers.accountSignIn].tapWhenReady()
-
-        app.buttons[Identifiers.forgotPassword].tapWhenReady()
-        app.buttons[Identifiers.resetSend].tapWhenReady()
-        let sent = app.descendants(matching: .any)[Identifiers.resetSent]
-        XCTAssertTrue(sent.waitForExistence(timeout: UITestSteps.timeout))
-        app.buttons[Identifiers.resetDone].tapWhenReady()
-
-        XCTAssertTrue(app.buttons[Identifiers.signInButton].waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertFalse(sent.exists)
-    }
-
     // MA-01: a recent search fills the field and lists its results under a count, a result opens
-    // the product, Save shows the small saved sheet, and View wish list swaps it for the wish list.
+    // the product on the Search stack from the search's view model, and Back returns to the
+    // results (planning #417). Save shows the small saved sheet, and View wish list swaps it for the
+    // wish list.
     func testSearchOpenAndSave() {
         let app = ExampleApp.launch(signedIn: true)
 
         openSavedProduct(in: app)
+        XCTAssertTrue(app.navigationBars[Self.savedProductTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+        let result = app.buttons[Identifiers.product(id: Self.savedProductID)]
+        XCTAssertTrue(result.waitForExistence(timeout: UITestSteps.timeout), "Back didn't return to the results")
+        result.tap()
         app.buttons[Identifiers.productSave].tapWhenReady()
         app.buttons[Identifiers.viewWishlist].tapWhenReady()
 
@@ -173,19 +145,17 @@ final class JourneyTests: XCTestCase {
         XCTAssertFalse(app.descendants(matching: .any)[Identifiers.savedSheet].exists)
     }
 
-    // MA-02: an empty cart says so, and Browse the shop opens Shop.
-    func testEmptyCartBrowsesShop() {
+    // MA-02 and the cart's checkout (planning #416): an empty cart says so and Browse the shop opens
+    // Shop. With the lamp added, checkout walks address, payment and review, and placing the order
+    // replaces the steps with Order placed in one `setPath`, which the event log shows as one line
+    // with no Review left. Continue shopping closes checkout and opens Shop at its root, since the
+    // tabs share one stack and Add to cart's switch to Cart popped it.
+    func testCheckoutPlacesOrder() {
         let app = ExampleApp.launch(signedIn: true)
-
         app.openTab(Self.cartTitle)
         app.buttons[Identifiers.browseShop].tapWhenReady()
-
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertFalse(app.buttons[Identifiers.checkout].exists)
-    }
-
-    func testCheckoutFromCartTab() {
-        let app = ExampleApp.launch(signedIn: true)
         addProductToCart(in: app)
 
         app.buttons[Identifiers.checkout].tapWhenReady()
@@ -193,13 +163,14 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.continueToReview].tapWhenReady()
         app.buttons[Identifiers.placeOrder].tapWhenReady()
         let placed = app.descendants(matching: .any)[Identifiers.orderPlaced]
-        XCTAssertTrue(placed.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(placed.waitForExistence(timeout: UITestSteps.timeout), "Order placed didn't show")
         app.buttons[Identifiers.continueShopping].tapWhenReady()
 
-        // The tabs share one stack, and Add to cart's switch to Cart popped it, so Shop opens at
-        // its root.
+        XCTAssertTrue(placed.waitForNonExistence(timeout: UITestSteps.timeout), "checkout stayed open")
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertFalse(placed.exists)
+        app.openLabTool(.eventLog)
+        let entry = app.descendants(matching: .any).matching(Self.replacedPath).firstMatch
+        XCTAssertTrue(app.reveal(entry), "the event log doesn't show the steps replaced in one change")
     }
 
     // MA-05: Add a new address pushes a form inside checkout. Saving goes back to the address step
@@ -232,17 +203,6 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.addressesButton].tapWhenReady()
         let saved = app.descendants(matching: .any)[Identifiers.address(label: Self.newAddressLabel)]
         XCTAssertTrue(saved.waitForExistence(timeout: UITestSteps.timeout))
-    }
-
-    // The trail comes from the stack router: a product pushed on Shop reads main, shop, then the
-    // product, on the bar's subtitle from iOS 26 and on the strip below the bar before that.
-    func testTrailFollowsRouter() {
-        let app = ExampleApp.launch()
-        XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
-        app.buttons[Identifiers.product(id: Self.cartProductID)].tapWhenReady()
-
-        let trail = app.descendants(matching: .any).matching(Self.productTrail).firstMatch
-        XCTAssertTrue(trail.waitForExistence(timeout: UITestSteps.timeout))
     }
 
     // MA-03: a guest's Wish list on Account asks to sign in through the account gate, then the wish
@@ -323,16 +283,6 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons[Self.shopTitle].exists)
     }
 
-    func testSettingsOpensLab() {
-        let app = ExampleApp.launch()
-
-        app.openTab(Self.accountTitle)
-        app.buttons[Identifiers.settingsButton].tapWhenReady()
-        app.buttons[Identifiers.labButton].tapWhenReady()
-
-        XCTAssertTrue(app.buttons[Identifiers.branch(.swiftUI)].waitForExistence(timeout: UITestSteps.timeout))
-    }
-
     func testClearAllDataStartsOver() {
         let app = ExampleApp.launch(signedIn: true)
         addProductToCart(in: app)
@@ -407,7 +357,11 @@ final class JourneyTests: XCTestCase {
         app.buttons[Identifiers.signUpTerms].tapWhenReady()
         let terms = app.descendants(matching: .any)[Identifiers.terms]
         XCTAssertTrue(terms.waitForExistence(timeout: UITestSteps.timeout))
+        // The terms sheet is locked (planning #412): a swipe leaves it, and only Done closes it.
+        terms.swipeDown(velocity: .fast)
+        XCTAssertFalse(terms.waitForNonExistence(timeout: UITestSteps.timeout), "a swipe closed the terms")
         app.buttons[Identifiers.termsDone].tapWhenReady()
+        XCTAssertTrue(terms.waitForNonExistence(timeout: UITestSteps.timeout), "Done didn't close the terms")
         app.switches[Identifiers.signUpAcceptTerms].turnOn()
     }
 

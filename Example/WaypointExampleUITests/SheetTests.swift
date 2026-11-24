@@ -9,17 +9,17 @@
 import XCTest
 
 // The app's sheets take their sizes and swipe-to-close from Waypoint's `SheetOptions`
-// (planning #412): the filters are presented with their own sizes, which the event log shows, a
-// bare `.sheet` takes the app's defaults and can grow to large, and the terms can't be swiped away.
+// (planning #412): the filters are presented with their own sizes, which the event log shows, and
+// a bare `.sheet` takes the app's defaults and can grow to large. The locked terms sheet is checked
+// on the way through Create account, in `JourneyTests.testSignUpInSheet`.
 // A sheet's size is read from where its navigation bar sits on the screen.
 @MainActor
 final class SheetTests: XCTestCase {
     private static let accountTitle = "Account"
     private static let filterTitle = "Filter"
     private static let resetTitle = "Reset password"
-    private static let signUpName = "Nova Reader"
     private static let email = "nova@example.com"
-    private static let password = "orbit-2026"
+    private static let wrongPassword = "wrong"
     // A medium sheet's top sits below this share of the screen, and a large one's above the next.
     private static let mediumTopShare: CGFloat = 0.35
     private static let largeTopShare: CGFloat = 0.25
@@ -51,38 +51,36 @@ final class SheetTests: XCTestCase {
         XCTAssertTrue(app.reveal(entry), "the event log doesn't show the filters' own sizes")
     }
 
-    func testBareSheetUsesAppDefaults() {
+    // Sign in from Account, the sheet Reset password opens over. A wrong password shows the error
+    // and keeps the sheet up. Forgot password presents Reset password as a bare `.sheet`, which
+    // takes the app's defaults: it opens at medium and can grow to large. Sending the link shows
+    // it was sent, Done goes back to sign in, and Cancel closes sign in, leaving Account as a guest.
+    func testSignInSheetFromAccount() {
         let app = ExampleApp.launch()
         app.openTab(Self.accountTitle)
         app.buttons[Identifiers.accountSignIn].tapWhenReady()
-        app.buttons[Identifiers.forgotPassword].tapWhenReady()
+        app.textFields[Identifiers.signInEmail].type(Self.email)
+        app.secureTextFields[Identifiers.signInPassword].type(Self.wrongPassword)
+        app.buttons[Identifiers.signInButton].tapWhenReady()
+        let error = app.descendants(matching: .any)[Identifiers.authError]
+        XCTAssertTrue(error.waitForExistence(timeout: UITestSteps.timeout), "a wrong password showed no error")
 
+        app.buttons[Identifiers.forgotPassword].tapWhenReady()
         let bar = app.navigationBars[Self.resetTitle]
         XCTAssertTrue(bar.waitForExistence(timeout: UITestSteps.timeout))
         let isMedium = waitForTop(of: bar, below: Self.mediumTopShare, in: app)
         XCTAssertTrue(isMedium, "Reset password didn't open at the app's default medium")
         let isLarge = growToLarge(bar, in: app)
         XCTAssertTrue(isLarge, "Reset password can't grow to the app's default large")
-    }
+        app.buttons[Identifiers.resetSend].tapWhenReady()
+        let sent = app.descendants(matching: .any)[Identifiers.resetSent]
+        XCTAssertTrue(sent.waitForExistence(timeout: UITestSteps.timeout))
+        app.buttons[Identifiers.resetDone].tapWhenReady()
+        XCTAssertTrue(app.buttons[Identifiers.signInButton].waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertFalse(sent.exists)
 
-    func testLockedSheetIgnoresSwipe() {
-        let app = ExampleApp.launch()
-        app.openTab(Self.accountTitle)
-        app.buttons[Identifiers.accountSignIn].tapWhenReady()
-        app.buttons[Identifiers.signInCreateAccount].tapWhenReady()
-        app.textFields[Identifiers.signUpName].type(Self.signUpName)
-        app.textFields[Identifiers.signUpEmail].type(Self.email)
-        app.buttons[Identifiers.signUpContinue].tapWhenReady()
-        app.secureTextFields[Identifiers.signUpPassword].type(Self.password)
-        app.buttons[Identifiers.signUpTerms].tapWhenReady()
-
-        let terms = app.descendants(matching: .any)[Identifiers.terms]
-        XCTAssertTrue(terms.waitForExistence(timeout: UITestSteps.timeout))
-        terms.swipeDown(velocity: .fast)
-        XCTAssertFalse(terms.waitForNonExistence(timeout: UITestSteps.timeout), "a swipe closed the terms")
-
-        app.buttons[Identifiers.termsDone].tapWhenReady()
-        XCTAssertTrue(terms.waitForNonExistence(timeout: UITestSteps.timeout), "Done didn't close the terms")
+        app.buttons[Identifiers.authCancel].tapWhenReady()
+        XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
     }
 
     private func waitForTop(
