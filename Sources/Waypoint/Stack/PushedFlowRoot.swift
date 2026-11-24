@@ -41,7 +41,27 @@
                     .environment(\.waypointStackRouter, router)
                     .environment(\.waypointFlowRouters, flowRouters.adding(router))
                     .environment(router)
+            } else {
+                #if DEBUG
+                    Text(missingReason)
+                        .accessibilityIdentifier(Self.missingIdentifier)
+                #endif
             }
+        }
+
+        /// The accessibility identifier of the debug text shown when the flow can't be drawn.
+        static let missingIdentifier = "waypoint.pushedFlow.missing"
+
+        /// Why the flow can't be drawn, for the debug text: which lookup found nothing.
+        private var missingReason: String {
+            guard let parent = stack.drawnParent(ofMarker: marker) else {
+                return "No pushed flow starts at \(marker). Drawn path: \(stack.drawnPath)"
+            }
+            guard parent.pushedFlow != nil else {
+                return "The flow at \(marker) has no router."
+            }
+            let coordinator = parent.pushedFlowCoordinator.map { String(describing: type(of: $0)) }
+            return "The flow at \(marker) has no StackCoordinator: \(coordinator ?? "none")."
         }
 
         /// `coordinator`'s root screen with its destinations, named for the journey.
