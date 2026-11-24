@@ -121,6 +121,13 @@ public final class StackRouter: NavigationRouter {
     /// change it.
     @ObservationIgnored var pushInterval: LogInterval?
 
+    /// How many renderers draw this router's coordinator right now. More than one is reported as
+    /// `coordinatorDrawnTwice`.
+    ///
+    /// `var` because a coordinator's view appears and disappears. Only
+    /// `rendererDidStartDrawing(_:file:line:)` and `rendererDidStopDrawing()` change it.
+    @ObservationIgnored var coordinatorDrawings = 0
+
     /// The name of the stack's root screen when it has no root route, or `nil`.
     ///
     /// `var` because a renderer or coordinator names it after the router exists. Only

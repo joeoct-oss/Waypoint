@@ -257,7 +257,7 @@ final class AuthCoordinator {
     @ViewBuilder
     private func makeResetPasswordFlow() -> some View {
         if let resetPassword {
-            resetPassword.makeFlow()
+            resetPassword.root
         }
     }
 

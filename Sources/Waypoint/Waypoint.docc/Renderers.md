@@ -4,7 +4,7 @@ Write one coordinator for each flow, in SwiftUI views or UIKit view controllers,
 
 ## Overview
 
-> Note: Draft until #59. The coordinator protocols with screens are built in #59, the SwiftUI renderer for every kind in #12, #13 and #37, and the UIKit stack renderer in #14. UIKit tabs and presented flows follow in #50 and #49. Names and signatures in this article can still change until then. Today a stack is drawn by `WaypointStack`, which is built: see <doc:SwiftUIRenderer>.
+> Note: Draft until #12, #13, #14 and #37. A stack or flow coordinator's screens and `view`, drawn by the SwiftUI stack renderer, are built (#59). The SwiftUI renderer for presented flows, tabs and the root comes in #12, #13 and #37, and the UIKit stack renderer in #14. UIKit tabs and presented flows follow in #50 and #49. Names and signatures of what isn't built can still change until then.
 
 An app writes one coordinator for each flow, whichever kind of app it is. The coordinator says what its screens are, and a renderer draws them. Waypoint has two renderers for each kind of coordinator, one in SwiftUI and one in UIKit, and picks the best one by default. An app can choose another one for the whole app or for one coordinator, or bring its own.
 
@@ -24,7 +24,7 @@ A coordinator's `root` and `destinations` take either kind of screen, written th
 // Conformances:
 // - `StackCoordinator`, so Waypoint can draw its stack and make its router.
 final class ShopCoordinator: StackCoordinator {
-    var root: some Screen {
+    var root: some View {
         ProductListView(onSelect: { self.showProduct(id: $0) })
     }
 
@@ -43,9 +43,9 @@ final class ShopCoordinator: StackCoordinator {
 }
 ```
 
-`ProductView` is a SwiftUI view and `ScannerViewController` is a `UIViewController`. Both work in either renderer: the SwiftUI renderer shows a controller through a representable, and the UIKit renderer shows a SwiftUI view in a `UIHostingController`.
+`ProductView` is a SwiftUI view and `ScannerViewController` is a `UIViewController`. Both work in either renderer: the SwiftUI renderer shows a controller through a representable (`ControllerScreen`, built), and the UIKit renderer shows a SwiftUI view in a `UIHostingController` (#14).
 
-A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made with `makeRouter()` the first time it is read, and released when the flow ends; `StackCoordinating` in `WaypointCore` holds it, and `StackCoordinator` with only the router is built so far in #59; a tab coordinator's router is made with its `makeRouter()` too, which has no default because only the app knows its first tab, and `TabCoordinator` with its router and `tabCoordinator(for:)` is built so far in #59, as is `FlowCoordinator` (with `FlowCoordinating` in `WaypointCore`), which adds `finish(with:)`, presented with `router.present(child) { result in … }`; the app coordinator declares its router, because only the app knows its first root), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer.
+A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made with `makeRouter()` the first time it is read, and released when the flow ends; `StackCoordinating` in `WaypointCore` holds it, and `StackCoordinator` with only the router is built so far in #59; a tab coordinator's router is made with its `makeRouter()` too, which has no default because only the app knows its first tab, and `TabCoordinator` with its router and `tabCoordinator(for:)` is built so far in #59, as is `FlowCoordinator` (with `FlowCoordinating` in `WaypointCore`), which adds `finish(with:)`, presented with `router.present(child) { result in … }`; the app coordinator declares its router, because only the app knows its first root), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer. A stack or flow coordinator's `root`, `destinations`, `view` and `Renderer` are built as below; `viewController` comes with #14.
 
 ```swift
 /// App code that owns one stack flow, with its screens.
@@ -55,53 +55,67 @@ A coordinator writes only what is its own: its screens, its flows and its logic.
 ///   `rootName` and `registerDestinations(on:)`, which has no UI.
 @MainActor
 public protocol StackCoordinator: StackCoordinating {
-    /// Conformances:
-    /// - `Screen`: the flow's first screen, a SwiftUI view or a view controller.
-    associatedtype RootScreen: Screen
-    /// Conformances:
-    /// - `Destinations`: the flow's screens, by route type.
-    associatedtype Body: Destinations
-    /// Conformances:
-    /// - `StackRenderer`: what draws this coordinator. Default: `DefaultStackRenderer`.
-    associatedtype Renderer: StackRenderer = DefaultStackRenderer
-
     /// The flow's first screen.
+    associatedtype RootScreen: View
+    /// The flow's screens, by route type. Default: `EmptyDestinations`.
+    associatedtype Screens: Destinations = EmptyDestinations
+    /// What draws the flow. Default: `DefaultStackRenderer<Self>`.
+    associatedtype Renderer: StackRenderer = DefaultStackRenderer<Self> where Renderer.Coordinator == Self
+
+    /// The flow's first screen, a SwiftUI view or a view controller.
     @ScreenBuilder var root: RootScreen { get }
-    /// The flow's screens, by route type.
-    @DestinationsBuilder var destinations: Body { get }
+    /// The flow's screens, by route type. Default: none.
+    @DestinationsBuilder var destinations: Screens { get }
     /// The whole flow, drawn by `Renderer`. Default: filled in by Waypoint.
     var view: Renderer { get }
 }
 
 #if canImport(UIKit)
 extension StackCoordinator {
-    /// `view` in a `UIHostingController`, for UIKit code that needs a controller.
+    /// `view` in a `UIHostingController`, for UIKit code that needs a controller. Comes with #14.
     public var viewController: UIViewController { get }
 }
 #endif
 
-/// A screen: any SwiftUI `View` or any `UIViewController`, through two builder overloads.
-public protocol Screen { }
-
-/// Builds a coordinator's `root` from a SwiftUI view or a view controller.
-@resultBuilder
-public enum ScreenBuilder {
-    public static func buildBlock<V: View>(_ view: V) -> some Screen
-
-    #if canImport(UIKit)
-    public static func buildBlock<C: UIViewController>(_ controller: C) -> some Screen
-    #endif
-
-    /* `buildEither` and `buildOptional`, so `if` and `switch` work as in `@ViewBuilder` */
+/// What draws a stack coordinator's flow. `SwiftUIStackRenderer` is built, and is
+/// `DefaultStackRenderer` on every system.
+@MainActor
+public protocol StackRenderer: View {
+    associatedtype Coordinator: StackCoordinator
+    init(coordinator: Coordinator)
 }
 
-/// A group of destinations, built with `@DestinationsBuilder`.
-public protocol Destinations { }
+/// Builds a coordinator's `root`, or a destination's screen, from a SwiftUI view or a view
+/// controller. `if`, `if let` and `switch` work as in `@ViewBuilder`.
+@resultBuilder
+public enum ScreenBuilder {
+    public static func buildExpression<Content: View>(_ content: Content) -> Content
 
-/// Builds a coordinator's `destinations` from `Destination` and `Flow` entries.
+    #if canImport(UIKit)
+    public static func buildExpression<Controller: UIViewController>(
+        _ controller: Controller
+    ) -> ControllerScreen<Controller>
+    #endif
+
+    /* `buildBlock`, `buildEither` and `buildOptional` */
+}
+
+/// A coordinator's screens, by route type. Each one adds one `navigationDestination(for:)`, with
+/// no `AnyView`.
+///
+/// Conformances:
+/// - `ViewModifier`, so the root screen gets every destination.
+@MainActor
+public protocol Destinations: ViewModifier {
+    /// Registers each route type with `router`, before the stack is drawn.
+    func registerRoutes(on router: StackRouter)
+}
+
+/// Builds a coordinator's `destinations` from `Destination` entries, one per line. Conditions,
+/// loops and `Flow` entries come later.
 @resultBuilder
 public enum DestinationsBuilder {
-    /* blocks, conditions and loops */
+    /* blocks */
 }
 
 /// Registers one route type's screen inside a coordinator.
@@ -109,23 +123,16 @@ public enum DestinationsBuilder {
 /// Conformances:
 /// - `Destinations`, so it can be listed in a coordinator's destinations.
 /// - `R: Route`: the route type this works with.
-/// - `Content: Screen`: the route's screen, a SwiftUI view or a view controller.
-public struct Destination<R: Route, Content: Screen>: Destinations {
-    /// `presentation` is how `router.show(_:)` shows the route. Default: `nil`, a push.
-    public init(
-        _ type: R.Type,
-        presentation: PresentationStyle? = nil,
-        @ScreenBuilder _ content: @escaping (R) -> Content
-    )
+/// - `Screen: View`: the route's screen, a SwiftUI view or a view controller's `ControllerScreen`.
+public struct Destination<R: Route, Screen: View>: Destinations {
+    public init(_ type: R.Type, @ScreenBuilder _ screen: @escaping (R) -> Screen)
 
     /// The same, and also hands the screen the stack's navigator for its view model.
-    public init(
-        _ type: R.Type,
-        presentation: PresentationStyle? = nil,
-        @ScreenBuilder _ content: @escaping (R, StackNavigator) -> Content
-    )
+    public init(_ type: R.Type, @ScreenBuilder _ screen: @escaping (R, StackNavigator) -> Screen)
 }
 ```
+
+`presentation:` on `Destination`, which says how `router.show(_:)` shows the route, comes with #12.
 
 A tab coordinator adds the screen for each tab:
 
@@ -255,7 +262,7 @@ Or choose for one coordinator, by declaring its `Renderer`:
 final class ScannerCoordinator: StackCoordinator {
     typealias Renderer = UIKitStackRenderer
 
-    var root: some Screen {
+    var root: some View {
         ScannerViewController()
     }
 
@@ -276,7 +283,7 @@ The choice for a place is made in this order:
 
 A pushed child flow shares its parent's stack, so its parent's renderer draws it. A pushed child that declares a renderer has it ignored, and that is reported in debug.
 
-`coordinatorDrawnTwice` is in `NavigationIssue.Kind` already, for a tab coordinator that returns one coordinator for two tabs; its report for a coordinator drawn in two places comes later in #59. `rendererNotSupportedHere` and `rendererIgnoredForPushedFlow` are added with the first renderer that isn't the default (#14).
+`coordinatorDrawnTwice` is reported for a tab coordinator that returns one coordinator for two tabs, and for a coordinator whose `view` is on screen in two places at once. `rendererNotSupportedHere` and `rendererIgnoredForPushedFlow` are added with the first renderer that isn't the default (#14).
 
 ### Mixing SwiftUI and UIKit
 

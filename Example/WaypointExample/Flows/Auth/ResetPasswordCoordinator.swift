@@ -34,18 +34,19 @@ final class ResetPasswordCoordinator: FlowCoordinator {
         "Reset password"
     }
 
-    init(service: any AuthService) {
-        self.service = service
-        sentTo = nil
-    }
-
-    func makeFlow() -> some View {
+    var root: some View {
         ForgotPasswordView(
             onSend: { self.sendLink(to: $0) },
             onDone: { self.done() },
             onCancel: { self.cancel() }
         )
     }
+
+    init(service: any AuthService) {
+        self.service = service
+        sentTo = nil
+    }
+
 
     func sendLink(to email: String) {
         sentTo = email

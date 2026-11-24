@@ -17,11 +17,11 @@ import Waypoint
 //
 //
 // It stores no router: `StackCoordinator` makes one with `makeRouter()` the first time it is read,
-// names it after this coordinator, roots it at the shop tab's name, and drops it once the Lab lets
-// this coordinator go.
+// names it after this coordinator, roots it at the shop tab's name, registers its destinations, and
+// drops it once the Lab lets this coordinator go. It draws itself: the Lab shows its `view`.
 //
 // Conformances:
-// - `StackCoordinator`, so Waypoint makes, names and keeps its router.
+// - `StackCoordinator`, so Waypoint makes, names and keeps its router, and draws its screens.
 // - `Observable` (from `@Observable`), so the demo redraws when a toast appears or goes.
 @Observable
 final class DetailPushCoordinator: StackCoordinator {
@@ -30,6 +30,7 @@ final class DetailPushCoordinator: StackCoordinator {
     private static let missingCartTitle = "Cart wasn't in the stack"
 
     private let navigation: NavigationConfiguration
+    private let onClose: () -> Void
     // `var` because `backToCart()` shows a toast for a recovered pop, and the toast's timer hides
     // it.
     private(set) var toast: RecoveredToastContent?
@@ -40,28 +41,42 @@ final class DetailPushCoordinator: StackCoordinator {
         MainTab.shop.title
     }
 
-    init(navigation: NavigationConfiguration) {
+    var root: some View {
+        DetailPushListView(
+            onSelect: { self.showProduct($0) },
+            onClose: { self.close() }
+        )
+        .screenChrome(
+            title: "Shop",
+            kind: .swiftUI,
+            router: router,
+            route: nil
+        )
+    }
+
+    var destinations: some Destinations {
+        Destination(DetailProductRoute.self) { self.makeProductScreen($0) }
+        Destination(DetailCartRoute.self) { self.makeCartScreen($0) }
+    }
+
+    init(
+        navigation: NavigationConfiguration,
+        onClose: @escaping () -> Void
+    ) {
         self.navigation = navigation
+        self.onClose = onClose
         toast = nil
         toastTimer = nil
     }
 
     func makeRouter() -> StackRouter {
-        StackRouter(flow: Self.flowID, configuration: navigation)
-    }
-
-    func makeListFlow() -> some View {
-        DetailPushListView(onSelect: { self.showProduct($0) })
-            .screenChrome(
-                title: "Shop",
-                kind: .swiftUI,
-                router: router,
-                route: nil
-            )
+        let router = StackRouter(flow: Self.flowID, configuration: navigation)
+        router.declareFlow(DetailPushFlow.self)
+        return router
     }
 
     @ViewBuilder
-    func makeProductFlow(_ route: DetailProductRoute) -> some View {
+    func makeProductScreen(_ route: DetailProductRoute) -> some View {
         if let product = Product.find(id: route.productID) {
             DetailPushProductView(
                 product: product,
@@ -78,7 +93,7 @@ final class DetailPushCoordinator: StackCoordinator {
     }
 
     @ViewBuilder
-    func makeCartFlow(_ route: DetailCartRoute) -> some View {
+    func makeCartScreen(_ route: DetailCartRoute) -> some View {
         if let product = Product.find(id: route.productID) {
             DetailPushCartView(product: product)
                 .screenChrome(
@@ -88,6 +103,10 @@ final class DetailPushCoordinator: StackCoordinator {
                     route: AnyRoute(route)
                 )
         }
+    }
+
+    func close() {
+        onClose()
     }
 
     func showProduct(_ product: Product) {

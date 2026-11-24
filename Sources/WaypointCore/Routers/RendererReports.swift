@@ -58,6 +58,26 @@ extension StackRouter {
         tree.trackJourney(noChanges, in: self, trigger: nil, file: file, line: line)
     }
 
+    /// Reports that a renderer started drawing `coordinator`, whose router this is. A second
+    /// renderer drawing it while the first still does is reported as `coordinatorDrawnTwice`:
+    /// both drive this one router, so each shows the other's pushes. Changes no state.
+    package func rendererDidStartDrawing(_ coordinator: AnyObject, file: StaticString = #fileID, line: UInt = #line) {
+        coordinatorDrawings += 1
+        guard coordinatorDrawings == 2 else {
+            return
+        }
+        let name = ViewTypeName.of(type(of: coordinator))
+        let message = "\(name).view is drawn in two places at once. Both drive \(flowID)'s one router, so "
+            + "each place shows the other's pushes. Draw a coordinator's view in one place, and make "
+            + "another \(name) for the second place."
+        report(.coordinatorDrawnTwice, message, file: file, line: line)
+    }
+
+    /// Reports that a renderer stopped drawing this router's coordinator.
+    package func rendererDidStopDrawing() {
+        coordinatorDrawings = max(coordinatorDrawings - 1, 0)
+    }
+
     /// Reports that the screen started animating the push of `route`.
     ///
     /// Until ``rendererDidEndPush(of:)``, a push of an equal route is skipped under

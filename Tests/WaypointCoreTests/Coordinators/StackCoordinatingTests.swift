@@ -405,4 +405,28 @@ struct StackCoordinatingTests {
         let coordinator = DeinitReadingCoordinator(outcomes: outcomes, madeRouter: madeRouter)
         return readsFirst ? coordinator.router : StackRouter()
     }
+
+    @Test
+    func coordinatorDrawnTwiceIsReported() throws {
+        let coordinator = ShopListCoordinator()
+        let router = coordinator.router
+        let reported = Recorder<NavigationIssue>()
+        router.tree.onReported { issue in
+            reported.record(issue)
+        }
+
+        router.rendererDidStartDrawing(coordinator)
+        router.rendererDidStopDrawing()
+        router.rendererDidStartDrawing(coordinator)
+        let drawnOnce = reported.values.isEmpty
+        router.rendererDidStartDrawing(coordinator)
+        router.rendererDidStartDrawing(coordinator)
+
+        #expect(drawnOnce)
+        let kinds = reported.values.map(\.kind)
+        let expectedKinds: [NavigationIssue.Kind] = [.coordinatorDrawnTwice]
+        #expect(kinds == expectedKinds)
+        let issue = try #require(reported.last)
+        #expect(issue.message.contains("ShopListCoordinator.view"))
+    }
 }

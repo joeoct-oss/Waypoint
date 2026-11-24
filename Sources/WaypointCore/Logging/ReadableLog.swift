@@ -189,7 +189,7 @@ enum ReadableLog {
         case .releasedRouterReturned:
             return "this coordinator got a router that already ended"
         case .coordinatorDrawnTwice:
-            return "one coordinator was given two tabs"
+            return "one coordinator is drawn in two places"
         case .routerInAnotherTree:
             return "this coordinator brought a router from another tree"
         case .childRouterIsAncestor:

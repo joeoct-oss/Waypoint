@@ -34,6 +34,10 @@ final class TabsDemoCoordinator: TabCoordinator {
 
     private let navigation: NavigationConfiguration
     private let onClose: () -> Void
+    // `var` because each tab's coordinator is made the first time Waypoint asks for it or its tab
+    // is drawn, and kept, so a tab added back gets the same coordinator. Only `child(for:)` changes
+    // it. Not observed, because it changes while a tab is drawn.
+    @ObservationIgnored private var tabCoordinators: [DemoTab: TabsDemoTabCoordinator]
 
     // Whether every tab shows, so the button offers to take two away.
     var showsAllTabs: Bool {
@@ -46,6 +50,7 @@ final class TabsDemoCoordinator: TabCoordinator {
     ) {
         self.navigation = navigation
         self.onClose = onClose
+        tabCoordinators = [:]
     }
 
     func makeRouter() -> TabRouter<DemoTab> {
@@ -58,19 +63,11 @@ final class TabsDemoCoordinator: TabCoordinator {
     }
 
     func tabCoordinator(for tab: DemoTab) -> any StackCoordinator {
-        TabsDemoTabCoordinator()
+        child(for: tab)
     }
 
     func makeTabFlow(for tab: DemoTab) -> some View {
-        WaypointStack(router.router(for: tab)) {
-            TabsDemoView(
-                tab: tab,
-                selection: router.selection,
-                showsAllTabs: showsAllTabs,
-                onChangeTabs: { self.toggleTabs() },
-                onClose: { self.close() }
-            )
-        }
+        child(for: tab).view
     }
 
     func selectTab(_ tab: DemoTab) {
@@ -89,16 +86,49 @@ final class TabsDemoCoordinator: TabCoordinator {
             router.setTabs(DemoTab.allCases)
         }
     }
+
+    // The tab's coordinator, made the first time it is needed and kept.
+    private func child(for tab: DemoTab) -> TabsDemoTabCoordinator {
+        if let kept = tabCoordinators[tab] {
+            return kept
+        }
+        let child = TabsDemoTabCoordinator(tab: tab, demo: self)
+        tabCoordinators[tab] = child
+        return child
+    }
 }
 
 // The coordinator of one tab of the Tabs story. Its router is the tab's stack, named after the tab
-// because it keeps the default root name. It has no screens of its own yet: the tab coordinator
-// draws each tab's stack until coordinators draw their own screens, later in #59.
+// because it keeps the default root name, and it draws that stack with its own `view`: the tab's
+// one screen, which shows the selection and the tab container's buttons. The tab bar is still
+// SwiftUI's until Waypoint draws tabs.
 //
 // Conformances:
-// - `StackCoordinator`, so Waypoint makes its router and the tab coordinator makes it the tab's
-//   stack.
-final class TabsDemoTabCoordinator: StackCoordinator { }
+// - `StackCoordinator`, so Waypoint makes its router, the tab coordinator makes it the tab's stack,
+//   and Waypoint draws its screen.
+final class TabsDemoTabCoordinator: StackCoordinator {
+    private let tab: DemoTab
+    // The tab container, which keeps this coordinator, so it is held without keeping it alive.
+    // `var` because a weak reference must be one: it reads `nil` once the Lab lets the demo go.
+    private weak var demo: TabsDemoCoordinator?
+
+    var root: some View {
+        if let demo {
+            TabsDemoView(
+                tab: tab,
+                selection: demo.router.selection,
+                showsAllTabs: demo.showsAllTabs,
+                onChangeTabs: { demo.toggleTabs() },
+                onClose: { demo.close() }
+            )
+        }
+    }
+
+    init(tab: DemoTab, demo: TabsDemoCoordinator) {
+        self.tab = tab
+        self.demo = demo
+    }
+}
 
 // A tab of the Tabs story.
 //
