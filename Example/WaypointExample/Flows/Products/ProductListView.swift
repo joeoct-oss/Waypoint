@@ -8,23 +8,24 @@
 
 import SwiftUI
 
-// Shop: the "Nebula nights" banner, two products picked as cards, then the rest of the shop as
+// Shop: the "Nebula nights" banner, the first two of `products` picked as cards, then the rest as
 // rows. Filter and Wish list are `ShopToolbar`, which the main tabs put in the navigation bar. The
 // screen reports each choice.
 struct ProductListView: View {
     private static let pickedCount = 2
 
+    let products: [Product]
     let cart: [Product]
     let onGoToCart: () -> Void
     let onSelect: (Product) -> Void
     let onSelectCollection: (ProductCollection) -> Void
 
     private var picked: [Product] {
-        Array(Product.all.prefix(Self.pickedCount))
+        Array(products.prefix(Self.pickedCount))
     }
 
     private var newThisWeek: [Product] {
-        Array(Product.all.dropFirst(Self.pickedCount))
+        Array(products.dropFirst(Self.pickedCount))
     }
 
     var body: some View {
