@@ -8,7 +8,7 @@ Tool versions (Tuist, SwiftLint and Periphery) are pinned in [`.mise.toml`](.mis
 
 ## Start with an issue
 
-Every change starts from an issue. Name the branch after it:
+Every change starts from an issue. Maintainers keep issues in the private Waypoint-planning repo, so this repo's own Issues tab is off until the package is public. Name the branch after the issue:
 
 ```text
 <type>/<issue-number>-<short-kebab-description>
@@ -60,7 +60,7 @@ New source files start with this header:
 
 ## Pull requests
 
-- **One issue per pull request.** Put `Closes #<issue>` in the body and copy the issue's labels.
+- **One issue per pull request.** Put `Closes joeoct-oss/Waypoint-planning#<issue>` in the body, the full reference, because the issue lives in the planning repo, and copy the issue's labels.
 - **Title:** one plain English sentence in the imperative that says what the change does for the package, with no prefix and no trailing period. For example: "Refuse a push when the route has no destination".
 - **Body:** fill in the template. Say what changed, why, and how it was tested, and flag any public API change.
 - **Changelog:** add a line to `CHANGELOG.md` under **Unreleased** for anything a package user would notice.

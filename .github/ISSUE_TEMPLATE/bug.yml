@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Prefer creating issues with the planning repo script, `tools/issues/new-issue.py` in Waypoint-planning, which fills this structure and sets labels and the milestone. If you use this form, add one `type:`, at least one `area:`, one `priority:`, at least one `test:` and a `runs:` label, then set the milestone. See the Issues section of `docs/workflow.md` in Waypoint-planning.
+        Waypoint's planned work is tracked in the private planning repo, created with its script `tools/issues/new-issue.py`, so maintainers don't file issues here. This form is kept for reports from package users once the package is public; when work starts on one, a planning issue links back to it. If you use this form, add one `type:`, at least one `area:`, one `priority:`, at least one `test:` and a `runs:` label.
   - type: textarea
     id: goal
     attributes:
