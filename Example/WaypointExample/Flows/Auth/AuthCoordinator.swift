@@ -11,31 +11,35 @@ import Waypoint
 
 // The accounts flow, presented as a sheet when the reader does something that needs an account:
 // Sign in at the root, the three steps of Create account pushed above it, Reset password as a sheet
-// over Sign in, and the terms as a sheet over Choose a password. The steps share one draft, so
-// going back keeps what the reader typed. Signing in and creating an account go through the auth
-// service; the flow reports the account, or Cancel, to the account gate that presented it. When
-// the gate opened the flow over another sheet, it then pushes Signed in, whose Done the gate passes
-// on to whoever opened the sheets, so they close together.
+// over Sign in, and the terms as a sheet over Choose a password. The steps share one Create account
+// builder, so going back keeps what the reader typed. Signing in and creating an account go through
+// the auth service and sign the session in; the flow then finishes with the account, and Cancel or
+// a swipe down ends it, which the account gate that presented it gets as `.cancelled`. When the
+// gate opened the flow over another sheet, signing in instead pushes Signed in, whose Done the gate
+// passes on to whoever opened the sheets, so they close together.
 //
-// The flow runs on Waypoint: `router` is the flow the main tab router presents, the steps are
-// `CreateAccountRoute` pushes, and the terms is a flow this router presents. Reset password is a
-// child flow with a coordinator of its own, which this router starts and gets the result of. The
-// sheets themselves are still SwiftUI's, bound to the routers, until Waypoint draws them.
+// `AuthFactory` builds the flow and each of its screens; the flow passes in what each screen
+// reports. The steps are `CreateAccountRoute` pushes, and the terms is a route this flow's router
+// presents. Reset password is a child flow with a coordinator of its own, which this router starts
+// and gets the result of. The sheets themselves are still SwiftUI's, bound to the routers, until
+// Waypoint draws them.
 //
 // Conformances:
-// - `Observable` (from `@Observable`), so `AuthFlowView` redraws when a sheet, the error or the
-//   busy state changes.
+// - `FlowCoordinator`, so the account gate presents it with `present(_:style:onFinish:)` and gets
+//   the account.
+// - `Observable` (from `@Observable`), so the flow redraws when a sheet, the error or the busy
+//   state changes.
 @Observable
-final class AuthCoordinator {
-    let router: StackRouter
-    private let reason: SignInReason
+final class AuthCoordinator: FlowCoordinator {
+    // The account the reader signed in to, or created.
+    typealias Output = Account
+
+    private let session: Session
     private let service: any AuthService
-    private let onSignedIn: (Account) -> Void
-    private let onCancel: () -> Void
-    private let draft: SignUpDraft
-    // `var` because creating an account keeps it until Check your email reports Verify and
-    // continue.
-    private var newAccount: Account?
+    private let factory: AuthFactory
+    let builder: CreateAccountBuilder
+    private let reason: SignInReason
+    private let signedInStep: SignedInStep?
     // `var` because `showResetPassword()` and `showTerms()` set it with the router they present,
     // and `releaseSheet()` clears both once the sheet has slid away, so it still draws meanwhile.
     private(set) var presentedSheet: AuthSheet?
@@ -46,49 +50,20 @@ final class AuthCoordinator {
     // `var` for the same reason as `presentedSheet`: Reset password's coordinator, which draws
     // that sheet.
     private(set) var resetPassword: ResetPasswordCoordinator?
-    // `var` because `showSignedIn(as:onDone:)` sets it with the account Signed in names.
+    // `var` because signing in over another sheet sets it with the account Signed in names.
     private var signedInAccount: Account?
-    // `var` because `showSignedIn(as:onDone:)` sets it with what Done on Signed in runs.
-    private var onSignedInDone: (() -> Void)?
     // `var` because a call to the auth service sets it while the call runs.
     private(set) var isWorking: Bool
     // `var` because a failed call to the auth service sets it, and the next call clears it.
     private(set) var errorMessage: String?
 
-    // Whether Reset password or the terms is presented over the flow.
-    var isShowingSheet: Bool {
-        router.presented != nil
+    // The journey's name for Sign in, the flow's first screen.
+    var rootName: String {
+        "Sign in"
     }
 
-    init(
-        router: StackRouter,
-        reason: SignInReason,
-        service: any AuthService,
-        onSignedIn: @escaping (Account) -> Void,
-        onCancel: @escaping () -> Void
-    ) {
-        self.router = router
-        self.reason = reason
-        self.service = service
-        self.onSignedIn = onSignedIn
-        self.onCancel = onCancel
-        draft = SignUpDraft()
-        newAccount = nil
-        presentedSheet = nil
-        sheetRouter = nil
-        sheetOptions = nil
-        resetPassword = nil
-        signedInAccount = nil
-        onSignedInDone = nil
-        isWorking = false
-        errorMessage = nil
-        router.setRootName("Sign in")
-        router.register(TermsRoute.self)
-        router.setCoordinator(self)
-    }
-
-    func makeSignInFlow() -> some View {
-        SignInView(
+    var root: some View {
+        factory.makeSignIn(
             reason: reason,
             isWorking: isWorking,
             errorMessage: errorMessage,
@@ -98,28 +73,72 @@ final class AuthCoordinator {
             onCancel: { self.cancel() }
         )
         .screenChrome(
-            title: "Sign in",
+            title: rootName,
             kind: nil,
             router: router,
             route: nil
         )
     }
 
-    func makeDestination(for route: CreateAccountRoute) -> some View {
-        makeCreateAccountFlow(route.step)
-            .screenChrome(
-                title: route.title,
-                kind: nil,
-                router: router,
-                route: AnyRoute(route)
-            )
+    var destinations: some Destinations {
+        Destination(CreateAccountRoute.self) { self.makeCreateAccountScreen($0) }
+        Destination(SignedInRoute.self) { _ in self.makeSignedInScreen() }
     }
 
-    func makeSignedInFlow() -> some View {
-        SignedInView(
+    // Whether Reset password or the terms is presented over the flow.
+    var isShowingSheet: Bool {
+        router.presented != nil
+    }
+
+    init(
+        dependencies: AuthDependencies,
+        factory: AuthFactory,
+        builder: CreateAccountBuilder,
+        reason: SignInReason,
+        signedInStep: SignedInStep?
+    ) {
+        session = dependencies.session
+        service = dependencies.service
+        self.factory = factory
+        self.builder = builder
+        self.reason = reason
+        self.signedInStep = signedInStep
+        presentedSheet = nil
+        sheetRouter = nil
+        sheetOptions = nil
+        resetPassword = nil
+        signedInAccount = nil
+        isWorking = false
+        errorMessage = nil
+    }
+
+    // Also registers the terms, which this router presents rather than pushes.
+    func registerDestinations(on router: StackRouter) {
+        destinations.registerRoutes(on: router)
+        router.register(TermsRoute.self)
+    }
+
+    func makeCreateAccountScreen(_ route: CreateAccountRoute) -> some View {
+        builder.makeStep(
+            route.step,
+            isWorking: isWorking,
+            errorMessage: errorMessage,
+            onContinue: { self.continueCreatingAccount(after: route.step) },
+            onShowTerms: { self.showTerms() }
+        )
+        .screenChrome(
+            title: route.title,
+            kind: nil,
+            router: router,
+            route: AnyRoute(route)
+        )
+    }
+
+    func makeSignedInScreen() -> some View {
+        factory.makeSignedIn(
             name: signedInAccount?.name ?? Account.sample.name,
-            resumedAction: reason.resumedAction,
-            onDone: { self.finishSignedIn() }
+            reason: reason,
+            onDone: { self.signedInStep?.onDone() }
         )
         .screenChrome(
             title: SignedInRoute.screenName,
@@ -147,7 +166,7 @@ final class AuthCoordinator {
     // Starts Reset password as a child flow. A link it sent clears a sign-in error, since the
     // reader is choosing a new password.
     func showResetPassword() {
-        let reset = ResetPasswordCoordinator(service: service)
+        let reset = factory.makeResetPassword()
         // No fallback, so a second tap while the sheet is up is refused and keeps the flow on
         // screen, with what the reader typed, instead of the app's `.replacePresentation`.
         let outcome = router.present(reset, style: .sheet, else: NavigationFallback.none) { result in
@@ -161,11 +180,8 @@ final class AuthCoordinator {
     }
 
     func showTerms() {
-        showSheet(
-            .terms,
-            route: TermsRoute(),
-            style: AppSheets.terms
-        )
+        router.present(TermsRoute(), style: AppSheets.terms)
+        keepPresentedSheet(.terms)
     }
 
     func signIn(
@@ -180,17 +196,21 @@ final class AuthCoordinator {
         }
     }
 
+    // Cancel: ends the flow, which the account gate gets as `.cancelled`.
     func cancel() {
-        onCancel()
+        router.dismissFlow()
     }
 
-    // Shows who signed in, over the step they signed in from, with Done running `onDone`.
-    func showSignedIn(
-        as account: Account,
-        onDone: @escaping () -> Void
-    ) {
+    // Signs the session in, then finishes with the account, or, over another sheet, runs what the
+    // gate asked for and shows Signed in.
+    func signedIn(as account: Account) {
+        session.signIn(account)
+        guard let signedInStep else {
+            finish(with: account)
+            return
+        }
+        signedInStep.onSignedIn(account)
         signedInAccount = account
-        onSignedInDone = onDone
         router.push(SignedInRoute())
     }
 
@@ -214,15 +234,6 @@ final class AuthCoordinator {
         resetPassword = nil
     }
 
-    private func showSheet<R: Route>(
-        _ sheet: AuthSheet,
-        route: R,
-        style: PresentationStyle
-    ) {
-        router.present(route, style: style)
-        keepPresentedSheet(sheet)
-    }
-
     // Keeps what draws the sheet the router now presents, if the present worked.
     private func keepPresentedSheet(_ sheet: AuthSheet) {
         guard let presented = router.presented, presented !== sheetRouter else {
@@ -239,19 +250,8 @@ final class AuthCoordinator {
         case .resetPassword:
             makeResetPasswordFlow()
         case .terms:
-            makeTermsFlow()
+            factory.makeTerms(onDone: { self.dismissSheet() })
         }
-    }
-
-    private func makeCreateAccountFlow(_ step: CreateAccountStep) -> some View {
-        CreateAccountStepView(
-            step: step,
-            draft: draft,
-            isWorking: isWorking,
-            errorMessage: errorMessage,
-            onContinue: { self.continueCreatingAccount(after: step) },
-            onShowTerms: { self.showTerms() }
-        )
     }
 
     @ViewBuilder
@@ -261,11 +261,8 @@ final class AuthCoordinator {
         }
     }
 
-    private func makeTermsFlow() -> some View {
-        TermsView(onDone: { self.dismissSheet() })
-    }
-
-    private func continueCreatingAccount(after step: CreateAccountStep) {
+    // Continue on a Create account step: the next step, registering the account, or signing in.
+    func continueCreatingAccount(after step: CreateAccountStep) {
         switch step {
         case .details:
             showStep(.password)
@@ -288,14 +285,10 @@ final class AuthCoordinator {
     }
 
     private func finishCreatingAccount() {
-        guard let newAccount else {
+        guard let account = builder.account else {
             return
         }
-        onSignedIn(newAccount)
-    }
-
-    private func finishSignedIn() {
-        onSignedInDone?()
+        signedIn(as: account)
     }
 
     private func resetPasswordEnded(with result: FlowResult<String>) {
@@ -319,7 +312,7 @@ final class AuthCoordinator {
                 password: password
             )
             errorMessage = nil
-            onSignedIn(account)
+            signedIn(as: account)
         } catch {
             errorMessage = error.message
         }
@@ -331,11 +324,7 @@ final class AuthCoordinator {
             isWorking = false
         }
         do {
-            newAccount = try await service.register(
-                name: draft.name,
-                email: draft.email,
-                password: draft.password
-            )
+            try await builder.register()
             showStep(.checkEmail)
         } catch {
             errorMessage = error.message

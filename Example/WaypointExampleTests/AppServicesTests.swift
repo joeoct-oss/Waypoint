@@ -59,7 +59,7 @@ struct AppServicesTests {
         )
         let gate = AccountGate(
             session: services.session,
-            service: services.auth,
+            factory: AuthFactory(dependencies: services.authDependencies()),
             tabs: TabRouter(selection: MainTab.shop)
         )
         let products = services.productsDependencies(

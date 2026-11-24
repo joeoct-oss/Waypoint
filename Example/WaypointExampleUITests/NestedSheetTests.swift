@@ -24,7 +24,8 @@ final class NestedSheetTests: XCTestCase {
     private static let presentedMark = "sheet"
     private static let wishlistClose = NSPredicate(format: "label CONTAINS 'dismiss' AND label CONTAINS 'wishlist'")
     private static let savedClose = NSPredicate(format: "label CONTAINS 'dismiss' AND label CONTAINS 'saved'")
-    private static let signInClose = NSPredicate(format: "label CONTAINS 'dismiss' AND label CONTAINS 'signIn'")
+    // The accounts flow is `AuthCoordinator`'s, so the log names it `auth`.
+    private static let signInClose = NSPredicate(format: "label CONTAINS 'dismiss' AND label CONTAINS 'auth'")
 
     func testSignInOpensOverWishlist() {
         let app = ExampleApp.launch()

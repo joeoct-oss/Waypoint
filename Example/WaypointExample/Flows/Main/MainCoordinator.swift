@@ -64,7 +64,7 @@ final class MainCoordinator {
         let rules = NavigationRules(tabs: tabs)
         let gate = AccountGate(
             session: services.session,
-            service: services.auth,
+            factory: AuthFactory(dependencies: services.authDependencies()),
             tabs: tabs
         )
         let cart = CartCoordinator(
