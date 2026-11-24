@@ -36,8 +36,10 @@ struct WaypointExampleApp: App {
             object: nil,
             queue: .main
         ) { note in
+            // The queue is the main queue, so the window is only touched on the main actor.
+            nonisolated(unsafe) let window = note.object as? UIWindow
             MainActor.assumeIsolated {
-                (note.object as? UIWindow)?.layer.speed = Float(speed)
+                window?.layer.speed = Float(speed)
             }
         }
     }
