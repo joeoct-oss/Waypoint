@@ -29,7 +29,8 @@
 # clone is on, or, on a merge batch's detached commit, the batch's branches joined with `+`. A run
 # for one pull request (WAYPOINT_PULL_REQUEST) also tells Tuist that pull request through
 # GITHUB_REF, so Tuist posts its run report on it: the tests run and skipped, and links to the
-# runs. Tuist takes the commit from the checkout, so GITHUB_SHA is never set.
+# runs. Tuist takes the commit from the checkout, so GITHUB_SHA is never set. Once its example
+# tests passed, that run also tells Tuist its commit is complete, so the report shows its coverage.
 #
 # Each build is made once: the host build with warnings as errors is the build `swift test` runs,
 # and the simulator build with warnings as errors is the build its tests run. Builds use at most
@@ -813,4 +814,12 @@ if $RUN_IOS17; then
     step "xcodebuild test Waypoint-Package on $IOS17_SIMULATOR_NAME" package_tests_on "$IOS17_UDID" package-ios17
     step "tuist test example app on $IOS17_SIMULATOR_NAME" \
         example_tests_on "$IOS17_UDID" "$IOS17_SIMULATOR_NAME" example-ios17
+fi
+
+# A run for a pull request ends by telling Tuist that its commit has every run it will get, so the
+# run report shows the commit's coverage instead of "still being collected". Only after every
+# example test step passed, and never for `--only`, which runs one test and leaves the rest out.
+if [[ -n "$TUIST_PULL_REQUEST" ]] && $RUN_UI && [[ -z "$ONLY_TEST" ]] && ! $RUN_COVERAGE_COMPLETE; then
+    step "tuist coverage complete for pull request $TUIST_PULL_REQUEST" \
+        tuist_cmd coverage complete --path Example
 fi

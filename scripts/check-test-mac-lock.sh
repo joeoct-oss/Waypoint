@@ -372,6 +372,42 @@ else
     fail "tuist test gets the pull request's ref (calls: $(grep 'GITHUB_REF' "$CALLS" | tr '\n' ';'))"
 fi
 : >"$CALLS"
+if grep -q "^tuist coverage complete" "$CALLS"; then
+    fail "a run of one test leaves its commit's coverage in progress"
+else
+    pass "a run of one test leaves its commit's coverage in progress"
+fi
+# A run of every example test for a pull request completes its commit's coverage, after the tests.
+pr_run() {
+    (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" STUB_CALLS="$CALLS" \
+        WAYPOINT_RUN_LOCK="$LOCK" WAYPOINT_SIMULATOR=waypoint-01 WAYPOINT_BASE=main \
+        WAYPOINT_PULL_REQUEST=42 STUB_PR_BRANCH=feature/first-part "$@" scripts/test-mac.sh quick --ui)
+}
+batch_commit checkout -q feature/first-part
+: >"$CALLS"
+if pr_run >"$WORK/1j.log" 2>&1 &&
+    [[ "$(grep -n "^tuist coverage complete --path Example" "$CALLS" | cut -d: -f1)" -gt \
+        "$(grep -n "^tuist test" "$CALLS" | tail -1 | cut -d: -f1)" ]]; then
+    pass "a pull request's run completes its commit's coverage after its tests"
+else
+    fail "a pull request's run completes its commit's coverage after its tests (calls: $(tr '\n' ';' <"$CALLS"))"
+fi
+: >"$CALLS"
+if pr_run STUB_STATUS=1 >"$WORK/1j.log" 2>&1; then
+    fail "a pull request's run whose tests fail fails"
+elif grep -q "^tuist coverage complete" "$CALLS"; then
+    fail "a pull request's run whose tests fail never completes the commit"
+else
+    pass "a pull request's run whose tests fail never completes the commit"
+fi
+: >"$CALLS"
+if pr_run WAYPOINT_PULL_REQUEST= >"$WORK/1j.log" 2>&1 && ! grep -q "^tuist coverage complete" "$CALLS"; then
+    pass "a run for no pull request leaves its commit's coverage in progress"
+else
+    fail "a run for no pull request leaves its commit's coverage in progress (calls: $(tr '\n' ';' <"$CALLS"))"
+fi
+batch_commit checkout -q main
+: >"$CALLS"
 if run_script GITHUB_REF=refs/pull/7/head >"$WORK/1j.log" 2>&1 &&
     grep -qx "GITHUB_REF seen by tuist test: " "$CALLS"; then
     pass "a GITHUB_REF left in the shell never reaches tuist test"
