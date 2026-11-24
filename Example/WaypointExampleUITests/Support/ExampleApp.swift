@@ -44,11 +44,8 @@ enum ExampleApp {
             missingDestination: missingDestination,
             labReviewsSeconds: labReviewsSeconds
         )
-        // Experiment: TEST_RUNNER_WAYPOINT_ANIMATION_SPEED=4 on the test command speeds up the
-        // app's animations for every test.
-        if let speed = ProcessInfo.processInfo.environment["WAYPOINT_ANIMATION_SPEED"] {
-            app.launchArguments += [LaunchArgument.animationSpeed.flag, speed]
-        }
+        // Experiment: every test runs with the app's animations four times faster.
+        app.launchArguments += [LaunchArgument.animationSpeed.flag, "4"]
         app.launch()
         return app
     }
