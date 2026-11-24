@@ -191,7 +191,8 @@ fi
 # The pull request Tuist posts its run report on. Tuist reads GITHUB_REF on any
 # machine, and its GitHub app comments on the pull request a `refs/pull/<n>/...` ref names, with
 # the commit the checkout is on. The script sets GITHUB_REF itself or clears it, so a value left in
-# the shell never sends a report to the wrong pull request. None for a coverage run (it tests
+# the shell never sends a report to the wrong pull request, and stops when the pull request's
+# branch (read with `gh`, read-only) isn't the branch under test; when `gh` can't answer, no report. None for a coverage run (it tests
 # `main`), an offline run (it uploads nothing), or a merge batch of several branches (one report
 # can't name them all).
 TUIST_PULL_REQUEST=""
@@ -207,6 +208,13 @@ if [[ -n "${WAYPOINT_PULL_REQUEST:-}" ]]; then
         echo "note: an offline run uploads nothing, so it posts no run report on pull request $WAYPOINT_PULL_REQUEST" >&2
     elif [[ "${GITHUB_HEAD_REF:-}" == *+* ]]; then
         echo "note: a merge batch tests several branches, so it posts no run report on pull request $WAYPOINT_PULL_REQUEST" >&2
+    elif ! pr_branch=$(gh pr view "$WAYPOINT_PULL_REQUEST" --repo joeoct-oss/Waypoint \
+        --json headRefName --jq .headRefName 2>/dev/null) || [[ -z "$pr_branch" ]]; then
+        echo "note: gh couldn't say which branch pull request $WAYPOINT_PULL_REQUEST is, so this run posts no run report" >&2
+    elif [[ "$pr_branch" != "${GITHUB_HEAD_REF:-}" ]]; then
+        # A wrong number would post this run's report on another pull request.
+        echo "error: pull request $WAYPOINT_PULL_REQUEST is $pr_branch, but this run tests ${GITHUB_HEAD_REF:-no branch}" >&2
+        exit 2
     else
         TUIST_PULL_REQUEST="$WAYPOINT_PULL_REQUEST"
         export GITHUB_REF="refs/pull/$TUIST_PULL_REQUEST/head"

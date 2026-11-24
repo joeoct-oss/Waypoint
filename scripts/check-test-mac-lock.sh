@@ -91,6 +91,12 @@ done
 shift
 exec "$@"
 EOF
+# `gh pr view` names the pull request's branch: STUB_PR_BRANCH, or fails when that is empty.
+cat >"$STUBS/gh" <<'EOF'
+#!/usr/bin/env bash
+[[ -n "${STUB_PR_BRANCH:-}" ]] || exit 1
+echo "$STUB_PR_BRANCH"
+EOF
 cat >"$STUBS/sysctl" <<'EOF'
 #!/usr/bin/env bash
 echo 4
@@ -310,7 +316,8 @@ fi
 # 1j. A run for one pull request tells Tuist that pull request, through
 # GITHUB_REF=refs/pull/<n>/head, so Tuist's GitHub app posts its run report there. A coverage run,
 # an offline run and a merge batch of several branches name none, a GITHUB_REF left in the shell
-# never reaches Tuist, and a value that isn't a number stops the run.
+# never reaches Tuist, and a value that isn't a number, or a pull request of another branch, stops
+# the run; when gh can't name the pull request's branch, no report.
 expect_pull_request() {
     local name="$1" want="$2" got
     shift 2
@@ -324,11 +331,20 @@ expect_pull_request() {
 }
 batch_commit checkout -q feature/first-part
 expect_pull_request "a run for a pull request tells Tuist that pull request" 42 \
+    full WAYPOINT_PULL_REQUEST=42 STUB_PR_BRANCH=feature/first-part
+expect_pull_request "a run whose pull request gh can't name tells Tuist none" none \
     full WAYPOINT_PULL_REQUEST=42
+if (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+    WAYPOINT_PULL_REQUEST=42 STUB_PR_BRANCH=fix/second-part \
+    scripts/test-mac.sh full --plan >/dev/null 2>&1); then
+    fail "a pull request of another branch stops the run"
+else
+    pass "a pull request of another branch stops the run"
+fi
 expect_pull_request "a run without a pull request number tells Tuist none" none \
     full GITHUB_REF=refs/pull/7/head
 expect_pull_request "an offline run tells Tuist no pull request" none \
-    full WAYPOINT_PULL_REQUEST=42 WAYPOINT_TUIST_OFFLINE=1
+    full WAYPOINT_PULL_REQUEST=42 STUB_PR_BRANCH=feature/first-part WAYPOINT_TUIST_OFFLINE=1
 batch_commit checkout -q --detach main
 for branch in feature/first-part fix/second-part; do
     git -C "$TREE" -c user.name="Merge batch" -c user.email="merge-batch@localhost" \
@@ -348,7 +364,8 @@ else
 fi
 batch_commit checkout -q main
 : >"$CALLS"
-if run_script WAYPOINT_PULL_REQUEST=42 >"$WORK/1j.log" 2>&1 &&
+if run_script WAYPOINT_PULL_REQUEST=42 GITHUB_HEAD_REF=probe/branch STUB_PR_BRANCH=probe/branch \
+    >"$WORK/1j.log" 2>&1 &&
     grep -qx "GITHUB_REF seen by tuist test: refs/pull/42/head" "$CALLS"; then
     pass "tuist test gets the pull request's ref"
 else
