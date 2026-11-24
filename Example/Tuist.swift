@@ -8,18 +8,26 @@
 
 // Tuist's settings for the example app. The Tuist version is pinned with mise (planning #330). The
 // project is linked to its Tuist server project, which keeps the selective testing results that
-// `scripts/test-mac.sh` uses (planning #427, planning #429; the binary cache stays off); the Mac
-// signs in once with `tuist auth login`. `enableCaching` adds Xcode's compilation cache settings to
-// the generated project, backed by Tuist's remote cache; `tuist setup cache` installs the local
-// proxy it talks to, once per Mac. Every scheme's test action collects code coverage, and `tuist
-// test` uploads it to the project's dashboard (planning #431). The value is the same for every run:
-// Tuist puts it in the selective testing hashes, so runs with it off couldn't reuse what runs with
-// it on passed. `prefixMapping` keeps the compilation cache shared across clones in builds that
-// collect coverage (Xcode 27 or later).
+// `scripts/test-mac.sh` uses (planning #427, planning #429), and its binary cache (planning #441);
+// the Mac signs in once with `tuist auth login`. `enableCaching` adds Xcode's compilation cache
+// settings to the generated project, backed by Tuist's remote cache; `tuist setup cache` installs
+// the local proxy it talks to, once per Mac. Every scheme's test action collects code coverage, and
+// `tuist test` uploads it to the project's dashboard (planning #431). The value is the same for
+// every run: Tuist puts it in the selective testing hashes, so runs with it off couldn't reuse what
+// runs with it on passed. `prefixMapping` keeps the compilation cache shared across clones in
+// builds that collect coverage (Xcode 27 or later).
+//
+// The binary cache's default profile is `none`, so `tuist generate` for work in Xcode keeps the
+// package's sources editable. `scripts/test-mac.sh` sets TUIST_WAYPOINT_BINARY_CACHE=1 for the runs
+// that may take the package's modules as prebuilt binaries (planning #441): Tuist uses one only
+// when it was built from exactly the same sources, build settings and Xcode.
 
 import ProjectDescription
 
 let tuistProject = "joeoct91/waypoint"
+
+let binaryCacheProfile: CacheProfileType =
+    Environment.waypointBinaryCache.getBoolean(default: false) ? .onlyExternal : .none
 
 let tuist = Tuist(
     fullHandle: tuistProject,
@@ -28,6 +36,7 @@ let tuist = Tuist(
         generationOptions: .options(
             enableCaching: true,
             coverage: .coverage(enabled: true, prefixMapping: true)
-        )
+        ),
+        cacheOptions: .options(profiles: .profiles(default: binaryCacheProfile))
     )
 )

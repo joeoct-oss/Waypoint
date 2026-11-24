@@ -77,6 +77,7 @@ cat >"$STUBS/tuist" <<'EOF'
 echo "tuist $*" >>"$STUB_CALLS"
 if [[ "$1" == test ]]; then
     echo "GITHUB_REF seen by tuist test: ${GITHUB_REF:-}" >>"$STUB_CALLS"
+    echo "TUIST_WAYPOINT_BINARY_CACHE seen by tuist test: ${TUIST_WAYPOINT_BINARY_CACHE:-}" >>"$STUB_CALLS"
     "$(dirname "$0")/stub-grandchild" "${STUB_SECONDS:-0}"
     exit "${STUB_STATUS:-0}"
 fi
@@ -145,7 +146,7 @@ fi
 # result bundle, with two parallel workers.
 TUIST_CALL=$(grep "^tuist test WaypointExample" "$CALLS" | head -1)
 for part in "--path Example" "--device waypoint-01" \
-    "--os 27.2" "--no-binary-cache" "--skip-quarantine" \
+    "--os 27.2" "--skip-quarantine" \
     "-T .build/results/example-only.xcresult" \
     "--test-targets WaypointExampleUITests/StackTests/testPushAndBack" \
     "-parallel-testing-enabled YES" "-parallel-testing-worker-count 2"; do
@@ -155,6 +156,20 @@ for part in "--path Example" "--device waypoint-01" \
         fail "tuist test gets $part (call: $TUIST_CALL)"
     fi
 done
+# A quick run may take the package's modules from Tuist's binary cache (planning #441): Example/Tuist.swift
+# turns the cache's profile on through TUIST_WAYPOINT_BINARY_CACHE=1, and `--destination simulator`
+# matches the simulator slices that runs warm.
+if [[ "$TUIST_CALL" != *"--no-binary-cache"* && "$TUIST_CALL" == *" --destination simulator"* ]] &&
+    grep -q "^TUIST_WAYPOINT_BINARY_CACHE seen by tuist test: 1$" "$CALLS"; then
+    pass "a quick run's example step may use the binary cache"
+else
+    fail "a quick run's example step may use the binary cache (call: $TUIST_CALL)"
+fi
+if ! grep -q "^tuist cache" "$CALLS"; then
+    pass "a quick run doesn't warm the binary cache"
+else
+    fail "a quick run doesn't warm the binary cache"
+fi
 # The derived data folder goes to xcodebuild after `--`, the way Tuist asks (planning #430).
 if [[ "${TUIST_CALL#* -- }" == *"-derivedDataPath $PWD/.build/example-derived-data"* &&
     "$TUIST_CALL" != *"--derived-data-path"* ]]; then
@@ -184,7 +199,8 @@ fi
 : >"$CALLS"
 if run_script WAYPOINT_TUIST_OFFLINE=1 >"$WORK/1b.log" 2>&1 &&
     grep "^tuist test" "$CALLS" | grep -q -- "--no-selective-testing --no-binary-cache --no-upload --inspect-mode off --skip-quarantine" &&
-    grep "^tuist test" "$CALLS" | grep -q -- " WAYPOINT_TUIST_OFFLINE=1"; then
+    grep "^tuist test" "$CALLS" | grep -q -- " WAYPOINT_TUIST_OFFLINE=1" &&
+    grep -q "^TUIST_WAYPOINT_BINARY_CACHE seen by tuist test: 0$" "$CALLS"; then
     pass "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
 else
     fail "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
@@ -258,6 +274,37 @@ if [[ "$got" == *"selective testing on, release reports selective testing off"* 
     pass "a full run's release reports step never skips its tests"
 else
     fail "a full run's release reports step never skips its tests (plan: ${got:-none})"
+fi
+
+# 1c2. Tuist's binary cache (planning #441): quick and full runs may use it; release, coverage and
+# offline runs build from source; green full and coverage runs warm it; the release reports step
+# never uses it.
+expect_cache() {
+    local name="$1" want="$2" got
+    shift 2
+    got=$(cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+        "${@:2}" scripts/test-mac.sh "$1" --plan 2>/dev/null | grep '^plan:' || true)
+    if [[ "$got" == *", $want, "* ]]; then
+        pass "$name"
+    else
+        fail "$name (plan: ${got:-none})"
+    fi
+}
+expect_cache "a quick run uses the binary cache and doesn't warm it" \
+    "binary cache on, warm binary cache false" quick
+expect_cache "a full run uses the binary cache and warms it" \
+    "binary cache on, warm binary cache true" full
+expect_cache "a release run builds from source and doesn't warm" \
+    "binary cache off, warm binary cache false" release
+expect_cache "a coverage run builds from source and warms" \
+    "binary cache off, warm binary cache true" coverage
+expect_cache "an offline full run builds from source and doesn't warm" \
+    "binary cache off, warm binary cache false" full WAYPOINT_TUIST_OFFLINE=1
+if grep -q "local BINARY_CACHE=off" scripts/test-mac.sh &&
+    grep -A3 "^release_reports_on()" scripts/test-mac.sh | grep -q "local BINARY_CACHE=off"; then
+    pass "the release reports step never uses the binary cache"
+else
+    fail "the release reports step never uses the binary cache"
 fi
 
 # 1d. Tuist is told the branch each run tests (planning #431), through GITHUB_HEAD_REF: the branch the clone

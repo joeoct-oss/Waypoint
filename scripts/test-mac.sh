@@ -24,6 +24,13 @@
 #   `main`'s own commit, then `tuist coverage complete`, so the Tuist dashboard charts `main`'s
 #   code coverage (planning #431). It refuses any other commit, and runs none of the package's steps.
 #
+# Tuist's binary cache (planning #441): quick and full runs may take the package's modules as
+# prebuilt binaries in the example app's test step, when a binary exists for exactly the same
+# sources, settings (warnings as errors included) and Xcode; any change builds them from source.
+# Release, coverage, offline runs and the release reports step always build from source. A green
+# full or coverage run then warms the cache for its tree (`tuist cache`), and a failed warm only
+# warns. The package's own steps never use the cache.
+#
 # Every run that uses Tuist collects code coverage (`Example/Tuist.swift`, planning #431) and tells Tuist
 # the branch it tests through GITHUB_HEAD_REF, which Tuist reads on any machine: the branch the
 # clone is on, or, on a merge batch's detached commit, the batch's branches joined with `+`. A run
@@ -50,7 +57,8 @@
 #   --all   quick runs every part, whatever the branch changed.
 #   --only  quick runs only the guard rail and this example UI test (passed to `tuist test --test-targets`),
 #           for example `--only WaypointExampleUITests/StackTests/testPushAndBack`.
-#   --plan  prints what the run would do, including whether Tuist's selective testing is on, and
+#   --plan  prints what the run would do, including whether Tuist's selective testing and binary
+#           cache are on, and
 #           stops: no lock, no simulator, no build.
 #
 # Environment:
@@ -59,8 +67,8 @@
 #   WAYPOINT_JOBS             build jobs (default half the performance cores, at least 2).
 #   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 2;
 #                             1 runs them on the simulator itself).
-#   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing and uploads
-#                             (default 0).
+#   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing, the binary
+#                             cache and uploads (default 0).
 #   WAYPOINT_PULL_REQUEST     the number of the pull request this run tests, whose page gets
 #                             Tuist's run report; unset for a merge batch of several branches.
 #   WAYPOINT_BASE             what the branch is compared with (default origin/main), for what
@@ -588,9 +596,8 @@ simulator_os() {
 # report reads its slowest tests from (planning #427). Extra arguments go to `tuist test`, such as
 # `--test-targets` or `--configuration`.
 #
-# Tuist's binary cache is off (planning #429): with the package in Tuist's graph it could swap the
-# package's targets for cached binaries, and every run builds the package from source with its
-# warnings as errors. Every run's results go to the project's Tuist dashboard (Test Insights: run
+# Tuist's binary cache (planning #441) follows BINARY_CACHE: on, the package's modules may come from
+# a binary built from exactly the same inputs; off, they build from source with warnings as errors. Every run's results go to the project's Tuist dashboard (Test Insights: run
 # times and flaky tests). Selective testing, which skips a test
 # target that already passed with the same hash, is on in quick and full runs unless the branch
 # changes a file the hashes don't cover; release, `--only`, `--ui` and `--all` run every test
@@ -625,9 +632,20 @@ example_tests_on() {
             # The build's post-action reads it too, so it sends no build timings.
             offline_settings=(WAYPOINT_TUIST_OFFLINE=1)
             ;;
-        off) tuist_flags=(--no-selective-testing --no-binary-cache --skip-quarantine) ;;
-        on) tuist_flags=(--no-binary-cache --skip-quarantine) ;;
+        off) tuist_flags=(--no-selective-testing --skip-quarantine) ;;
+        on) tuist_flags=(--skip-quarantine) ;;
     esac
+    # `Example/Tuist.swift` turns the binary cache's default profile on only with
+    # TUIST_WAYPOINT_BINARY_CACHE=1; everywhere else the package builds from source.
+    local -x TUIST_WAYPOINT_BINARY_CACHE=0
+    # Runs warm only simulator slices, and `tuist test` asks for every destination unless told
+    # otherwise, so without `--destination simulator` it finds no binary (measured 2026-11-24).
+    if [[ "$SELECTIVE_TESTING" != offline && "$BINARY_CACHE" == on ]]; then
+        TUIST_WAYPOINT_BINARY_CACHE=1
+        tuist_flags+=(--destination simulator)
+    elif [[ "$SELECTIVE_TESTING" != offline ]]; then
+        tuist_flags+=(--no-binary-cache)
+    fi
     mkdir -p "$RESULTS_DIR"
     # Release products an older run left beside the Debug ones would be read for coverage instead.
     if [[ "$EXAMPLE_DERIVED_DATA" != "$RELEASE_REPORTS_DERIVED_DATA" ]]; then
@@ -712,10 +730,28 @@ if [[ "$SELECTIVE_TESTING" == on ]]; then
 fi
 # The report says whether a passed target could have been skipped (TESTING.md, Report the result).
 echo "selective testing: $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING"
+
+# Whether the example app's test step may take the package's modules from Tuist's binary cache
+# (planning #441), and whether a green run warms the cache for its tree. A binary is keyed by its
+# sources, build settings (warnings as errors included), configuration and Xcode, so it is never
+# stale. Release runs build everything from source; coverage runs too, because Tuist caches a
+# package without coverage counters and `main`'s coverage must measure the package. The release
+# reports step always builds from source (Release isn't warmed).
+if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 || "$TIER" == release || "$TIER" == coverage ]]; then
+    BINARY_CACHE=off
+else
+    BINARY_CACHE=on
+fi
+if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" != 1 && -z "$ONLY_TEST" && ( "$TIER" == full || "$TIER" == coverage ) ]]; then
+    WARM_BINARY_CACHE=true
+else
+    WARM_BINARY_CACHE=false
+fi
+echo "binary cache: $BINARY_CACHE, release reports binary cache off, warm after a pass $WARM_BINARY_CACHE"
 echo "tuist branch: ${GITHUB_HEAD_REF:-none}"
 echo "tuist pull request: ${TUIST_PULL_REQUEST:-none}"
 if $PLAN_ONLY; then
-    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}"
+    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, binary cache $BINARY_CACHE, warm binary cache $WARM_BINARY_CACHE, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}"
     trap - EXIT
     exit 0
 fi
@@ -792,6 +828,7 @@ fi
 release_reports_on() {
     local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
     local EXAMPLE_DERIVED_DATA="$RELEASE_REPORTS_DERIVED_DATA"
+    local BINARY_CACHE=off
     TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 example_tests_on "$@"
 }
 if $RUN_RELEASE_REPORTS; then
@@ -822,4 +859,17 @@ fi
 if [[ -n "$TUIST_PULL_REQUEST" ]] && $RUN_UI && [[ -z "$ONLY_TEST" ]] && ! $RUN_COVERAGE_COMPLETE; then
     step "tuist coverage complete for pull request $TUIST_PULL_REQUEST" \
         tuist_cmd coverage complete --path Example
+fi
+
+# A green full or coverage run warms Tuist's binary cache for its tree (planning #441): it builds the
+# package's modules for the simulator in Debug and uploads them, so a later run on the same inputs
+# can skip building them. It runs last, after every test passed, so a binary only ever comes from a
+# tree whose tests passed. A failed warm warns and leaves the run green: the cache only saves time.
+warm_binary_cache() {
+    if ! tuist_cmd cache --path Example --destination simulator; then
+        echo "warning: warming Tuist's binary cache failed; the next run builds the package from source" >&2
+    fi
+}
+if $WARM_BINARY_CACHE; then
+    step "tuist cache (warm the binary cache)" warm_binary_cache
 fi
