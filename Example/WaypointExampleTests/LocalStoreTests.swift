@@ -10,8 +10,8 @@ import Foundation
 import Testing
 @testable import WaypointExample
 
-// A store made for a test keeps its data in a domain of its own (#301), so tests never change what
-// the app keeps between launches, and the app's data never leaks into a test.
+// A store made for a test keeps its data in a domain of its own (planning #424), so tests never
+// change what the app keeps between launches, and the app's data never leaks into a test.
 struct LocalStoreTests {
     private static let lampID = 1
 

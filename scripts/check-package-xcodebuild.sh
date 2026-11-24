@@ -6,7 +6,7 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Checks scripts/package-xcodebuild.sh (#324) with a stand-in xcodebuild, so it runs on Linux and
+# Checks scripts/package-xcodebuild.sh (planning #429) with a stand-in xcodebuild, so it runs on Linux and
 # on the Mac without Xcode:
 #
 # - xcodebuild runs with Tuist's package project (`Waypoint.xcodeproj` and `Derived/`) moved aside;

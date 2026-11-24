@@ -15,7 +15,6 @@ on:
 permissions: {}
 
 env:
-  PROJECT_URL: https://github.com/users/JoeOCT91/projects/3
   PROJECT_ID: PVT_kwHOAyL-xM4Br2PN
   STATUS_FIELD_ID: PVTSSF_lAHOAyL-xM4Br2PNzhqG_sI
   STATUS_IN_PROGRESS: 023a83b6
@@ -26,17 +25,12 @@ jobs:
     if: vars.BOARD_AUTOMATION == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Add the item to the board
-        id: add
-        uses: actions/add-to-project@v2.0.0
-        with:
-          project-url: ${{ env.PROJECT_URL }}
-          github-token: ${{ secrets.WAYPOINT_PROJECT_TOKEN }}
-
-      - name: Set the Status column
+      # GraphQL directly: actions/add-to-project makes a draft card instead when the PR's owner
+      # (the org) isn't the board's owner (the user), and `gh project` asks for extra token scopes.
+      - name: Add the pull request to the board and set its column
         env:
           GH_TOKEN: ${{ secrets.WAYPOINT_PROJECT_TOKEN }}
-          ITEM_ID: ${{ steps.add.outputs.itemId }}
+          CONTENT_ID: ${{ github.event.pull_request.node_id }}
           IS_DRAFT: ${{ github.event.pull_request.draft }}
         run: |
           if [ "$IS_DRAFT" = "true" ]; then
@@ -44,8 +38,17 @@ jobs:
           else
             status_option="$STATUS_IN_REVIEW"
           fi
-          gh project item-edit \
-            --id "$ITEM_ID" \
-            --project-id "$PROJECT_ID" \
-            --field-id "$STATUS_FIELD_ID" \
-            --single-select-option-id "$status_option"
+          item_id="$(gh api graphql \
+            -f query='mutation($project: ID!, $content: ID!) {
+              addProjectV2ItemById(input: {projectId: $project, contentId: $content}) { item { id } }
+            }' \
+            -f project="$PROJECT_ID" -f content="$CONTENT_ID" \
+            --jq '.data.addProjectV2ItemById.item.id')"
+          gh api graphql \
+            -f query='mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+              updateProjectV2ItemFieldValue(input: {projectId: $project, itemId: $item,
+                fieldId: $field, value: {singleSelectOptionId: $option}}) { projectV2Item { id } }
+            }' \
+            -f project="$PROJECT_ID" -f item="$item_id" -f field="$STATUS_FIELD_ID" \
+            -f option="$status_option" > /dev/null
+          echo "Moved item $item_id"

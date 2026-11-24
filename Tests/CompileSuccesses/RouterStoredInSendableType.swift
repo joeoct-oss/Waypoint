@@ -6,7 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// Must compile: a router is a main-actor type, so a `Sendable` value may keep it (#24).
+// Must compile: a router is a main-actor type, so a `Sendable` value may keep it (planning #278).
 
 import WaypointCore
 

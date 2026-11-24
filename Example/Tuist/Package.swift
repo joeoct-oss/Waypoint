@@ -9,7 +9,7 @@
 
 // The example app takes the Waypoint package through Tuist's own package integration, so the
 // package's targets join Tuist's graph and their sources count in the hashes that selective
-// testing uses (#324): a change in any of them runs the example app's tests again. Run
+// testing uses (planning #429): a change in any of them runs the example app's tests again. Run
 // `tuist install --path Example` before `tuist generate`; `scripts/test-mac.sh` does.
 //
 // Tuist writes the package's project, `Waypoint.xcodeproj` and `Derived/`, into the package root.

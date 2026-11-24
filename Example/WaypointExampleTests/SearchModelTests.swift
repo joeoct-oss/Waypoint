@@ -11,11 +11,11 @@ import Testing
 import WaypointCore
 @testable import WaypointExample
 
-// Search's view model navigates on its own (#282): a tapped result pushes the product through the
-// stack's navigator scoped to the shop, on a real router with no screen. Each test wires the model
-// through `SearchModel.onShopStack(_:)`, as the shop's coordinator does, so a stack that stops
-// declaring `ShopFlow` fails here: the declared flow is checked, and a navigator scoped to another
-// flow is no longer reported.
+// Search's view model navigates on its own (planning #417): a tapped result pushes the product
+// through the stack's navigator scoped to the shop, on a real router with no screen. Each test
+// wires the model through `SearchModel.onShopStack(_:)`, as the shop's coordinator does, so a stack
+// that stops declaring `ShopFlow` fails here: the declared flow is checked, and a navigator scoped
+// to another flow is no longer reported.
 struct SearchModelTests {
     private static let lampID = 1
     private static let shopFlowID = FlowID("search")

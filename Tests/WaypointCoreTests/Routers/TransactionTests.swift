@@ -12,7 +12,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// Several changes applied as one (#47).
+/// Several changes applied as one (planning #300).
 @Suite("Transactions")
 @MainActor
 struct TransactionTests {

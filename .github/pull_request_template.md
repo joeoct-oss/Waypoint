@@ -12,7 +12,7 @@ Closes joeoct-oss/Waypoint-planning#
 
 ## Checklist
 
-- [ ] `scripts/lint.sh` passes (strict SwiftLint and swift-format, see #70); required before review
+- [ ] `scripts/lint.sh` passes (strict SwiftLint and swift-format, see planning #324); required before review
 - [ ] Labels copied from the issue (type, area, priority, test, runs)
 - [ ] Public symbols documented in DocC
 - [ ] Code follows `CODE_STYLE.md`, including a reason for every protocol conformance

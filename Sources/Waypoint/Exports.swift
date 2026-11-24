@@ -8,7 +8,7 @@
 
 // Apps import only `Waypoint`, the one UI product (decision 0017), and get the core's routes,
 // routers and outcomes with it. Code that draws nothing may import `WaypointCore` alone, so it
-// stays free of UI frameworks (#304).
+// stays free of UI frameworks (planning #425).
 @_exported import WaypointCore
 
 #if canImport(os)

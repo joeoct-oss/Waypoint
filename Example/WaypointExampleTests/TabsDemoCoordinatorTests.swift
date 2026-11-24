@@ -10,9 +10,9 @@ import Testing
 import Waypoint
 @testable import WaypointExample
 
-// The Lab's Tabs coordinator stores no router (#59): Waypoint makes it the first time it is read
-// and asks for each tab's coordinator, whose router becomes the tab's stack. Tabs added later get
-// their coordinators, and removed tabs' stacks leave the tree.
+// The Lab's Tabs coordinator stores no router (planning #313): Waypoint makes it the first time it
+// is read and asks for each tab's coordinator, whose router becomes the tab's stack. Tabs added
+// later get their coordinators, and removed tabs' stacks leave the tree.
 struct TabsDemoCoordinatorTests {
     @Test
     func eachTabStackIsItsCoordinatorsRouter() {

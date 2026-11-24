@@ -6,7 +6,7 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Checks that Tuist's selective testing sees every part of the package (#324). Selective testing
+# Checks that Tuist's selective testing sees every part of the package (planning #429). Selective testing
 # skips a test target that already passed with the same hash, so the hash must change whenever
 # something the tests run changes. In a copy of the working tree, this adds a comment line to one
 # Swift file of each package module and of the example app, one at a time, and checks that each

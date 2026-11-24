@@ -67,13 +67,13 @@ extension StackRouter {
 }
 ```
 
-> Note: Two kinds of presentation are coming. Alerts and confirmation dialogs become presentations in the navigation state, shown by both renderers, with the tapped button returned as a typed result. And when something Waypoint didn't present is on screen, such as a share sheet or a payment sheet from another SDK, Waypoint will wait until it closes before presenting, or dismiss it first if the app chooses, and report it in the log. Tracked in #154 and #153.
+> Note: Two kinds of presentation are coming. Alerts and confirmation dialogs become presentations in the navigation state, shown by both renderers, with the tapped button returned as a typed result. And when something Waypoint didn't present is on screen, such as a share sheet or a payment sheet from another SDK, Waypoint will wait until it closes before presenting, or dismiss it first if the app chooses, and report it in the log. Tracked in planning #355 and planning #354.
 
-> Note: Two more changes are coming. A popover style anchored to a view, which becomes a sheet in compact width (#156). And a leave confirmation set at run time with `router.setLeaveConfirmation(_:)`, which asks before swipe back, a sheet drag or Back, next to the fixed `allowsInteractiveDismiss` below (#155).
+> Note: Two more changes are coming. A popover style anchored to a view, which becomes a sheet in compact width (planning #357). And a leave confirmation set at run time with `router.setLeaveConfirmation(_:)`, which asks before swipe back, a sheet drag or Back, next to the fixed `allowsInteractiveDismiss` below (planning #356).
 
 ### Declared presentation
 
-> Note: Draft until #12. `show(_:)` and the `presentation:` parameter are planned, not built, and can still change when #12 lands.
+> Note: Draft until planning #266. `show(_:)` and the `presentation:` parameter are planned, not built, and can still change when planning #266 lands.
 
 A route that is always shown the same way can say so once, next to its screen, instead of at every call site. Its destination declares a default presentation, and `show(_:)` uses it:
 
@@ -127,7 +127,7 @@ func showOrder(id: Order.ID) {
 }
 ```
 
-The outcome is `.recovered(alreadyPresenting, by: .replacePresentation)` when something was replaced, and `.applied` when nothing was presented. If the new route can't be presented, the dismissal is rolled back too. A replacement made in code doesn't ask the presented flow for a leave confirmation; that applies only to the user's own gestures (#155). To replace across the app, set it once as the router's fallback for `alreadyPresenting`:
+The outcome is `.recovered(alreadyPresenting, by: .replacePresentation)` when something was replaced, and `.applied` when nothing was presented. If the new route can't be presented, the dismissal is rolled back too. A replacement made in code doesn't ask the presented flow for a leave confirmation; that applies only to the user's own gestures (planning #356). To replace across the app, set it once as the router's fallback for `alreadyPresenting`:
 
 ```swift
 router.setFallback(.replacePresentation, for: .alreadyPresenting)

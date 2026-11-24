@@ -11,7 +11,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// Path builders and the helpers that search the path (#47).
+/// Path builders and the helpers that search the path (planning #300).
 @Suite("Path helpers")
 @MainActor
 struct PathHelperTests {

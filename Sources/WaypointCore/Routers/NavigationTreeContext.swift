@@ -151,7 +151,7 @@ final class NavigationTreeContext {
     }
 
     /// Calls `observer` with the changes of each committed transaction, while it is still being
-    /// applied. The seam for observers and events (#23). Replaces the previous one.
+    /// applied. The seam for observers and events (planning #276). Replaces the previous one.
     func onApplied(_ observer: @escaping ([AppliedChange]) -> Void) {
         observers = observers.withApplied(observer)
     }
@@ -163,7 +163,7 @@ final class NavigationTreeContext {
     }
 
     /// Calls `observer` with the outcome of every call, including queued and ignored ones. The
-    /// seam for `WaypointTesting` strict mode (#41). Replaces the previous one.
+    /// seam for `WaypointTesting` strict mode (planning #294). Replaces the previous one.
     package func onFinished(_ observer: @escaping (NavigationOutcome) -> Void) {
         observers = observers.withFinished(observer)
     }
@@ -449,7 +449,7 @@ final class NavigationTreeContext {
     /// the rest.
     ///
     /// The failure handlers hear the first one only. A handler that navigates would otherwise be
-    /// refused again, call the handler again, and never return (#24).
+    /// refused again, call the handler again, and never return (planning #278).
     private func refuseLoop(on router: some TreeNode, file: StaticString, line: UInt) -> NavigationOutcome {
         let message = "More than \(maxQueuedChanges) calls were made while changes were applied, "
             + "which looks like an observer that navigates on every change. The rest were dropped."

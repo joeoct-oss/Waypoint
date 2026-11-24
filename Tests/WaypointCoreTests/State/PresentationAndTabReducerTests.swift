@@ -11,7 +11,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The pure presentation and tab reducers (#45).
+/// The pure presentation and tab reducers (planning #298).
 @Suite("Presentation and tab reducers")
 struct PresentationAndTabReducerTests {
     let sheet = Presentation(style: .sheet, flow: FlowID("filter"), route: AnyRoute(SettingsRoute()))

@@ -11,7 +11,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The `.replacePresentation` fallback and the outcome helpers (#145).
+/// The `.replacePresentation` fallback and the outcome helpers (planning #347).
 @Suite("Replace presentation")
 @MainActor
 struct ReplacePresentationTests {

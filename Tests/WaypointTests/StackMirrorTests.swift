@@ -14,7 +14,7 @@ import WaypointTestSupport
 @testable import Waypoint
 @testable import WaypointCore
 
-/// The binding between a stack router and what a SwiftUI stack shows (#11).
+/// The binding between a stack router and what a SwiftUI stack shows (planning #265).
 @Suite("Stack mirror")
 @MainActor
 struct StackMirrorTests {
@@ -116,8 +116,8 @@ struct StackMirrorTests {
     }
 
     // On a busy device, drawing a push can block the main actor for seconds, and iOS 17 runs the
-    // push only after that (#204). A change that lands as the drawing ends is held until the push
-    // that runs from then ends.
+    // push only after that (planning #373). A change that lands as the drawing ends is held until
+    // the push that runs from then ends.
     @Test
     func transitionCountsFromWhenDrawingEnds() {
         let router = StackRouter(configuration: .permissive)
@@ -199,7 +199,7 @@ struct StackMirrorTests {
 
         #expect(mirror.shown.isEmpty)
         #expect(!mirror.isHoldingChange)
-        // Only the end of the push is waiting, to clear the duplicate push window (#142).
+        // Only the end of the push is waiting, to clear the duplicate push window (planning #344).
         #expect(clock.scheduledCount == 1)
     }
 

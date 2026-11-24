@@ -12,7 +12,7 @@ import Waypoint
 // Draws a sheet the way its Waypoint `SheetOptions` say: the sizes it rests at and opens at, the
 // drag indicator, and whether a swipe can close it. The app's sheets are still SwiftUI's own, bound
 // to the routers, so this is the one place that turns the router's options into SwiftUI modifiers;
-// no screen sets a detent of its own. It goes away when Waypoint draws sheets (#12).
+// no screen sets a detent of its own. It goes away when Waypoint draws sheets (planning #266).
 //
 // `.fitsContent` and app-defined sizes need that renderer, so until then they show as large.
 //

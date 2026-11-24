@@ -10,9 +10,9 @@ import Testing
 import Waypoint
 @testable import WaypointExample
 
-// The Lab's Write a review flow, pushed on the Detail push stack (#59): its screens follow the
-// product on the parent's stack, Post review finishes with the stars and pops back to the
-// product, and the Detail push flow keeps the stars a posted review gave.
+// The Lab's Write a review flow, pushed on the Detail push stack (planning #313): its screens
+// follow the product on the parent's stack, Post review finishes with the stars and pops back to
+// the product, and the Detail push flow keeps the stars a posted review gave.
 struct DetailReviewCoordinatorTests {
     private static let productID = 1
     private static let rating = 4

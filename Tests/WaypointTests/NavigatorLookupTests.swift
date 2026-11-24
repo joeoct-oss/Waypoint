@@ -14,7 +14,7 @@ import WaypointTestSupport
 @testable import Waypoint
 @testable import WaypointCore
 
-/// What the property wrappers find in the environment (#25, decision 0004).
+/// What the property wrappers find in the environment (planning #279, decision 0004).
 @Suite("Navigator lookup")
 @MainActor
 struct NavigatorLookupTests {

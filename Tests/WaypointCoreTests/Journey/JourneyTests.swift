@@ -12,9 +12,9 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The journey (#216, #239): the screen on display after each change across tabs, stacks and
-/// presentations, its visit with the previous screen and the source, and the box each change
-/// writes.
+/// The journey (planning #379, planning #392): the screen on display after each change across tabs,
+/// stacks and presentations, its visit with the previous screen and the source, and the box each
+/// change writes.
 @Suite("Journey")
 @MainActor
 struct JourneyTests {

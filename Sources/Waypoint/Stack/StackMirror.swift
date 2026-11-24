@@ -30,10 +30,11 @@ import WaypointCore
 ///   can't read back. The router reports `rendererMismatch`, and the screen is redrawn from the
 ///   router.
 /// - When the mirror shows a push, it tells the router the push started, and when the push ends,
-///   so a second tap on the same row while the screen slides in pushes nothing (#142).
+///   so a second tap on the same row while the screen slides in pushes nothing (planning #344).
 /// - When a push ends, and when the stack appears, the mirror checks that every route it
 ///   shows has a destination inside this stack. A route type with none is reported once as
-///   `missingDestination`, and the stack shows its missing-destination screen for it (#166).
+///   `missingDestination`, and the stack shows its missing-destination screen for it
+///   (planning #361).
 ///
 /// Conformances:
 /// - `Observable`, so the stack redraws when `shown` changes.

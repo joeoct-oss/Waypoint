@@ -27,7 +27,7 @@ final class LoginGuard: NavigationGuard {
 root.addGuard(LoginGuard(session: session))
 ```
 
-> Note: Draft until #40. Guards are not built yet. This article fixes their shape so the rest of the API leaves room for them.
+> Note: Draft until planning #293. Guards are not built yet. This article fixes their shape so the rest of the API leaves room for them.
 
 A link that needs the user to sign in first is not a guard's job. The app coordinator holds the link until sign-in is complete, as <doc:DeepLinks> explains. Guards check navigation inside the app.
 
