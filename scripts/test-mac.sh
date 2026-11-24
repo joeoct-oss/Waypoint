@@ -682,6 +682,12 @@ if $PLAN_ONLY; then
     exit 0
 fi
 
+# The daily coverage run says whether a newer stable Tuist than the pinned one is out (#334). It
+# only reports, so it is no step and never fails the run.
+if $RUN_COVERAGE_COMPLETE; then
+    scripts/check-tuist-version.sh
+fi
+
 step "Checking the concurrency guard rail" scripts/check-concurrency.sh
 step "Checking the example app's isolation" scripts/check-example-isolation.sh
 step "Checking that app code imports Waypoint once" scripts/check-single-import.sh
