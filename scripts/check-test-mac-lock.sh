@@ -143,7 +143,9 @@ for part in "--path Example" "--device waypoint-01" "--os 27.2" "--skip-quaranti
 done
 # The package comes through Tuist's package integration, which `tuist install` resolves first
 # (#324).
-if [[ "$(grep -m1 -n "^tuist install --path Example" "$CALLS" | cut -d: -f1)" -lt "$(grep -m1 -n "^tuist test" "$CALLS" | cut -d: -f1)" ]] 2>/dev/null; then
+INSTALL_LINE=$(grep -m1 -n "^tuist install --path Example" "$CALLS" | cut -d: -f1 || true)
+TEST_LINE=$(grep -m1 -n "^tuist test" "$CALLS" | cut -d: -f1 || true)
+if [[ -n "$INSTALL_LINE" && -n "$TEST_LINE" && "$INSTALL_LINE" -lt "$TEST_LINE" ]]; then
     pass "tuist install runs before tuist test"
 else
     fail "tuist install runs before tuist test ($(grep '^tuist' "$CALLS" | tr '\n' ';'))"
