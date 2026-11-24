@@ -141,6 +141,13 @@ for part in "--path Example" "--device waypoint-01" "--os 27.2" "--skip-quaranti
         fail "tuist test gets $part (call: $TUIST_CALL)"
     fi
 done
+# The package comes through Tuist's package integration, which `tuist install` resolves first
+# (#324).
+if [[ "$(grep -m1 -n "^tuist install --path Example" "$CALLS" | cut -d: -f1)" -lt "$(grep -m1 -n "^tuist test" "$CALLS" | cut -d: -f1)" ]] 2>/dev/null; then
+    pass "tuist install runs before tuist test"
+else
+    fail "tuist install runs before tuist test ($(grep '^tuist' "$CALLS" | tr '\n' ';'))"
+fi
 if [[ "$TUIST_CALL" == *"--no-selective-testing"* ]]; then
     pass "a test asked for with --only always runs: selective testing is off"
 else
@@ -155,9 +162,10 @@ else
     fail "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
 fi
 
-# 1c. Tuist's selective testing is off in a merge gate and after any change outside `Example/`,
-# and on only in a quick run that changes nothing but `Example/`. `--plan` prints the decision
-# without a run, in a copy of the working tree with its own one-commit history.
+# 1c. Tuist's selective testing (#324) is on in quick and full runs whose changes Tuist's test
+# hashes cover (the package's and the example app's sources), and off in a release run, after a
+# change to a file the hashes don't cover, and when there are no changes to judge. `--plan` prints
+# the decision without a run, in a copy of the working tree with its own one-commit history.
 TREE="$WORK/tree"
 mkdir -p "$TREE"
 git ls-files -z | tar --null -T - -cf - | tar -xf - -C "$TREE"
@@ -178,14 +186,41 @@ expect_plan() {
         fail "$name (plan: ${got:-none})"
     fi
 }
-expect_plan "a full run never skips a test: selective testing is off" off full
-touch "$TREE/Example/SelectiveProbe.swift"
-expect_plan "a quick run that changes only Example/ may skip passed tests" on quick
-rm "$TREE/Example/SelectiveProbe.swift"
-touch "$TREE/Sources/SelectiveProbe.swift"
-expect_plan "a quick run that changes the package runs every test" off quick
-rm "$TREE/Sources/SelectiveProbe.swift"
-expect_plan "a quick run with no changes runs every test" off quick
+# Each probe file is made, judged and removed again, so the next case starts from no changes.
+expect_plan_with() {
+    local probe="$1"
+    shift
+    mkdir -p "$(dirname "$TREE/$probe")"
+    if [[ -e "$TREE/$probe" ]]; then
+        echo "// probe" >>"$TREE/$probe"
+        expect_plan "$@"
+        git -C "$TREE" checkout -q -- "$probe"
+    else
+        touch "$TREE/$probe"
+        expect_plan "$@"
+        rm "$TREE/$probe"
+    fi
+}
+expect_plan "a full run with no changes to judge runs every test" off full
+expect_plan "a quick run with no changes to judge runs every test" off quick
+expect_plan_with Sources/WaypointCore/SelectiveProbe.swift \
+    "a full run that changes the package may skip passed tests" on full
+expect_plan_with Sources/WaypointCore/SelectiveProbe.swift \
+    "a quick run that changes the package may skip passed tests" on quick
+expect_plan_with Example/WaypointExample/SelectiveProbe.swift \
+    "a quick run that changes only Example/ may skip passed tests" on quick
+expect_plan_with Tests/WaypointCoreTests/SelectiveProbe.swift \
+    "a full run that changes only the package's tests may skip passed tests" on full
+expect_plan_with scripts/test-mac.sh \
+    "a full run that changes a script runs every test" off full
+expect_plan_with Example/Project.swift \
+    "a full run that changes the example app's manifest runs every test" off full
+expect_plan_with Example/Tuist/Package.swift \
+    "a full run that changes the package integration runs every test" off full
+expect_plan_with Package.swift \
+    "a full run that changes Package.swift runs every test" off full
+expect_plan_with Sources/WaypointCore/SelectiveProbe.swift \
+    "a release run never skips a test" off release
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
 : >"$CALLS"
