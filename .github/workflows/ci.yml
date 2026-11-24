@@ -1,5 +1,6 @@
 # Runs the Linux checks (scripts/test-linux.sh) on pull requests to main.
-# Built to stay inside the account's included Actions minutes:
+# Every job runs on Tuist runners (`tuist-linux`, #332), not GitHub-hosted runners, so CI uses the
+# Tuist account's Linux minutes instead of GitHub Actions minutes. Built to use few of them:
 # - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
 # - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**, docs-theme/**)
 #   skips both Swift jobs, which GitHub counts as passed; the first job, "Changed files and docs
@@ -29,7 +30,7 @@ jobs:
   changes:
     name: Changed files and docs checks
     if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
-    runs-on: ubuntu-latest
+    runs-on: tuist-linux
     timeout-minutes: 5
     outputs:
       code: ${{ steps.files.outputs.code }}
@@ -75,7 +76,7 @@ jobs:
     if: >-
       !cancelled() && vars.CI_ENABLED == 'true' && !github.event.pull_request.draft &&
       !(needs.changes.result == 'success' && needs.changes.outputs.code == 'false')
-    runs-on: ubuntu-latest
+    runs-on: tuist-linux
     timeout-minutes: 20
     container:
       image: swift:6.4
@@ -122,7 +123,7 @@ jobs:
     if: >-
       !cancelled() && vars.CI_ENABLED == 'true' && !github.event.pull_request.draft &&
       !(needs.changes.result == 'success' && needs.changes.outputs.code == 'false')
-    runs-on: ubuntu-latest
+    runs-on: tuist-linux
     timeout-minutes: 15
     container: swift:6.2
     steps:
