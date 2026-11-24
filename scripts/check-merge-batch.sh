@@ -88,7 +88,12 @@ git checkout -q main
 # 2. Squash-merging in the batch's order gives the batch's tree.
 git checkout -q -b squashed origin/main
 for branch in one two; do
-    git merge -q --squash "origin/$branch" >/dev/null 2>&1 && git commit -q -m "squash $branch"
+    if ! { git merge -q --squash "origin/$branch" >/dev/null 2>&1 &&
+        git commit -q -m "squash $branch"; }; then
+        fail "squash-merging $branch"
+        git reset -q --hard
+        break
+    fi
 done
 if [[ -n "${tree:-}" && "$(git rev-parse HEAD^{tree})" == "$tree" ]]; then
     pass "squash-merging the batch's branches in order gives the batch's tree"
@@ -100,8 +105,11 @@ git checkout -q main
 # 2-merge. Merging in the batch's order with merge commits gives the batch's tree too.
 git checkout -q -b merged origin/main
 for branch in one two; do
-    git merge -q --no-ff -m "merge $branch" "origin/$branch" >/dev/null 2>&1 ||
+    if ! git merge -q --no-ff -m "merge $branch" "origin/$branch" >/dev/null 2>&1; then
         fail "merging $branch with a merge commit"
+        git merge --abort 2>/dev/null || git reset -q --hard
+        break
+    fi
 done
 if [[ -n "${tree:-}" && "$(git rev-parse HEAD^{tree})" == "$tree" ]]; then
     pass "merging the batch's branches in order with merge commits gives the batch's tree"
