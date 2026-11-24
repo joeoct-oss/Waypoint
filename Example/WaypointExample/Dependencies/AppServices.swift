@@ -89,7 +89,7 @@ final class AppServices {
     // What Shop and Search use. `launch` is the window's, so its link settings reach the products
     // stacks.
     func productsDependencies(
-        gate: AccountGate,
+        gate: any SheetAccountGating,
         launch: LaunchOptions
     ) -> ProductsDependencies {
         let products = ProductsNavigation(

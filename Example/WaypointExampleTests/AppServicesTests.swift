@@ -48,7 +48,7 @@ struct AppServicesTests {
     }
 
     @Test
-    func screensShareOneAppWideStore() {
+    func screensShareOneAppWideStore() throws {
         let store = TestStore.make()
         defer {
             store.clearAll()
@@ -62,18 +62,32 @@ struct AppServicesTests {
             factory: AuthFactory(dependencies: services.authDependencies()),
             tabs: TabRouter(selection: MainTab.shop)
         )
-        let products = services.productsDependencies(
-            gate: gate,
-            launch: TestStore.launchOptions()
+        let productsFactory = ProductsFactory(
+            dependencies: services.productsDependencies(gate: gate, launch: TestStore.launchOptions())
         )
         let cartFactory = CartFactory(dependencies: services.cartDependencies(gate: gate))
-
-        products.store.cartProductIDs = [Self.lampID]
-
         let cart = cartFactory.makeCoordinator(router: StackRouter(), onShopMore: { })
+        let productsCart = ProductsCart(
+            products: { cart.products },
+            onGoToCart: { },
+            onCheckout: { }
+        )
+        let shop = productsFactory.makeCoordinator(
+            start: .browse,
+            router: StackRouter(),
+            launchSteps: .none,
+            onAddToCart: { cart.add($0) },
+            cart: productsCart
+        )
+        let lamp = try #require(Product.find(id: Self.lampID))
+
+        shop.addToCart(lamp)
+
+        // A checkout opened now reads the cart from the store both factories share.
+        let checkout = cartFactory.makeCheckoutBuilder()
         let expected = [
             Self.lampID,
         ]
-        #expect(cart.products.map(\.id) == expected)
+        #expect(checkout.products.map(\.id) == expected)
     }
 }
