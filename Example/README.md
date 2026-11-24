@@ -15,9 +15,10 @@ The `App` asks for each window's view with `AppCoordinator.makeWindow(services:l
 
 ## Generate and run
 
-The Xcode project is generated with [Tuist](https://tuist.dev) from `Project.swift`; no `.xcodeproj` or `.xcworkspace` is committed. Its version is pinned in `.mise.toml`; see [Setup](../CONTRIBUTING.md#setup).
+The Xcode project is generated with [Tuist](https://tuist.dev) from `Project.swift`; no `.xcodeproj` or `.xcworkspace` is committed. The app takes the Waypoint package through Tuist's package integration (`Tuist/Package.swift`), which `tuist install` resolves; Tuist then also writes the package's own project, `Waypoint.xcodeproj` and `Derived/`, into the repository root, where git ignores them. If Xcode reports a `package` symbol as inaccessible after you pull this change, the app's derived data still holds builds from before it: clean the build folder (Product > Clean Build Folder) once. Its version is pinned in `.mise.toml`; see [Setup](../CONTRIBUTING.md#setup).
 
 ```sh
+tuist install --path Example
 tuist generate --path Example --no-open
 open Example/WaypointExample.xcworkspace
 ```

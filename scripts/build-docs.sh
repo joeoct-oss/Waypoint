@@ -56,7 +56,8 @@ rm -rf "$WORK_DIR" "$SITE_DIR"
 mkdir -p "$WORK_DIR"
 
 echo "==> xcodebuild docbuild Waypoint-Package for iOS"
-xcodebuild docbuild -quiet \
+# With Tuist's generated package project moved aside, if the example app was generated (#324).
+scripts/package-xcodebuild.sh docbuild -quiet \
     -scheme Waypoint-Package \
     -destination "generic/platform=iOS" \
     -derivedDataPath "$WORK_DIR/DerivedData"
