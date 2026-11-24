@@ -638,6 +638,9 @@ example_tests_on() {
     # `Example/Tuist.swift` turns the binary cache's default profile on only with
     # TUIST_WAYPOINT_BINARY_CACHE=1; everywhere else the package builds from source.
     local -x TUIST_WAYPOINT_BINARY_CACHE=0
+    # `tuist test` sends this run's results to Test Insights itself, so the scheme's test
+    # post-action, which sends them for runs in Xcode, skips (planning #456).
+    local -x WAYPOINT_TUIST_TEST_RUN=1
     # Runs warm only simulator slices, and `tuist test` asks for every destination unless told
     # otherwise, so without `--destination simulator` it finds no binary (measured 2026-11-24).
     if [[ "$SELECTIVE_TESTING" != offline && "$BINARY_CACHE" == on ]]; then
