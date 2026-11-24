@@ -23,7 +23,7 @@ tuist generate --path Example --no-open
 open Example/WaypointExample.xcworkspace
 ```
 
-`scripts/test-mac.sh full` generates the project and runs the unit tests (`WaypointExampleTests`, Swift Testing, for the view models, the services container and the store) and the UI tests on the project simulator, then runs `SystemLinkTests` and `MissingDestinationTests` again in the release configuration. `scripts/test-mac.sh --only WaypointExampleUITests/StackTests` runs one class or test; see [Run a Mac tier](../TESTING.md#5-run-a-mac-tier) for the steps and [Where each test runs](../TESTING.md#1-where-each-test-runs) for the tiers.
+`scripts/test-mac.sh full` generates the project and runs the unit tests (`WaypointExampleTests`, Swift Testing, for the view models, the services container and the store) and the UI tests on the project simulator, then runs `SystemLinkTests` and `MissingDestinationTests` again in the release configuration. Every `tuist test` run collects code coverage for the project's Tuist dashboard, and every build sends its timings there; `scripts/test-mac.sh coverage`, once a day on `main`, makes the dashboard chart `main`'s coverage. `scripts/test-mac.sh --only WaypointExampleUITests/StackTests` runs one class or test; see [Run a Mac tier](../TESTING.md#5-run-a-mac-tier) for the steps and [Where each test runs](../TESTING.md#1-where-each-test-runs) for the tiers.
 
 ## Launch arguments
 

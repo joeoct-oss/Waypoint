@@ -20,6 +20,15 @@
 #   on the same inputs (#324), unless the branch changes a file those hashes don't cover.
 # - release (before a tag): full, plus a build for an iOS device with warnings as errors, and the
 #   package and example app tests again on the iOS 17 simulator. It never skips a test.
+# - coverage (on `main`, as TESTING.md schedules it): every example app test, never skipped, on
+#   `main`'s own commit, then `tuist coverage complete`, so the Tuist dashboard charts `main`'s
+#   code coverage (#327). It refuses any other commit, and runs none of the package's steps.
+#
+# Every run that uses Tuist collects code coverage (`Example/Tuist.swift`, #327) and tells Tuist
+# the branch it tests through GITHUB_HEAD_REF, which Tuist reads on any machine: the branch the
+# clone is on, or, on a merge batch's detached commit, the batch's branches joined with `+`. It
+# never sets GITHUB_REF or GITHUB_SHA, so Tuist posts no pull request comment and reports the
+# commit that ran.
 #
 # Each build is made once: the host build with warnings as errors is the build `swift test` runs,
 # and the simulator build with warnings as errors is the build its tests run. Builds use at most
@@ -34,7 +43,7 @@
 # (#294). A second run stops at once and names the run that holds it. A lock left by a run that
 # is no longer going is cleared; a lock whose run is still going is never touched.
 #
-# Usage: scripts/test-mac.sh [quick|full|release] [--ui] [--all] [--only <Target/Class[/test]>] [--plan]
+# Usage: scripts/test-mac.sh [quick|full|release|coverage] [--ui] [--all] [--only <Target/Class[/test]>] [--plan]
 #   --ui    quick also runs the example app's unit and UI tests.
 #   --all   quick runs every part, whatever the branch changed.
 #   --only  quick runs only the guard rail and this example UI test (passed to `tuist test --test-targets`),
@@ -72,7 +81,7 @@ ONLY_TEST=""
 PLAN_ONLY=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        quick | full | release) TIER="$1" ;;
+        quick | full | release | coverage) TIER="$1" ;;
         --ui) WITH_UI=true ;;
         --all) RUN_ALL=true ;;
         --plan) PLAN_ONLY=true ;;
@@ -91,7 +100,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 if [[ -n "$ONLY_TEST" && "$TIER" != "quick" ]]; then
-    echo "error: --only works with quick; full and release run every test" >&2
+    echo "error: --only works with quick; full, release and coverage run every test" >&2
     exit 2
 fi
 
@@ -99,11 +108,69 @@ SIMULATOR_NAME="${WAYPOINT_SIMULATOR:-waypoint-01}"
 IOS17_SIMULATOR_NAME="${WAYPOINT_IOS17_SIMULATOR:-waypoint-02}"
 BASE_REF="${WAYPOINT_BASE:-origin/main}"
 RUN_LOCK="${WAYPOINT_RUN_LOCK:-/tmp/waypoint-test-mac.lock}"
+
+# A coverage run marks `main`'s commit complete on the Tuist dashboard (#327), so it runs only on
+# `main`'s own commit, unchanged, which is BASE_REF's: never on a branch or a merge batch, whose
+# commits never land on `main` (merges squash).
+if [[ "$TIER" == coverage ]]; then
+    current_branch=$(git symbolic-ref -q --short HEAD || true)
+    if [[ "$current_branch" != main ]]; then
+        echo "error: a coverage run runs on main only, not on ${current_branch:-a detached commit}" >&2
+        exit 2
+    fi
+    if [[ -n "$(git status --porcelain)" ]]; then
+        echo "error: a coverage run needs a clean main; this clone has changes" >&2
+        exit 2
+    fi
+    if [[ "$(git rev-parse HEAD)" != "$(git rev-parse -q --verify "$BASE_REF^{commit}" || true)" ]]; then
+        echo "error: main isn't $BASE_REF; pull main first" >&2
+        exit 2
+    fi
+    if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
+        echo "error: a coverage run uploads to Tuist, so it can't run with WAYPOINT_TUIST_OFFLINE=1" >&2
+        exit 2
+    fi
+fi
+
+# The branch Tuist shows for this run's tests and builds (#327). Tuist reads GITHUB_HEAD_REF on any
+# machine, ahead of `git branch --show-current`, which names nothing on a detached commit. A merge
+# batch (scripts/merge-batch.sh) is a detached chain of merge commits by "Merge batch": its name
+# is the merged branches, in merge order, joined with `+`. Any other detached commit has none. A
+# GITHUB_HEAD_REF already set wins.
+tuist_branch() {
+    local branch commit subject names=()
+    local merge_subject="^Merge (remote-tracking )?branch '([^']+)'"
+    if branch=$(git symbolic-ref -q --short HEAD); then
+        echo "$branch"
+        return
+    fi
+    commit=$(git rev-parse -q --verify HEAD) || return 0
+    while [[ "$(git log -1 --format=%ae "$commit")" == merge-batch@localhost ]]; do
+        subject=$(git log -1 --format=%s "$commit")
+        if [[ "$subject" =~ $merge_subject ]]; then
+            names=("${BASH_REMATCH[2]#origin/}" ${names[@]+"${names[@]}"})
+        fi
+        commit=$(git rev-parse -q --verify "$commit^1") || break
+    done
+    if [[ ${#names[@]} -gt 0 ]]; then
+        (
+            IFS=+
+            echo "${names[*]}"
+        )
+    fi
+}
+if [[ -z "${GITHUB_HEAD_REF:-}" ]]; then
+    TUIST_BRANCH=$(tuist_branch)
+    if [[ -n "$TUIST_BRANCH" ]]; then
+        export GITHUB_HEAD_REF="$TUIST_BRANCH"
+    fi
+fi
 # How long each tier may run before TESTING.md calls it hung, in minutes.
 case "$TIER" in
     quick) STOP_AFTER_MINUTES=30 ;;
     full) STOP_AFTER_MINUTES=35 ;;
     release) STOP_AFTER_MINUTES=50 ;;
+    coverage) STOP_AFTER_MINUTES=30 ;;
 esac
 
 # Half the performance cores, so the Mac and other simulators stay usable during a run.
@@ -505,13 +572,12 @@ example_tests_on() {
     tuist_cmd install --path Example
     tuist_cmd test WaypointExample \
         --path Example \
-        --derived-data-path "$EXAMPLE_DERIVED_DATA" \
         --device "$simulator" \
         ${os:+--os "$os"} \
         ${tuist_flags[@]+"${tuist_flags[@]}"} \
         -T "$bundle" \
         "$@" \
-        -- -quiet -jobs "$JOBS" "${EXAMPLE_PARALLEL_FLAGS[@]}" \
+        -- -quiet -jobs "$JOBS" -derivedDataPath "$EXAMPLE_DERIVED_DATA" "${EXAMPLE_PARALLEL_FLAGS[@]}" \
         ${offline_settings[@]+"${offline_settings[@]}"}
 }
 
@@ -524,6 +590,7 @@ RUN_UI=false
 RUN_RELEASE_REPORTS=false
 RUN_DEVICE_BUILD=false
 RUN_IOS17=false
+RUN_COVERAGE_COMPLETE=false
 case "$TIER" in
     quick)
         if ! $RUN_ALL; then
@@ -539,6 +606,13 @@ case "$TIER" in
             RUN_SIMULATOR=false
         fi
         echo "quick: host $RUN_HOST, simulator $RUN_SIMULATOR, example UI $RUN_UI (compared with $BASE_REF)"
+        ;;
+    coverage)
+        # Only the example app's tests, every one of them, on `main`'s own commit.
+        RUN_HOST=false
+        RUN_SIMULATOR=false
+        RUN_UI=true
+        RUN_COVERAGE_COMPLETE=true
         ;;
     full | release)
         # Every part runs; the changes decide only whether selective testing is on.
@@ -561,7 +635,7 @@ esac
 # for by name, --ui and --all always run every test.
 if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
     SELECTIVE_TESTING=offline
-elif [[ "$TIER" == release || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CHANGED_OUTSIDE_TEST_HASHES; then
+elif [[ "$TIER" == release || "$TIER" == coverage || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CHANGED_OUTSIDE_TEST_HASHES; then
     SELECTIVE_TESTING=off
 else
     SELECTIVE_TESTING=on
@@ -572,9 +646,10 @@ if [[ "$SELECTIVE_TESTING" == on ]]; then
     RELEASE_REPORTS_SELECTIVE_TESTING=off
 fi
 # The report says whether a passed target could have been skipped (TESTING.md, Report the result).
-echo "selective testing: $SELECTIVE_TESTING, release reports $RELEASE_REPORTS_SELECTIVE_TESTING"
+echo "selective testing: $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING"
+echo "tuist branch: ${GITHUB_HEAD_REF:-none}"
 if $PLAN_ONLY; then
-    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING"
+    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, tuist branch ${GITHUB_HEAD_REF:-none}"
     trap - EXIT
     exit 0
 fi
@@ -625,6 +700,12 @@ if $RUN_UI; then
     else
         step "tuist test example app on $SIMULATOR_NAME" example_tests_on "$UDID" "$SIMULATOR_NAME" example
     fi
+fi
+
+# A coverage run tells Tuist that `main`'s commit has every run it will get, so the dashboard
+# charts its coverage (#327). It runs only after the example app's tests passed.
+if $RUN_COVERAGE_COMPLETE; then
+    step "tuist coverage complete" tuist_cmd coverage complete --path Example
 fi
 
 # A system link (#147) and a route with no destination in its stack (#166) must be reported in

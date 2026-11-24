@@ -14,6 +14,10 @@
 #   cleared and the run goes on;
 # - the lock is gone after a pass, a failure, and a stop with TERM.
 #
+# It also checks what the script hands Tuist: selective testing per tier (#324), the derived data
+# folder after `--` (#326), the branch through GITHUB_HEAD_REF and the `coverage` tier on `main`
+# (#327), and that the Build Insights post-action runs the Tuist mise pins (#327).
+#
 # Each case runs `test-mac.sh quick --only` with its own lock path and temporary folder, so a
 # real run on the Mac is never touched.
 #
@@ -132,7 +136,7 @@ fi
 # The example app's tests run through `tuist test` (#312): on the project simulator, into a
 # result bundle, with two parallel workers.
 TUIST_CALL=$(grep "^tuist test WaypointExample" "$CALLS" | head -1)
-for part in "--path Example" "--derived-data-path $PWD/.build/example-derived-data" "--device waypoint-01" \
+for part in "--path Example" "--device waypoint-01" \
     "--os 27.2" "--no-binary-cache" "--skip-quarantine" \
     "-T .build/results/example-only.xcresult" \
     "--test-targets WaypointExampleUITests/StackTests/testPushAndBack" \
@@ -143,6 +147,18 @@ for part in "--path Example" "--derived-data-path $PWD/.build/example-derived-da
         fail "tuist test gets $part (call: $TUIST_CALL)"
     fi
 done
+# The derived data folder goes to xcodebuild after `--`, the way Tuist asks (#326).
+if [[ "${TUIST_CALL#* -- }" == *"-derivedDataPath $PWD/.build/example-derived-data"* &&
+    "$TUIST_CALL" != *"--derived-data-path"* ]]; then
+    pass "tuist test passes -derivedDataPath after --"
+else
+    fail "tuist test passes -derivedDataPath after -- (call: $TUIST_CALL)"
+fi
+if grep -q "^selective testing: off, release reports selective testing off$" "$WORK/1.log"; then
+    pass "the log says selective testing is off for the release reports step"
+else
+    fail "the log says selective testing is off for the release reports step ($(grep '^selective' "$WORK/1.log"))"
+fi
 # The package comes through Tuist's package integration, which `tuist install` resolves first
 # (#324).
 INSTALL_LINE=$(grep -m1 -n "^tuist install --path Example" "$CALLS" | cut -d: -f1 || true)
@@ -173,11 +189,12 @@ fi
 TREE="$WORK/tree"
 mkdir -p "$TREE"
 git ls-files -z | tar --null -T - -cf - | tar -xf - -C "$TREE"
-git -C "$TREE" init -q
+git -C "$TREE" init -q -b main
 git -C "$TREE" add -A
 git -C "$TREE" -c user.name=check -c user.email=check@example.invalid commit -q -m base
+# GITHUB_HEAD_REF is unset: CI sets it, and it would win over the branch the script works out.
 plan_of() {
-    (cd "$TREE" && env PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+    (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
         scripts/test-mac.sh "$@" --plan 2>/dev/null | grep '^plan:')
 }
 expect_plan() {
@@ -233,6 +250,115 @@ if [[ "$got" == *"selective testing on, release reports selective testing off"* 
     pass "a full run's release reports step never skips its tests"
 else
     fail "a full run's release reports step never skips its tests (plan: ${got:-none})"
+fi
+
+# 1d. Tuist is told the branch each run tests (#327), through GITHUB_HEAD_REF: the branch the clone
+# is on; on a merge batch's detached commit, the batch's branches in merge order; on any other
+# detached commit, nothing. GITHUB_REF and GITHUB_SHA are never set, so no pull request comment.
+expect_branch() {
+    local name="$1" want="$2" got
+    shift 2
+    got=$(plan_of "$@" || true)
+    if [[ "$got" == *", tuist branch $want" ]]; then
+        pass "$name"
+    else
+        fail "$name (plan: ${got:-none})"
+    fi
+}
+expect_branch "a run on a branch tells Tuist that branch" main quick
+batch_commit() {
+    git -C "$TREE" -c user.name=check -c user.email=check@example.invalid "$@"
+}
+batch_commit checkout -q -b feature/first-part
+echo "// first" >"$TREE/BranchProbeA.swift"
+batch_commit add BranchProbeA.swift
+batch_commit commit -q -m first
+batch_commit checkout -q -b fix/second-part main
+echo "// second" >"$TREE/BranchProbeB.swift"
+batch_commit add BranchProbeB.swift
+batch_commit commit -q -m second
+batch_commit checkout -q --detach main
+for branch in feature/first-part fix/second-part; do
+    git -C "$TREE" -c user.name="Merge batch" -c user.email="merge-batch@localhost" \
+        merge -q --no-ff --no-edit "$branch"
+done
+expect_branch "a merge batch tells Tuist its branches in merge order" \
+    "feature/first-part+fix/second-part" full
+batch_commit checkout -q --detach feature/first-part
+expect_branch "another detached commit tells Tuist no branch" none full
+batch_commit checkout -q main
+got=$(cd "$TREE" && env PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+    GITHUB_HEAD_REF=chosen/by-hand scripts/test-mac.sh quick --plan 2>/dev/null | grep '^plan:' || true)
+if [[ "$got" == *", tuist branch chosen/by-hand" ]]; then
+    pass "a GITHUB_HEAD_REF already set wins"
+else
+    fail "a GITHUB_HEAD_REF already set wins (plan: ${got:-none})"
+fi
+if grep -Eq '(export|^[[:space:]]*)GITHUB_(REF|SHA)=' scripts/test-mac.sh; then
+    fail "the script never sets GITHUB_REF or GITHUB_SHA"
+else
+    pass "the script never sets GITHUB_REF or GITHUB_SHA"
+fi
+
+# 1e. A coverage run (#327) runs on `main`'s own unchanged commit only, runs every example test,
+# and marks the commit complete only after they pass.
+expect_plan "a coverage run on main runs every example test" off coverage
+batch_commit checkout -q feature/first-part
+if plan_of coverage >/dev/null; then
+    fail "a coverage run refuses a branch other than main"
+else
+    pass "a coverage run refuses a branch other than main"
+fi
+batch_commit checkout -q --detach main
+if plan_of coverage >/dev/null; then
+    fail "a coverage run refuses a detached commit"
+else
+    pass "a coverage run refuses a detached commit"
+fi
+batch_commit checkout -q main
+touch "$TREE/Sources/WaypointCore/CoverageProbe.swift"
+if plan_of coverage >/dev/null; then
+    fail "a coverage run refuses a clone with changes"
+else
+    pass "a coverage run refuses a clone with changes"
+fi
+rm "$TREE/Sources/WaypointCore/CoverageProbe.swift"
+if (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD~1 \
+    scripts/test-mac.sh coverage --plan >/dev/null 2>&1); then
+    fail "a coverage run refuses a main that isn't the base's"
+else
+    pass "a coverage run refuses a main that isn't the base's"
+fi
+coverage_run() {
+    (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" STUB_CALLS="$CALLS" \
+        WAYPOINT_RUN_LOCK="$LOCK" WAYPOINT_SIMULATOR=waypoint-01 WAYPOINT_BASE=HEAD "$@" \
+        scripts/test-mac.sh coverage)
+}
+: >"$CALLS"
+if coverage_run >"$WORK/1e.log" 2>&1 &&
+    grep "^tuist test" "$CALLS" | grep -q -- "--no-selective-testing" &&
+    grep -q "^tuist coverage complete --path Example" "$CALLS" &&
+    ! grep -q "^xcodebuild" "$CALLS"; then
+    pass "a coverage run tests every example test, skips the package steps and completes the commit"
+else
+    fail "a coverage run tests every example test, skips the package steps and completes the commit (log: $(tail -3 "$WORK/1e.log"); calls: $(tr '\n' ';' <"$CALLS"))"
+fi
+: >"$CALLS"
+if coverage_run STUB_STATUS=1 >"$WORK/1f.log" 2>&1; then
+    fail "a coverage run whose tests fail fails"
+elif grep -q "^tuist coverage complete" "$CALLS"; then
+    fail "a coverage run whose tests fail never completes the commit"
+else
+    pass "a coverage run whose tests fail never completes the commit"
+fi
+: >"$CALLS"
+
+# 1f. The Build Insights post-action runs the Tuist that mise pins (#327), not one on the PATH.
+if grep -q '"$MISE" exec -C "$SRCROOT" -- tuist inspect build' Example/Project.swift &&
+    ! grep -q 'activate -C "$SRCROOT"' Example/Project.swift; then
+    pass "the Build Insights post-action runs Tuist through mise exec"
+else
+    fail "the Build Insights post-action runs Tuist through mise exec"
 fi
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
