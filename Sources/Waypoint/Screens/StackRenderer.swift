@@ -33,7 +33,8 @@
     /// as the first screen, and a destination for each of its `destinations`.
     ///
     /// A coordinator drawn in two places at once is reported as `coordinatorDrawnTwice`: both
-    /// would drive one router, and each stack would show the other's pushes.
+    /// would drive one router, and each stack would show the other's pushes. The check runs once
+    /// the screen settles, so a view that replaces another in one update isn't reported.
     ///
     /// Conformances:
     /// - `StackRenderer`, so a coordinator can draw itself with it.
@@ -56,9 +57,12 @@
             }
             .onAppear {
                 router.rendererDidStartDrawing(coordinator)
+                Task {
+                    router.rendererCheckDrawing(coordinator)
+                }
             }
             .onDisappear {
-                router.rendererDidStopDrawing()
+                router.rendererDidStopDrawing(coordinator)
             }
         }
     }

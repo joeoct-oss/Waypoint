@@ -87,7 +87,7 @@ Give a flow its root screen and its destinations in a coordinator. Screens can b
 // Conformances:
 // - `StackCoordinator`, so Waypoint can draw its stack and make its router.
 final class ShopCoordinator: StackCoordinator {
-    var root: some Screen {
+    var root: some View {
         ProductListView(onSelect: { self.showProduct(id: $0) })
     }
 

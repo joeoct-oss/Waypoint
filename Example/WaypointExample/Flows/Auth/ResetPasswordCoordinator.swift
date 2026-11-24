@@ -47,7 +47,6 @@ final class ResetPasswordCoordinator: FlowCoordinator {
         sentTo = nil
     }
 
-
     func sendLink(to email: String) {
         sentTo = email
         Task {
