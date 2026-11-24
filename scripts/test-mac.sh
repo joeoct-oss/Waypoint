@@ -112,7 +112,8 @@ RUN_LOCK="${WAYPOINT_RUN_LOCK:-/tmp/waypoint-test-mac.lock}"
 # A coverage run marks `main`'s commit complete on the Tuist dashboard (#327), so it runs only on
 # `main`'s own commit, unchanged, which is BASE_REF's: checked out as `main`, or detached there, as
 # the preflight's checkout leaves it. Never on another branch or a merge batch, whose commits never
-# land on `main` (merges squash). Tuist is told the branch is `main` either way.
+# land on `main`: a squash or a merge commit makes new commits. Tuist is told the branch is `main`
+# either way.
 if [[ "$TIER" == coverage ]]; then
     current_branch=$(git symbolic-ref -q --short HEAD || true)
     if [[ -n "$current_branch" && "$current_branch" != main ]]; then
