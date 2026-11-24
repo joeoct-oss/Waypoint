@@ -30,7 +30,7 @@ A stack or flow coordinator doesn't declare its router. Waypoint makes it the fi
 
 > Warning: Don't read a coordinator's router in `deinit`. A coordinator going away gets an inert router: its calls return `.ignored` and log `staleNavigator`. A coordinator that subclasses `NSObject` traps there instead.
 
-Built so far in #59: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`; and `TabCoordinating` in `WaypointCore` and `TabCoordinator` in `Waypoint`, with the router, `makeRouter()`, each tab's coordinator and `navigator(for:)`. The rest of this article is still planned.
+Built so far in #59: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`; `TabCoordinating` in `WaypointCore` and `TabCoordinator` in `Waypoint`, with the router, `makeRouter()`, each tab's coordinator and `navigator(for:)`; and `FlowCoordinating` in `WaypointCore` and `FlowCoordinator` in `Waypoint`, with `finish(with:)`, presenting a child flow with `onFinish:` in both forms, and `FlowResult`. The rest of this article is still planned.
 
 There is one coordinator protocol for each kind, and it is the same in SwiftUI and UIKit apps. The `Waypoint` product adds the screens: `root` and `destinations`, which take SwiftUI views or UIKit view controllers, and `view`, the whole flow drawn by a renderer you can choose. See "Coordinators and renderers" in the `Waypoint` catalog. The parts below have no UI, so a coordinator's logic is tested on Linux.
 
@@ -85,17 +85,14 @@ public protocol TabCoordinating: AnyObject {
 /// started it.
 ///
 /// Conformances:
-/// - `AnyObject`, because the flow is one object that ends once.
+/// - `StackCoordinating`, because a flow is a stack with a router of its own.
 @MainActor
-public protocol FlowCoordinator: AnyObject {
+public protocol FlowCoordinating: StackCoordinating {
     /// What the flow hands back, such as a picked address.
     associatedtype Output: Sendable
 
-    /// The router this coordinator owns. Default: made the first time it is read.
-    var router: StackRouter { get }
-
     /// Ends the flow with `output`. Waypoint delivers the result, dismisses the flow, and
-    /// releases its router and coordinator. Default: filled in by Waypoint.
+    /// lets the coordinator go. Default: filled in by Waypoint.
     func finish(with output: Output)
 }
 ```
@@ -185,59 +182,85 @@ extension StackCoordinator where Self: NavigationFlow {
 
 ### Starting a child flow
 
-A child flow is a `FlowCoordinator`. Presenting or pushing one creates a child router in the tree. When the child flow ends, its router is removed and released.
+A child flow is a `FlowCoordinator`. Presenting one starts it: the child's router joins the presenting router's tree, with any screens it already pushed, and takes the tree's settings, fallbacks and registered routes from then on. The parent gets the flow's result in `onFinish:` exactly once, after the call that ended the flow is done. Waypoint keeps the child until its flow ends, then lets it go, so the parent needn't keep it.
 
 ```swift
-let result = await router.present(AddressPickerCoordinator(), style: .sheet)
-switch result {
-case .finished(let address):
-    useAddress(address)
-case .cancelled:
-    break   // the user swiped the sheet away
+router.present(AddressPickerCoordinator(), style: .sheet) { result in
+    switch result {
+    case .finished(let address):
+        self.useAddress(address)
+    case .cancelled:
+        break   // the user swiped the sheet away
+    }
 }
 ```
+
+> Warning: Waypoint keeps `onFinish:` with the child's flow until the flow ends. When it captures the parent coordinator, as a call to a named method does, the parent stays alive while the child is presented, even after the app lets it go. End the flow first, such as by dismissing it, or capture `[weak self]`.
+
+The child ends the flow with `finish(with:)`, and the parent gets `.finished(value)`. Every other end is `.cancelled`: the user swipes the sheet away, the child calls `router.dismissFlow()`, a parent dismisses it or a flow above it, or the `.replacePresentation` fallback replaces it. A second `finish(with:)`, or a dismiss after it, delivers nothing more.
+
+The lazy form builds the child only when the present happens, so a present that is refused, such as over a sheet already up, or ignored, on a router that left the tree, builds nothing, and a queued one builds it when it runs:
+
+```swift
+router.present(style: .sheet, onFinish: addressPicked) {
+    AddressPickerCoordinator(addresses: addresses)
+}
+```
+
+While the closure runs, the child's router is made inside the parent's tree, so a push from the child's `init` gets the tree's settings. Any other router made in the closure stays separate; one that took the child's place, such as another coordinator of the same type read first, is reported as `routerDetachedFromLazyStart`. A child whose own `makeRouter()` makes its router joins on start like one passed in.
+
+A present that returns `.failed` or `.ignored` started no flow, so `onFinish:` is never called. A child whose router is the presenting router or one above it fails with `childRouterIsAncestor`, and one whose router is already in another tree, belongs to another coordinator or ended with an earlier flow fails with `routerInAnotherTree`. A tab router presents a child flow above the whole container the same way.
 
 ```swift
 /// How a child flow ended.
 ///
 /// Conformances:
 /// - `Sendable`, so it can leave the main actor for logging, analytics and saving.
-/// - `Value: Sendable`, because the result travels from the child flow to the task that awaits it.
 public enum FlowResult<Value: Sendable>: Sendable {
     case finished(Value)
     case cancelled
 }
 
 extension StackRouter {
-    /// Presents a child flow and waits for its result.
-    ///
-    /// The result is delivered exactly once: when the flow calls `finish(with:)`,
-    /// when it is dismissed in code, or when the user swipes it away.
-    public func present<C: FlowCoordinator>(
-        _ child: C,
-        style: PresentationStyle = .sheet
-    ) async -> FlowResult<C.Output>
-
-    /// The same, with a callback instead of `await`.
+    /// Presents a child flow, and gives its result to `onFinish` once.
     @discardableResult
-    public func present<C: FlowCoordinator>(
-        _ child: C,
+    public func present<Child: FlowCoordinating>(
+        _ child: Child,
         style: PresentationStyle = .sheet,
+        trigger: String? = nil,
         else fallback: NavigationFallback? = nil,
-        onFinish: @escaping @MainActor (FlowResult<C.Output>) -> Void
+        onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void
     ) -> NavigationOutcome
 
-    /// Pushes a child flow's first screen onto this stack. The child shares
-    /// this stack but has its own router for its own routes.
+    /// The same, building the child only when the present happens.
     @discardableResult
-    public func push<C: FlowCoordinator>(
-        _ child: C,
-        else fallback: NavigationFallback? = nil
+    public func present<Child: FlowCoordinating>(
+        style: PresentationStyle = .sheet,
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil,
+        onFinish: @escaping @MainActor (FlowResult<Child.Output>) -> Void,
+        _ makeChild: @escaping @MainActor () -> Child
     ) -> NavigationOutcome
 }
 ```
 
-Like every navigation method, these take an optional fallback, file and line, left out here. To start a flow without waiting for its result, give it a `Flow(...)` entry and call `router.show(_:)`, or use the `onFinish:` form.
+Like every navigation method, these take a file and line, left out here. Still planned: pushing a child flow, which shares its parent's stack but has its own router for its own routes (#59), and `await router.present(child, style:)`, which returns the `FlowResult` (#60):
+
+```swift
+let result = await router.present(AddressPickerCoordinator(), style: .sheet)
+
+extension StackRouter {
+    /// Pushes a child flow's first screen onto this stack.
+    @discardableResult
+    public func push<C: FlowCoordinator>(
+        _ child: C,
+        else fallback: NavigationFallback? = nil,
+        onFinish: @escaping @MainActor (FlowResult<C.Output>) -> Void
+    ) -> NavigationOutcome
+}
+```
+
+To start a flow without passing its coordinator, give it a `Flow(...)` entry and call `router.show(_:)`.
 
 ### A flow that stands for a route
 

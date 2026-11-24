@@ -83,15 +83,23 @@ public struct NavigationIssue: NavigationRecord {
         /// stack.
         case coordinatorDrawnTwice
 
-        /// A tab's child coordinator brought a router that is already in another tree, such as a
-        /// presented flow's, so it can't become the tab's stack. The tab keeps a stack of its own,
-        /// or shows the tabs' shared stack.
+        /// A coordinator brought a router that is already in another tree, such as a presented
+        /// flow's, so it can't become a tab's stack or start as a child flow. A tab keeps a stack
+        /// of its own, or shows the tabs' shared stack; a child flow doesn't start.
         case routerInAnotherTree
 
         /// A tab's child coordinator pushed or presented on its own router before it joined, and
         /// the tab's stack was kept instead: the tabs' shared stack, or a tab stack that already
         /// had screens. Its calls go to that stack from now on, and those screens are dropped.
         case tabChildRouterMerged
+
+        /// A child coordinator's router is the router starting it, or one above it, so the flow
+        /// doesn't start: a router can't be its own child.
+        case childRouterIsAncestor
+
+        /// A router took a lazy start's mark but belongs to another coordinator than the child
+        /// the start's closure returned, so it moved into a tree of its own.
+        case routerDetachedFromLazyStart
     }
 
     /// What went wrong.

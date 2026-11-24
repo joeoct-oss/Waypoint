@@ -18,8 +18,9 @@ import Waypoint
 // on to whoever opened the sheets, so they close together.
 //
 // The flow runs on Waypoint: `router` is the flow the main tab router presents, the steps are
-// `CreateAccountRoute` pushes, and Reset password and the terms are flows this router presents.
-// The sheets themselves are still SwiftUI's, bound to the routers, until Waypoint draws them.
+// `CreateAccountRoute` pushes, and the terms is a flow this router presents. Reset password is a
+// child flow with a coordinator of its own, which this router starts and gets the result of. The
+// sheets themselves are still SwiftUI's, bound to the routers, until Waypoint draws them.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so `AuthFlowView` redraws when a sheet, the error or the
@@ -42,6 +43,9 @@ final class AuthCoordinator {
     private(set) var sheetRouter: StackRouter?
     // `var` for the same reason as `presentedSheet`: the sizes the router gives the sheet.
     private(set) var sheetOptions: SheetOptions?
+    // `var` for the same reason as `presentedSheet`: Reset password's coordinator, which draws
+    // that sheet.
+    private(set) var resetPassword: ResetPasswordCoordinator?
     // `var` because `showSignedIn(as:onDone:)` sets it with the account Signed in names.
     private var signedInAccount: Account?
     // `var` because `showSignedIn(as:onDone:)` sets it with what Done on Signed in runs.
@@ -73,12 +77,12 @@ final class AuthCoordinator {
         presentedSheet = nil
         sheetRouter = nil
         sheetOptions = nil
+        resetPassword = nil
         signedInAccount = nil
         onSignedInDone = nil
         isWorking = false
         errorMessage = nil
         router.setRootName("Sign in")
-        router.register(ResetPasswordRoute.self)
         router.register(TermsRoute.self)
         router.setCoordinator(self)
     }
@@ -140,12 +144,20 @@ final class AuthCoordinator {
         router.push(CreateAccountRoute(step: .details))
     }
 
+    // Starts Reset password as a child flow. A link it sent clears a sign-in error, since the
+    // reader is choosing a new password.
     func showResetPassword() {
-        showSheet(
-            .resetPassword,
-            route: ResetPasswordRoute(),
-            style: .sheet
-        )
+        let reset = ResetPasswordCoordinator(service: service)
+        // No fallback, so a second tap while the sheet is up is refused and keeps the flow on
+        // screen, with what the reader typed, instead of the app's `.replacePresentation`.
+        let outcome = router.present(reset, style: .sheet, else: NavigationFallback.none) { result in
+            self.resetPasswordEnded(with: result)
+        }
+        guard outcome.didChange else {
+            return
+        }
+        resetPassword = reset
+        keepPresentedSheet(.resetPassword)
     }
 
     func showTerms() {
@@ -199,6 +211,7 @@ final class AuthCoordinator {
         presentedSheet = nil
         sheetRouter = nil
         sheetOptions = nil
+        resetPassword = nil
     }
 
     private func showSheet<R: Route>(
@@ -207,7 +220,12 @@ final class AuthCoordinator {
         style: PresentationStyle
     ) {
         router.present(route, style: style)
-        guard let presented = router.presented else {
+        keepPresentedSheet(sheet)
+    }
+
+    // Keeps what draws the sheet the router now presents, if the present worked.
+    private func keepPresentedSheet(_ sheet: AuthSheet) {
+        guard let presented = router.presented, presented !== sheetRouter else {
             return
         }
         presentedSheet = sheet
@@ -236,12 +254,11 @@ final class AuthCoordinator {
         )
     }
 
+    @ViewBuilder
     private func makeResetPasswordFlow() -> some View {
-        ForgotPasswordView(
-            onSend: { self.sendResetLink(to: $0) },
-            onDone: { self.dismissSheet() },
-            onCancel: { self.dismissSheet() }
-        )
+        if let resetPassword {
+            resetPassword.makeFlow()
+        }
     }
 
     private func makeTermsFlow() -> some View {
@@ -281,10 +298,11 @@ final class AuthCoordinator {
         onSignedInDone?()
     }
 
-    private func sendResetLink(to email: String) {
-        Task {
-            await service.sendResetLink(to: email)
+    private func resetPasswordEnded(with result: FlowResult<String>) {
+        guard case .finished = result else {
+            return
         }
+        errorMessage = nil
     }
 
     private func runSignIn(

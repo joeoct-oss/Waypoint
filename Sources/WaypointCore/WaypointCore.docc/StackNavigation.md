@@ -411,6 +411,8 @@ public struct NavigationIssue: NavigationRecord {
         case coordinatorDrawnTwice
         case routerInAnotherTree
         case tabChildRouterMerged
+        case childRouterIsAncestor
+        case routerDetachedFromLazyStart
     }
     /// What went wrong.
     public let kind: Kind

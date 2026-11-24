@@ -45,7 +45,7 @@ final class ShopCoordinator: StackCoordinator {
 
 `ProductView` is a SwiftUI view and `ScannerViewController` is a `UIViewController`. Both work in either renderer: the SwiftUI renderer shows a controller through a representable, and the UIKit renderer shows a SwiftUI view in a `UIHostingController`.
 
-A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made with `makeRouter()` the first time it is read, and released when the flow ends; `StackCoordinating` in `WaypointCore` holds it, and `StackCoordinator` with only the router is built so far in #59; a tab coordinator's router is made with its `makeRouter()` too, which has no default because only the app knows its first tab, and `TabCoordinator` with its router and `tabCoordinator(for:)` is built so far in #59; the app coordinator declares its router, because only the app knows its first root), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer.
+A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made with `makeRouter()` the first time it is read, and released when the flow ends; `StackCoordinating` in `WaypointCore` holds it, and `StackCoordinator` with only the router is built so far in #59; a tab coordinator's router is made with its `makeRouter()` too, which has no default because only the app knows its first tab, and `TabCoordinator` with its router and `tabCoordinator(for:)` is built so far in #59, as is `FlowCoordinator` (with `FlowCoordinating` in `WaypointCore`), which adds `finish(with:)`, presented with `router.present(child) { result in … }`; the app coordinator declares its router, because only the app knows its first root), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer.
 
 ```swift
 /// App code that owns one stack flow, with its screens.
@@ -177,7 +177,7 @@ public struct Flow<R: Route, C: FlowCoordinator>: Destinations {
 
 An entry with no `onResult:`, whose result goes to a call that awaits the route, is designed with #60, together with how that call is written. Until then every `Flow(...)` entry names its handler, so no result is lost.
 
-`RootCoordinator` and `FlowCoordinator` follow the same shape, each with its own router and renderer. Which requirements live in `WaypointCore`, which has no UI, and which in `Waypoint`, which adds the screens, is settled in #59. The core part stays testable on Linux. The `presentation:` parameter declares how `router.show(_:)` shows the route, built in #12: see "Declared presentation" in the core's presentation article.
+`RootCoordinator` and `FlowCoordinator` follow the same shape, each with its own router and renderer. Which requirements live in `WaypointCore`, which has no UI, and which in `Waypoint`, which adds the screens, is settled in #59: `FlowCoordinating` in the core holds the router, `Output` and `finish(with:)`, and `FlowCoordinator` in `Waypoint` adds the screens, as `StackCoordinator` does. The core part stays testable on Linux. The `presentation:` parameter declares how `router.show(_:)` shows the route, built in #12: see "Declared presentation" in the core's presentation article.
 
 ### A coordinator's view
 

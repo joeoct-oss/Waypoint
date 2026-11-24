@@ -137,7 +137,6 @@ enum TrailStepTypes {
         AccountRoute.self,
         SignInRoute.self,
         CreateAccountRoute.self,
-        ResetPasswordRoute.self,
         TermsRoute.self,
         SignedInRoute.self,
         SheetDemoRoute.self,
@@ -160,7 +159,6 @@ extension OrderPlacedRoute: TrailStep { }
 extension AccountRoute: TrailStep { }
 extension SignInRoute: TrailStep { }
 extension CreateAccountRoute: TrailStep { }
-extension ResetPasswordRoute: TrailStep { }
 extension TermsRoute: TrailStep { }
 extension SignedInRoute: TrailStep { }
 extension SheetDemoRoute: TrailStep { }
