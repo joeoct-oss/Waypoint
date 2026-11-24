@@ -16,7 +16,7 @@ import Waypoint
 struct TabsDemoCoordinatorTests {
     @Test
     func eachTabStackIsItsCoordinatorsRouter() {
-        let demo = TabsDemoCoordinator(navigation: .default, onClose: { })
+        let demo = TestLab.makeFactory().makeTabsDemo(onClose: { })
 
         let router = demo.router
 
@@ -32,7 +32,7 @@ struct TabsDemoCoordinatorTests {
 
     @Test
     func addedTabsGetTheirCoordinatorsAndRemovedTabsLeave() {
-        let demo = TabsDemoCoordinator(navigation: .default, onClose: { })
+        let demo = TestLab.makeFactory().makeTabsDemo(onClose: { })
         demo.toggleTabs()
         let cart = demo.router.router(for: .cart)
 

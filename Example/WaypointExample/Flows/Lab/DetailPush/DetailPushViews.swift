@@ -10,6 +10,7 @@ import SwiftUI
 
 // The Detail push flow's shop list: every product, and a tap reports the one picked.
 struct DetailPushListView: View {
+    let products: [Product]
     let onSelect: (Product) -> Void
     let onClose: () -> Void
 
@@ -22,7 +23,7 @@ struct DetailPushListView: View {
 
     var body: some View {
         List {
-            ForEach(Product.all) { product in
+            ForEach(products) { product in
                 ProductRow(product: product) { onSelect(product) }
             }
         }

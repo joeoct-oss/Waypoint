@@ -102,18 +102,14 @@ final class MainCoordinator {
             onAddToCart: addToCart,
             cart: productsCart
         )
-        account = AccountCoordinator(
+        let accountDependencies = services.accountDependencies(
+            gate: gate,
+            rules: rules,
+            describeTree: { [tabs] in tabs.debugTree() }
+        )
+        account = AccountFactory(dependencies: accountDependencies).makeCoordinator(
             router: tabs.router(for: .account),
             launch: launch,
-            session: services.session,
-            store: services.store,
-            addressBook: services.addresses,
-            gate: gate,
-            navigation: services.navigation,
-            rules: rules,
-            issues: services.issues,
-            events: services.events,
-            describeTree: { [tabs] in tabs.debugTree() },
             onClearAllData: onClearAllData
         )
         // The journey box names each router by the coordinator that owns it. The tabs share one

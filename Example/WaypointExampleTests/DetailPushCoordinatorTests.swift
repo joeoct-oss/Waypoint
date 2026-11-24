@@ -18,10 +18,7 @@ struct DetailPushCoordinatorTests {
 
     @Test
     func routerIsMadeForTheDetailPushFlow() {
-        let coordinator = DetailPushCoordinator(
-            navigation: .default,
-            onClose: { }
-        )
+        let coordinator = TestLab.makeFactory().makeDetailPush(onClose: { })
 
         let router = coordinator.router
 
@@ -35,10 +32,7 @@ struct DetailPushCoordinatorTests {
     // push before the stack is drawn is applied.
     @Test
     func destinationsRegisteredWithoutRegisterCalls() {
-        let coordinator = DetailPushCoordinator(
-            navigation: .default,
-            onClose: { }
-        )
+        let coordinator = TestLab.makeFactory().makeDetailPush(onClose: { })
 
         let outcome = coordinator.router.push(DetailProductRoute(productID: 1))
 
@@ -51,7 +45,7 @@ struct DetailPushCoordinatorTests {
 
     @Test
     func closedDemoLeavesNoLiveRouter() throws {
-        let lab = LabDemoCoordinator(navigation: .default)
+        let lab = TestLab.makeFactory().makeDemos()
         lab.showDemo(.detailPush)
         let router = try #require(lab.detailPush).router
         let navigation = router.navigator

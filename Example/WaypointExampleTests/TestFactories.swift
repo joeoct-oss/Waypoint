@@ -1,5 +1,5 @@
 //
-//  FixedCatalog.swift
+//  TestFactories.swift
 //  WaypointExampleTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
@@ -40,5 +40,17 @@ enum TestProducts {
             navigation: navigation
         )
         return ProductsFactory(dependencies: dependencies)
+    }
+}
+
+// A Lab factory for a test: the sample catalog and the default navigation configuration.
+enum TestLab {
+    static func makeFactory() -> LabFactory {
+        LabFactory(
+            dependencies: LabDependencies(
+                catalog: SampleCatalog(),
+                navigation: .default
+            )
+        )
     }
 }

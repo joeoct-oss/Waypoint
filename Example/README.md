@@ -34,7 +34,7 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 | Folder | What it holds |
 |---|---|
 | `App/` | The `App`, the app coordinator and its roots, and launch arguments |
-| `Dependencies/` | `AppServices`, the one container the `App` makes, and one dependency struct per feature (`ProductsDependencies`, `CartDependencies`, `AccountDependencies`, `AuthDependencies`, `LabDependencies`) listing what that feature uses. A feature's factory takes its struct (`AuthFactory`, `CartFactory`, `ProductsFactory`); Account's coordinator still takes its services one by one until it moves onto its struct (planning #424) |
+| `Dependencies/` | `AppServices`, the one container the `App` makes, and one dependency struct per feature (`ProductsDependencies`, `CartDependencies`, `AccountDependencies`, `AuthDependencies`, `LabDependencies`) listing what that feature uses. A feature's factory takes its struct (`AuthFactory`, `CartFactory`, `ProductsFactory`, `AccountFactory`, `LabFactory`) and builds the feature's coordinator and screens from it (planning #424) |
 | `Services/` | The local store, the session, the saved addresses, the auth service protocol and its mock, and the issue and event logs |
 | `Store/` | The product catalog (`ProductCatalog`, with `SampleCatalog` for the fixed sample products), orders, and the account type |
 | `Flows/Splash/` | The splash screen |
@@ -42,8 +42,8 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 | `Flows/Main/` | The main tabs and their coordinator |
 | `Flows/Products/` | Shop and Search, built by `ProductsFactory` from the catalog it is given: the collection banner, the cart card, product cards and rows, a collection, a product, the cart pushed by Go to cart, the filter and wish list sheets, and Search's view model (`SearchModel`), which finds the results in the catalog and pushes through a navigator scoped to `ShopFlow` |
 | `Flows/Cart/` | The cart and the full-screen checkout: `CartFactory` builds the tab's coordinator and its screens, and each checkout gets a new draft, `CheckoutBuilder`, which builds the steps and places the order. The cart takes the account gate as `AccountGating`, so its tests use a fake |
-| `Flows/Account/` | Account, orders, settings, and the Navigation Lab's place in the account stack |
-| `Flows/Lab/` | The Navigation Lab: both branches, the Detail push flow (`DetailPush/`), the Tabs and Sheet stories (`TabsDemo/`, `SheetDemo/`), the placeholder each other demo flow shows until it is built, the Views and view models demos (`ViewModels/`), and the Lab tools (`Tools/`): the event log and the navigation tree |
+| `Flows/Account/` | Account, orders, settings, and the Navigation Lab's place in the account stack, which `AccountFactory` builds |
+| `Flows/Lab/` | The Navigation Lab: `LabFactory`, which builds the demos' coordinators, both branches, the Detail push flow (`DetailPush/`), the Tabs and Sheet stories (`TabsDemo/`, `SheetDemo/`), the placeholder each other demo flow shows until it is built, the Views and view models demos (`ViewModels/`), and the Lab tools (`Tools/`): the event log and the navigation tree |
 | `Resources/` | The asset catalog with the app icon |
 | `Catalog/` | The Lab's branches, flows, kinds and entries, accessibility identifiers and launch argument names. The UI tests compile these too |
 | `DesignSystem/` | Color, type and spacing tokens, and the few components the app adds to system controls |

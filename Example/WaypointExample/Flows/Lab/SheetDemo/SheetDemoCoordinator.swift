@@ -21,13 +21,15 @@ import WaypointCore
 // Conformances:
 // - `Observable` (from `@Observable`), so the story redraws when a level opens or closes, or the
 //   size or swipe choice changes.
+// - `StackCoordinating`, so Waypoint makes the story's router, from the Lab's configuration, and
+//   lets it go with the story. Its levels are drawn by `SheetDemoStack`, so it needs no screens of
+//   the protocol's.
 @Observable
-final class SheetDemoCoordinator {
+final class SheetDemoCoordinator: StackCoordinating {
     private static let flowID = FlowID("labSheet")
-    private static let rootName = "Sheet story"
     private static let firstLevel = 1
 
-    let router: StackRouter
+    private let navigation: NavigationConfiguration
     private let onClose: () -> Void
     // `var` because the size picker sets it with `setSize(_:)` before the next sheet is presented.
     private(set) var size: SheetDemoSize
@@ -37,6 +39,11 @@ final class SheetDemoCoordinator {
     // `var` because each present keeps its level here, keyed by the presenting router, and
     // `release(over:)` drops it once the sheet or cover has gone, so it still draws meanwhile.
     private var levels: [ObjectIdentifier: SheetDemoLevel]
+
+    // The journey's name for the story's screen.
+    var rootName: String {
+        "Sheet story"
+    }
 
     // The story router's whole tree, as the story's screen shows it.
     var tree: String {
@@ -55,16 +62,18 @@ final class SheetDemoCoordinator {
         navigation: NavigationConfiguration,
         onClose: @escaping () -> Void
     ) {
+        self.navigation = navigation
         self.onClose = onClose
-        router = StackRouter(
-            flow: Self.flowID,
-            configuration: navigation
-        )
         size = .medium
         allowsSwipe = true
         levels = [:]
-        router.setRootName(Self.rootName)
-        router.setCoordinator(self)
+    }
+
+    func makeRouter() -> StackRouter {
+        StackRouter(
+            flow: Self.flowID,
+            configuration: navigation
+        )
     }
 
     // Whether `presenter` presents a cover (`cover`) or a sheet now.

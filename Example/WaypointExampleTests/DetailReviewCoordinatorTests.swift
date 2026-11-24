@@ -45,10 +45,7 @@ struct DetailReviewCoordinatorTests {
     @Test
     func postedReviewIsShownAndALeftOneIsNot() throws {
         let product = try #require(Product.find(id: Self.productID))
-        let detailPush = DetailPushCoordinator(
-            navigation: .default,
-            onClose: { }
-        )
+        let detailPush = TestLab.makeFactory().makeDetailPush(onClose: { })
 
         detailPush.reviewEnded(.cancelled, for: product)
         let afterCancel = detailPush.postedReviews[product.id]
@@ -61,10 +58,7 @@ struct DetailReviewCoordinatorTests {
     @Test
     func writeReviewPushesTheFlowAboveTheProduct() throws {
         let product = try #require(Product.find(id: Self.productID))
-        let detailPush = DetailPushCoordinator(
-            navigation: .default,
-            onClose: { }
-        )
+        let detailPush = TestLab.makeFactory().makeDetailPush(onClose: { })
         detailPush.showProduct(product)
 
         detailPush.writeReview(for: product)

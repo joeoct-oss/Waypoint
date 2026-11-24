@@ -29,6 +29,7 @@ final class LabDemoCoordinator {
     private static let shopFlowID = FlowID("labShop")
     private static let defaultReviewsDelay = Duration.milliseconds(2500)
 
+    private let factory: LabFactory
     private let navigation: NavigationConfiguration
     private let reviewsDelay: Duration
     // `var` because `showDemo(_:)` and `dismissDemo()` change it, and `syncDemo(_:)` takes the
@@ -55,8 +56,14 @@ final class LabDemoCoordinator {
         }
     }
 
-    // `reviewsDelay` is how long the demo reviews take to load; `nil` keeps the usual delay.
-    init(navigation: NavigationConfiguration, reviewsDelay: Duration? = nil) {
+    // `LabFactory` makes it. `reviewsDelay` is how long the demo reviews take to load; `nil` keeps
+    // the usual delay.
+    init(
+        factory: LabFactory,
+        navigation: NavigationConfiguration,
+        reviewsDelay: Duration?
+    ) {
+        self.factory = factory
         self.navigation = navigation
         self.reviewsDelay = reviewsDelay ?? Self.defaultReviewsDelay
         presentedDemo = nil
@@ -162,24 +169,15 @@ final class LabDemoCoordinator {
     }
 
     private func makeDetailPushDemo() -> DetailPushCoordinator {
-        DetailPushCoordinator(
-            navigation: navigation,
-            onClose: { self.dismissDemo() }
-        )
+        factory.makeDetailPush(onClose: { self.dismissDemo() })
     }
 
     private func makeSheetDemo() -> SheetDemoCoordinator {
-        SheetDemoCoordinator(
-            navigation: navigation,
-            onClose: { self.dismissDemo() }
-        )
+        factory.makeSheetDemo(onClose: { self.dismissDemo() })
     }
 
     private func makeTabsDemo() -> TabsDemoCoordinator {
-        TabsDemoCoordinator(
-            navigation: navigation,
-            onClose: { self.dismissDemo() }
-        )
+        factory.makeTabsDemo(onClose: { self.dismissDemo() })
     }
 
     @ViewBuilder
