@@ -25,7 +25,7 @@ The types are `feature`, `fix`, `docs`, `test`, `refactor` and `chore`, for exam
 
 ## Running tests
 
-[TESTING.md](TESTING.md) is the one home for running the tests: which layers run on Linux and which on a Mac, which run is needed while working, before a merge and before a tag, the simulators, the exact steps, and what to do when a run fails. In short, `scripts/test-linux.sh` runs the core on Linux, and `scripts/test-mac.sh [quick|full|release]` runs the renderers and the example app's unit and UI tests on a Mac.
+[TESTING.md](TESTING.md) is the one home for running the tests: which layers run on Linux and which on a Mac, which run is needed while working, before a merge and before a tag, the simulators, the exact steps, and what to do when a run fails. In short, `scripts/test-linux.sh` runs the core on Linux, and `scripts/test-mac.sh [quick|full|release]` runs the renderers and the example app's unit and UI tests on a Mac. Once Tuist has generated the example app, the repository root holds Tuist's project for the package (`Waypoint.xcodeproj` and `Derived/`, ignored by git), and a plain `xcodebuild -scheme Waypoint-Package` finds no scheme there: run the package's scheme through `scripts/package-xcodebuild.sh <xcodebuild arguments>`, which moves that project aside and puts it back. The test and docs scripts do.
 
 ## Documentation site
 

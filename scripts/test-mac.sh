@@ -183,23 +183,6 @@ stop_step_tools() {
 RESULTS_DIR=.build/results
 SLOWEST_TEST_COUNT=10
 
-# Tuist writes the package's own project, `Waypoint.xcodeproj` and `Derived/`, into the package
-# root, since the example app takes the package through Tuist's package integration (#324). While
-# that project sits next to `Package.swift`, xcodebuild opens it and finds no `Waypoint-Package`
-# scheme, so every package step moves both aside and puts them back when it ends, pass or fail.
-# Tuist writes them again whenever it generates the example app.
-GENERATED_PACKAGE_PROJECT=(Waypoint.xcodeproj Derived)
-GENERATED_ASIDE=.build/tuist-package-project
-
-restore_generated_package_project() {
-    local path
-    for path in "${GENERATED_PACKAGE_PROJECT[@]}"; do
-        if [[ -e "$GENERATED_ASIDE/$path" && ! -e "$path" ]]; then
-            mv "$GENERATED_ASIDE/$path" "$path"
-        fi
-    done
-}
-
 # Lists the slowest tests of each result bundle. Only a report: it never fails the run.
 report_slowest_tests() {
     local bundle
@@ -216,8 +199,8 @@ finish() {
     local status=$?
     local udid lock index
     stop_step_tools
-    # A run stopped during a package step leaves Tuist's project aside.
-    restore_generated_package_project
+    # A run stopped during a package step may leave Tuist's project aside (#324).
+    scripts/package-xcodebuild.sh --restore || true
     for udid in ${BOOTED_UDIDS[@]+"${BOOTED_UDIDS[@]}"}; do
         xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true
     done
@@ -454,24 +437,6 @@ tuist_cmd() {
     fi
 }
 
-# xcodebuild of the package's own scheme, with Tuist's project moved aside.
-package_xcodebuild() {
-    local path status=0
-    for path in "${GENERATED_PACKAGE_PROJECT[@]}"; do
-        [[ -e "$path" ]] || continue
-        if git ls-files --error-unmatch "$path" >/dev/null 2>&1; then
-            echo "error: $path is committed; only Tuist's generated project may be moved aside" >&2
-            return 1
-        fi
-        mkdir -p "$GENERATED_ASIDE"
-        rm -rf "${GENERATED_ASIDE:?}/$path"
-        mv "$path" "$GENERATED_ASIDE/$path"
-    done
-    xcodebuild "$@" || status=$?
-    restore_generated_package_project
-    return "$status"
-}
-
 # The package's unit tests on the simulator `udid`, built with warnings as errors: the one
 # simulator build checks the warnings and runs the tests. The result bundle `bundle_name` in
 # `.build/results` puts the step's test count and slowest tests in the report, as the example app's
@@ -479,7 +444,7 @@ package_xcodebuild() {
 package_tests_on() {
     local udid="$1" bundle_name="$2"
     mkdir -p "$RESULTS_DIR"
-    package_xcodebuild test "${XCODE_TEST_FLAGS[@]}" \
+    scripts/package-xcodebuild.sh test "${XCODE_TEST_FLAGS[@]}" \
         -scheme Waypoint-Package \
         -destination "platform=iOS Simulator,id=$udid" \
         -resultBundlePath "$RESULTS_DIR/$bundle_name.xcresult" \
@@ -623,7 +588,7 @@ fi
 
 if $RUN_DEVICE_BUILD; then
     step "xcodebuild build Waypoint-Package for an iOS device with warnings as errors" \
-        package_xcodebuild build -quiet -jobs "$JOBS" -scheme Waypoint-Package -destination generic/platform=iOS \
+        scripts/package-xcodebuild.sh build -quiet -jobs "$JOBS" -scheme Waypoint-Package -destination generic/platform=iOS \
         SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
 fi
 
