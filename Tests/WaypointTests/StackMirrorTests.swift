@@ -388,6 +388,72 @@ struct StackMirrorTests {
 
         #expect(router.push(ProductRoute(id: 1)) == .alreadyThere)
     }
+
+    @Test
+    func showsAPushedChildFlowsScreensAfterItsMarker() throws {
+        let router = StackRouter(configuration: .permissive)
+        let mirror = StackMirror(router: router, holdsTransitions: false, clock: ManualTransitionClock())
+        let child = MirrorFlowCoordinator()
+        router.push(child) { _ in }
+        child.router.push(ProductRoute(id: 1))
+
+        mirror.routerDidChange()
+
+        let marker = try #require(child.router.marker)
+        let expected = [marker, AnyRoute(ProductRoute(id: 1))]
+        #expect(mirror.shown == expected)
+        #expect(!mirror.isMissingDestination(marker))
+    }
+
+    @Test
+    func backInsideAPushedChildFlowPopsTheChild() {
+        let router = StackRouter(configuration: .permissive)
+        let child = MirrorFlowCoordinator()
+        let results = Recorder<FlowResult<String>>()
+        router.push(child) { result in
+            results.record(result)
+        }
+        child.router.push(ProductRoute(id: 1))
+        let mirror = Self.holdingMirror(router, ManualTransitionClock())
+
+        mirror.screenDidShow(count: 1)
+        let childPathAfterBack = child.router.state.path
+        mirror.screenDidShow(count: 0)
+
+        #expect(childPathAfterBack.isEmpty)
+        #expect(router.state.path.isEmpty)
+        let expected: [FlowResult<String>] = [.cancelled]
+        #expect(results.values == expected)
+        #expect(mirror.shown.isEmpty)
+    }
+
+    @Test
+    func aChildFlowsPushIsReportedToTheChild() {
+        let router = StackRouter(configuration: .permissive)
+        let clock = ManualTransitionClock()
+        let mirror = StackMirror(router: router, holdsTransitions: false, clock: clock)
+        let child = MirrorFlowCoordinator()
+        router.push(child) { _ in }
+        mirror.routerDidChange()
+        clock.advance(by: StackMirror.transitionDuration)
+
+        child.router.push(ProductRoute(id: 1))
+        mirror.routerDidChange()
+        clock.advance(by: .milliseconds(100))
+
+        #expect(child.router.push(ProductRoute(id: 1)) == .alreadyThere)
+        #expect(router.push(HomeRoute()) == .applied)
+    }
+}
+
+/// A child flow a test pushes on a stack the mirror draws.
+///
+/// Conformances:
+/// - `FlowCoordinating`, so a stack router can push it.
+@MainActor
+private final class MirrorFlowCoordinator: FlowCoordinating {
+    /// What the flow finishes with.
+    typealias Output = String
 }
 
 /// A transition clock that only moves when a test moves it.

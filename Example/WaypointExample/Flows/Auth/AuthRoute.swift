@@ -46,14 +46,6 @@ struct SignedInRoute: TrackableScreen {
     static let screenName = "Signed in"
 }
 
-// Reset password, presented as a sheet over Sign in by the accounts flow's router.
-//
-// Conformances:
-// - `TrackableScreen`, a `Route` the journey log names "Reset password".
-struct ResetPasswordRoute: TrackableScreen {
-    static let screenName = "Reset password"
-}
-
 // The terms, presented as a sheet over Choose a password by the accounts flow's router.
 //
 // Conformances:

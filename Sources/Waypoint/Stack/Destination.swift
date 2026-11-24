@@ -71,6 +71,9 @@
         /// The mirror of the enclosing stack, if any, which learns the stack's destinations.
         @Environment(\.waypointStackMirror) private var mirror
 
+        /// The nearest stack of each flow, as this screen sees them.
+        @Environment(\.waypointFlowRouters) private var flowRouters
+
         /// The view, with the route type's destination.
         func body(content view: Content) -> some View {
             // Registering is idempotent and observed by nothing, so it is safe while drawing,
@@ -79,10 +82,28 @@
             router?.registerViewName(ViewTypeName.of(Destination.self), for: R.self)
             mirror?.registerDestination(R.self)
             let stackRouter = router
+            let flows = flowRouters
             return view.navigationDestination(for: R.self) { route in
                 let navigator = NavigatorLookup.destination(stackRouter, route: route, report: NavigationIssueLog.report)
                 content(route, navigator)
+                    .stackRouterEnvironment(stackRouter, flows: flows)
                     .pushedTabBar()
+            }
+        }
+    }
+
+    extension View {
+        /// The view, seeing `router` as its stack's router and `flows` as the flows above it, as
+        /// the screen that declared its destination does. A pushed child flow's screens are drawn
+        /// on its parent's stack, and see the child's router, never the parent's.
+        @ViewBuilder
+        fileprivate func stackRouterEnvironment(_ router: StackRouter?, flows: FlowRouters) -> some View {
+            if let router {
+                environment(\.waypointStackRouter, router)
+                    .environment(\.waypointFlowRouters, flows)
+                    .environment(router)
+            } else {
+                self
             }
         }
     }

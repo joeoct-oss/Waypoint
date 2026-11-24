@@ -115,7 +115,7 @@ extension StackRouter {
     }
 
     /// Reports an issue of `kind` on this router's flow, as an error.
-    private func report(_ kind: NavigationIssue.Kind, _ message: String, file: StaticString, line: UInt) {
+    func report(_ kind: NavigationIssue.Kind, _ message: String, file: StaticString, line: UInt) {
         let issue = NavigationIssue(kind: kind, flow: flowID, message: message, file: file, line: line)
         tree.report(issue, level: .error)
     }

@@ -53,8 +53,8 @@ public protocol StackCoordinating: AnyObject {
     func makeRouter() -> StackRouter
 
     /// Registers the route types this coordinator's screens show, once per router, as soon as
-    /// the router is made. Default: registers nothing. Later in #59, `StackCoordinator`
-    /// registers its `destinations`.
+    /// the router is made. Default: registers nothing. `StackCoordinator` in `Waypoint` registers
+    /// its `destinations`.
     func registerDestinations(on router: StackRouter)
 }
 
@@ -78,9 +78,10 @@ extension StackCoordinating {
         RouterTable.shared.checkedRouter(of: self, file: #fileID, line: #line).navigator
     }
 
-    /// A new router with the default settings.
+    /// A new router with the default settings. Made while a parent lazily starts this
+    /// coordinator, it is made inside the parent's tree, so calls from `init` get its settings.
     public func makeRouter() -> StackRouter {
-        StackRouter()
+        RouterTable.shared.takeJoiningMark(for: type(of: self)) ?? StackRouter()
     }
 
     /// Registers nothing.

@@ -12,14 +12,14 @@ import Waypoint
 // Runs the Lab's demos, presented full screen over the Lab: the view and view-model demos, and the
 // Detail push flow, which `DetailPushCoordinator` runs. Each product demo is the small
 // `LabShopFlow` on a Waypoint stack of its own, because stacks don't nest, and Detail push is
-// `DetailPushFlow` on another, Tabs is `TabsDemoCoordinator`'s tab container, and Sheet is
-// `SheetDemoCoordinator`'s stack with the sheets and covers it presents. Detail push's coordinator
-// makes its own router, which Waypoint drops once this coordinator lets it go. Every other
-// product demo gets a fresh router, which this coordinator owns while the demo is up and drops once
-// it has closed, so a navigator that outlives the demo has no router left. The no-router demo runs
-// in a plain SwiftUI stack instead: the account stack above the Lab is a Waypoint stack, so only a
-// cover, which sits outside it, has no router above its view. The cover stays plain SwiftUI until
-// Waypoint's presentations are built.
+// `DetailPushFlow`, drawn by its coordinator's own `view`. Tabs is `TabsDemoCoordinator`'s tab
+// container, and Sheet is `SheetDemoCoordinator`'s stack with the sheets and covers it presents.
+// Detail push's coordinator makes its own router, which Waypoint drops once this coordinator lets
+// it go. Every other product demo gets a fresh router, which this coordinator owns while the demo
+// is up and drops once it has closed, so a navigator that outlives the demo has no router left.
+// The no-router demo runs in a plain SwiftUI stack instead: the account stack above the Lab is a
+// Waypoint stack, so only a cover, which sits outside it, has no router above its view. The cover
+// stays plain SwiftUI until Waypoint's presentations are built.
 //
 // Conformances:
 // - `Observable` (from `@Observable`), so the Lab redraws when a demo opens or closes, and when a
@@ -90,7 +90,7 @@ final class LabDemoCoordinator {
         let ownsRouter = demo == .detailPush || demo == .tabs || demo == .sheet
         let router = ownsRouter ? nil : makeRouter()
         lateOutcome = nil
-        detailPush = demo == .detailPush ? DetailPushCoordinator(navigation: navigation) : nil
+        detailPush = demo == .detailPush ? makeDetailPushDemo() : nil
         tabsDemo = demo == .tabs ? makeTabsDemo() : nil
         sheetDemo = demo == .sheet ? makeSheetDemo() : nil
         productModel = router.map { makeProductModel($0) }
@@ -135,14 +135,9 @@ final class LabDemoCoordinator {
     @ViewBuilder
     private func makeDetailPushFlow() -> some View {
         if let detailPush {
-            WaypointStack(flow: DetailPushFlow.self, router: detailPush.router) {
-                detailPush.makeListFlow()
-                    .destination(DetailProductRoute.self) { detailPush.makeProductFlow($0) }
-                    .destination(DetailCartRoute.self) { detailPush.makeCartFlow($0) }
-                    .toolbar { closeItem }
-            }
-            .overlay(alignment: .bottom) { makeToast(for: detailPush.toast) }
-            .animation(.default, value: detailPush.toast)
+            detailPush.view
+                .overlay(alignment: .bottom) { makeToast(for: detailPush.toast) }
+                .animation(.default, value: detailPush.toast)
         }
     }
 
@@ -164,6 +159,13 @@ final class LabDemoCoordinator {
                 level: nil
             )
         }
+    }
+
+    private func makeDetailPushDemo() -> DetailPushCoordinator {
+        DetailPushCoordinator(
+            navigation: navigation,
+            onClose: { self.dismissDemo() }
+        )
     }
 
     private func makeSheetDemo() -> SheetDemoCoordinator {

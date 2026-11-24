@@ -81,6 +81,20 @@ final class RouterTable {
     /// `var` because it is set for the length of one sweep. Only `sweep()` changes it.
     private var isSweeping = false
 
+    /// While a lazy start builds its child: the parent's tree, and the child type whose first
+    /// default `makeRouter()` makes its router inside that tree. `nil` otherwise, and once taken.
+    ///
+    /// `var` because each lazy start sets it while its closure runs. Only
+    /// `build(_:joining:file:line:)`, `takeJoiningMark(for:)` and `withoutJoiningMark(_:)` change
+    /// it.
+    private var joiningMark: JoiningMark?
+
+    /// The router made with the joining mark during the current lazy start, or `nil`.
+    ///
+    /// `var` because the router that takes the mark is made inside the start's closure. Only
+    /// `build(_:joining:file:line:)` and `takeJoiningMark(for:)` change it.
+    private var markedRouter: StackRouter?
+
     /// Creates an empty table. The app uses ``shared``; tests make their own.
     init() { }
 
@@ -278,7 +292,7 @@ final class RouterTable {
         standIn: (Router) -> Router
     ) -> Router {
         sweep()
-        let router = (found?.router as? Router) ?? make()
+        let router = (found?.router as? Router) ?? withoutJoiningMark(make)
         guard !isHeldByLiveEntry(router) else {
             return standIn(router)
         }
@@ -300,5 +314,106 @@ extension TreeNode {
         self === node || childNodes.contains { child in
             child.contains(node)
         }
+    }
+}
+
+/// Starting and ending child flows.
+extension RouterTable {
+    /// What a lazy start marks while its closure builds the child.
+    struct JoiningMark {
+        /// The parent's tree, where the marked router is made.
+        let tree: NavigationTreeContext
+
+        /// The type the start's closure returns. Only a coordinator of this type takes the mark.
+        let type: ObjectIdentifier
+
+        /// The flow name the marked router gets: the child type's name.
+        let name: String
+    }
+
+    /// Runs `make` with the joining mark on `tree`, so the child's router is made inside the
+    /// parent's tree and calls from the child's `init` get the tree's settings. A router that took
+    /// the mark but isn't the returned child's moves into a tree of its own, and debug says so.
+    func build<Child: FlowCoordinating>(
+        _ make: () -> Child,
+        joining tree: NavigationTreeContext,
+        file: StaticString,
+        line: UInt
+    ) -> Child {
+        let saved = (joiningMark, markedRouter)
+        joiningMark = JoiningMark(
+            tree: tree,
+            type: ObjectIdentifier(Child.self),
+            name: FlowNaming.baseName(forCoordinator: Child.self)
+        )
+        markedRouter = nil
+        let child = make()
+        let marked = markedRouter
+        (joiningMark, markedRouter) = saved
+        if let marked, entries[ObjectIdentifier(child)]?.router !== marked {
+            marked.leaveJoiningTree()
+            reportDetachedFromLazyStart(marked, child: child, in: tree, file: file, line: line)
+        }
+        return child
+    }
+
+    /// A router inside the marked tree for a coordinator of `type`, taking the mark, or `nil` when
+    /// no lazy start marked that type. The default `makeRouter()` calls this.
+    func takeJoiningMark(for type: Any.Type) -> StackRouter? {
+        guard let mark = joiningMark, mark.type == ObjectIdentifier(type) else {
+            return nil
+        }
+        joiningMark = nil
+        let router = StackRouter(joining: mark.tree, flow: mark.name)
+        markedRouter = router
+        return router
+    }
+
+    /// Runs `make` with no joining mark, so a router made for a coordinator going away never
+    /// takes a lazy start's mark.
+    func withoutJoiningMark<Router>(_ make: () -> Router) -> Router {
+        let saved = joiningMark
+        joiningMark = nil
+        defer {
+            joiningMark = saved
+        }
+        return make()
+    }
+
+    /// Whether the router of `coordinator` is its own, not another coordinator's it was handed.
+    func ownsRouter(of coordinator: AnyObject) -> Bool {
+        entries[ObjectIdentifier(coordinator)]?.ownsRouter ?? true
+    }
+
+    /// Keeps `output` for the parent of `coordinator`'s flow, then dismisses the flow.
+    func finish<Coordinator: FlowCoordinating>(_ coordinator: Coordinator, with output: Coordinator.Output) {
+        let router = coordinator.router
+        if let flow = router.childFlow as? ChildFlow<Coordinator.Output> {
+            flow.keep(output)
+        }
+        router.dismissFlow()
+    }
+
+    /// Reports `routerDetachedFromLazyStart`: `router` took a lazy start's mark but belongs to
+    /// another coordinator than `child`, so it moved into a tree of its own.
+    private func reportDetachedFromLazyStart(
+        _ router: StackRouter,
+        child: AnyObject,
+        in tree: NavigationTreeContext,
+        file: StaticString,
+        line: UInt
+    ) {
+        let name = ViewTypeName.of(type(of: child))
+        let message = "Another \(name) was made while a lazy start built its \(name), and read its "
+            + "router first, so that router is in a tree of its own and never joins this flow. Make "
+            + "only the child in the start's closure."
+        let issue = NavigationIssue(
+            kind: .routerDetachedFromLazyStart,
+            flow: router.flowID,
+            message: message,
+            file: file,
+            line: line
+        )
+        tree.report(issue, level: .error)
     }
 }

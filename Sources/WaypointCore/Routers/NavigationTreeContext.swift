@@ -34,7 +34,7 @@ final class NavigationTreeContext {
     /// coordinator for the children of tabs a call added.
     ///
     /// `var` because commits add work and the end of a turn runs it. Only `runAfterTurn(_:)` and
-    /// `drainQueue` change it.
+    /// `drainQueue` change it, and `runWhenIdle(_:)` through `runAfterTurn(_:)`.
     private var afterTurn: [() -> Void] = []
 
     /// Flow names used by routers in the tree.
@@ -54,6 +54,13 @@ final class NavigationTreeContext {
     /// `var` because each pushed screen takes the next id. Only ``claimScreenID()`` and
     /// `takeOver(_:)` change it.
     private var screenCount: UInt64 = 0
+
+    /// How many child flows were pushed in this tree, so each push's marker differs from every
+    /// other, also from one of the same flow pushed again after it ended.
+    ///
+    /// `var` because each pushed child flow takes the next number. Only ``claimFlowPushID()``
+    /// and `takeOver(_:)` change it.
+    private var flowPushCount: UInt64 = 0
 
     /// The time on the tree's clock, for the journey's durations and duplicate window.
     ///
@@ -196,6 +203,7 @@ final class NavigationTreeContext {
         }
         namesViews = namesViews || other.namesViews
         screenCount = max(screenCount, other.screenCount)
+        flowPushCount = max(flowPushCount, other.flowPushCount)
     }
 
     /// Registers `type`, opened from an existential.
@@ -215,6 +223,12 @@ final class NavigationTreeContext {
     func claimScreenID() -> UInt64 {
         screenCount += 1
         return screenCount
+    }
+
+    /// The number of the next pushed child flow. Numbers start at 1.
+    func claimFlowPushID() -> UInt64 {
+        flowPushCount += 1
+        return flowPushCount
     }
 
     /// The id of the next measured interval.
@@ -472,6 +486,28 @@ final class NavigationTreeContext {
     /// made from `work` apply at once.
     func runAfterTurn(_ work: @escaping () -> Void) {
         afterTurn.append(work)
+    }
+
+    /// Runs `work` now when no call is being applied or queued calls are running, otherwise
+    /// once they are done, so code `work` calls, such as a parent's `onFinish:`, never runs inside
+    /// a commit.
+    func runWhenIdle(_ work: @escaping () -> Void) {
+        guard !turn.isApplying, !turn.isDraining else {
+            runAfterTurn(work)
+            return
+        }
+        work()
+    }
+
+    /// Lets `object` go once no call is being applied, so its `deinit`, such as a child
+    /// coordinator's, never runs inside a commit.
+    func releaseWhenIdle(_ object: AnyObject?) {
+        guard let object else {
+            return
+        }
+        runWhenIdle {
+            withExtendedLifetime(object) { }
+        }
     }
 
     /// Removes the first queued call and returns it, or `nil` when the queue is empty.

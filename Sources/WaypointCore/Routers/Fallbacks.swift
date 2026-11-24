@@ -14,7 +14,7 @@ struct FallbackContext {
     /// The route of a `popTo` route call, for the `.push` fallback.
     let route: AnyRoute?
 
-    /// The route and style of a `present` call, for the `.replacePresentation` fallback.
+    /// What a `present` call presents, for the `.replacePresentation` fallback.
     let presentation: PresentationRequest?
 
     /// The file of the call.
@@ -40,13 +40,23 @@ struct FallbackContext {
     }
 }
 
-/// What a `present` call asked for, kept so the `.replacePresentation` fallback can present it.
+/// What a `present` call asked for, kept so the `.replacePresentation` fallback can present it:
+/// a route as the new flow's root screen, or a child coordinator's flow.
 struct PresentationRequest {
-    /// The route to present as the new flow's root screen.
-    let route: AnyRoute
+    /// Presents the flow from a router, in a transaction.
+    let step: @MainActor (any PresentingRouter, TransactionStore) -> StepResult
 
-    /// How to present it.
-    let style: PresentationStyle
+    /// A request that presents the flow with `step`.
+    init(step: @escaping @MainActor (any PresentingRouter, TransactionStore) -> StepResult) {
+        self.step = step
+    }
+
+    /// A request that presents `route` as the new flow's root screen, in `style`.
+    init(route: AnyRoute, style: PresentationStyle) {
+        self.step = { router, store in
+            router.presentStep(route, style: style, in: store)
+        }
+    }
 }
 
 extension TransactionStore {
@@ -153,7 +163,7 @@ extension TransactionStore {
     }
 
     /// Dismisses the router's presented flow with everything above it, then presents the call's
-    /// route.
+    /// flow.
     private func replacePresentationStep(
         _ request: PresentationRequest?,
         on router: any PresentingRouter
@@ -166,7 +176,7 @@ extension TransactionStore {
         if case .failed = dismissed {
             return dismissed
         }
-        return router.presentStep(request.route, style: request.style, in: self)
+        return request.step(router, self)
     }
 
     /// Runs a custom fallback through a transaction value. Its first failed step is its issue.

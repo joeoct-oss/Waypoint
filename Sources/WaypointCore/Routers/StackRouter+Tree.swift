@@ -14,9 +14,9 @@ extension StackRouter: TreeNode {
         presented
     }
 
-    /// The presented flow, if any.
+    /// The pushed child flow, then the presented flow, if any.
     var childNodes: [any TreeNode] {
-        presented.map { [$0] } ?? []
+        [pushedFlow, presented].compactMap { $0 }
     }
 
     /// The path as it is in the current transaction, or the committed one.
@@ -48,10 +48,14 @@ extension StackRouter: TreeNode {
         )
         let detail = ReadableLog.stackText(stack, naming: naming, shortens: false)
         let style = current.state.presentation?.style
-        let children = presented.map { child in
-            [child.readableTree(naming).presented(as: style)]
+        let pushedChild = pushedFlow.map { child in
+            child.readableTree(naming)
         }
-        return ReadableTree(name: flowID.name, detail: detail, children: children ?? [])
+        let presentedChild = presented.map { child in
+            child.readableTree(naming).presented(as: style)
+        }
+        let children = [pushedChild, presentedChild].compactMap { $0 }
+        return ReadableTree(name: flowID.name, detail: detail, children: children)
     }
 }
 
@@ -66,6 +70,11 @@ extension StackRouter: PresentingRouter {
     /// The presented router as it is in the current transaction, or the committed one.
     var currentPresented: StackRouter? {
         current.presented
+    }
+
+    /// The pushed child flow as it is in the current transaction, or the committed one.
+    var currentPushed: StackRouter? {
+        current.pushed
     }
 
     /// This stack.
@@ -125,10 +134,17 @@ extension StackRouter {
         return inFlight
     }
 
-    /// Stores the reduced state and records its changes.
+    /// Stores the reduced state and records its changes. A child flow pushed on top ends unless
+    /// its marker is still the last route: its marker leaves the path, wherever it is.
     private func apply(_ next: StackState, _ changes: [NavigationChange], in store: TransactionStore) -> StepResult {
         updateWorkingCopy { snapshot in
-            snapshot.withState(next)
+            guard let pushed = snapshot.pushed, next.path.last != pushed.marker else {
+                return snapshot.withState(next)
+            }
+            let path = next.path.filter { route in
+                route != pushed.marker
+            }
+            return snapshot.pushing(nil, state: next.withPath(path))
         }
         store.record(changes, in: flowID)
         return .changed

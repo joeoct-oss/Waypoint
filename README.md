@@ -26,8 +26,8 @@ Waypoint is a navigation library for iOS apps. Every screen is named by a small 
 | SwiftUI stacks: `WaypointStack`, `destination(_:_:)`, swipe-back sync | ✅ Built in `Waypoint` |
 | `WaypointLink`, navigators and property wrappers for views and view models | ✅ Built in `Waypoint` |
 | SwiftUI sheets, tabs and the app coordinator | 🛰️ Next |
-| Stack and tab coordinators: `StackCoordinator` and `TabCoordinator` (and `StackCoordinating` and `TabCoordinating` in `WaypointCore`) with the router made, named and released for you, and each tab's stack its coordinator's router | ✅ Built in #59 (first parts) |
-| The other coordinator kinds, a coordinator's screens and `view`, swappable renderers, child flows, root switching, deep links | 📐 Designed in DocC |
+| Stack, tab and flow coordinators: `StackCoordinator`, `TabCoordinator` and `FlowCoordinator` (and `StackCoordinating`, `TabCoordinating` and `FlowCoordinating` in `WaypointCore`) with the router made, named and released for you, each tab's stack its coordinator's router, presented and pushed child flows that end with a result in `onFinish:`, a pushed flow's screens drawn on its parent's stack, and a stack or flow coordinator's own screens (`root`, `destinations`) drawn by its `view` in SwiftUI | ✅ Built in #59 (first parts) |
+| The root coordinator, a tab coordinator's `view`, UIKit renderers, root switching, deep links | 📐 Designed in DocC |
 | Events, guards, restoration, `WaypointTesting` | 📐 Designed in DocC |
 
 Built parts have unit tests that run on a Mac and on Linux. Designed parts are written as signatures in the DocC articles below and follow the same rules.
@@ -87,7 +87,7 @@ Give a flow its root screen and its destinations in a coordinator. Screens can b
 // Conformances:
 // - `StackCoordinator`, so Waypoint can draw its stack and make its router.
 final class ShopCoordinator: StackCoordinator {
-    var root: some Screen {
+    var root: some View {
         ProductListView(onSelect: { self.showProduct(id: $0) })
     }
 

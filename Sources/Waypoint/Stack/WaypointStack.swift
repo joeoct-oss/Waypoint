@@ -192,12 +192,16 @@
                         MissingDestinationHost(entry: entry, mirror: mirror)
                             .pushedTabBar()
                     }
+                    .navigationDestination(for: ChildFlowRoute.self) { marker in
+                        PushedFlowRoot(marker: AnyRoute(marker), stack: mirror.router)
+                            .pushedTabBar()
+                    }
             }
             .environment(\.waypointStackRouter, mirror.router)
             .environment(\.waypointStackMirror, mirror)
             .environment(\.waypointFlowRouters, flowRouters.adding(mirror.router))
             .environment(mirror.router)
-            .onChange(of: mirror.router.state.path) {
+            .onChange(of: mirror.router.drawnPath) {
                 mirror.routerDidChange()
             }
             .onAppear {

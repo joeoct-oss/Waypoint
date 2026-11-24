@@ -24,7 +24,7 @@ View controllers navigate through injection: the coordinator or the destination 
 final class ShopCoordinator: StackCoordinator {
     typealias Renderer = UIKitStackRenderer
 
-    var root: some Screen {
+    var root: some View {
         ProductListViewController(onSelect: { [weak self] in self?.showProduct(id: $0) })
     }
 

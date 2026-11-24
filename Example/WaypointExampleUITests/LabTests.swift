@@ -14,6 +14,9 @@ import XCTest
 @MainActor
 final class LabTests: XCTestCase {
     private static let lampID = 1
+    private static let reviewStars = 4
+    private static let postedReview = "4 stars"
+    private static let pushedFlowMissing = "waypoint.pushedFlow.missing"
     private static let missingRouteName = "ProductReviewsRoute"
     // How the tree names the route of the screen it is shown on: the account flow, then the
     // route's case, with its private value folded.
@@ -118,6 +121,43 @@ final class LabTests: XCTestCase {
         XCTAssertTrue(product.exists, "back should pop the cart only")
     }
 
+    // Write a review pushes a child flow on the Detail push stack: its screens follow the
+    // product, and Post review pops back to the product, which shows the stars.
+    func testPushedReviewFlowFinishesOnTheSameStack() {
+        let app = openDetailPush()
+        let product = openLampProduct(in: app)
+
+        app.buttons[Identifiers.detailWriteReview].tap()
+        app.buttons[Identifiers.detailReviewStars(Self.reviewStars)].tapWhenReady()
+        app.buttons[Identifiers.detailReviewPost].tapWhenReady()
+
+        let posted = app.staticTexts[Identifiers.detailReviewPosted]
+        XCTAssertTrue(posted.waitForExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(posted.label.contains(Self.postedReview), "product says \(posted.label)")
+        XCTAssertTrue(product.exists, "Post review should pop back to the product")
+    }
+
+    // Back from the review's first screen leaves the flow without a review, and the flow can be
+    // pushed again, with its first screen drawn.
+    func testPushedReviewFlowLeftWithBackCanStartAgain() {
+        let app = openDetailPush()
+        openLampProduct(in: app)
+        let writeReview = app.buttons[Identifiers.detailWriteReview]
+        let rating = app.descendants(matching: .any)[Identifiers.detailReviewRating]
+
+        writeReview.tap()
+        XCTAssertTrue(rating.waitForExistence(timeout: UITestSteps.timeout))
+        app.goBack()
+        XCTAssertTrue(rating.waitForNonExistence(timeout: UITestSteps.timeout))
+        XCTAssertFalse(app.staticTexts[Identifiers.detailReviewPosted].exists, "Back posts no review")
+
+        writeReview.tap()
+        let missing = app.staticTexts[Self.pushedFlowMissing]
+        let drawn = rating.waitForExistence(timeout: UITestSteps.timeout)
+        XCTAssertTrue(drawn, missing.exists ? missing.label : "no rating and no debug text")
+        XCTAssertTrue(app.buttons[Identifiers.detailReviewStars(Self.reviewStars)].exists)
+    }
+
     // TX-04: the Tabs story's tabs change at run time. Search stays selected when it stays, and
     // removing the selected Account tab falls back to Shop.
     func testTabsChangeAtRunTime() {
@@ -158,6 +198,15 @@ final class LabTests: XCTestCase {
             toast.label.contains("recovered routeNotInPath by=popToRoot"),
             "toast says \(toast.label)"
         )
+    }
+
+    // Opens the lamp from the Detail push list.
+    @discardableResult
+    private func openLampProduct(in app: XCUIApplication) -> XCUIElement {
+        app.buttons[Identifiers.product(id: Self.lampID)].tap()
+        let product = app.descendants(matching: .any)[Identifiers.detailProduct]
+        XCTAssertTrue(product.waitForExistence(timeout: UITestSteps.timeout))
+        return product
     }
 
     // Opens the SwiftUI branch's Detail push entry and waits for its shop list.

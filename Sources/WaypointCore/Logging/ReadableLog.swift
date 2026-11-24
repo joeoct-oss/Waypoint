@@ -189,9 +189,13 @@ enum ReadableLog {
         case .releasedRouterReturned:
             return "this coordinator got a router that already ended"
         case .coordinatorDrawnTwice:
-            return "one coordinator was given two tabs"
+            return "one coordinator is drawn in two places"
         case .routerInAnotherTree:
-            return "this tab's coordinator brought a router from another tree"
+            return "this coordinator brought a router from another tree"
+        case .childRouterIsAncestor:
+            return "this child flow's router is its parent's"
+        case .routerDetachedFromLazyStart:
+            return "a router made while starting a flow stays separate"
         case .tabChildRouterMerged:
             return "this tab's coordinator's early screens were dropped"
         }

@@ -71,8 +71,12 @@ extension PresentingRouter {
         return ([own] + children).contains(where: \.isChanged) ? .changed : .unchanged
     }
 
-    /// Asks the router that presented this flow to dismiss it.
+    /// Asks the router that presented this flow to dismiss it, or the router that pushed it to
+    /// pop back below it.
     func dismissFlowStep(in store: TransactionStore) -> StepResult {
+        if let stack = self as? StackRouter, let pusher = parentNode as? StackRouter, pusher.currentPushed === stack {
+            return pusher.popPushedChildStep(stack, in: store)
+        }
         guard let presenter = presenter() as? any PresentingRouter else {
             return .failed(notPresentedDraft())
         }
@@ -97,7 +101,7 @@ extension PresentingRouter {
     }
 
     /// Stores the new child and records the change.
-    private func attach(
+    func attach(
         _ child: StackRouter,
         _ presentation: Presentation,
         _ changes: [NavigationChange],

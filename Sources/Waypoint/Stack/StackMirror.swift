@@ -15,6 +15,10 @@ import WaypointCore
 
 /// The routes a SwiftUI stack shows, kept in step with its router.
 ///
+/// A stack shows its router's ``StackRouter/drawnPath``: the router's own path and, after the
+/// marker of a child flow pushed on top, the child's path. What the user does to a screen goes to
+/// the router that owns it.
+///
 /// The screen follows the router, and the router hears what the user does to the screen:
 ///
 /// - When the router's path changes, the mirror shows the new path. While a push or pop is still
@@ -114,7 +118,7 @@ final class StackMirror {
         self.router = router
         self.holdsTransitions = holdsTransitions
         self.clock = clock
-        self.shown = router.state.path
+        self.shown = router.drawnPath
     }
 
     /// How many routes two paths share from the bottom.
@@ -126,7 +130,7 @@ final class StackMirror {
 
     /// Shows the router's newest path now, or when the running transition ends.
     func routerDidChange() {
-        guard shown != router.state.path else {
+        guard shown != router.drawnPath else {
             return
         }
         guard holdsTransitions, let wait = remainingTransition() else {
@@ -170,7 +174,7 @@ final class StackMirror {
     /// the router; more routes is a push the router can't read back, which is refused.
     func screenDidShow(count: Int) {
         guard count <= shown.count else {
-            router.rendererDidPop(toCount: count)
+            router.rendererDidPopDrawn(toCount: count)
             redrawCount += 1
             return
         }
@@ -179,7 +183,7 @@ final class StackMirror {
         }
         let kept = Array(shown.prefix(count))
         show(kept)
-        router.rendererDidPop(toCount: Self.sharedPrefixCount(kept, router.state.path))
+        router.rendererDidPopDrawn(toCount: Self.sharedPrefixCount(kept, router.drawnPath))
     }
 
     /// Shows the router's newest path.
@@ -188,7 +192,7 @@ final class StackMirror {
     /// another, is shown in two steps: first back to the screens both paths share, then, when that
     /// transition ends, forward to the new ones. iOS 17 drops a replacement made in one step.
     private func showNewest() {
-        let target = router.state.path
+        let target = router.drawnPath
         let shared = Self.sharedPrefixCount(shown, target)
         guard holdsTransitions, shared < shown.count, shared < target.count else {
             show(target)
@@ -209,7 +213,7 @@ final class StackMirror {
             restartTransitionAfterDrawing(started)
         }
         if pushes, let top = routes.last {
-            reportPush(of: top)
+            reportPush(of: top, to: router.drawnOwner(ofIndex: routes.count - 1))
         }
     }
 
@@ -226,18 +230,18 @@ final class StackMirror {
         }
     }
 
-    /// Tells the router a push of `route` started, and that it ended once the transition ends,
-    /// unless a newer push started meanwhile. When it ends, the routes on screen are checked for
-    /// missing destinations.
-    private func reportPush(of route: AnyRoute) {
+    /// Tells `owner`, the router whose path holds `route`, that a push of `route` started, and
+    /// that it ended once the transition ends, unless a newer push started meanwhile. When it
+    /// ends, the routes on screen are checked for missing destinations.
+    private func reportPush(of route: AnyRoute, to owner: StackRouter) {
         pushCount += 1
         let push = pushCount
-        router.rendererDidStartPush(of: route)
+        owner.rendererDidStartPush(of: route)
         clock.run(after: Self.transitionDuration) { [weak self] in
             guard let self, self.pushCount == push else {
                 return
             }
-            self.router.rendererDidEndPush(of: route)
+            owner.rendererDidEndPush(of: route)
             self.checkDestinations()
         }
     }
@@ -254,7 +258,7 @@ final class StackMirror {
     /// the first time it is found.
     private func checkDestinations() {
         let entries = shown
-            .filter { !destinations.contains($0.routeKey) }
+            .filter { !destinations.contains($0.routeKey) && $0.routeKey != ChildFlowRoute.routeKey }
             .map { ($0.routeKey, missingIssue(for: $0)) }
         let missing = Dictionary(entries) { first, _ in
             first
@@ -291,7 +295,7 @@ final class StackMirror {
     /// Ends a hold by showing the router's newest path, never a replay of the held ones.
     private func endHold() {
         isHolding = false
-        guard shown != router.state.path else {
+        guard shown != router.drawnPath else {
             return
         }
         if let wait = remainingTransition() {

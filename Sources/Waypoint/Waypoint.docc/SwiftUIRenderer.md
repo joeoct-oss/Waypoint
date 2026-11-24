@@ -4,7 +4,7 @@ Draw stacks, sheets, tabs and roots with SwiftUI.
 
 ## Overview
 
-> Note: Stacks are built (#11): `WaypointStack`, `destination(_:_:)`, swipe-back sync and the Waypoint link (#147), the missing-destination screen (#166), hiding the tab bar on pushed screens (#207) and the journey line for each screen the user sees (#216). So are the flow initializer, the navigator destination and previews (#25). The rest of this article is planned, not built, and can still change: coordinators (#59), sheets and full-screen covers (#12), tabs (#13), roots (#37, #148) and incoming links (#15).
+> Note: Stacks are built (#11): `WaypointStack`, `destination(_:_:)`, swipe-back sync and the Waypoint link (#147), the missing-destination screen (#166), hiding the tab bar on pushed screens (#207) and the journey line for each screen the user sees (#216). So are the flow initializer, the navigator destination and previews (#25), and coordinators that draw their own stack with `root`, `destinations` and `view`, through `SwiftUIStackRenderer`, with child flows pushed on it (#59). The rest of this article is planned, not built, and can still change: sheets and full-screen covers (#12), tabs (#13), roots (#37, #148) and incoming links (#15).
 
 The SwiftUI renderers draw a coordinator's router with SwiftUI's own containers: `NavigationStack`, sheets, `TabView`. They are the default for every kind of coordinator, and the UIKit ones can replace them: see <doc:Renderers>. The views in this article are also usable on their own. Each takes a router, or makes one for you, and draws its state. Screens are registered by route type. SwiftUI applies one `navigationDestination(for:)` per registered type, so screens are never wrapped in `AnyView`.
 
@@ -238,15 +238,13 @@ The link is disabled when its value is `nil`, like a system link, and outside a 
 
 ### Coordinators
 
-> Note: Draft until #59. One coordinator protocol for each kind, written once for SwiftUI and UIKit, is designed in <doc:Renderers> and built in #59.
-
-A coordinator gives a flow its root screen and its destinations in one place. Its `view` is the whole flow, drawn by its renderer. With the SwiftUI renderer, that is a `SwiftUIStackRenderer`, which draws with `WaypointStack` and registers every destination before the first push:
+A coordinator gives a flow its root screen and its destinations in one place. Its `view` is the whole flow, drawn by its renderer. With the SwiftUI renderer, that is a `SwiftUIStackRenderer`, which draws with `WaypointStack`. Every destination is registered when the coordinator's router is made, before the first push:
 
 ```swift
 // Conformances:
 // - `StackCoordinator`, so Waypoint can draw its stack and make its router.
 final class ShopCoordinator: StackCoordinator {
-    var root: some Screen {
+    var root: some View {
         ProductListView(onSelect: { self.showProduct(id: $0) })
     }
 
@@ -269,7 +267,7 @@ final class ShopCoordinator: StackCoordinator {
 }
 ```
 
-`ShopCoordinator().view` is the whole flow, drawn. The router comes from the conformance, so the coordinator doesn't declare one. A coordinator that wants a router of its own, as tests and previews do, implements `makeRouter()`; a stored `let router` is reported as `routerNotFromWaypoint` and adopted.
+`ShopCoordinator().view` is the whole flow, drawn. Draw it in one place at a time: a coordinator's `view` on screen twice drives one router from both places, and is reported as `coordinatorDrawnTwice`. A coordinator with only a root screen leaves out `destinations`. A screen can also be a `UIViewController`, shown through a representable. The router comes from the conformance, so the coordinator doesn't declare one. A coordinator that wants a router of its own, as tests and previews do, implements `makeRouter()`; a stored `let router` is reported as `routerNotFromWaypoint` and adopted.
 
 `WaypointStack(router) { … }` and `WaypointStack(flow:router:root:)` above stay as the lower-level views, for a stack that no coordinator runs.
 
