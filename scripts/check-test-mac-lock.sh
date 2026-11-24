@@ -6,18 +6,18 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Checks the run lock of scripts/test-mac.sh (planning #420) with stand-in tools, so it runs on
-# Linux and on the Mac without Xcode or a simulator:
+# Checks the run lock of scripts/test-mac.sh (planning #420) with stand-in tools, so it runs on Linux and
+# on the Mac without Xcode or a simulator:
 #
 # - a second run while one holds the lock stops at once and runs nothing;
 # - a lock left by a run that has ended, or pointing at a process that isn't a test run, is
 #   cleared and the run goes on;
 # - the lock is gone after a pass, a failure, and a stop with TERM.
 #
-# It also checks what the script hands Tuist: selective testing per tier (planning #429), the
-# derived data folder after `--` (planning #430), the branch through GITHUB_HEAD_REF and the
-# `coverage` tier on `main` (planning #431), the pull request through GITHUB_REF, and that the Build
-# Insights post-action runs the Tuist mise pins (planning #431).
+# It also checks what the script hands Tuist: selective testing per tier (planning #429), the derived data
+# folder after `--` (planning #430), the branch through GITHUB_HEAD_REF and the `coverage` tier on `main`
+# (planning #431), the pull request through GITHUB_REF, and that the Build Insights
+# post-action runs the Tuist mise pins (planning #431).
 #
 # Each case runs `test-mac.sh quick --only` with its own lock path and temporary folder, so a
 # real run on the Mac is never touched.
@@ -190,8 +190,8 @@ else
     fail "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
 fi
 
-# 1c. Tuist's selective testing (planning #429) is on in quick and full runs whose changes Tuist's
-# test hashes cover (the package's and the example app's sources), and off in a release run, after a
+# 1c. Tuist's selective testing (planning #429) is on in quick and full runs whose changes Tuist's test
+# hashes cover (the package's and the example app's sources), and off in a release run, after a
 # change to a file the hashes don't cover, and when there are no changes to judge. `--plan` prints
 # the decision without a run, in a copy of the working tree with its own one-commit history.
 TREE="$WORK/tree"
@@ -260,9 +260,9 @@ else
     fail "a full run's release reports step never skips its tests (plan: ${got:-none})"
 fi
 
-# 1d. Tuist is told the branch each run tests (planning #431), through GITHUB_HEAD_REF: the branch
-# the clone is on; on a merge batch's detached commit, the batch's branches in merge order; on any
-# other detached commit, nothing.
+# 1d. Tuist is told the branch each run tests (planning #431), through GITHUB_HEAD_REF: the branch the clone
+# is on; on a merge batch's detached commit, the batch's branches in merge order; on any other
+# detached commit, nothing.
 expect_branch() {
     local name="$1" want="$2" got
     shift 2
@@ -380,8 +380,8 @@ else
 fi
 : >"$CALLS"
 
-# 1e. A coverage run (planning #431) runs on `main`'s own unchanged commit only, runs every example
-# test, and marks the commit complete only after they pass.
+# 1e. A coverage run (planning #431) runs on `main`'s own unchanged commit only, runs every example test,
+# and marks the commit complete only after they pass.
 expect_plan "a coverage run on main runs every example test" off coverage
 batch_commit checkout -q feature/first-part
 if plan_of coverage >/dev/null; then
@@ -444,9 +444,9 @@ else
 fi
 : >"$CALLS"
 
-# 1i. The Tuist version check (planning #434) compares the pin with Tuist's latest stable release,
-# ignores canaries and release candidates, tells a new major version apart, and never fails. The
-# daily coverage run prints it.
+# 1i. The Tuist version check (planning #434) compares the pin with Tuist's latest stable release, ignores
+# canaries and release candidates, tells a new major version apart, and never fails. The daily
+# coverage run prints it.
 TAGS="$WORK/tuist-tags"
 PINNED=$(sed -n 's/^tuist *= *"\([^"]*\)".*/\1/p' .mise.toml | head -1)
 IFS=. read -r PIN_MAJOR PIN_MINOR PIN_PATCH <<<"$PINNED"
@@ -488,8 +488,7 @@ else
 fi
 : >"$CALLS"
 
-# 1g. The release reports step collects no coverage (planning #431): the Debug step measured its
-# tests.
+# 1g. The release reports step collects no coverage (planning #431): the Debug step measured its tests.
 if sed -n '/^release_reports_on() {/,/^}/p' scripts/test-mac.sh |
     grep -q 'TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 example_tests_on'; then
     pass "the release reports step runs with coverage off"
@@ -497,9 +496,9 @@ else
     fail "the release reports step runs with coverage off"
 fi
 
-# 1h. The release reports step builds into its own derived data (planning #431): Tuist reads
-# coverage from one products folder and took the Release one when both sat in the example app's
-# derived data. An example run removes Release products an older run left there.
+# 1h. The release reports step builds into its own derived data (planning #431): Tuist reads coverage from
+# one products folder and took the Release one when both sat in the example app's derived data.
+# An example run removes Release products an older run left there.
 if sed -n '/^release_reports_on() {/,/^}/p' scripts/test-mac.sh |
     grep -q 'local EXAMPLE_DERIVED_DATA="$RELEASE_REPORTS_DERIVED_DATA"' &&
     grep -q '^RELEASE_REPORTS_DERIVED_DATA="$PWD/.build/release-reports-derived-data"$' scripts/test-mac.sh; then
@@ -518,8 +517,7 @@ else
 fi
 : >"$CALLS"
 
-# 1f. The Build Insights post-action runs the Tuist that mise pins (planning #431), not one on the
-# PATH.
+# 1f. The Build Insights post-action runs the Tuist that mise pins (planning #431), not one on the PATH.
 if grep -q '"$MISE" exec -C "$SRCROOT" -- tuist inspect build' Example/Project.swift &&
     ! grep -q 'activate -C "$SRCROOT"' Example/Project.swift; then
     pass "the Build Insights post-action runs Tuist through mise exec"
@@ -551,9 +549,8 @@ else
 fi
 
 # 2b. A run turned away at the run lock leaves Tuist's package project where the run holding the
-# lock put it, since that run may be in a package step (planning #429); the holder puts it back when
-# it ends. Both runs go in the copy of the working tree, so the clone's own folders are never
-# touched.
+# lock put it, since that run may be in a package step (planning #429); the holder puts it back when it
+# ends. Both runs go in the copy of the working tree, so the clone's own folders are never touched.
 ASIDE="$TREE/.build/tuist-package-project"
 (cd "$TREE" && run_script STUB_SECONDS=4) >"$WORK/2c.log" 2>&1 &
 first=$!

@@ -1,18 +1,16 @@
 # Runs the Linux checks (scripts/test-linux.sh) on pull requests to main.
-# Every job runs on Tuist runners (`tuist-linux`, planning #433), not GitHub-hosted runners, so CI
-# uses the Tuist account's Linux minutes instead of GitHub Actions minutes. Built to use few of
-# them:
-# - draft pull requests are skipped; the check runs when a PR is ready for review and on every push
-#   after that,
-# - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**,
-#   docs-theme/**) skips both Swift jobs, which GitHub counts as passed; the first job, "Changed
-#   files and docs checks" (a required check too), still runs the two checks that read docs. If that
-#   job fails, the Swift jobs run anyway,
+# Every job runs on Tuist runners (`tuist-linux`, planning #433), not GitHub-hosted runners, so CI uses the
+# Tuist account's Linux minutes instead of GitHub Actions minutes. Built to use few of them:
+# - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
+# - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**, docs-theme/**)
+#   skips both Swift jobs, which GitHub counts as passed; the first job, "Changed files and docs
+#   checks" (a required check too), still runs the two checks that read docs. If that job fails,
+#   the Swift jobs run anyway,
 # - a newer push cancels the run still going for the same PR,
 # - the SwiftPM build folder is cached between runs.
-# A second job builds the package with Swift 6.2, the minimum Package.swift declares (build only, no
-# tests). The Mac stays the full test gate (scripts/test-mac.sh, see TESTING.md); there is no macOS
-# job here. Switched off unless the repository variable CI_ENABLED is "true".
+# A second job builds the package with Swift 6.2, the minimum Package.swift declares (build only, no tests).
+# The Mac stays the full test gate (scripts/test-mac.sh, see TESTING.md); there is no macOS job here.
+# Switched off unless the repository variable CI_ENABLED is "true".
 name: CI
 
 on:

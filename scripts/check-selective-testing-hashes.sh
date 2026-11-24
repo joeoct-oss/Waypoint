@@ -6,12 +6,11 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Checks that Tuist's selective testing sees every part of the package (planning #429). Selective
-# testing skips a test target that already passed with the same hash, so the hash must change
-# whenever something the tests run changes. In a copy of the working tree, this adds a comment line
-# to one Swift file of each package module and of the example app, one at a time, and checks that
-# each edit changes the hashes of the example app and its unit tests. A docs edit must change
-# neither.
+# Checks that Tuist's selective testing sees every part of the package (planning #429). Selective testing
+# skips a test target that already passed with the same hash, so the hash must change whenever
+# something the tests run changes. In a copy of the working tree, this adds a comment line to one
+# Swift file of each package module and of the example app, one at a time, and checks that each
+# edit changes the hashes of the example app and its unit tests. A docs edit must change neither.
 #
 # `tuist hash selective-testing` takes no destination, so it lists no hash for the UI tests: Tuist
 # hashes a UI test target only for a run with a destination, which `tuist test --device` gives it.

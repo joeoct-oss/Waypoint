@@ -6,8 +6,8 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Builds a merge batch (planning #421): the latest `main` with each branch merged in, in the order
-# given, checked out detached in this clone, so one `scripts/test-mac.sh full` run covers every pull
+# Builds a merge batch (planning #421): the latest `main` with each branch merged in, in the order given,
+# checked out detached in this clone, so one `scripts/test-mac.sh full` run covers every pull
 # request in it. Nothing is pushed. It prints the batch's commit and tree; after the batch's pull
 # requests merge, `main`'s tree must equal that tree (TESTING.md, Merge batches).
 #

@@ -6,8 +6,8 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Checks scripts/merge-batch.sh and scripts/slowest-tests.py (planning #421) in a temporary
-# repository, so it runs on Linux and on the Mac without touching this clone:
+# Checks scripts/merge-batch.sh and scripts/slowest-tests.py (planning #421) in a temporary repository, so
+# it runs on Linux and on the Mac without touching this clone:
 #
 # - two branches that merge cleanly make a batch with both and `main`;
 # - squash-merging the batch's branches one at a time, in its order, gives the batch's tree, and

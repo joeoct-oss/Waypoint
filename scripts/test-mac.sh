@@ -12,46 +12,42 @@
 # - quick (the default, while working on a branch): the concurrency guard rail, the compile
 #   fixtures, the host build and unit tests with warnings as errors, and the package tests on the
 #   project simulator with warnings as errors. The example app's unit and UI tests join when the
-#   branch changes `Example/` or a renderer, or with --ui. Parts the branch can't affect are
-#   skipped.
+#   branch changes `Example/` or a renderer, or with --ui. Parts the branch can't affect are skipped.
 # - full (before every merge): every check, whatever changed. Adds the example app's unit and UI
 #   tests, the unified log tests under the thread sanitizer, the system link and missing
 #   destination UI tests again in the release configuration, and the check that Tuist's test
-#   hashes see every part of the package. Tuist's selective testing may skip an example test target
-#   that already passed on the same inputs (planning #429), unless the branch changes a file those
-#   hashes don't cover.
+#   hashes see every part of the package. Tuist's selective testing may skip an example test target that already passed
+#   on the same inputs (planning #429), unless the branch changes a file those hashes don't cover.
 # - release (before a tag): full, plus a build for an iOS device with warnings as errors, and the
 #   package and example app tests again on the iOS 17 simulator. It never skips a test.
 # - coverage (on `main`, as TESTING.md schedules it): every example app test, never skipped, on
 #   `main`'s own commit, then `tuist coverage complete`, so the Tuist dashboard charts `main`'s
-#   code coverage (planning #431). It refuses any other commit, and runs none of the package's
-#   steps.
+#   code coverage (planning #431). It refuses any other commit, and runs none of the package's steps.
 #
-# Every run that uses Tuist collects code coverage (`Example/Tuist.swift`, planning #431) and tells
-# Tuist the branch it tests through GITHUB_HEAD_REF, which Tuist reads on any machine: the branch
-# the clone is on, or, on a merge batch's detached commit, the batch's branches joined with `+`. A
-# run for one pull request (WAYPOINT_PULL_REQUEST) also tells Tuist that pull request through
-# GITHUB_REF, so Tuist posts its run report on it: the tests run and skipped, and links to the runs.
-# Tuist takes the commit from the checkout, so GITHUB_SHA is never set.
+# Every run that uses Tuist collects code coverage (`Example/Tuist.swift`, planning #431) and tells Tuist
+# the branch it tests through GITHUB_HEAD_REF, which Tuist reads on any machine: the branch the
+# clone is on, or, on a merge batch's detached commit, the batch's branches joined with `+`. A run
+# for one pull request (WAYPOINT_PULL_REQUEST) also tells Tuist that pull request through
+# GITHUB_REF, so Tuist posts its run report on it: the tests run and skipped, and links to the
+# runs. Tuist takes the commit from the checkout, so GITHUB_SHA is never set.
 #
 # Each build is made once: the host build with warnings as errors is the build `swift test` runs,
 # and the simulator build with warnings as errors is the build its tests run. Builds use at most
 # WAYPOINT_JOBS jobs, only one run uses a simulator at a time, and the script shuts down each
 # simulator it booted. The example app's tests run through `tuist test`, which also generates the
-# project, on WAYPOINT_UI_WORKERS temporary copies of the simulator at once (planning #427); Xcode
-# makes the copies and removes them, and the package's tests never use copies. It ends with the time
-# each step took and the 10 slowest tests of each simulator test step, the package's included
-# (planning #421), read from its result bundle.
+# project, on WAYPOINT_UI_WORKERS temporary copies of the simulator at once (planning #427); Xcode makes the
+# copies and removes them, and the package's tests never use copies. It ends with the time each
+# step took and the 10 slowest tests of each simulator test step, the package's included (planning #421),
+# read from its result bundle.
 #
 # One run at a time: the script first takes a run lock that every clone of the repo shares
-# (planning #420). A second run stops at once and names the run that holds it. A lock left by a run
-# that is no longer going is cleared; a lock whose run is still going is never touched.
+# (planning #420). A second run stops at once and names the run that holds it. A lock left by a run that
+# is no longer going is cleared; a lock whose run is still going is never touched.
 #
 # Usage: scripts/test-mac.sh [quick|full|release|coverage] [--ui] [--all] [--only <Target/Class[/test]>] [--plan]
 #   --ui    quick also runs the example app's unit and UI tests.
 #   --all   quick runs every part, whatever the branch changed.
-#   --only quick runs only the guard rail and this example UI test (passed to `tuist test
-#   --test-targets`),
+#   --only  quick runs only the guard rail and this example UI test (passed to `tuist test --test-targets`),
 #           for example `--only WaypointExampleUITests/StackTests/testPushAndBack`.
 #   --plan  prints what the run would do, including whether Tuist's selective testing is on, and
 #           stops: no lock, no simulator, no build.
@@ -116,11 +112,11 @@ IOS17_SIMULATOR_NAME="${WAYPOINT_IOS17_SIMULATOR:-waypoint-02}"
 BASE_REF="${WAYPOINT_BASE:-origin/main}"
 RUN_LOCK="${WAYPOINT_RUN_LOCK:-/tmp/waypoint-test-mac.lock}"
 
-# A coverage run marks `main`'s commit complete on the Tuist dashboard (planning #431), so it runs
-# only on `main`'s own commit, unchanged, which is BASE_REF's: checked out as `main`, or detached
-# there, as the preflight's checkout leaves it. Never on another branch or a merge batch, whose
-# commits never land on `main`: a squash or a merge commit makes new commits. Tuist is told the
-# branch is `main` either way.
+# A coverage run marks `main`'s commit complete on the Tuist dashboard (planning #431), so it runs only on
+# `main`'s own commit, unchanged, which is BASE_REF's: checked out as `main`, or detached there, as
+# the preflight's checkout leaves it. Never on another branch or a merge batch, whose commits never
+# land on `main`: a squash or a merge commit makes new commits. Tuist is told the branch is `main`
+# either way.
 if [[ "$TIER" == coverage ]]; then
     current_branch=$(git symbolic-ref -q --short HEAD || true)
     if [[ -n "$current_branch" && "$current_branch" != main ]]; then
@@ -142,13 +138,13 @@ if [[ "$TIER" == coverage ]]; then
     fi
 fi
 
-# The branch Tuist shows for this run's tests and builds (planning #431). Tuist reads
-# GITHUB_HEAD_REF on any machine, ahead of `git branch --show-current`, which names nothing on a
-# detached commit. A merge batch (scripts/merge-batch.sh) is a detached chain of merge commits by
-# "Merge batch": its name is the merged branches, in merge order, joined with `+`. Any other
-# detached commit, such as the preflight's `git checkout --detach origin/<branch>`, takes the
-# `origin` branches that point at it (`main` only when no other does), and none when no branch does.
-# A GITHUB_HEAD_REF already set wins, except in a coverage run, which is always `main`.
+# The branch Tuist shows for this run's tests and builds (planning #431). Tuist reads GITHUB_HEAD_REF on any
+# machine, ahead of `git branch --show-current`, which names nothing on a detached commit. A merge
+# batch (scripts/merge-batch.sh) is a detached chain of merge commits by "Merge batch": its name
+# is the merged branches, in merge order, joined with `+`. Any other detached commit, such as the
+# preflight's `git checkout --detach origin/<branch>`, takes the `origin` branches that point at
+# it (`main` only when no other does), and none when no branch does. A GITHUB_HEAD_REF already set
+# wins, except in a coverage run, which is always `main`.
 tuist_branch() {
     local branch commit subject names=()
     local merge_subject="^Merge (remote-tracking )?branch '([^']+)'"
@@ -196,9 +192,9 @@ fi
 # machine, and its GitHub app comments on the pull request a `refs/pull/<n>/...` ref names, with
 # the commit the checkout is on. The script sets GITHUB_REF itself or clears it, so a value left in
 # the shell never sends a report to the wrong pull request, and stops when the pull request's
-# branch (read with `gh`, read-only) isn't the branch under test; when `gh` can't answer, no report.
-# None for a coverage run (it tests `main`), an offline run (it uploads nothing), or a merge batch
-# of several branches (one report can't name them all).
+# branch (read with `gh`, read-only) isn't the branch under test; when `gh` can't answer, no report. None for a coverage run (it tests
+# `main`), an offline run (it uploads nothing), or a merge batch of several branches (one report
+# can't name them all).
 TUIST_PULL_REQUEST=""
 unset GITHUB_REF
 if [[ -n "${WAYPOINT_PULL_REQUEST:-}" ]]; then
@@ -244,8 +240,8 @@ JOBS="${WAYPOINT_JOBS:-$(default_jobs)}"
 # would clone the simulator once per worker.
 XCODE_TEST_FLAGS=(-quiet -jobs "$JOBS" -parallel-testing-enabled NO)
 
-# The example app's tests run on this many simulator copies at once (planning #427), so they take
-# about half as long.
+# The example app's tests run on this many simulator copies at once (planning #427), so they take about
+# half as long.
 UI_WORKERS="${WAYPOINT_UI_WORKERS:-2}"
 if [[ "$UI_WORKERS" -gt 1 ]]; then
     EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled YES -parallel-testing-worker-count "$UI_WORKERS")
@@ -325,8 +321,8 @@ finish() {
     local status=$?
     local udid lock index
     stop_step_tools
-    # A run stopped during a package step may leave Tuist's project aside (planning #429). A run
-    # turned away at the run lock leaves it alone: the run holding the lock may be in that step.
+    # A run stopped during a package step may leave Tuist's project aside (planning #429). A run turned
+    # away at the run lock leaves it alone: the run holding the lock may be in that step.
     if $OWNS_RUN_LOCK; then
         scripts/package-xcodebuild.sh --restore || true
     fi
@@ -449,9 +445,9 @@ step() {
 # Which parts the branch changed, compared with BASE_REF, including uncommitted and untracked
 # files. quick runs only those parts; with no changes at all, or no BASE_REF, it runs them all.
 # CHANGED_OUTSIDE_TEST_HASHES says whether the branch changes a file that Tuist's test hashes
-# don't cover (planning #429): those hashes take the package's and the example app's sources, so a
-# change to a script, a manifest, a tool version or CI could change a result while every hash stays
-# the same. Selective testing is off then.
+# don't cover (planning #429): those hashes take the package's and the example app's sources, so a change
+# to a script, a manifest, a tool version or CI could change a result while every hash stays the
+# same. Selective testing is off then.
 CHANGED_PACKAGE=true
 CHANGED_UI=true
 CHANGED_OUTSIDE_TEST_HASHES=true
@@ -598,22 +594,21 @@ simulator_os() {
 # target that already passed with the same hash, is on in quick and full runs unless the branch
 # changes a file the hashes don't cover; release, `--only`, `--ui` and `--all` run every test
 # they name. A run narrowed to a class or a test never records a pass, so only whole targets are
-# ever skipped (planning #429). Tuist's quarantine is never applied (`--skip-quarantine`): a flaky
-# test still runs and still fails the run. All of it uses the Tuist server project in
+# ever skipped (planning #429). Tuist's quarantine is never applied (`--skip-quarantine`): a flaky test
+# still runs and still fails the run. All of it uses the Tuist server project in
 # `Example/Tuist.swift`; WAYPOINT_TUIST_OFFLINE=1 turns every server feature off, for a Mac that
-# isn't signed in. The example app builds into a derived data folder of its own in the clone, not
-# Xcode's shared one. On 2026-11-24 the app failed to build in the shared folder after the package
-# moved into Tuist's graph (planning #429): `package` symbols were "inaccessible", although the
-# generated targets set the package name, and the same build in a fresh folder was clean. Older
-# builds of the same workspace had left module state the new settings didn't invalidate. A folder
-# only these runs use starts clean on every Mac and still builds incrementally from one run to the
-# next.
+# isn't signed in.
+# The example app builds into a derived data folder of its own in the clone, not Xcode's shared
+# one. On 2026-11-24 the app failed to build in the shared folder after the package moved into
+# Tuist's graph (planning #429): `package` symbols were "inaccessible", although the generated targets set
+# the package name, and the same build in a fresh folder was clean. Older builds of the same
+# workspace had left module state the new settings didn't invalidate. A folder only these runs
+# use starts clean on every Mac and still builds incrementally from one run to the next.
 EXAMPLE_DERIVED_DATA="$PWD/.build/example-derived-data"
-# The release reports step builds into a folder of its own (planning #431). Tuist reads a run's
-# coverage from one products folder of the derived data, the one holding most of the run's test
-# bundles and the newest on a tie, whatever the configuration: with Release products beside the
-# Debug ones, it read the uninstrumented Release builds and uploaded no covered file (measured
-# 2026-11-24).
+# The release reports step builds into a folder of its own (planning #431). Tuist reads a run's coverage
+# from one products folder of the derived data, the one holding most of the run's test bundles and
+# the newest on a tie, whatever the configuration: with Release products beside the Debug ones,
+# it read the uninstrumented Release builds and uploaded no covered file (measured 2026-11-24).
 RELEASE_REPORTS_DERIVED_DATA="$PWD/.build/release-reports-derived-data"
 
 example_tests_on() {
@@ -698,8 +693,8 @@ case "$TIER" in
 esac
 
 # Whether `tuist test` may skip a test target that already passed with the same hash (selective
-# testing, planning #429). Its hash covers the package's and the example app's sources, so it is on
-# in quick and full runs, and off when the branch changes a file the hashes don't cover, or when the
+# testing, planning #429). Its hash covers the package's and the example app's sources, so it is on in
+# quick and full runs, and off when the branch changes a file the hashes don't cover, or when the
 # branch's changes can't be told (no BASE_REF, or no changes at all). A release run, a test asked
 # for by name, --ui and --all always run every test.
 if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
@@ -724,8 +719,8 @@ if $PLAN_ONLY; then
     exit 0
 fi
 
-# The daily coverage run says whether a newer stable Tuist than the pinned one is out
-# (planning #434). It only reports, so it is no step and never fails the run.
+# The daily coverage run says whether a newer stable Tuist than the pinned one is out (planning #434). It
+# only reports, so it is no step and never fails the run.
 if $RUN_COVERAGE_COMPLETE; then
     scripts/check-tuist-version.sh
 fi
@@ -784,15 +779,15 @@ if $RUN_COVERAGE_COMPLETE; then
     step "tuist coverage complete" tuist_cmd coverage complete --path Example
 fi
 
-# A system link (planning #349) and a route with no destination in its stack (planning #361) must be
-# reported in release builds too, so their UI tests run again with the app and the tests built in
-# the release configuration. They always run: the Debug step just passed their target, and nothing
-# shows that Tuist's hash tells the two configurations apart (planning #429).
+# A system link (planning #349) and a route with no destination in its stack (planning #361) must be reported in
+# release builds too, so their UI tests run again with the app and the tests built in the release
+# configuration. They always run: the Debug step just passed their target, and nothing shows that
+# Tuist's hash tells the two configurations apart (planning #429).
 #
-# It collects no coverage (planning #431): it tests two classes again in Release, after the Debug
-# step measured them, so it would add about a minute and nothing new. It always runs every test it
-# names, so the different hash costs no reuse. It builds into its own derived data folder, so the
-# example step's coverage is read from Debug.
+# It collects no coverage (planning #431): it tests two classes again in Release, after the Debug step
+# measured them, so it would add about a minute and nothing new. It always runs every test it
+# names, so the different hash costs no reuse.
+# It builds into its own derived data folder, so the example step's coverage is read from Debug.
 release_reports_on() {
     local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
     local EXAMPLE_DERIVED_DATA="$RELEASE_REPORTS_DERIVED_DATA"
