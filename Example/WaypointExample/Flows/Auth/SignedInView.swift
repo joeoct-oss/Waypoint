@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
 import SwiftUI
 
 // Signed in, the last step of the accounts flow when it opened over another sheet: who is signed

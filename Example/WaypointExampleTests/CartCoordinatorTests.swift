@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
+import ExampleServices
+import ExampleStore
 import Testing
 import WaypointCore
 @testable import WaypointExample

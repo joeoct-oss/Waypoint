@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 
 // Account (MA-03, AU-05): the reader's profile, or for a guest the "Sign in or create account"

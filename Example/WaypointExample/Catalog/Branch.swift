@@ -14,11 +14,11 @@
 //   accessibility identifiers use the same word.
 // - `Codable` (from the raw values), so a branch can sit in an account route.
 // - `CaseIterable`, so Home and the UI tests list every branch from this one declaration.
-nonisolated enum Branch: String, CaseIterable, Codable {
+package nonisolated enum Branch: String, CaseIterable, Codable {
     case swiftUI = "swiftui"
     case uiKit = "uikit"
 
-    var title: String {
+    package var title: String {
         switch self {
         case .swiftUI:
             return "SwiftUI branch"
@@ -27,7 +27,7 @@ nonisolated enum Branch: String, CaseIterable, Codable {
         }
     }
 
-    var summary: String {
+    package var summary: String {
         switch self {
         case .swiftUI:
             return "Hosted in SwiftUI, launches either kind of flow"
@@ -36,7 +36,7 @@ nonisolated enum Branch: String, CaseIterable, Codable {
         }
     }
 
-    var symbolName: String {
+    package var symbolName: String {
         switch self {
         case .swiftUI:
             return "chevron.left.forwardslash.chevron.right"
@@ -45,7 +45,7 @@ nonisolated enum Branch: String, CaseIterable, Codable {
         }
     }
 
-    var hostKind: FlowKind {
+    package var hostKind: FlowKind {
         switch self {
         case .swiftUI:
             return .swiftUI

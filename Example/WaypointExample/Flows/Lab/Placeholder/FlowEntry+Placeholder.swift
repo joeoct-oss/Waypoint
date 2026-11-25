@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+
 // The text a placeholder screen shows until its flow is built.
 extension FlowEntry {
     var placeholderLine: String {

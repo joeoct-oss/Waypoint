@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
 import SwiftUI
 
 // One step of creating an account under the bar's Create account title: the step's own title, its

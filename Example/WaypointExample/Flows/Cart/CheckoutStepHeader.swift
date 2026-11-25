@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleDesignSystem
 import SwiftUI
 
 // The top of each checkout step: a bar of three segments filled up to this step, "Step n of 3"

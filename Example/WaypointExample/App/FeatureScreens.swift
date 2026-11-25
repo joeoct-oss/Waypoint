@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleStore
 import SwiftUI
 
 // The screens one feature shows from another, which the app builds and hands in through the

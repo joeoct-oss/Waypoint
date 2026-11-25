@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleStore
 import Testing
 import Waypoint
 @testable import WaypointExample

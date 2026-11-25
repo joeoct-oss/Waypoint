@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleServices
+import ExampleStore
 import SwiftUI
 
 // One checkout's draft: the cart's products when it opened, the address chosen for this order, an

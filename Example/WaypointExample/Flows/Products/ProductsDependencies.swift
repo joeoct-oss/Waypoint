@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
+import ExampleServices
+import ExampleStore
 import SwiftUI
 
 // What Shop and Search use, from `AppServices.productsDependencies(gate:launch:)`: the catalog

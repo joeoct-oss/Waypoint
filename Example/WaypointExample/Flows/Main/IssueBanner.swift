@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleServices
 import SwiftUI
 
 // The newest navigation issue, in a banner at the bottom of every tab. It appears only when

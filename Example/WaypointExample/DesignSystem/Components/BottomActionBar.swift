@@ -13,7 +13,7 @@ extension View {
     // system safe-area bar, so content scrolls under it with the system's edge effect; earlier
     // systems inset the content above it.
     @ViewBuilder
-    func bottomActionBar(@ViewBuilder _ makeBar: () -> some View) -> some View {
+    package func bottomActionBar(@ViewBuilder _ makeBar: () -> some View) -> some View {
         if #available(iOS 26.0, *) {
             safeAreaBar(edge: .bottom, content: makeBar)
         } else {

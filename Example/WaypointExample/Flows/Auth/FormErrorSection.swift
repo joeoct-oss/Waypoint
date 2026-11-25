@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
 import SwiftUI
 
 // The reason a form's last request failed, such as a wrong password, shown as its own section in

@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleNavigation
 import SwiftUI
 
 // Sign in, the root of the accounts sheet: email and password, Sign in, and ways to create an

@@ -6,16 +6,18 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleStore
 import SwiftUI
 
 // One product in a list: its illustration, name, a detail line (its category, or the quantity in
 // the cart), its price and a chevron, because a tap opens it.
-struct ProductRow: View {
-    let product: Product
-    let detail: String
-    let onSelect: () -> Void
+package struct ProductRow: View {
+    package let product: Product
+    package let detail: String
+    package let onSelect: () -> Void
 
-    init(
+    package init(
         product: Product,
         detail: String? = nil,
         onSelect: @escaping () -> Void
@@ -25,7 +27,7 @@ struct ProductRow: View {
         self.onSelect = onSelect
     }
 
-    var body: some View {
+    package var body: some View {
         Button(action: onSelect) {
             ProductRowContent(product: product, detail: detail)
         }
@@ -36,11 +38,19 @@ struct ProductRow: View {
 }
 
 // What a product row shows, shared by lists and the cards of Shop's sections.
-struct ProductRowContent: View {
-    let product: Product
-    let detail: String
+package struct ProductRowContent: View {
+    package let product: Product
+    package let detail: String
 
-    var body: some View {
+    package init(
+        product: Product,
+        detail: String
+    ) {
+        self.product = product
+        self.detail = detail
+    }
+
+    package var body: some View {
         HStack(spacing: Spacing.medium) {
             ProductIllustration(artwork: product.artwork, drawsBackdrop: true)
                 .frame(width: Size.productThumbnail, height: Size.productThumbnail)

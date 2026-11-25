@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleNavigation
+import ExampleStore
 import WaypointCore
 
 // A screen the account tab's router can push: orders, the wish list, addresses and their form,

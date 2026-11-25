@@ -9,13 +9,25 @@
 import SwiftUI
 
 // A rounded square holding an SF Symbol, used at the start of cards and rows.
-struct IconTile: View {
-    let symbolName: String
-    let size: CGFloat
-    let tint: ColorToken
-    let fill: ColorToken
+package struct IconTile: View {
+    package let symbolName: String
+    package let size: CGFloat
+    package let tint: ColorToken
+    package let fill: ColorToken
 
-    var body: some View {
+    package init(
+        symbolName: String,
+        size: CGFloat,
+        tint: ColorToken,
+        fill: ColorToken
+    ) {
+        self.symbolName = symbolName
+        self.size = size
+        self.tint = tint
+        self.fill = fill
+    }
+
+    package var body: some View {
         Image(systemName: symbolName)
             .font(.title3)
             .foregroundStyle(tint.color)

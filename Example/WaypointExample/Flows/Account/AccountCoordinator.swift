@@ -6,6 +6,10 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleNavigation
+import ExampleServices
+import ExampleStore
 import SwiftUI
 import Waypoint
 

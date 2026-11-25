@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
 import UIKit
 
 // The UIKit branch: the same five flows as the SwiftUI branch, in a system inset-grouped table. The

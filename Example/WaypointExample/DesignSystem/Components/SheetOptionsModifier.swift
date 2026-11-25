@@ -18,8 +18,8 @@ import Waypoint
 //
 // Conformances:
 // - `ViewModifier`, so a coordinator gives its sheet's content `.sheetOptions(_:)`.
-struct SheetOptionsModifier: ViewModifier {
-    let options: SheetOptions
+package struct SheetOptionsModifier: ViewModifier {
+    package let options: SheetOptions
     // `var` because the reader drags the sheet between its sizes.
     @State private var selection: PresentationDetent
 
@@ -38,7 +38,7 @@ struct SheetOptionsModifier: ViewModifier {
         }
     }
 
-    init(options: SheetOptions) {
+    package init(options: SheetOptions) {
         self.options = options
         let opening = options.selectedDetent ?? options.detents.first ?? .large
         _selection = State(initialValue: Self.presentationDetent(for: opening))
@@ -57,7 +57,7 @@ struct SheetOptionsModifier: ViewModifier {
         }
     }
 
-    func body(content: Content) -> some View {
+    package func body(content: Content) -> some View {
         content
             .presentationDetents(detents, selection: $selection)
             .presentationDragIndicator(dragIndicator)
@@ -68,7 +68,7 @@ struct SheetOptionsModifier: ViewModifier {
 extension View {
     // Sizes and locks the sheet this view is the content of. A new set of options, such as the
     // saved sheet swapping to the wish list, starts at its own opening size.
-    func sheetOptions(_ options: SheetOptions?) -> some View {
+    package func sheetOptions(_ options: SheetOptions?) -> some View {
         modifier(SheetOptionsModifier(options: options ?? .default))
             .id(options)
     }

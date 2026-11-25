@@ -7,6 +7,7 @@
 //
 
 
+import ExampleStore
 import Foundation
 
 // Everything the example app keeps between launches: the signed-in account, the accounts made on
@@ -14,8 +15,8 @@ import Foundation
 // domain, so Clear all data in Settings removes all of it at once and leaves the system's own
 // settings alone. The app uses `appDomain`; a test passes a domain of its own, so it never reads or
 // changes the app's data.
-final class LocalStore {
-    static let appDomain = "dev.waypoint.example.data"
+package final class LocalStore {
+    package static let appDomain = "dev.waypoint.example.data"
 
     private static func decodeAccount(_ data: Data) -> Account? {
         try? JSONDecoder().decode(Account.self, from: data)
@@ -36,7 +37,7 @@ final class LocalStore {
     private let domain: String
     private let defaults: UserDefaults
 
-    var account: Account? {
+    package var account: Account? {
         get {
             defaults.data(forKey: Key.account.rawValue).flatMap(Self.decodeAccount)
         }
@@ -45,7 +46,7 @@ final class LocalStore {
         }
     }
 
-    var registeredEmails: [String] {
+    package var registeredEmails: [String] {
         get {
             defaults.stringArray(forKey: Key.registeredEmails.rawValue) ?? []
         }
@@ -54,7 +55,7 @@ final class LocalStore {
         }
     }
 
-    var cartProductIDs: [Int] {
+    package var cartProductIDs: [Int] {
         get {
             defaults.array(forKey: Key.cart.rawValue) as? [Int] ?? []
         }
@@ -63,7 +64,7 @@ final class LocalStore {
         }
     }
 
-    var wishlistProductIDs: [Int] {
+    package var wishlistProductIDs: [Int] {
         get {
             defaults.array(forKey: Key.wishlist.rawValue) as? [Int] ?? []
         }
@@ -73,7 +74,7 @@ final class LocalStore {
     }
 
     // `nil` until the reader saves an address, so a fresh install starts with the samples.
-    var addresses: [Address]? {
+    package var addresses: [Address]? {
         get {
             defaults.data(forKey: Key.addresses.rawValue).flatMap(Self.decodeAddresses)
         }
@@ -82,12 +83,12 @@ final class LocalStore {
         }
     }
 
-    init(domain: String = LocalStore.appDomain) {
+    package init(domain: String = LocalStore.appDomain) {
         self.domain = domain
         defaults = UserDefaults(suiteName: domain) ?? .standard
     }
 
-    func clearAll() {
+    package func clearAll() {
         defaults.removePersistentDomain(forName: domain)
     }
 }

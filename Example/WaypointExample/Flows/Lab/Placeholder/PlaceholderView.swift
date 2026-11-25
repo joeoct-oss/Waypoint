@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
 import SwiftUI
 
 // The SwiftUI placeholder for a flow: its icon, name and summary, and a line naming the entry that

@@ -8,8 +8,8 @@
 
 // The build configuration this code was compiled in. The app shows it with a navigation issue, and
 // the UI tests, which compile this file too, check the app was built the same way they were.
-nonisolated enum BuildConfiguration {
-    static var name: String {
+package nonisolated enum BuildConfiguration {
+    package static var name: String {
         #if DEBUG
             return "debug"
         #else

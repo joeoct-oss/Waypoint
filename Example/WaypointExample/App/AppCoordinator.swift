@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
 import SwiftUI
 
 // The app's navigation starts here (decision 0009). The app asks for each window's view with

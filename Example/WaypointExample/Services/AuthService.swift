@@ -7,11 +7,12 @@
 //
 
 
+import ExampleStore
 import Foundation
 
 // Signs readers in, creates accounts and sends reset links. The example app uses
 // `MockAuthService`; a real app would put its server behind the same three calls.
-protocol AuthService {
+package protocol AuthService {
     func signIn(
         email: String,
         password: String
@@ -30,11 +31,11 @@ protocol AuthService {
 //
 // Conformances:
 // - `Error`, so the auth service can throw it.
-enum AuthError: Error {
+package enum AuthError: Error {
     case wrongPassword
     case emailTaken
 
-    var message: String {
+    package var message: String {
         switch self {
         case .wrongPassword:
             return "That email and password don't match."

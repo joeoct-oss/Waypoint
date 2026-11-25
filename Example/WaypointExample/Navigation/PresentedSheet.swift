@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleDesignSystem
 import Observation
 import Waypoint
 
@@ -17,15 +18,15 @@ import Waypoint
 // Conformances:
 // - `Observable` (from `@Observable`), so the sheet redraws when what it draws changes.
 @Observable
-final class PresentedSheet<Sheet> {
+package final class PresentedSheet<Sheet> {
     // `var` because `keep(_:presentedBy:)` sets it and `release()` clears it.
-    private(set) var sheet: Sheet?
+    package private(set) var sheet: Sheet?
     // `var` for the same reason as `sheet`: the presented sheet's router.
-    private(set) var router: StackRouter?
+    package private(set) var router: StackRouter?
     // `var` for the same reason as `sheet`: the sizes the presenting router gives the sheet.
-    private(set) var options: SheetOptions?
+    package private(set) var options: SheetOptions?
 
-    init() {
+    package init() {
         sheet = nil
         router = nil
         options = nil
@@ -33,7 +34,7 @@ final class PresentedSheet<Sheet> {
 
     // Whether `presenter` presents this sheet now. Every tab shares one stack, so a sheet another
     // coordinator presents on it doesn't count.
-    func isShowing(over presenter: StackRouter) -> Bool {
+    package func isShowing(over presenter: StackRouter) -> Bool {
         guard let router else {
             return false
         }
@@ -42,7 +43,7 @@ final class PresentedSheet<Sheet> {
 
     // Keeps what draws `sheet`, which `presenter` now presents. Does nothing when the present
     // didn't change what `presenter` presents.
-    func keep(
+    package func keep(
         _ sheet: Sheet,
         presentedBy presenter: StackRouter
     ) {
@@ -54,7 +55,7 @@ final class PresentedSheet<Sheet> {
         options = presenter.state.presentation.map { presenter.sheetOptions(for: $0) }
     }
 
-    func release() {
+    package func release() {
         sheet = nil
         router = nil
         options = nil

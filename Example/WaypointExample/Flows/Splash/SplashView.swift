@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
 import SwiftUI
 
 // The first screen: the brand while the app starts. It reports when it is done, and the app

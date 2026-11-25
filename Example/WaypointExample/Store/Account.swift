@@ -13,12 +13,20 @@
 // Conformances:
 // - `Codable`, so the local store can save the signed-in account.
 // - `Hashable`, so screens can compare accounts.
-nonisolated struct Account: Codable, Hashable {
-    static let sample = Account(
+package nonisolated struct Account: Codable, Hashable {
+    package static let sample = Account(
         name: "Nova Reader",
         email: "nova@example.com"
     )
 
-    let name: String
-    let email: String
+    package let name: String
+    package let email: String
+
+    package init(
+        name: String,
+        email: String
+    ) {
+        self.name = name
+        self.email = email
+    }
 }

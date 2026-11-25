@@ -10,12 +10,22 @@ import SwiftUI
 
 // The main action of a screen, such as Sign in or Place order: a system prominent capsule button in
 // the brand color, with text that passes 4.5:1 on it in both appearances.
-struct PrimaryActionButton: View {
-    let title: String
-    let identifier: String
-    let action: () -> Void
+package struct PrimaryActionButton: View {
+    package let title: String
+    package let identifier: String
+    package let action: () -> Void
 
-    var body: some View {
+    package init(
+        title: String,
+        identifier: String,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.identifier = identifier
+        self.action = action
+    }
+
+    package var body: some View {
         Button(action: action) {
             Text(title)
                 .font(Typography.headline)

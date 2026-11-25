@@ -6,6 +6,10 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleDesignSystem
+import ExampleNavigation
+import ExampleServices
+import ExampleStore
 import Waypoint
 
 // The one container: the services every window shares, made once by the `App` and handed to each

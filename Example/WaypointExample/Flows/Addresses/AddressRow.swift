@@ -6,15 +6,25 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 
 // One address: its label over its street and city line. In checkout it starts with a radio circle,
 // filled when the address is the one chosen; in Account it starts with a pin.
-struct AddressRow: View {
-    let address: Address
-    let style: AddressRowStyle
+package struct AddressRow: View {
+    package let address: Address
+    package let style: AddressRowStyle
 
-    var body: some View {
+    package init(
+        address: Address,
+        style: AddressRowStyle
+    ) {
+        self.address = address
+        self.style = style
+    }
+
+    package var body: some View {
         HStack(spacing: Spacing.medium) {
             marker
             VStack(alignment: .leading, spacing: 2) {
@@ -51,16 +61,22 @@ struct AddressRow: View {
 }
 
 // How an address row starts: a radio circle for a choice, or a pin for a saved address.
-enum AddressRowStyle {
+package enum AddressRowStyle {
     case choice(isSelected: Bool)
     case saved
 }
 
 // A radio circle, filled with the brand color when chosen.
-struct RadioMark: View {
-    let isSelected: Bool
+package struct RadioMark: View {
+    package let isSelected: Bool
 
-    var body: some View {
+    package init(
+        isSelected: Bool
+    ) {
+        self.isSelected = isSelected
+    }
+
+    package var body: some View {
         Circle()
             .strokeBorder(isSelected ? Palette.brand.color : Palette.line.color, lineWidth: 2)
             .overlay(fill)

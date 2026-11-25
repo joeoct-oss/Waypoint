@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleServices
+
 // What the accounts sheet uses, from `AppServices.authDependencies()`: the session it signs in, and
 // the auth service that checks the email and password.
 struct AuthDependencies {

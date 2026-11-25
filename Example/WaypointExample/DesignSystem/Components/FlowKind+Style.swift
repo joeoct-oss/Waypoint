@@ -6,9 +6,11 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+
 // The color each kind wears: Nova (accent) for SwiftUI, Star line (brand) for UIKit.
 extension FlowKind {
-    var tint: ColorToken {
+    package var tint: ColorToken {
         switch self {
         case .swiftUI:
             return Palette.accent
@@ -17,7 +19,7 @@ extension FlowKind {
         }
     }
 
-    var subtleTint: ColorToken {
+    package var subtleTint: ColorToken {
         switch self {
         case .swiftUI:
             return Palette.accentSubtle

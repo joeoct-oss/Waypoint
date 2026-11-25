@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
 import SwiftUI
 
 // Settings (AU-05, AU-06): App (Appearance and Notifications), Developer (the Navigation Lab for

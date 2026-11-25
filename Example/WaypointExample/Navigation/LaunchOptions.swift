@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
 import Foundation
 
 // What the launch arguments ask for: start from a fresh install, start signed in, open the
@@ -14,23 +15,24 @@ import Foundation
 // push a route with no destination in its stack, or make the Lab's demo reviews load slower. UI
 // tests use them to start a journey or open any Lab entry directly. `startingOver()` gives the
 // options for starting a window over after Clear all data: the same splash, and no screen opened
-// directly.
-struct LaunchOptions {
+// directly. Plain values read once, so `nonisolated`: a route, which is nonisolated, reads them
+// from another module to build the Lab's launch path.
+package nonisolated struct LaunchOptions {
     private static let defaultSplashDuration = Duration.seconds(1)
 
-    let clearsData: Bool
-    let signsIn: Bool
-    let opensLab: Bool
-    let branch: Branch?
-    let entry: FlowEntry?
-    let splashDuration: Duration
-    let shopSteps: ShopLaunchSteps
-    let usesSystemLinks: Bool
-    let linksToMissingDestination: Bool
+    package let clearsData: Bool
+    package let signsIn: Bool
+    package let opensLab: Bool
+    package let branch: Branch?
+    package let entry: FlowEntry?
+    package let splashDuration: Duration
+    package let shopSteps: ShopLaunchSteps
+    package let usesSystemLinks: Bool
+    package let linksToMissingDestination: Bool
     // `nil` keeps the Lab's usual reviews delay.
-    let labReviewsDelay: Duration?
+    package let labReviewsDelay: Duration?
 
-    init(defaults: UserDefaults) {
+    package init(defaults: UserDefaults) {
         let branch = Self.value(Branch.self, for: .branch, in: defaults)
         let flow = Self.value(ExampleFlow.self, for: .flow, in: defaults)
         let kind = Self.value(FlowKind.self, for: .kind, in: defaults)
@@ -116,7 +118,7 @@ struct LaunchOptions {
         )
     }
 
-    func startingOver() -> LaunchOptions {
+    package func startingOver() -> LaunchOptions {
         LaunchOptions(splashDuration: splashDuration)
     }
 }

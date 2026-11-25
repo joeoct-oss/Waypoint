@@ -15,8 +15,8 @@ import Foundation
 // - `Hashable`, so an order can sit in a navigation path.
 // - `Codable`, so an order can sit in an account route, which Waypoint can save and restore.
 // - `Identifiable`, so lists can show orders without naming an id key path.
-nonisolated struct Order: Hashable, Codable, Identifiable {
-    static let all = [
+package nonisolated struct Order: Hashable, Codable, Identifiable {
+    package static let all = [
         Order(
             id: 1042,
             productIDs: lampAndMug,
@@ -49,20 +49,20 @@ nonisolated struct Order: Hashable, Codable, Identifiable {
     ]
 
     // How many orders are still on their way, for Account's Orders row.
-    static var onTheirWayCount: Int {
+    package static var onTheirWayCount: Int {
         all.filter { $0.stage != .delivered }.count
     }
 
-    let id: Int
-    let productIDs: [Int]
-    let statusLine: String
-    let stage: OrderStage
+    package let id: Int
+    package let productIDs: [Int]
+    package let statusLine: String
+    package let stage: OrderStage
 
-    var products: [Product] {
+    package var products: [Product] {
         Product.products(withIDs: productIDs)
     }
 
-    var total: Decimal {
+    package var total: Decimal {
         Product.total(of: products)
     }
 }
@@ -73,12 +73,12 @@ nonisolated struct Order: Hashable, Codable, Identifiable {
 // - `CaseIterable`, so the timeline lists every stage from this one declaration.
 // - `Comparable`, so the timeline can tell a stage the order has reached from one it hasn't.
 // - `Codable` (from the raw values), so an order with its stage can sit in an account route.
-nonisolated enum OrderStage: Int, CaseIterable, Comparable, Codable {
+package nonisolated enum OrderStage: Int, CaseIterable, Comparable, Codable {
     case placed
     case shipped
     case delivered
 
-    var title: String {
+    package var title: String {
         switch self {
         case .placed:
             return "Placed"
@@ -89,7 +89,7 @@ nonisolated enum OrderStage: Int, CaseIterable, Comparable, Codable {
         }
     }
 
-    static func < (lhs: OrderStage, rhs: OrderStage) -> Bool {
+    package static func < (lhs: OrderStage, rhs: OrderStage) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
 }

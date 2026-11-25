@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 
 // The cart (MA-02): its products, the subtotal, shipping and total, with Check out at the bottom.

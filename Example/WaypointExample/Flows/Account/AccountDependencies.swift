@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
+import ExampleServices
+import ExampleStore
 import SwiftUI
 
 // What the Account tab uses, from `AppServices.accountDependencies(gate:rules:describeTree:)`: the

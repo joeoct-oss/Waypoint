@@ -19,17 +19,17 @@ import WaypointCore
 // Conformances:
 // - `Observable` (from `@Observable`), so Settings redraws when the duplicate push rule changes.
 @Observable
-final class NavigationRules {
+package final class NavigationRules {
     private let tabs: TabRouter<MainTab>
     // `var` because `setPushesTwice(_:)` changes it, for Settings to show.
-    private(set) var duplicatePushRule: DuplicatePushRule
+    package private(set) var duplicatePushRule: DuplicatePushRule
 
     // The most calls the routers queue in one main-actor turn, from the app's configuration.
-    var queueLimit: Int {
+    package var queueLimit: Int {
         tabs.configuration.maxQueuedChanges
     }
 
-    init(tabs: TabRouter<MainTab>) {
+    package init(tabs: TabRouter<MainTab>) {
         self.tabs = tabs
         duplicatePushRule = tabs.duplicatePushRule
         tabs.setFallback(.popToRoot, for: .routeNotInPath)
@@ -38,7 +38,7 @@ final class NavigationRules {
 
     // Settings' toggle: `.allow` lets a second push of the same route go through while the first is
     // still animating, `.skipWhileInFlight` skips it.
-    func setPushesTwice(_ pushesTwice: Bool) {
+    package func setPushesTwice(_ pushesTwice: Bool) {
         let rule = pushesTwice ? DuplicatePushRule.allow : .skipWhileInFlight
         tabs.setDuplicatePushRule(rule)
         duplicatePushRule = rule
