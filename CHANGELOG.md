@@ -6,6 +6,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ### Changed
 
+- A Mac test run stopped with TERM or Ctrl-C now ends with "Mac tests stopped by TERM before they finished" instead of "All Mac tests passed" (planning #484). `scripts/test-mac.sh` traps both signals, and the run lock check covers it.
 - The test targets use Understudy 0.1.x (test targets only, so apps never fetch it): `Spy` replaces `WaypointTestSupport`'s `Recorder`, which is gone. `scripts/test-mac.sh` now fails a run on any warning in Waypoint's own `Sources/` and `Tests/`, found in the xcodebuild log, instead of passing `SWIFT_TREAT_WARNINGS_AS_ERRORS`, which also failed on warnings in packages Waypoint depends on.
 
 ### Added

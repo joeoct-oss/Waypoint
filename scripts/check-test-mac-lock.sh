@@ -12,7 +12,7 @@
 # - a second run while one holds the lock stops at once and runs nothing;
 # - a lock left by a run that has ended, or pointing at a process that isn't a test run, is
 #   cleared and the run goes on;
-# - the lock is gone after a pass, a failure, and a stop with TERM.
+# - the lock is gone after a pass, a failure, and a stop with TERM, and a stopped run never says it passed.
 #
 # It also checks what the script hands Tuist: selective testing per tier (planning #429), the derived data
 # folder after `--` (planning #430), the branch through GITHUB_HEAD_REF and the `coverage` tier on `main`
@@ -770,6 +770,14 @@ for how in step script; do
     if pgrep -f "$STUBS/tuist|$STUBS/stub-grandchild" >/dev/null; then
         fail "a run stopped with TERM ($how) stops its step's tools, grandchildren included"
         pkill -f "$STUBS/tuist|$STUBS/stub-grandchild" || true
+    fi
+    if grep -q "All Mac tests passed" "$WORK/6-$how.log"; then
+        fail "a run stopped with TERM ($how) never says it passed"
+    else
+        pass "a run stopped with TERM ($how) never says it passed"
+    fi
+    if [[ "$how" == script ]] && ! grep -q "Mac tests stopped by TERM" "$WORK/6-$how.log"; then
+        fail "a run stopped with TERM (script) says it stopped (log: $(tail -3 "$WORK/6-$how.log"))"
     fi
     if lock_gone; then
         pass "a run stopped with TERM ($how) releases the lock"
