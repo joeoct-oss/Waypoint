@@ -42,7 +42,7 @@ There are two places a test can run:
 | Example app UI tests (XCUITest) | `Example/WaypointExampleUITests`, run through `tuist test` on 3 simulator copies at once | | ✅ simulator |
 | iOS device build | `Waypoint-Package` for `generic/platform=iOS` | | ✅ `release` only |
 
-The tests in `Tests/WaypointCoreTests/LinuxBehaviourTests.swift` pin the Observation, main actor and `Sendable` behaviour the core relies on, so a difference between Linux and Apple platforms shows up there first.
+The core's own tests pin the Observation, main actor and `Sendable` behaviour it relies on, so a difference between Linux and Apple platforms fails a test that names the behaviour: `observationFiresOncePerCall` and `observationFiresOncePerTransaction` for Observation, and the `Concurrency` suites (`BackgroundNavigationTests`, `CrossActorValueTests`) for actors and `Sendable` values (planning #451 removed the separate checks of Swift itself). The slowest package tests, the `Navigation wrappers` and `Coordinator screens` suites at up to 4 s each on the Mac, draw a real `UIWindow` and wait for SwiftUI, which is what they test; the same lookups without a window run in `NavigatorLookupTests` in milliseconds.
 
 Two scripts run every layer. Nothing else counts as a test run:
 

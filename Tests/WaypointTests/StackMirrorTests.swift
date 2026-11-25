@@ -18,6 +18,9 @@ import WaypointTestSupport
 @Suite("Stack mirror")
 @MainActor
 struct StackMirrorTests {
+    /// A mirror that holds changes mid-transition, as on iOS 17, and one that doesn't.
+    nonisolated static let bothHoldModes = [true, false]
+
     /// A mirror that holds changes mid-transition, as on iOS 17, on a clock moved by hand.
     private static func holdingMirror(_ router: StackRouter, _ clock: ManualTransitionClock) -> StackMirror {
         StackMirror(router: router, holdsTransitions: true, clock: clock)
@@ -337,7 +340,7 @@ struct StackMirrorTests {
         #expect(mirror.isHoldingChange)
     }
 
-    @Test(arguments: [true, false])
+    @Test(arguments: Self.bothHoldModes)
     func doubleTapPushesOnce(holdsTransitions: Bool) {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
