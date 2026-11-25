@@ -58,12 +58,13 @@ struct RendererReportTests {
         #expect(batches.last?.map(\.origin) == [.user])
     }
 
-    @Test
-    func backToFirstScreenEmptiesPath() {
+    /// A count below zero reads as zero.
+    @Test(arguments: [0, -1])
+    func backToFirstScreenEmptiesPath(count: Int) {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
 
-        router.rendererDidPop(toCount: 0)
+        router.rendererDidPop(toCount: count)
 
         #expect(router.state.path.isEmpty)
     }
@@ -103,16 +104,6 @@ struct RendererReportTests {
         #expect(reported.last?.kind == .rendererMismatch)
         #expect(reported.last?.flow == FlowID("shop"))
         #expect(reported.last?.line == line)
-    }
-
-    @Test
-    func negativeCountReadsAsZero() {
-        let router = StackRouter(configuration: .permissive)
-        router.push(ProductRoute(id: 1))
-
-        router.rendererDidPop(toCount: -1)
-
-        #expect(router.state.path.isEmpty)
     }
 
     @Test
@@ -206,28 +197,17 @@ struct RendererReportTests {
         #expect(child.rendererDidPop(toCount: 0) == .ignored)
     }
 
-    @Test
-    func userChangesReadAsByUser() {
+    /// The readable log says "by user", the structured log `origin=user`.
+    @Test(arguments: [(LogFormat.readable, ", by user"), (LogFormat.structured, "origin=user")])
+    func userChangesAreLoggedAsTheUsers(format: LogFormat, marker: String) {
         let handler = RecordingLogHandler()
-        let logging = LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withSymbols(false)
+        let logging = LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withFormat(format)
         let router = StackRouter(configuration: NavigationConfiguration(logging: logging, registry: .permissive))
         router.push(ProductRoute(id: 1))
 
         router.rendererDidPop(toCount: 0)
 
-        #expect(handler.texts.contains { $0.contains(", by user") })
-    }
-
-    @Test
-    func userChangesLogWithUserOrigin() {
-        let handler = RecordingLogHandler()
-        let logging = LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withFormat(.structured)
-        let router = StackRouter(configuration: NavigationConfiguration(logging: logging, registry: .permissive))
-        router.push(ProductRoute(id: 1))
-
-        router.rendererDidPop(toCount: 0)
-
-        #expect(handler.texts.contains { $0.contains("origin=user") })
+        #expect(handler.texts.contains { $0.contains(marker) })
     }
 
     @Test
