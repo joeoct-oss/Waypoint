@@ -51,6 +51,14 @@
 # step took and the 10 slowest tests of each simulator test step, the package's included (planning #421),
 # read from its result bundle.
 #
+# A failed example app test runs once more (`-retry-tests-on-failure -test-iterations 2`), and
+# scripts/flaky-tests.py then decides each example step from its result bundle and
+# Example/quarantine.json: a UI test that passed on its retry is flaky and doesn't block; a UI test
+# that failed both tries blocks unless it is quarantined; a unit test that needed a retry blocks;
+# a step that failed with no failed test blocks. The log ends with the flaky and quarantined tests.
+# `--only` never retries: it is how a person tells a flaky test from a broken one (TESTING.md,
+# Flaky tests and quarantine).
+#
 # One run at a time: the script first takes a run lock that every clone of the repo shares
 # (planning #420). A second run stops at once and names the run that holds it. A lock left by a run that
 # is no longer going is cleared; a lock whose run is still going is never touched.
@@ -261,6 +269,18 @@ else
     EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled NO)
 fi
 
+# A failed example app test runs once more, so one flake can't fail the run on its own; the
+# verdict after the step decides what blocks. `--only` runs exactly once, since it is how a person
+# tells a flaky test from a broken one.
+if [[ -n "$ONLY_TEST" ]]; then
+    EXAMPLE_RETRY_FLAGS=()
+    RETRY=off
+else
+    EXAMPLE_RETRY_FLAGS=(-retry-tests-on-failure -test-iterations 2)
+    RETRY=on
+fi
+QUARANTINE_FILE=Example/quarantine.json
+
 # The steps run so far, with the seconds each took, printed when the script ends.
 STEP_NAMES=()
 STEP_SECONDS=()
@@ -355,6 +375,8 @@ finish() {
     # A run turned away at the run lock reports nothing of the run that holds it.
     if $OWNS_RUN_LOCK; then
         report_slowest_tests
+        echo
+        scripts/flaky-tests.py --summary "$RESULTS_DIR" || true
     fi
     if [[ -n "$STOPPED_BY" ]]; then
         echo "Mac tests stopped by $STOPPED_BY before they finished ($TIER)." >&2
@@ -716,8 +738,30 @@ example_tests_on() {
         -T "$bundle" \
         "$@" \
         -- -quiet -jobs "$JOBS" -skipMacroValidation -derivedDataPath "$EXAMPLE_DERIVED_DATA" \
-        "${EXAMPLE_PARALLEL_FLAGS[@]}" \
+        "${EXAMPLE_PARALLEL_FLAGS[@]}" ${EXAMPLE_RETRY_FLAGS[@]+"${EXAMPLE_RETRY_FLAGS[@]}"} \
         WAYPOINT_TUIST_TEST_RUN=1 ${offline_settings[@]+"${offline_settings[@]}"}
+}
+
+# An example app test step, then its verdict (scripts/flaky-tests.py): the step passes when nothing
+# blocks, whatever xcodebuild said, and fails when anything does. A flaky or quarantined test is
+# printed, and listed in `.build/results/<bundle>-flaky.json` for the report. Without a result
+# bundle, or without results in it, the step's own status stands.
+judged_example_tests_on() {
+    local bundle="$RESULTS_DIR/$3.xcresult" status=0 status_after=0 results
+    example_tests_on "$@" || status=$?
+    if [[ ! -d "$bundle" ]]; then
+        return "$status"
+    fi
+    results=$(mktemp "${TMPDIR:-/tmp}/waypoint-test-results.XXXXXX")
+    if ! xcrun xcresulttool get test-results tests --path "$bundle" >"$results" 2>/dev/null; then
+        rm -f "$results"
+        echo "note: no test results in $bundle to judge; the step's own status stands"
+        return "$status"
+    fi
+    scripts/flaky-tests.py --step-status "$status" --quarantine "$QUARANTINE_FILE" \
+        --out "$RESULTS_DIR/$3-flaky.json" <"$results" || status_after=$?
+    rm -f "$results"
+    return "$status_after"
 }
 
 # What this run does.
@@ -816,7 +860,7 @@ fi
 echo "tuist branch: ${GITHUB_HEAD_REF:-none}"
 echo "tuist pull request: ${TUIST_PULL_REQUEST:-none}"
 if $PLAN_ONLY; then
-    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, binary cache $BINARY_CACHE, warm binary cache $WARM_BINARY_CACHE, package test insights $PACKAGE_TEST_INSIGHTS, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}"
+    echo "plan: $TIER, example tests $RUN_UI, retry $RETRY, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, binary cache $BINARY_CACHE, warm binary cache $WARM_BINARY_CACHE, package test insights $PACKAGE_TEST_INSIGHTS, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}"
     trap - EXIT
     exit 0
 fi
@@ -869,9 +913,10 @@ fi
 if $RUN_UI; then
     if [[ -n "$ONLY_TEST" ]]; then
         step "tuist test $ONLY_TEST on $SIMULATOR_NAME" \
-            example_tests_on "$UDID" "$SIMULATOR_NAME" example-only --test-targets "$ONLY_TEST"
+            judged_example_tests_on "$UDID" "$SIMULATOR_NAME" example-only --test-targets "$ONLY_TEST"
     else
-        step "tuist test example app on $SIMULATOR_NAME" example_tests_on "$UDID" "$SIMULATOR_NAME" example
+        step "tuist test example app on $SIMULATOR_NAME" \
+            judged_example_tests_on "$UDID" "$SIMULATOR_NAME" example
     fi
 fi
 
@@ -894,7 +939,7 @@ release_reports_on() {
     local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
     local EXAMPLE_DERIVED_DATA="$RELEASE_REPORTS_DERIVED_DATA"
     local BINARY_CACHE=off
-    TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 example_tests_on "$@"
+    TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 judged_example_tests_on "$@"
 }
 if $RUN_RELEASE_REPORTS; then
     step "tuist test release reports (Release) on $SIMULATOR_NAME" \
@@ -915,7 +960,7 @@ if $RUN_IOS17; then
     claim_simulator "$IOS17_SIMULATOR_NAME" "$IOS17_UDID"
     step "xcodebuild test Waypoint-Package on $IOS17_SIMULATOR_NAME" package_tests_on "$IOS17_UDID" package-ios17
     step "tuist test example app on $IOS17_SIMULATOR_NAME" \
-        example_tests_on "$IOS17_UDID" "$IOS17_SIMULATOR_NAME" example-ios17
+        judged_example_tests_on "$IOS17_UDID" "$IOS17_SIMULATOR_NAME" example-ios17
 fi
 
 # A run for a pull request ends by telling Tuist that its commit has every run it will get, so the
