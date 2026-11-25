@@ -62,7 +62,6 @@ struct ProductsCoordinatorTests {
         )
         return TestProducts.makeFactory(store: store, gate: gate).makeCoordinator(
             start: .browse,
-            router: StackRouter(),
             launchSteps: .none,
             onAddToCart: { _ in },
             cart: cart

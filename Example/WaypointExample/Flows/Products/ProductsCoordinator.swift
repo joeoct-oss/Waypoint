@@ -21,25 +21,25 @@ import Waypoint
 // (`dismissAll`). The wish list's Done closes its own flow (`dismissFlow`), and the saved sheet's
 // Close does the same from the view (`@DismissFlow`).
 //
-// The stack runs on Waypoint: `router`, the one stack every main tab shares, owns the path,
-// `MainTabView` draws it with `WaypointStack` around the tabs and asks the selected tab's
-// coordinator for each pushed screen, and a swipe back comes back to the router by itself.
-// `ProductsFlowView` draws the tab's root, and `ProductsSheet` its sheets. A product page links to
-// a related product with `WaypointLink`, which pushes through the same router, and a search result
-// pushes from `SearchModel`, a view model holding the stack's navigator scoped to `ShopFlow`,
-// which the stack declares. The router also presents the filters, the saved sheet and the wish
-// list (`FilterRoute`, `SavedRoute`, `WishlistRoute`), each drawn on the presented router with
-// `WaypointStack`; the sheet itself is still SwiftUI's, bound to the router, until Waypoint draws
-// sheets.
+// The stack runs on Waypoint: `router`, which Waypoint makes and the main tabs make the one stack
+// every tab shares, owns the path. `MainTabView` draws it with `WaypointStack` around the tabs and
+// asks the selected tab's coordinator for each pushed screen, and a swipe back comes back to the
+// router by itself. `root` draws the tab's root, and `ProductsSheet` its sheets. A product page
+// links to a related product with `WaypointLink`, which pushes through the same router, and a
+// search result pushes from `SearchModel`, a view model holding the stack's navigator scoped to
+// `ShopFlow`, which the stack declares. The router also presents the filters, the saved sheet and
+// the wish list (`FilterRoute`, `SavedRoute`, `WishlistRoute`), each drawn on the presented router
+// with `WaypointStack`; the sheet itself is still SwiftUI's, bound to the router, until Waypoint
+// draws sheets.
 //
 // Conformances:
+// - `StackCoordinator`, so Waypoint makes its router and the main tabs make it the shared stack.
 // - `Observable` (from `@Observable`), so `ProductsSheet` redraws when the sheet changes.
 @Observable
-final class ProductsCoordinator {
+final class ProductsCoordinator: StackCoordinator {
     private static let followUpDelay = Duration.milliseconds(150)
     private static let linkedProductID = 4
 
-    let router: StackRouter
     private let start: ProductsStart
     private let store: LocalStore
     private let gate: any SheetAccountGating
@@ -48,8 +48,10 @@ final class ProductsCoordinator {
     private let navigation: ProductsNavigation
     private let onAddToCart: (Product) -> Void
     private let cart: ProductsCart
-    // Search's view model, which pushes a tapped result itself.
-    private let searchModel: SearchModel
+    // `var` because Search's view model is made the first time Search's root draws, on the router
+    // Waypoint has made by then, and kept. Only `searchModel` changes it. Not observed, because it
+    // changes while the root draws.
+    @ObservationIgnored private var madeSearchModel: SearchModel?
     // `var` because `showFilters()`, `showSaved()` and `showWishlist()` set it with the router they
     // present, and `releaseSheet()` clears both once the sheet has slid away, so it still draws
     // meanwhile.
@@ -65,6 +67,27 @@ final class ProductsCoordinator {
     // switch.
     private var hasPlayedLaunchSteps: Bool
 
+    // The tab's root: Shop or Search. Shop plays the launch steps the first time it appears.
+    var root: some View {
+        makeRootFlow()
+            .task { await self.playLaunchSteps() }
+    }
+
+    // Names the stack's first screen in the journey lines.
+    var rootName: String {
+        start.rootName
+    }
+
+    // Search's view model, which pushes a tapped result itself.
+    private var searchModel: SearchModel {
+        if let madeSearchModel {
+            return madeSearchModel
+        }
+        let model = factory.makeSearchModel(on: router)
+        madeSearchModel = model
+        return model
+    }
+
     // Whether this coordinator's filters, saved sheet or wish list is presented over the stack.
     // Shop and Search share one stack, so a presentation the other tab made doesn't count.
     var isShowingSheet: Bool {
@@ -76,7 +99,6 @@ final class ProductsCoordinator {
 
     init(
         start: ProductsStart,
-        router: StackRouter,
         dependencies: ProductsDependencies,
         factory: ProductsFactory,
         launchSteps: ShopLaunchSteps,
@@ -91,18 +113,23 @@ final class ProductsCoordinator {
         navigation = dependencies.navigation
         self.onAddToCart = onAddToCart
         self.cart = cart
-        self.router = router
-        router.setRootName(start.rootName)
-        searchModel = factory.makeSearchModel(on: router)
-        router.register(FilterRoute.self)
-        router.register(SavedRoute.self)
-        router.register(WishlistRoute.self)
+        madeSearchModel = nil
         presentedSheet = nil
         sheetRouter = nil
         sheetOptions = nil
         wishlistProductIDs = store.wishlistProductIDs
         hasPlayedLaunchSteps = false
-        router.setCoordinator(self)
+    }
+
+    // Registers the routes this stack pushes and presents. `MainTabView` draws the pushed screens
+    // on the stack every tab shares, so the stack has no `destinations` of its own.
+    func registerDestinations(on router: StackRouter) {
+        router.register(ProductRoute.self)
+        router.register(CollectionRoute.self)
+        router.register(ShopCartRoute.self)
+        router.register(FilterRoute.self)
+        router.register(SavedRoute.self)
+        router.register(WishlistRoute.self)
     }
 
     @ViewBuilder

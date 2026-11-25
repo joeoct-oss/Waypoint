@@ -19,13 +19,10 @@ struct CartFactory {
         self.dependencies = dependencies
     }
 
-    // The Cart tab on `router`, the stack the main tabs give it. Keep shopping runs `onShopMore`.
-    func makeCoordinator(
-        router: StackRouter,
-        onShopMore: @escaping () -> Void
-    ) -> CartCoordinator {
+    // The Cart tab. Waypoint makes its router, which the main tabs make the stack every tab
+    // shares. Keep shopping runs `onShopMore`.
+    func makeCoordinator(onShopMore: @escaping () -> Void) -> CartCoordinator {
         CartCoordinator(
-            router: router,
             dependencies: dependencies,
             factory: self,
             onShopMore: onShopMore

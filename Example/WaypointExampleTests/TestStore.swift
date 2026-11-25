@@ -18,10 +18,14 @@ enum TestStore {
         LocalStore(domain: domainPrefix + UUID().uuidString)
     }
 
-    // The launch options of a plain launch: no launch arguments, read from an empty domain.
-    static func launchOptions() -> LaunchOptions {
+    // The launch options of a plain launch: no launch arguments, read from an empty domain. With
+    // `opensLab`, the launch opens the Navigation Lab, as the `lab` launch argument does.
+    static func launchOptions(opensLab: Bool = false) -> LaunchOptions {
         let domain = domainPrefix + UUID().uuidString
         let defaults = UserDefaults(suiteName: domain) ?? .standard
-        return LaunchOptions(defaults: defaults)
+        defaults.set(opensLab, forKey: LaunchArgument.lab.rawValue)
+        let options = LaunchOptions(defaults: defaults)
+        defaults.removePersistentDomain(forName: domain)
+        return options
     }
 }

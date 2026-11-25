@@ -12,10 +12,11 @@ import Waypoint
 // The cart tab: the cart at the root, and checkout presented full screen as its own flow. Check out
 // needs an account, so the account gate asks a guest to sign in first.
 //
-// Both run on Waypoint: the cart's router is the one stack every main tab shares, and checkout is
-// a flow that router presents full screen, with a fresh router of its own each time, which
-// `CheckoutCover` draws with `WaypointStack(flow: CheckoutFlow.self)`. So the journey lines
-// write `flow_started Checkout from Cart`, each step with `step 2 of 3`, and `flow_finished`.
+// Both run on Waypoint: the cart's router, which Waypoint makes and the main tabs make the one
+// stack every tab shares, presents checkout full screen as a flow with a fresh router of its own
+// each time, which `CheckoutCover` draws with `WaypointStack(flow: CheckoutFlow.self)`. So the
+// journey lines write `flow_started Checkout from Cart`, each step with `step 2 of 3`, and
+// `flow_finished`.
 // `CartFactory` builds the cart and the forms, and each checkout gets a new `CheckoutBuilder`, its
 // draft: it starts at the address step with the first saved address chosen; Continue pushes
 // Payment, then Review, and Add a new address pushes the form. Saving the form pops back to the
@@ -27,11 +28,11 @@ import Waypoint
 // bound to the router's presented flow, until Waypoint draws presentations itself.
 //
 // Conformances:
-// - `Observable` (from `@Observable`), so `CartFlowView` and the tab's badge redraw when the cart
+// - `StackCoordinator`, so Waypoint makes its router and the main tabs make it the shared stack.
+// - `Observable` (from `@Observable`), so the cart's root and the tab's badge redraw when the cart
 //   or checkout changes.
 @Observable
-final class CartCoordinator {
-    let router: StackRouter
+final class CartCoordinator: StackCoordinator {
     private let store: LocalStore
     private let gate: any AccountGating
     private let factory: CartFactory
@@ -44,6 +45,11 @@ final class CartCoordinator {
     private(set) var checkoutRouter: StackRouter?
     // `var` for the same reason as `checkoutRouter`: the open checkout's draft.
     private(set) var checkout: CheckoutBuilder?
+
+    // The tab's root: the cart.
+    var root: some View {
+        makeCartFlow()
+    }
 
     // Whether checkout is presented over the cart. Every tab shares one stack, so a sheet another
     // tab presents doesn't count.
@@ -67,22 +73,22 @@ final class CartCoordinator {
     }
 
     init(
-        router: StackRouter,
         dependencies: CartDependencies,
         factory: CartFactory,
         onShopMore: @escaping () -> Void
     ) {
-        self.router = router
         store = dependencies.store
         gate = dependencies.gate
         self.factory = factory
         self.onShopMore = onShopMore
-        router.setRootName(MainTab.cart.title)
-        router.register(CheckoutRoute.self)
         products = dependencies.catalog.products(withIDs: dependencies.store.cartProductIDs)
         checkoutRouter = nil
         checkout = nil
-        router.setCoordinator(self)
+    }
+
+    // Registers checkout, which this stack presents rather than pushes.
+    func registerDestinations(on router: StackRouter) {
+        router.register(CheckoutRoute.self)
     }
 
     func makeCartFlow() -> some View {

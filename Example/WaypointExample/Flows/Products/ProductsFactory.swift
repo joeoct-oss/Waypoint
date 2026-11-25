@@ -21,17 +21,16 @@ struct ProductsFactory {
         self.dependencies = dependencies
     }
 
-    // The products stack on `router`, the stack the main tabs give it, starting at Shop or Search.
+    // A products stack starting at Shop or Search. Waypoint makes its router, which the main tabs
+    // make the stack every tab shares.
     func makeCoordinator(
         start: ProductsStart,
-        router: StackRouter,
         launchSteps: ShopLaunchSteps,
         onAddToCart: @escaping (Product) -> Void,
         cart: ProductsCart
     ) -> ProductsCoordinator {
         ProductsCoordinator(
             start: start,
-            router: router,
             dependencies: dependencies,
             factory: self,
             launchSteps: launchSteps,
