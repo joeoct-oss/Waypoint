@@ -11,7 +11,19 @@ import XCTest
 // The steps every UI test repeats: wait for an element, then use it. Each poll reads the app's
 // whole accessibility tree, so polls are a quarter second apart, not faster.
 enum UITestSteps {
-    static let timeout: TimeInterval = 5
+    // How long a step waits for state that stays until something changes it: a screen, a banner, a
+    // count, a sheet. A wait ends as soon as its element shows, so a passing test doesn't spend it;
+    // only a failure takes the whole time to report. It is 10 s because a Mac under memory load can
+    // take more than 5 s to show lasting state (planning #479). A short-lived message, such as a
+    // toast or a notice, is read right after the action that shows it, never after another wait.
+    static let timeout: TimeInterval = 10
+    // How long a step watches an element to prove it stays, for example a locked sheet after a
+    // swipe. Unlike `timeout`, a passing check spends all of it, so it stays short.
+    static let stayTime: TimeInterval = 5
+    // How long `reveal(_:)` waits for a row before it starts scrolling. A list builds its rows
+    // lazily, so a row below the fold never shows without a scroll, and a long first wait would be
+    // spent in full on every such row.
+    static let revealWait: TimeInterval = 1
     static let pollInterval: TimeInterval = 0.25
     static let settleTime: TimeInterval = 1
     // How many times `setSwitch(to:)` taps a switch before it gives up.
@@ -185,12 +197,12 @@ extension XCUIApplication {
         )
     }
 
-    // Lists build rows lazily, so a row below the fold exists only after scrolling to it. Waits for
-    // the screen to finish sliding in before scrolling, so a row that was about to show is not
-    // scrolled away, and scrolls back down for a row that ends up under the navigation bar.
+    // Lists build rows lazily, so a row below the fold exists only after scrolling to it. Waits
+    // briefly (`revealWait`) for a row that was about to show, so it is not scrolled away, then
+    // scrolls, and scrolls back down for a row that ends up under the navigation bar.
     @MainActor
     func reveal(_ element: XCUIElement) -> Bool {
-        _ = element.waitForExistence(timeout: UITestSteps.timeout)
+        _ = element.waitForExistence(timeout: UITestSteps.revealWait)
         for _ in 0..<4 where !waitUntilTappable(element) {
             if isAboveVisibleArea(element) {
                 swipeDown()

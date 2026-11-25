@@ -301,6 +301,10 @@ Find the first row that matches what the log says. Do what it says, once. A retr
 | The run was stopped as hung | Not a test result | Teardown, then report the last `==> ` line and the time it started. No retry. |
 | Anything else | Unknown | Stop. Report the last 30 lines of the log. |
 
+**A UI test that failed on a wait** (planning #479). Look at the failure's screenshot in the result bundle. If it shows the screen the test expected next, the app got there late: a load timeout, most likely on a Mac with high swap. If it shows a wrong screen, or the right screen with the wrong content, the app did the wrong thing: a real failure. Either way the gate failed; the screenshot only tells the report which it was.
+
+**Writing a UI test that checks a short-lived message.** A toast, a notice or the splash shows for a fixed time, so the test reads it right after the action that shows it, before it waits for anything else. Waits on state that stays (a screen, a banner, a count) use `UITestSteps.timeout`, which is long enough for a loaded Mac and costs a passing test nothing, since a wait ends as soon as its element shows. A check that an element stays, such as a locked sheet after a swipe, uses `UITestSteps.stayTime`, since it always spends its whole time.
+
 ## 7. Report the result
 
 Every run ends with one report, passed or failed, in this shape. For a merge gate it goes in the pull request's **Tests** section.
