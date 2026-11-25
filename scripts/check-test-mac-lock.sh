@@ -690,10 +690,17 @@ if grep -q '"$MISE" exec -C "$SRCROOT" -- tuist inspect \\(command)' Example/Pro
     ! grep -q 'activate -C "$SRCROOT"' Example/Project.swift &&
     grep -q 'insightsScript("build", skippedBy: \["WAYPOINT_TUIST_OFFLINE"\])' Example/Project.swift &&
     grep -q 'skippedBy: \["WAYPOINT_TUIST_OFFLINE", "WAYPOINT_TUIST_TEST_RUN"\]' Example/Project.swift &&
-    grep -q 'testAction: .targets(schemeTestTargets, postActions: \[testInsights\])' Example/Project.swift; then
+    grep -q 'testAction: .targets(schemeTestTargets, postActions: \[testInsights\], options: testOptions)' Example/Project.swift; then
     pass "the Build and Test Insights post-actions run Tuist through mise exec"
 else
     fail "the Build and Test Insights post-actions run Tuist through mise exec"
+fi
+# A failed UI test keeps screenshots, not a screen recording, so a failing run's result bundle stays
+# small enough to upload (planning #489).
+if grep -q '^let testOptions = TestActionOptions.options(preferredScreenCaptureFormat: .screenshots)$' Example/Project.swift; then
+    pass "a failed UI test keeps screenshots, not a screen recording"
+else
+    fail "a failed UI test keeps screenshots, not a screen recording"
 fi
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
