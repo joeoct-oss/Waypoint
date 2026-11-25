@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -48,7 +49,7 @@ struct PushedChildFlowTests {
     @Test
     func pushedFlowReleasedOnPop() {
         let parent = StackRouter()
-        let results = Recorder<FlowResult<String>>()
+        let results = Spy<FlowResult<String>, Void>()
         // `var` because a weak reference must be one: it reads `nil` once the test lets go.
         weak var weakChild: CheckoutFlowCoordinator?
         // `var` because a weak reference must be one: it reads `nil` once the test lets go.
@@ -58,7 +59,7 @@ struct PushedChildFlowTests {
             weakChild = child
             weakRouter = child.router
             parent.push(child) { result in
-                results.record(result)
+                results(result)
             }
             child.router.push(ProductRoute(id: 7))
         }
@@ -67,7 +68,7 @@ struct PushedChildFlowTests {
         RouterTable.shared.sweep()
 
         let expected: [FlowResult<String>] = [.cancelled]
-        #expect(results.values == expected)
+        #expect(results.calls == expected)
         #expect(parent.state.path.isEmpty)
         #expect(parent.pushedFlow == nil)
         #expect(weakChild == nil)
@@ -80,16 +81,16 @@ struct PushedChildFlowTests {
         parent.register(SettingsRoute.self)
         parent.push(SettingsRoute())
         let child = CheckoutFlowCoordinator()
-        let results = Recorder<FlowResult<String>>()
+        let results = Spy<FlowResult<String>, Void>()
         parent.push(child) { result in
-            results.record(result)
+            results(result)
         }
         child.router.push(ProductRoute(id: 7))
 
         child.finish(with: Self.order)
 
         let expected: [FlowResult<String>] = [.finished(Self.order)]
-        #expect(results.values == expected)
+        #expect(results.calls == expected)
         let path = [AnyRoute(SettingsRoute())]
         #expect(parent.state.path == path)
         #expect(!child.router.isActive)
@@ -99,31 +100,31 @@ struct PushedChildFlowTests {
     func dismissFlowFromPushedChildPopsIt() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()
-        let results = Recorder<FlowResult<String>>()
+        let results = Spy<FlowResult<String>, Void>()
         parent.push(child) { result in
-            results.record(result)
+            results(result)
         }
 
         let outcome = child.router.dismissFlow()
 
         #expect(outcome == .applied)
         let expected: [FlowResult<String>] = [.cancelled]
-        #expect(results.values == expected)
+        #expect(results.calls == expected)
         #expect(parent.state.path.isEmpty)
     }
 
     @Test
     func userBackPastTheChildsRootCancels() {
         let parent = StackRouter()
-        let results = Recorder<FlowResult<String>>()
+        let results = Spy<FlowResult<String>, Void>()
         parent.push(CheckoutFlowCoordinator()) { result in
-            results.record(result)
+            results(result)
         }
 
         parent.rendererDidPop(toCount: 0)
 
         let expected: [FlowResult<String>] = [.cancelled]
-        #expect(results.values == expected)
+        #expect(results.calls == expected)
         #expect(parent.pushedFlow == nil)
     }
 
@@ -131,16 +132,16 @@ struct PushedChildFlowTests {
     func parentPushEndsTheChildOnTop() {
         let parent = StackRouter()
         parent.register(SettingsRoute.self)
-        let results = Recorder<FlowResult<String>>()
+        let results = Spy<FlowResult<String>, Void>()
         parent.push(CheckoutFlowCoordinator()) { result in
-            results.record(result)
+            results(result)
         }
 
         let outcome = parent.push(SettingsRoute())
 
         #expect(outcome == .applied)
         let expected: [FlowResult<String>] = [.cancelled]
-        #expect(results.values == expected)
+        #expect(results.calls == expected)
         let path = [AnyRoute(SettingsRoute())]
         #expect(parent.state.path == path)
         #expect(parent.pushedFlow == nil)
@@ -149,20 +150,20 @@ struct PushedChildFlowTests {
     @Test
     func secondPushedChildEndsTheFirst() {
         let parent = StackRouter()
-        let first = Recorder<FlowResult<String>>()
-        let second = Recorder<FlowResult<String>>()
+        let first = Spy<FlowResult<String>, Void>()
+        let second = Spy<FlowResult<String>, Void>()
         parent.push(CheckoutFlowCoordinator()) { result in
-            first.record(result)
+            first(result)
         }
         let child = CheckoutFlowCoordinator()
 
         parent.push(child) { result in
-            second.record(result)
+            second(result)
         }
 
         let cancelled: [FlowResult<String>] = [.cancelled]
-        #expect(first.values == cancelled)
-        #expect(second.values.isEmpty)
+        #expect(first.calls == cancelled)
+        #expect(second.calls.isEmpty)
         #expect(parent.pushedFlow === child.router)
         #expect(parent.state.path.count == 1)
     }
@@ -170,37 +171,37 @@ struct PushedChildFlowTests {
     @Test
     func parentPopCancelsNestedPushedChildren() {
         let parent = StackRouter()
-        let outer = Recorder<FlowResult<String>>()
-        let inner = Recorder<FlowResult<String>>()
+        let outer = Spy<FlowResult<String>, Void>()
+        let inner = Spy<FlowResult<String>, Void>()
         let child = CheckoutFlowCoordinator()
         parent.push(child) { result in
-            outer.record(result)
+            outer(result)
         }
         let grandchild = CheckoutFlowCoordinator()
         child.router.push(grandchild) { result in
-            inner.record(result)
+            inner(result)
         }
 
         parent.pop()
 
         let cancelled: [FlowResult<String>] = [.cancelled]
-        #expect(outer.values == cancelled)
-        #expect(inner.values == cancelled)
+        #expect(outer.calls == cancelled)
+        #expect(inner.calls == cancelled)
         #expect(!grandchild.router.isActive)
     }
 
     @Test
     func pushedChildWithCallersRouterIsRefused() {
         let parent = StackRouter()
-        let results = Recorder<FlowResult<Int>>()
+        let results = Spy<FlowResult<Int>, Void>()
 
         let outcome = parent.push(GivenRouterFlowCoordinator(given: parent)) { result in
-            results.record(result)
+            results(result)
         }
 
         #expect(outcome.failure?.issue.kind == .childRouterIsAncestor)
         #expect(parent.state.path.isEmpty)
-        #expect(results.values.isEmpty)
+        #expect(results.calls.isEmpty)
     }
 
     @Test
@@ -226,11 +227,11 @@ struct PushedChildFlowTests {
     @Test
     func doubleTapPushesTheFlowOnce() {
         let parent = StackRouter()
-        let first = Recorder<FlowResult<String>>()
-        let built = Recorder<CheckoutFlowCoordinator>()
+        let first = Spy<FlowResult<String>, Void>()
+        let built = Spy<CheckoutFlowCoordinator, Void>()
         let child = CheckoutFlowCoordinator()
         parent.push(child) { result in
-            first.record(result)
+            first(result)
         }
         let marker = parent.state.path.last
         if let marker {
@@ -239,33 +240,33 @@ struct PushedChildFlowTests {
 
         let outcome = parent.push(onFinish: { _ in }) {
             let twin = CheckoutFlowCoordinator()
-            built.record(twin)
+            built(twin)
             return twin
         }
 
         #expect(outcome == .alreadyThere)
-        #expect(built.values.isEmpty)
-        #expect(first.values.isEmpty)
+        #expect(built.calls.isEmpty)
+        #expect(first.calls.isEmpty)
         #expect(parent.pushedFlow === child.router)
     }
 
     @Test
     func ignoredPushBuildsNothing() {
         let inert = StackRouter.inert()
-        let built = Recorder<CheckoutFlowCoordinator>()
-        let results = Recorder<FlowResult<String>>()
+        let built = Spy<CheckoutFlowCoordinator, Void>()
+        let results = Spy<FlowResult<String>, Void>()
 
         let outcome = inert.push(onFinish: { result in
-            results.record(result)
+            results(result)
         }) {
             let child = CheckoutFlowCoordinator()
-            built.record(child)
+            built(child)
             return child
         }
 
         #expect(outcome == .ignored)
-        #expect(built.values.isEmpty)
-        #expect(results.values.isEmpty)
+        #expect(built.calls.isEmpty)
+        #expect(results.calls.isEmpty)
     }
 
     @Test
@@ -274,11 +275,11 @@ struct PushedChildFlowTests {
         let child = CheckoutFlowCoordinator()
         child.router.push(ProductRoute(id: 3))
         let childTree = child.router.tree
-        let results = Recorder<FlowResult<String>>()
+        let results = Spy<FlowResult<String>, Void>()
         let draft = IssueDraft(kind: .denied, flow: parent.flowID, message: "Denied after the start.")
         let context = FallbackContext(explicit: nil, file: #fileID, line: #line)
         let onFinish: @MainActor (FlowResult<String>) -> Void = { result in
-            results.record(result)
+            results(result)
         }
 
         let outcome = parent.tree.perform(on: parent, file: #fileID, line: #line) { store in
@@ -297,9 +298,9 @@ struct PushedChildFlowTests {
         let path = [AnyRoute(ProductRoute(id: 3))]
         #expect(child.router.state.path == path)
         let retried = parent.push(child) { result in
-            results.record(result)
+            results(result)
         }
         #expect(retried == .applied)
-        #expect(results.values.isEmpty)
+        #expect(results.calls.isEmpty)
     }
 }

@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -30,17 +31,17 @@ final class MainTabsCoordinator: TabCoordinating {
     let stacks: TabStacks
 
     /// Each tab it was asked for, in order.
-    let asked = Recorder<MainTab>()
+    let asked = Spy<MainTab, Void>()
 
     /// Each issue its tree reported.
-    let reported = Recorder<NavigationIssue>()
+    let reported = Spy<NavigationIssue, Void>()
 
     /// Makes each tab's child.
     private let makeChild: ChildMaker
 
     /// The kinds of the issues its tree reported.
     var reportedKinds: [NavigationIssue.Kind] {
-        reported.values.map(\.kind)
+        reported.calls.map(\.kind)
     }
 
     /// Creates a tab coordinator. Default: every tab, `home` selected, a stack per tab, and a
@@ -74,14 +75,14 @@ final class MainTabsCoordinator: TabCoordinating {
     func makeRouter() -> TabRouter<MainTab> {
         let router = TabRouter(tabs: tabs, selection: selection, stacks: stacks, configuration: .permissive)
         router.tree.onReported { [reported] issue in
-            reported.record(issue)
+            reported(issue)
         }
         return router
     }
 
     /// The child the test chose, recording the tab.
     func coordinator(for tab: MainTab) -> any StackCoordinating {
-        asked.record(tab)
+        asked(tab)
         return makeChild(tab, self)
     }
 }
@@ -158,10 +159,10 @@ final class ParentReadingCoordinator: StackCoordinating {
 @MainActor
 final class DeinitReadingTabsCoordinator: TabCoordinating {
     /// What the select in `deinit` returned, and the router it went to.
-    let outcomes: Recorder<(NavigationOutcome, TabRouter<MainTab>)>
+    let outcomes: Spy<(NavigationOutcome, TabRouter<MainTab>), Void>
 
     /// Creates a coordinator that records into `outcomes`.
-    init(outcomes: Recorder<(NavigationOutcome, TabRouter<MainTab>)>) {
+    init(outcomes: Spy<(NavigationOutcome, TabRouter<MainTab>), Void>) {
         self.outcomes = outcomes
     }
 
@@ -169,7 +170,7 @@ final class DeinitReadingTabsCoordinator: TabCoordinating {
     deinit {
         MainActor.assumeIsolated {
             let router = router
-            outcomes.record((router.select(.shop), router))
+            outcomes((router.select(.shop), router))
         }
     }
 
@@ -214,7 +215,7 @@ final class StoredTabsCoordinator: TabCoordinating {
     let router: TabRouter<MainTab>
 
     /// Each tab it was asked for, in order.
-    let asked = Recorder<MainTab>()
+    let asked = Spy<MainTab, Void>()
 
     /// Creates a coordinator that keeps `router`.
     init(router: TabRouter<MainTab>) {
@@ -228,7 +229,7 @@ final class StoredTabsCoordinator: TabCoordinating {
 
     /// A plain child, recording the tab.
     func coordinator(for tab: MainTab) -> any StackCoordinating {
-        asked.record(tab)
+        asked(tab)
         return TabChildCoordinator()
     }
 }
@@ -244,7 +245,7 @@ final class GivenTabsCoordinator: TabCoordinating {
     let given: TabRouter<MainTab>
 
     /// Each tab it was asked for, in order.
-    let asked = Recorder<MainTab>()
+    let asked = Spy<MainTab, Void>()
 
     /// Creates a coordinator whose `makeRouter()` returns `given`.
     init(given: TabRouter<MainTab>) {
@@ -258,7 +259,7 @@ final class GivenTabsCoordinator: TabCoordinating {
 
     /// A plain child, recording the tab.
     func coordinator(for tab: MainTab) -> any StackCoordinating {
-        asked.record(tab)
+        asked(tab)
         return TabChildCoordinator()
     }
 }

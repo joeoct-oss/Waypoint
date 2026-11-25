@@ -257,7 +257,7 @@ Immutability catches logic errors before they happen at run time:
 - No public settable properties: a setting changes through a guarded function such as `router.setFallback(.popToRoot, for: .routeNotInPath)`, which reports `invalidSetting` and keeps the old value when the new one breaks a rule.
 - No `inout` parameters for our own types, no `lazy var`, no stored `static var` or global `var`.
 - Every remaining `var`, stored or local, has a comment above it that starts "`var` because" and names what changes it. Computed properties, protocol requirements and property wrappers (`@State`) are not stored `var`s and need no reason.
-- Tests too: collect with `Recorder` and act once with `Once` instead of captured `var`s.
+- Tests too: collect calls with a `Spy` from [Understudy](https://github.com/joeoct-oss/Understudy) (`Spy<Value, Void>()`, read back with `calls`) and act once with `Once` instead of captured `var`s.
 - Enforced by the custom SwiftLint rules `stored_var_needs_reason`, `no_public_stored_var`, `no_lazy_var`, `no_mutating_func` and `no_static_stored_var` in planning #324.
 
 For example:

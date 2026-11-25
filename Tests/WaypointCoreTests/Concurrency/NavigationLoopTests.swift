@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointCore
 import WaypointTestSupport
 
@@ -23,9 +24,9 @@ struct NavigationLoopTests {
 
     @Test
     func navigationLoopStopsAndReportsReentrantLoop() {
-        let failures = Recorder<NavigationIssue.Kind>()
+        let failures = Spy<NavigationIssue.Kind, Void>()
         let configuration = NavigationConfiguration(maxQueuedChanges: Self.limit, registry: .permissive) { failure in
-            failures.record(failure.issue.kind)
+            failures(failure.issue.kind)
         }
         let router = StackRouter(configuration: configuration)
 
@@ -37,7 +38,7 @@ struct NavigationLoopTests {
         let reportedOnce: [NavigationIssue.Kind] = [.reentrantLoop]
         #expect(queued.count == Self.limit)
         #expect(refused == loops)
-        #expect(failures.values == reportedOnce)
+        #expect(failures.calls == reportedOnce)
         #expect(router.state.path.count == Self.limit)
     }
 
@@ -83,10 +84,10 @@ struct NavigationLoopTests {
 
     @Test
     func failureHandlerThatNavigatesCannotOverflowAfterLoop() {
-        let issues = Recorder<NavigationIssue.Kind>()
+        let issues = Spy<NavigationIssue.Kind, Void>()
         let holder = RouterHolder()
         let configuration = NavigationConfiguration(maxQueuedChanges: 4, registry: .permissive) { failure in
-            issues.record(failure.issue.kind)
+            issues(failure.issue.kind)
             // Fails again on the empty path, so the handler is called again: a loop.
             holder.router?.pop()
         }
@@ -96,19 +97,19 @@ struct NavigationLoopTests {
         let outcome = router.pop()
 
         #expect(outcome.failure?.issue.kind == .emptyPath)
-        #expect(issues.values.contains(.reentrantLoop))
+        #expect(issues.calls.contains(.reentrantLoop))
         #expect(router.state.path.isEmpty)
     }
 
     /// Makes `calls` pushes from inside a transaction, as an observer that navigates on every
     /// change would, and returns their outcomes.
     private func navigateDuringAChange(on router: StackRouter, calls: Int) -> [NavigationOutcome] {
-        let outcomes = Recorder<NavigationOutcome>()
+        let outcomes = Spy<NavigationOutcome, Void>()
         router.transaction { _ in
             for id in 0..<calls {
-                outcomes.record(router.push(ItemRoute(id: id)))
+                outcomes(router.push(ItemRoute(id: id)))
             }
         }
-        return outcomes.values
+        return outcomes.calls
     }
 }

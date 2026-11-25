@@ -4,6 +4,10 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ## Unreleased
 
+### Changed
+
+- The test targets use Understudy 0.1.x (test targets only, so apps never fetch it): `Spy` replaces `WaypointTestSupport`'s `Recorder`, which is gone. `scripts/test-mac.sh` now fails a run on any warning in Waypoint's own `Sources/` and `Tests/`, found in the xcodebuild log, instead of passing `SWIFT_TREAT_WARNINGS_AS_ERRORS`, which also failed on warnings in packages Waypoint depends on.
+
 ### Added
 
 - Orbit Shop's account and accounts flow coordinators are under 300 lines (planning #462, step 6), and every example app coordinator file is under the 500-line limit `CODE_STYLE.md` now states. `LabFactory` picks the Lab's branch, placeholder and story screens, and `AccountFactory` the Lab's tools and Settings' navigation rules, which Account's tries reach through `SettingsTries`. A launch into the Lab reads its path from `AccountRoute.launchPath(for:)`. The accounts flow keeps its call to the auth service in a new `AuthForm`, and it and the products stacks keep their sheet in a new shared `PresentedSheet`. `ProductsFactory` builds the related link, and `ProductsStart`'s extension moved next to the enum. The example README states the coordinator rules.

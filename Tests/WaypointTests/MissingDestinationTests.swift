@@ -9,6 +9,7 @@
 // Not guarded by `canImport(SwiftUI)`: the mirror uses only the core, so these run on Linux too.
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import Waypoint
@@ -24,10 +25,10 @@ struct MissingDestinationTests {
     }
 
     /// The issues `router`'s tree reports from now on.
-    private static func recordIssues(of router: StackRouter) -> Recorder<NavigationIssue> {
-        let reported = Recorder<NavigationIssue>()
+    private static func recordIssues(of router: StackRouter) -> Spy<NavigationIssue, Void> {
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         return reported
     }
@@ -46,7 +47,7 @@ struct MissingDestinationTests {
 
         #expect(mirror.missingDestinations.isEmpty)
         #expect(!mirror.isMissingDestination(AnyRoute(ProductRoute(id: 1))))
-        #expect(reported.count == 0)
+        #expect(reported.callCount == 0)
     }
 
     @Test
@@ -69,7 +70,7 @@ struct MissingDestinationTests {
         #expect(issue.flow == FlowID("shop"))
         #expect(mirror.isMissingDestination(AnyRoute(ProductRoute(id: 1))))
         let expectedIssues = [issue]
-        #expect(reported.values == expectedIssues)
+        #expect(reported.calls == expectedIssues)
     }
 
     @Test
@@ -87,7 +88,7 @@ struct MissingDestinationTests {
         clock.advance(by: StackMirror.transitionDuration)
 
         #expect(mirror.missingDestinations.count == 1)
-        #expect(reported.count == 1)
+        #expect(reported.callCount == 1)
     }
 
     @Test
@@ -139,7 +140,7 @@ struct MissingDestinationTests {
         clock.advance(by: StackMirror.transitionDuration)
 
         #expect(mirror.missingDestinations.isEmpty)
-        #expect(reported.count == 0)
+        #expect(reported.callCount == 0)
         #expect(clock.scheduledCount == 0)
     }
 
@@ -157,6 +158,6 @@ struct MissingDestinationTests {
         clock.advance(by: StackMirror.transitionDuration)
 
         #expect(mirror.missingDestinations.isEmpty)
-        #expect(reported.count == 0)
+        #expect(reported.callCount == 0)
     }
 }

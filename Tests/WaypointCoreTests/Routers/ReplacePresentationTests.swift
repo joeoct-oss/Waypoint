@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -20,9 +21,9 @@ struct ReplacePresentationTests {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let replaced = try #require(router.presented)
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
 
         let outcome = router.present(HomeRoute(), else: .replacePresentation)
@@ -32,11 +33,11 @@ struct ReplacePresentationTests {
         #expect(presented !== replaced)
         #expect(presented.rootRoute == AnyRoute(HomeRoute()))
         #expect(router.state.presentation?.route == AnyRoute(HomeRoute()))
-        try #require(batches.count == 1)
-        let changes = batches.values[0].map(\.change)
+        try #require(batches.callCount == 1)
+        let changes = batches.calls[0].map(\.change)
         #expect(changes.count == 2)
         #expect(changes.first == .dismissed(replaced.flowID))
-        let origins = batches.values[0].map(\.origin)
+        let origins = batches.calls[0].map(\.origin)
         let expectedOrigins: [ChangeOrigin] = [.fallback, .fallback]
         #expect(origins == expectedOrigins)
     }

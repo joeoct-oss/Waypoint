@@ -8,6 +8,7 @@
 
 import Observation
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -69,9 +70,9 @@ struct FallbackTests {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
         router.push(ProductRoute(id: 1))
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
         let fired = FireCounter()
         withObservationTracking {
@@ -86,17 +87,17 @@ struct FallbackTests {
         let popped = NavigationChange.popped(routes)
         let batch = [AppliedChange(flow: router.flowID, change: popped, origin: .fallback)]
         let expectedBatches = [batch]
-        #expect(batches.values == expectedBatches)
+        #expect(batches.calls == expectedBatches)
         #expect(fired.calls == 1)
     }
 
     @Test
     func fallbackFailureRollsBack() throws {
-        let failures = Recorder<NavigationFailure>()
+        let failures = Spy<NavigationFailure, Void>()
         let configuration = NavigationConfiguration(
             registry: .permissive,
             onNavigationFailure: { failure in
-                failures.record(failure)
+                failures(failure)
             }
         )
         let router = StackRouter(configuration: configuration)
@@ -111,17 +112,17 @@ struct FallbackTests {
         #expect(failure.fallback == .push)
         #expect(failure.fallbackIssue?.kind == .fallbackFailed)
         let expectedValues = [failure]
-        #expect(failures.values == expectedValues)
+        #expect(failures.calls == expectedValues)
         #expect(router.state.path.isEmpty)
     }
 
     @Test
     func customFallbackFailureRollsBackItsOwnSteps() throws {
-        let failures = Recorder<NavigationFailure>()
+        let failures = Spy<NavigationFailure, Void>()
         let configuration = NavigationConfiguration(
             registry: .permissive,
             onNavigationFailure: { failure in
-                failures.record(failure)
+                failures(failure)
             }
         )
         let router = StackRouter(configuration: configuration)
@@ -137,7 +138,7 @@ struct FallbackTests {
         #expect(failure.description.hasSuffix("fallback=custom(pushThenFail) fallbackIssue=routeNotInPath"))
         let expectedPath = [AnyRoute(HomeRoute())]
         #expect(router.state.path == expectedPath)
-        #expect(failures.count == 1)
+        #expect(failures.callCount == 1)
     }
 
     @Test
@@ -158,9 +159,9 @@ struct FallbackTests {
     func customFallbackGetsTheIssueAndCanNavigate() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
-        let seen = Recorder<NavigationIssue.Kind>()
+        let seen = Spy<NavigationIssue.Kind, Void>()
         let showHome = NavigationFallback.custom("showHome") { transaction, issue in
-            seen.record(issue.kind)
+            seen(issue.kind)
             transaction.setPath {
                 HomeRoute()
             }
@@ -170,7 +171,7 @@ struct FallbackTests {
 
         #expect(outcome.description == "recovered routeNotInPath by=custom(showHome)")
         let expectedKinds: [NavigationIssue.Kind] = [.routeNotInPath]
-        #expect(seen.values == expectedKinds)
+        #expect(seen.calls == expectedKinds)
         let expectedPath = [AnyRoute(HomeRoute())]
         #expect(router.state.path == expectedPath)
     }
@@ -235,16 +236,16 @@ struct FallbackTests {
     @Test
     func recoveredAndFailedIssuesAreReported() {
         let router = StackRouter(configuration: .permissive)
-        let reported = Recorder<NavigationIssue.Kind>()
+        let reported = Spy<NavigationIssue.Kind, Void>()
         router.tree.onReported { issue in
-            reported.record(issue.kind)
+            reported(issue.kind)
         }
 
         router.popTo(HomeRoute(), else: .popToRoot)
         router.pop()
 
         let expectedKinds: [NavigationIssue.Kind] = [.routeNotInPath, .emptyPath]
-        #expect(reported.values == expectedKinds)
+        #expect(reported.calls == expectedKinds)
     }
 
     @Test
@@ -253,9 +254,9 @@ struct FallbackTests {
         router.present(SettingsRoute())
         let child = try #require(router.presented)
         router.dismiss()
-        let outcomes = Recorder<String>()
+        let outcomes = Spy<String, Void>()
         router.tree.onFinished { outcome in
-            outcomes.record(outcome.description)
+            outcomes(outcome.description)
         }
 
         router.push(HomeRoute())
@@ -264,7 +265,7 @@ struct FallbackTests {
         child.push(HomeRoute())
 
         let expected = ["applied", "recovered notEnoughRoutes by=popToRoot", "failed routeNotInPath", "ignored"]
-        #expect(outcomes.values == expected)
+        #expect(outcomes.calls == expected)
     }
 
     @Test

@@ -9,6 +9,7 @@
 // Not guarded by `canImport(SwiftUI)`: the mirror uses only the core, so these run on Linux too.
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import Waypoint
@@ -229,9 +230,9 @@ struct StackMirrorTests {
         router.push(HomeRoute())
         router.push(ProductRoute(id: 1))
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
 
         mirror.screenDidShow(count: 1)
@@ -239,7 +240,7 @@ struct StackMirrorTests {
         let expected = [AnyRoute(HomeRoute())]
         #expect(router.state.path == expected)
         #expect(mirror.shown == expected)
-        #expect(batches.last?.map(\.origin) == [.user])
+        #expect(batches.lastCall?.map(\.origin) == [.user])
     }
 
     @Test
@@ -251,15 +252,15 @@ struct StackMirrorTests {
             ProductRoute(id: 2)
         }
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
 
         mirror.screenDidShow(count: 0)
 
         #expect(router.state.path.isEmpty)
-        #expect(batches.count == 1)
+        #expect(batches.callCount == 1)
     }
 
     @Test
@@ -267,14 +268,14 @@ struct StackMirrorTests {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
 
         mirror.screenDidShow(count: 1)
 
-        #expect(batches.count == 0)
+        #expect(batches.callCount == 0)
         #expect(mirror.redrawCount == 0)
     }
 
@@ -283,9 +284,9 @@ struct StackMirrorTests {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
-        let reported = Recorder<NavigationIssue.Kind>()
+        let reported = Spy<NavigationIssue.Kind, Void>()
         router.tree.onReported { issue in
-            reported.record(issue.kind)
+            reported(issue.kind)
         }
 
         mirror.screenDidShow(count: 2)
@@ -294,7 +295,7 @@ struct StackMirrorTests {
         #expect(router.state.path == expected)
         #expect(mirror.shown == expected)
         #expect(mirror.redrawCount == 1)
-        #expect(reported.values == [.rendererMismatch])
+        #expect(reported.calls == [.rendererMismatch])
     }
 
     @Test
@@ -412,9 +413,9 @@ struct StackMirrorTests {
     func backInsideAPushedChildFlowPopsTheChild() {
         let router = StackRouter(configuration: .permissive)
         let child = MirrorFlowCoordinator()
-        let results = Recorder<FlowResult<String>>()
+        let results = Spy<FlowResult<String>, Void>()
         router.push(child) { result in
-            results.record(result)
+            results(result)
         }
         child.router.push(ProductRoute(id: 1))
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
@@ -426,7 +427,7 @@ struct StackMirrorTests {
         #expect(childPathAfterBack.isEmpty)
         #expect(router.state.path.isEmpty)
         let expected: [FlowResult<String>] = [.cancelled]
-        #expect(results.values == expected)
+        #expect(results.calls == expected)
         #expect(mirror.shown.isEmpty)
     }
 

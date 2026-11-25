@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -27,9 +28,9 @@ struct RendererReportTests {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
         router.push(ProductRoute(id: 1))
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
 
         let outcome = router.rendererDidPop(toCount: 1)
@@ -40,7 +41,7 @@ struct RendererReportTests {
         let popped = [AnyRoute(ProductRoute(id: 1))]
         let change = AppliedChange(flow: router.flowID, change: .popped(popped), origin: .user)
         let expectedBatches = [[change]]
-        #expect(batches.values == expectedBatches)
+        #expect(batches.calls == expectedBatches)
     }
 
     @Test
@@ -52,17 +53,17 @@ struct RendererReportTests {
             ProductRoute(id: 2)
             SettingsRoute()
         }
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
 
         router.rendererDidPop(toCount: 1)
 
         let expectedPath = [AnyRoute(HomeRoute())]
         #expect(router.state.path == expectedPath)
-        #expect(batches.count == 1)
-        #expect(batches.last?.map(\.origin) == [.user])
+        #expect(batches.callCount == 1)
+        #expect(batches.lastCall?.map(\.origin) == [.user])
     }
 
     /// A count below zero reads as zero.
@@ -80,27 +81,27 @@ struct RendererReportTests {
     func reportMatchingStateIsNoOp() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
-        let reported = Recorder<NavigationIssue.Kind>()
+        let reported = Spy<NavigationIssue.Kind, Void>()
         router.tree.onReported { issue in
-            reported.record(issue.kind)
+            reported(issue.kind)
         }
 
         #expect(router.rendererDidPop(toCount: 1) == .alreadyThere)
-        #expect(batches.count == 0)
-        #expect(reported.count == 0)
+        #expect(batches.callCount == 0)
+        #expect(reported.callCount == 0)
     }
 
     @Test
     func staleCountKeepsPathWithIssue() {
         let router = StackRouter(flow: FlowID("shop"), configuration: .permissive)
         router.push(ProductRoute(id: 1))
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
 
         let line: UInt = #line + 1
@@ -108,9 +109,9 @@ struct RendererReportTests {
 
         #expect(outcome == .alreadyThere)
         #expect(router.state.path.count == 1)
-        #expect(reported.last?.kind == .rendererMismatch)
-        #expect(reported.last?.flow == FlowID("shop"))
-        #expect(reported.last?.line == line)
+        #expect(reported.lastCall?.kind == .rendererMismatch)
+        #expect(reported.lastCall?.flow == FlowID("shop"))
+        #expect(reported.lastCall?.line == line)
     }
 
     @Test
@@ -118,16 +119,16 @@ struct RendererReportTests {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
         let child = try #require(router.presented)
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
 
         #expect(router.rendererDidDismiss() == .applied)
         #expect(router.presented == nil)
         #expect(router.state.presentation == nil)
         #expect(!child.isActive)
-        #expect(batches.last?.map(\.origin) == [.user])
+        #expect(batches.lastCall?.map(\.origin) == [.user])
     }
 
     @Test
@@ -140,16 +141,16 @@ struct RendererReportTests {
     @Test
     func tabTapSelectsTab() {
         let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         tabs.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
 
         #expect(tabs.rendererDidSelect(.shop) == .applied)
         #expect(tabs.selection == .shop)
         let change = AppliedChange(flow: tabs.flowID, change: .tabSelected(from: "home", to: "shop"), origin: .user)
         let expectedBatches = [[change]]
-        #expect(batches.values == expectedBatches)
+        #expect(batches.calls == expectedBatches)
     }
 
     @Test
@@ -221,13 +222,13 @@ struct RendererReportTests {
     func missingDestinationIsReportedWithTheFix() {
         let router = StackRouter(flow: FlowID("shop"), configuration: .permissive)
         router.push(ProductRoute(id: 7))
-        let batches = Recorder<[AppliedChange]>()
+        let batches = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            batches.record(changes)
+            batches(changes)
         }
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
 
         let line: UInt = #line + 1
@@ -239,8 +240,8 @@ struct RendererReportTests {
         #expect(issue.message.contains(".destination(ProductRoute.self)"))
         #expect(!issue.message.contains("7"))
         let expectedIssues = [issue]
-        #expect(reported.values == expectedIssues)
-        #expect(batches.count == 0)
+        #expect(reported.calls == expectedIssues)
+        #expect(batches.callCount == 0)
         #expect(router.state.path.count == 1)
     }
 }

@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointCore
 import WaypointTestSupport
 
@@ -161,15 +162,15 @@ struct StaleNavigatorTests {
         let router = StackRouter(configuration: .permissive)
         router.push(ItemRoute(id: 1))
         let navigation = router.navigator
-        let late = Recorder<NavigationOutcome>()
+        let late = Spy<NavigationOutcome, Void>()
 
         router.transaction { _ in
             router.pop()
-            late.record(navigation.push(ItemRoute(id: 2)))
+            late(navigation.push(ItemRoute(id: 2)))
         }
 
         let queued: [NavigationOutcome] = [.queued]
-        #expect(late.values == queued)
+        #expect(late.calls == queued)
         #expect(router.state.path.isEmpty)
     }
 
@@ -232,12 +233,12 @@ struct StaleNavigatorTests {
     @Test
     func transactionKeptPastItsCallChangesNothing() {
         let router = StackRouter(configuration: .permissive)
-        let kept = Recorder<NavigationTransaction>()
+        let kept = Spy<NavigationTransaction, Void>()
         router.transaction { transaction in
-            kept.record(transaction)
+            kept(transaction)
         }
 
-        let outcomes = kept.values.map { transaction in
+        let outcomes = kept.calls.map { transaction in
             transaction.push(ItemRoute(id: 1))
         }
         let after = router.push(ItemRoute(id: 2))

@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -68,9 +69,9 @@ struct DrawnPathTests {
     func backInsideTheChildPopsTheChildsPath() {
         let parent = StackRouter(configuration: .permissive)
         let child = CheckoutFlowCoordinator()
-        let results = Recorder<FlowResult<String>>()
+        let results = Spy<FlowResult<String>, Void>()
         parent.push(child) { result in
-            results.record(result)
+            results(result)
         }
         child.router.push(ProductRoute(id: 7))
         child.router.push(CartRoute())
@@ -83,7 +84,7 @@ struct DrawnPathTests {
         #expect(afterOneBack == expectedAfterOneBack)
         #expect(child.router.state.path.isEmpty)
         #expect(parent.pushedFlow === child.router)
-        #expect(results.values.isEmpty)
+        #expect(results.calls.isEmpty)
     }
 
     @Test
@@ -91,9 +92,9 @@ struct DrawnPathTests {
         let parent = StackRouter(configuration: .permissive)
         parent.push(HomeRoute())
         let child = CheckoutFlowCoordinator()
-        let results = Recorder<FlowResult<String>>()
+        let results = Spy<FlowResult<String>, Void>()
         parent.push(child) { result in
-            results.record(result)
+            results(result)
         }
         child.router.push(ProductRoute(id: 7))
 
@@ -103,7 +104,7 @@ struct DrawnPathTests {
         #expect(parent.state.path == parentPath)
         #expect(parent.pushedFlow == nil)
         let expected: [FlowResult<String>] = [.cancelled]
-        #expect(results.values == expected)
+        #expect(results.calls == expected)
     }
 
     @Test
@@ -127,9 +128,9 @@ struct DrawnPathTests {
     @Test
     func drawnCountPastTheEndIsAMismatch() {
         let parent = StackRouter(configuration: .permissive)
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         parent.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         let child = CheckoutFlowCoordinator()
         parent.push(child) { _ in }
@@ -137,7 +138,7 @@ struct DrawnPathTests {
         parent.rendererDidPopDrawn(toCount: 3)
 
         let expectedKinds: [NavigationIssue.Kind] = [.rendererMismatch]
-        #expect(reported.values.map(\.kind) == expectedKinds)
+        #expect(reported.calls.map(\.kind) == expectedKinds)
         #expect(parent.drawnPath.count == 1)
     }
 }

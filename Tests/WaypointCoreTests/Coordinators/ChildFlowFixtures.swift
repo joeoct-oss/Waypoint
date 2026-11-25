@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import Understudy
 import WaypointCore
 import WaypointTestSupport
 
@@ -35,11 +36,11 @@ final class PushingInInitFlowCoordinator: FlowCoordinating {
     typealias Output = Int
 
     /// What the push in `init` returned.
-    let outcomes = Recorder<NavigationOutcome>()
+    let outcomes = Spy<NavigationOutcome, Void>()
 
     /// Creates the flow and pushes a product on its router.
     init() {
-        outcomes.record(router.push(ProductRoute(id: 1)))
+        outcomes(router.push(ProductRoute(id: 1)))
     }
 }
 
@@ -54,11 +55,11 @@ final class OwnRouterFlowCoordinator: FlowCoordinating {
     typealias Output = Int
 
     /// What the push in `init` returned.
-    let outcomes = Recorder<NavigationOutcome>()
+    let outcomes = Spy<NavigationOutcome, Void>()
 
     /// Creates the flow and pushes a product on its router.
     init() {
-        outcomes.record(router.push(ProductRoute(id: 1)))
+        outcomes(router.push(ProductRoute(id: 1)))
     }
 
     /// A router of its own, with a permissive registry.
@@ -141,10 +142,10 @@ final class DyingFlowCoordinator: FlowCoordinating {
     typealias Output = Int
 
     /// Each router `deinit` read.
-    let deinitRouters: Recorder<StackRouter>
+    let deinitRouters: Spy<StackRouter, Void>
 
     /// Creates the flow. With `readingRouter`, it reads its router in `init`.
-    init(deinitRouters: Recorder<StackRouter>, readingRouter: Bool) {
+    init(deinitRouters: Spy<StackRouter, Void>, readingRouter: Bool) {
         self.deinitRouters = deinitRouters
         if readingRouter {
             _ = router
@@ -154,7 +155,7 @@ final class DyingFlowCoordinator: FlowCoordinating {
     /// Reads the router from `deinit`. The tests free it on the main actor.
     deinit {
         MainActor.assumeIsolated {
-            deinitRouters.record(router)
+            deinitRouters(router)
         }
     }
 }
@@ -169,16 +170,16 @@ final class StartingFlowCoordinator: FlowCoordinating {
     typealias Output = Int
 
     /// The flow it started on the other router.
-    let started: Recorder<CheckoutFlowCoordinator>
+    let started: Spy<CheckoutFlowCoordinator, Void>
 
     /// Reads its router, then starts a checkout flow on `other`.
     init(startingOn other: StackRouter) {
-        let started = Recorder<CheckoutFlowCoordinator>()
+        let started = Spy<CheckoutFlowCoordinator, Void>()
         self.started = started
         _ = router
         other.present(onFinish: { _ in }) {
             let child = CheckoutFlowCoordinator()
-            started.record(child)
+            started(child)
             _ = child.router
             return child
         }

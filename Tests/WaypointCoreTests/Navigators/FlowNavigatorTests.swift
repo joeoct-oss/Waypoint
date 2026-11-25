@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -85,39 +86,39 @@ struct FlowNavigatorTests {
     @Test
     func navigatorForTheDeclaredFlowReportsNothing() {
         let router = StackRouter(configuration: .permissive)
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         router.declareFlow(ShopFlow.self)
 
         let shop = router.navigator(for: ShopFlow.self)
 
         #expect(router.declaredFlow == ShopFlow.self)
-        #expect(reported.count == 0)
+        #expect(reported.callCount == 0)
         #expect(shop.isActive)
     }
 
     @Test
     func navigatorForAnUndeclaredStackReportsNothing() {
         let router = StackRouter(configuration: .permissive)
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
 
         _ = router.navigator(for: ShopFlow.self)
 
         #expect(router.declaredFlow == nil)
-        #expect(reported.count == 0)
+        #expect(reported.callCount == 0)
     }
 
     @Test
     func navigatorForAnotherFlowReportsMismatchAndStillNavigates() throws {
         let router = StackRouter(configuration: .permissive)
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         router.declareFlow(SettingsFlow.self)
 
@@ -125,7 +126,7 @@ struct FlowNavigatorTests {
         let shop = router.navigator(for: ShopFlow.self)
         let outcome = shop.push(CartRoute())
 
-        let issue = try #require(reported.last)
+        let issue = try #require(reported.lastCall)
         #expect(issue.kind == .flowMismatch)
         #expect(issue.flow == router.flowID)
         #expect(issue.line == line)
@@ -148,9 +149,9 @@ struct FlowNavigatorTests {
     @Test
     func scopedNavigatorFromAStackNavigator() throws {
         let router = StackRouter(configuration: .permissive)
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         router.declareFlow(SettingsFlow.self)
         let navigation = router.navigator
@@ -162,8 +163,8 @@ struct FlowNavigatorTests {
 
         let expected = [AnyRoute(PrivacyRoute())]
         #expect(router.state.path == expected)
-        let issue = try #require(reported.last)
-        #expect(reported.count == 1)
+        let issue = try #require(reported.lastCall)
+        #expect(reported.callCount == 1)
         #expect(issue.kind == .flowMismatch)
         #expect(issue.line == line)
     }

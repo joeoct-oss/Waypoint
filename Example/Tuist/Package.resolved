@@ -1,0 +1,15 @@
+{
+  "originHash" : "f2442379187826d27f61aa57a8638a201861d1e50659f686127623fcc989f51f",
+  "pins" : [
+    {
+      "identity" : "understudy",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/joeoct-oss/Understudy",
+      "state" : {
+        "revision" : "c595686f1cfc8cc568add73fd7ff4d742ebc44a4",
+        "version" : "0.1.0"
+      }
+    }
+  ],
+  "version" : 3
+}
