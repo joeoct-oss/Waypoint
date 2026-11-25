@@ -13,26 +13,32 @@ import WaypointCore
 //
 // Conformances:
 // - `NavigationFlow`, so the flow's routes name it and its stack is declared for it.
-enum DetailPushFlow: NavigationFlow { }
+package enum DetailPushFlow: NavigationFlow { }
 
 // A product in the Detail push flow, pushed from the shop list.
 //
 // Conformances:
 // - `Route`, so the flow's stack router can push it and find its destination.
-struct DetailProductRoute: Route {
-    typealias Flow = DetailPushFlow
+package struct DetailProductRoute: Route {
+    package typealias Flow = DetailPushFlow
 
-    let productID: Int
+    package let productID: Int
+
+    package init(
+        productID: Int
+    ) {
+        self.productID = productID
+    }
 }
 
 // The cart in the Detail push flow, pushed by the product's Add to cart.
 //
 // Conformances:
 // - `Route`, so the flow's stack router can push it, pop to it and find its destination.
-struct DetailCartRoute: Route {
-    typealias Flow = DetailPushFlow
+package struct DetailCartRoute: Route {
+    package typealias Flow = DetailPushFlow
 
-    let productID: Int
+    package let productID: Int
 }
 
 // The review's note in the Write a review flow, pushed by the rating screen with the stars picked.
@@ -40,6 +46,12 @@ struct DetailCartRoute: Route {
 //
 // Conformances:
 // - `Route`, so the review flow's router can push it and find its destination.
-struct DetailReviewNoteRoute: Route {
-    let rating: Int
+package struct DetailReviewNoteRoute: Route {
+    package let rating: Int
+
+    package init(
+        rating: Int
+    ) {
+        self.rating = rating
+    }
 }

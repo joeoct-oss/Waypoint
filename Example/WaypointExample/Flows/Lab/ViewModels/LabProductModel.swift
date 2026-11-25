@@ -19,16 +19,16 @@ import WaypointCore
 // Conformances:
 // - `Observable` (from `@Observable`), so the product redraws while reviews load.
 @Observable
-final class LabProductModel {
+package final class LabProductModel {
     private let navigation: FlowNavigator<LabShopFlow>
     private let reviewsDelay: Duration
     private let onLateOutcome: (NavigationOutcome) -> Void
     // `var` because `loadReviews()` sets it while the reviews load.
-    private(set) var isLoadingReviews: Bool
+    package private(set) var isLoadingReviews: Bool
     // `var` because `showReviews()` keeps what its push did, while the flow is still there.
-    private(set) var reviewsOutcome: NavigationOutcome?
+    package private(set) var reviewsOutcome: NavigationOutcome?
 
-    init(
+    package init(
         navigation: FlowNavigator<LabShopFlow>,
         reviewsDelay: Duration,
         onLateOutcome: @escaping (NavigationOutcome) -> Void
@@ -40,11 +40,11 @@ final class LabProductModel {
         reviewsOutcome = nil
     }
 
-    func buy() {
+    package func buy() {
         navigation.push(LabCartRoute())
     }
 
-    func loadReviews() {
+    package func loadReviews() {
         isLoadingReviews = true
         reviewsOutcome = nil
         Task {

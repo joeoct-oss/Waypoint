@@ -1,17 +1,18 @@
 //
 //  CartCoordinatorTests.swift
-//  WaypointExampleTests
+//  ExampleCartTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCart
 import ExampleNavigation
 import ExampleServices
 import ExampleStore
+import ExampleTestSupport
 import Testing
 import WaypointCore
-@testable import WaypointExample
 
 // The Cart tab, built by `CartFactory` (planning #424): Check out asks a guest to sign in first,
 // opens checkout at the address step for a signed-in reader, and each checkout starts from a new

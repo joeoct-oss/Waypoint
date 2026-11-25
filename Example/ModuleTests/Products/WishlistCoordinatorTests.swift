@@ -1,16 +1,17 @@
 //
 //  WishlistCoordinatorTests.swift
-//  WaypointExampleTests
+//  ExampleProductsTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
 import ExampleNavigation
+import ExampleProducts
 import ExampleStore
+import ExampleTestSupport
 import Testing
 import Waypoint
-@testable import WaypointExample
 
 // The wish list, the child flow Shop presents (planning #462): a suggestion's Save asks a guest to
 // sign in over the wish list and saves nothing yet, a signed-in reader's Save adds the product to

@@ -17,12 +17,12 @@ import WaypointCore
 // catalog's categories. It imports only `WaypointCore`, never SwiftUI, so a unit test drives it
 // with a real router and no screen. `onShopStack(_:catalog:)` is the one place that wires it:
 // `ProductsFactory` calls it for the coordinator and the unit tests.
-final class SearchModel {
+package final class SearchModel {
     private let navigation: FlowNavigator<ShopFlow>
     private let catalog: any ProductCatalog
 
     // Every category in the catalog, once each, in the catalog's order.
-    var categories: [String] {
+    package var categories: [String] {
         catalog.products.reduce(into: [String]()) { categories, product in
             if !categories.contains(product.category) {
                 categories.append(product.category)
@@ -30,7 +30,7 @@ final class SearchModel {
         }
     }
 
-    init(
+    package init(
         navigation: FlowNavigator<ShopFlow>,
         catalog: any ProductCatalog
     ) {
@@ -41,7 +41,7 @@ final class SearchModel {
     // Declares the shop on the stack, then scopes the stack's navigator to it. Call it before
     // anything is pushed, so the navigator belongs to the root screen and lives as long as the
     // stack.
-    static func onShopStack(
+    package static func onShopStack(
         _ router: StackRouter,
         catalog: any ProductCatalog
     ) -> SearchModel {
@@ -53,7 +53,7 @@ final class SearchModel {
     }
 
     // The products whose name or category holds every word of `query`, in the catalog's order.
-    func results(for query: String) -> [Product] {
+    package func results(for query: String) -> [Product] {
         let words = query.split(separator: " ").map(String.init)
         return catalog.products.filter { product in
             words.allSatisfy { Self.product(product, matches: $0) }
@@ -62,7 +62,7 @@ final class SearchModel {
 
     // Pushes the product, handing it over for the first frame.
     @discardableResult
-    func select(_ product: Product) -> NavigationOutcome {
+    package func select(_ product: Product) -> NavigationOutcome {
         let route = ProductRoute(
             id: product.id,
             preview: product

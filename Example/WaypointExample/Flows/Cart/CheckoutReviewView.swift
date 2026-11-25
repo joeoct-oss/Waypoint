@@ -13,12 +13,12 @@ import SwiftUI
 
 // Checkout's last step: where the order goes, how it is paid, and the total, with Place order at
 // the bottom. The screen reports Place order.
-struct CheckoutReviewView: View {
-    let products: [Product]
-    let address: Address?
-    let onPlaceOrder: () -> Void
+package struct CheckoutReviewView: View {
+    package let products: [Product]
+    package let address: Address?
+    package let onPlaceOrder: () -> Void
 
-    var body: some View {
+    package var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 CheckoutStepHeader(

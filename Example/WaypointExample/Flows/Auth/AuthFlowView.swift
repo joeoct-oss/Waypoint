@@ -11,10 +11,16 @@ import SwiftUI
 import Waypoint
 
 // The accounts flow, drawn by its coordinator, with Reset password or the terms as a sheet over it.
-struct AuthFlowView: View {
-    let auth: AuthCoordinator
+package struct AuthFlowView: View {
+    package let auth: AuthCoordinator
 
-    var body: some View {
+    package init(
+        auth: AuthCoordinator
+    ) {
+        self.auth = auth
+    }
+
+    package var body: some View {
         auth.view
             .sheet(
                 isPresented: Binding(reading: auth.isShowingSheet, writing: auth.syncSheet),

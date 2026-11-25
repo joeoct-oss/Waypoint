@@ -6,8 +6,11 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAccount
+import ExampleAuth
 import ExampleDesignSystem
 import ExampleNavigation
+import ExampleProducts
 import ExampleServices
 import ExampleStore
 import SwiftUI

@@ -13,11 +13,11 @@ import SwiftUI
 
 // A product as a card in Shop's "Picked for you": its illustration across the card's width, then
 // its name and price. The card reports a tap.
-struct ProductCard: View {
-    let product: Product
-    let onSelect: () -> Void
+package struct ProductCard: View {
+    package let product: Product
+    package let onSelect: () -> Void
 
-    var body: some View {
+    package var body: some View {
         Button(action: onSelect) {
             content
         }

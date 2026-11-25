@@ -6,9 +6,12 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAccount
+import ExampleCart
 import ExampleCatalog
 import ExampleDesignSystem
 import ExampleNavigation
+import ExampleProducts
 import SwiftUI
 import Waypoint
 

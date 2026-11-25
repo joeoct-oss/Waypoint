@@ -1,17 +1,17 @@
 //
-//  TestFactories.swift
-//  WaypointExampleTests
+//  TestProducts.swift
+//  ExampleProductsTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
 import ExampleNavigation
+import ExampleProducts
 import ExampleServices
 import ExampleStore
 import SwiftUI
 import Waypoint
-@testable import WaypointExample
 
 // A catalog of the products a test picks, so it knows exactly what the screens can list.
 //
@@ -45,17 +45,5 @@ enum TestProducts {
             cartScreen: { _ in AnyView(EmptyView()) }
         )
         return ProductsFactory(dependencies: dependencies)
-    }
-}
-
-// A Lab factory for a test: the sample catalog and the default navigation configuration.
-enum TestLab {
-    static func makeFactory() -> LabFactory {
-        LabFactory(
-            dependencies: LabDependencies(
-                catalog: SampleCatalog(),
-                navigation: .default
-            )
-        )
     }
 }

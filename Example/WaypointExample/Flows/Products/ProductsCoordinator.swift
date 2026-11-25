@@ -41,7 +41,7 @@ import Waypoint
 // - `StackCoordinator`, so Waypoint makes its router and the main tabs make it the shared stack.
 // - `Observable` (from `@Observable`), so `ProductsSheet` redraws when the sheet changes.
 @Observable
-final class ProductsCoordinator: StackCoordinator {
+package final class ProductsCoordinator: StackCoordinator {
     private static let followUpDelay = Duration.milliseconds(150)
     private static let linkedProductID = 4
 
@@ -58,22 +58,22 @@ final class ProductsCoordinator: StackCoordinator {
     // The filters, the saved sheet or the wish list, which `showFilters()`, `showSaved()` and
     // `openWishlist()` keep and `releaseSheet()` drops once the sheet has slid away, so it still
     // draws meanwhile.
-    let sheet: PresentedSheet<ProductSheet>
+    package let sheet: PresentedSheet<ProductSheet>
     // `var` because `showWishlist()` and `openWishlist()` set it with the flow they present, and
     // `releaseSheet()` drops it once the sheet has gone.
-    private(set) var wishlist: WishlistCoordinator?
+    package private(set) var wishlist: WishlistCoordinator?
     // `var` because `playLaunchSteps()` plays them once, and the shop appears again on every tab
     // switch.
     private var hasPlayedLaunchSteps: Bool
 
     // The tab's root: Shop or Search. Shop plays the launch steps the first time it appears.
-    var root: some View {
+    package var root: some View {
         makeRootFlow()
             .task { await self.playLaunchSteps() }
     }
 
     // Names the stack's first screen in the journey lines.
-    var rootName: String {
+    package var rootName: String {
         start.rootName
     }
 
@@ -89,12 +89,12 @@ final class ProductsCoordinator: StackCoordinator {
 
     // Whether this coordinator's filters, saved sheet or wish list is presented over the stack.
     // Shop and Search share one stack, so a presentation the other tab made doesn't count.
-    var isShowingSheet: Bool {
+    package var isShowingSheet: Bool {
         sheet.isShowing(over: router)
     }
 
     // `ProductsFactory` makes it, and hands it the feature's dependencies.
-    init(
+    package init(
         factory: ProductsFactory,
         start: ProductsStart,
         cart: ProductsCart
@@ -114,7 +114,7 @@ final class ProductsCoordinator: StackCoordinator {
 
     // Registers the routes this stack pushes and presents. `MainTabView` draws the pushed screens
     // on the stack every tab shares, so the stack has no `destinations` of its own.
-    func registerDestinations(on router: StackRouter) {
+    package func registerDestinations(on router: StackRouter) {
         router.register(ProductRoute.self)
         router.register(CollectionRoute.self)
         router.register(ShopCartRoute.self)
@@ -123,7 +123,7 @@ final class ProductsCoordinator: StackCoordinator {
     }
 
     @ViewBuilder
-    func makeRootFlow() -> some View {
+    package func makeRootFlow() -> some View {
         switch start {
         case .browse:
             makeShopFlow()
@@ -135,7 +135,7 @@ final class ProductsCoordinator: StackCoordinator {
     // Shows the product the list handed over at once, or looks it up by id after a link or a
     // restore.
     @ViewBuilder
-    func makeProductFlow(for route: ProductRoute) -> some View {
+    package func makeProductFlow(for route: ProductRoute) -> some View {
         if let detail = makeProductDetail(for: route) {
             detail.screenChrome(
                 title: detail.product.name,
@@ -148,7 +148,7 @@ final class ProductsCoordinator: StackCoordinator {
 
     // Shows the collection the banner handed over, or looks it up by id after a restore.
     @ViewBuilder
-    func makeCollectionFlow(for route: CollectionRoute) -> some View {
+    package func makeCollectionFlow(for route: CollectionRoute) -> some View {
         if let collection = factory.makeCollection(for: route, onSelect: { self.showProduct($0) }) {
             collection.screenChrome(
                 title: collection.collection.name,
@@ -171,7 +171,7 @@ final class ProductsCoordinator: StackCoordinator {
 
     // The cart Go to cart pushes above a product. Check out and Keep shopping report like the Cart
     // tab's: Check out opens checkout from the Cart tab, and Keep shopping goes back to Shop.
-    func makeCartFlow() -> some View {
+    package func makeCartFlow() -> some View {
         factory.makeCart(
             products: cart.products(),
             onCheckout: { self.cart.onCheckout() },
@@ -188,7 +188,7 @@ final class ProductsCoordinator: StackCoordinator {
     // The presented sheet, with the accounts flow over it when the wish list asked a guest to sign
     // in.
     @ViewBuilder
-    func makeSheetFlow() -> some View {
+    package func makeSheetFlow() -> some View {
         if let sheetRouter = sheet.router, let presentedSheet = sheet.sheet {
             WaypointStack(sheetRouter) {
                 makeSheetScreen(for: presentedSheet)
@@ -215,7 +215,7 @@ final class ProductsCoordinator: StackCoordinator {
         }
     }
 
-    func showProduct(_ product: Product) {
+    package func showProduct(_ product: Product) {
         let route = ProductRoute(
             id: product.id,
             preview: product
@@ -223,7 +223,7 @@ final class ProductsCoordinator: StackCoordinator {
         router.push(route)
     }
 
-    func showCollection(_ collection: ProductCollection) {
+    package func showCollection(_ collection: ProductCollection) {
         let route = CollectionRoute(
             id: collection.id,
             preview: collection
@@ -232,14 +232,14 @@ final class ProductsCoordinator: StackCoordinator {
     }
 
     // Shop's Filter and Wish list, for the main tabs' navigation bar.
-    func makeShopToolbar() -> ShopToolbar {
+    package func makeShopToolbar() -> ShopToolbar {
         ShopToolbar(
             onFilter: { self.showFilters() },
             onWishlist: { self.openWishlist() }
         )
     }
 
-    func showFilters() {
+    package func showFilters() {
         showSheet(
             .filters,
             route: FilterRoute(),
@@ -247,7 +247,7 @@ final class ProductsCoordinator: StackCoordinator {
         )
     }
 
-    func showSaved() {
+    package func showSaved() {
         showSheet(
             .saved,
             route: SavedRoute(),
@@ -256,7 +256,7 @@ final class ProductsCoordinator: StackCoordinator {
     }
 
     // Shop's Wish list button: starts the wish list's flow as a sheet.
-    func openWishlist() {
+    package func openWishlist() {
         let wishlist = factory.makeWishlistFlow(onCloseAll: { self.dismissAllSheets() })
         let outcome = router.present(wishlist, style: AppSheets.large) { _ in }
         guard outcome.didChange else {
@@ -269,38 +269,38 @@ final class ProductsCoordinator: StackCoordinator {
     // The saved sheet's View wish list: dismisses the saved sheet's flow, then starts the wish
     // list's, since a stack shows one presentation at a time. Both happen before the sheet redraws,
     // so it swaps its content and grows instead of closing and opening again.
-    func showWishlist() {
+    package func showWishlist() {
         router.dismiss()
         openWishlist()
     }
 
-    func addToCart(_ product: Product) {
+    package func addToCart(_ product: Product) {
         cart.onAddToCart(product)
     }
 
-    func goToCart() {
+    package func goToCart() {
         cart.onGoToCart()
     }
 
-    func showShop() {
+    package func showShop() {
         router.popToRoot()
     }
 
-    func save(_ product: Product) {
+    package func save(_ product: Product) {
         gate.requireAccount(for: .save) { self.addToWishlist(product) }
     }
 
-    func dismissSheet() {
+    package func dismissSheet() {
         router.dismiss()
     }
 
     // Done on Signed in: the wish list and the accounts flow over it close in one change.
-    func dismissAllSheets() {
+    package func dismissAllSheets() {
         router.dismissAll()
     }
 
     // Takes the system's own dismissal of the sheet, a swipe down.
-    func syncSheet(_ isShowing: Bool) {
+    package func syncSheet(_ isShowing: Bool) {
         guard !isShowing else {
             return
         }
@@ -308,7 +308,7 @@ final class ProductsCoordinator: StackCoordinator {
     }
 
     // Drops the sheet's router once the sheet has gone.
-    func releaseSheet() {
+    package func releaseSheet() {
         if let sheetRouter = sheet.router {
             gate.finishAuth(over: sheetRouter)
         }
@@ -334,7 +334,7 @@ final class ProductsCoordinator: StackCoordinator {
 
     // Pushes the launch products in one change, then makes the follow-up change while that push
     // still animates. Runs once, when the shop first appears.
-    func playLaunchSteps() async {
+    package func playLaunchSteps() async {
         guard !hasPlayedLaunchSteps, !launchSteps.productIDs.isEmpty else {
             return
         }

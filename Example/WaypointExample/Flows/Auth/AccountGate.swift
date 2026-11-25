@@ -37,7 +37,7 @@ import Waypoint
 // - `SessionAccountGating`, so the Account tab opens sign in and signs out without naming this
 //   type.
 @Observable
-final class AccountGate: SheetAccountGating, SessionAccountGating {
+package final class AccountGate: SheetAccountGating, SessionAccountGating {
     private static let noticeDuration = Duration.seconds(3)
     private static let signInTrigger = "sign_in"
 
@@ -54,28 +54,28 @@ final class AccountGate: SheetAccountGating, SessionAccountGating {
     private var presentedAuth: AuthCoordinator?
     // `var` for the same reason as `presentedAuth`: the sizes the presenting router gives the
     // sheet.
-    private(set) var authSheetOptions: SheetOptions?
+    package private(set) var authSheetOptions: SheetOptions?
     // `var` for the same reason as `presentedAuth`: the sheet's router the flow opened over, or
     // `nil` when it opened over the tabs.
     private var authPresenter: StackRouter?
     // `var` because `showSignIn(for:then:)` keeps why the sheet opened until the reader signs in.
     private var reason: SignInReason
     // `var` because signing in and out set it, and its timer clears it.
-    private(set) var notice: Notice?
+    package private(set) var notice: Notice?
     // `var` because each notice replaces the timer of the one before it.
     @ObservationIgnored private var noticeTimer: Task<Void, Never>?
 
     // Whether the accounts flow is presented over the tabs.
-    var isShowingAuth: Bool {
+    package var isShowingAuth: Bool {
         tabs.presented != nil
     }
 
     // The accounts flow over the tabs, which `MainTabView` draws.
-    var tabsAuth: AuthCoordinator? {
+    package var tabsAuth: AuthCoordinator? {
         authPresenter == nil ? presentedAuth : nil
     }
 
-    init(
+    package init(
         session: Session,
         factory: AuthFactory,
         tabs: TabRouter<MainTab>
@@ -93,7 +93,7 @@ final class AccountGate: SheetAccountGating, SessionAccountGating {
         noticeTimer = nil
     }
 
-    func requireAccount(
+    package func requireAccount(
         for reason: SignInReason,
         then action: @escaping () -> Void
     ) {
@@ -104,7 +104,7 @@ final class AccountGate: SheetAccountGating, SessionAccountGating {
         showSignIn(for: reason, then: action)
     }
 
-    func showSignIn(
+    package func showSignIn(
         for reason: SignInReason = .account,
         then action: (() -> Void)? = nil
     ) {
@@ -123,7 +123,7 @@ final class AccountGate: SheetAccountGating, SessionAccountGating {
     // Like `requireAccount(for:then:)`, but a guest gets the accounts flow over `presenter`, the
     // router of the sheet the action is in. Once they sign in, the action runs at once and the flow
     // shows Signed in, whose Done runs `done`.
-    func requireAccount(
+    package func requireAccount(
         for reason: SignInReason,
         over presenter: StackRouter,
         then action: @escaping () -> Void,
@@ -151,12 +151,12 @@ final class AccountGate: SheetAccountGating, SessionAccountGating {
     }
 
     // Whether the accounts flow is presented over the sheet `router` draws.
-    func isShowingAuth(over router: StackRouter) -> Bool {
+    package func isShowingAuth(over router: StackRouter) -> Bool {
         authPresenter === router && router.presented != nil
     }
 
     // The accounts flow over the sheet `router` draws, which that sheet draws.
-    func authFlow(over router: StackRouter) -> AnyView? {
+    package func authFlow(over router: StackRouter) -> AnyView? {
         guard authPresenter === router, let presentedAuth else {
             return nil
         }
@@ -164,12 +164,12 @@ final class AccountGate: SheetAccountGating, SessionAccountGating {
     }
 
     // Ends the session and says so; the reader stays where they are, as a guest.
-    func signOut() {
+    package func signOut() {
         session.signOut()
         show(Notice(title: "Signed out", detail: nil))
     }
 
-    func dismissAuth() {
+    package func dismissAuth() {
         if let authPresenter {
             authPresenter.dismiss()
         } else {
@@ -178,7 +178,7 @@ final class AccountGate: SheetAccountGating, SessionAccountGating {
     }
 
     // Takes the system's own dismissal of the sheet, a swipe down.
-    func syncAuth(_ isShowing: Bool) {
+    package func syncAuth(_ isShowing: Bool) {
         guard !isShowing else {
             return
         }
@@ -186,7 +186,7 @@ final class AccountGate: SheetAccountGating, SessionAccountGating {
     }
 
     // Once the sheet has gone: drops the flow, then runs the held action if the reader signed in.
-    func finishAuth() {
+    package func finishAuth() {
         presentedAuth = nil
         authSheetOptions = nil
         authPresenter = nil
@@ -194,7 +194,7 @@ final class AccountGate: SheetAccountGating, SessionAccountGating {
     }
 
     // Once the accounts flow over the sheet `router` draws has gone, by itself or with that sheet.
-    func finishAuth(over router: StackRouter) {
+    package func finishAuth(over router: StackRouter) {
         guard authPresenter === router else {
             return
         }

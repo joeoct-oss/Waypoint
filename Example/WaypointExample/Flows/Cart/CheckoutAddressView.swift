@@ -15,16 +15,16 @@ import SwiftUI
 // Checkout's first step: the saved addresses as a choice, one of them chosen, and Add a new address
 // below them, with Continue to payment at the bottom and Close in the bar. When an address was just
 // added, a toast says so over the bottom. The screen reports each choice.
-struct CheckoutAddressView: View {
-    let addresses: [Address]
-    let selectedID: String?
-    let savedNotice: Address?
-    let onSelect: (Address) -> Void
-    let onAddAddress: () -> Void
-    let onContinue: () -> Void
-    let onClose: () -> Void
+package struct CheckoutAddressView: View {
+    package let addresses: [Address]
+    package let selectedID: String?
+    package let savedNotice: Address?
+    package let onSelect: (Address) -> Void
+    package let onAddAddress: () -> Void
+    package let onContinue: () -> Void
+    package let onClose: () -> Void
 
-    var body: some View {
+    package var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 CheckoutStepHeader(
@@ -102,10 +102,10 @@ struct CheckoutAddressView: View {
 
 // The dark toast that says a new address was saved and chosen, with the result the form handed back
 // in Waypoint's log style.
-struct SavedAddressToast: View {
-    let address: Address
+package struct SavedAddressToast: View {
+    package let address: Address
 
-    var body: some View {
+    package var body: some View {
         HStack(spacing: Spacing.medium) {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(ToastColor.success)
@@ -128,9 +128,9 @@ struct SavedAddressToast: View {
 }
 
 // The toast's colors. The toast is always dark, so it reads over any screen in both appearances.
-enum ToastColor {
-    static let background = Color(artHex: 0x151A3D)
-    static let text = Color(artHex: 0xEEF0FF)
-    static let detail = Color(artHex: 0xB4BADB)
-    static let success = Color(artHex: 0x4FD1A1)
+package enum ToastColor {
+    package static let background = Color(artHex: 0x151A3D)
+    package static let text = Color(artHex: 0xEEF0FF)
+    package static let detail = Color(artHex: 0xB4BADB)
+    package static let success = Color(artHex: 0x4FD1A1)
 }

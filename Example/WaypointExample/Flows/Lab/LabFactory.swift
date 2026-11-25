@@ -15,16 +15,16 @@ import Waypoint
 // push, Tabs and Sheet stories' coordinators and their child coordinators, each on the Lab's
 // navigation configuration, and every Lab screen the Account tab and those coordinators show. The
 // coordinators pass in what each screen reports, so navigation stays in the coordinators.
-struct LabFactory {
+package struct LabFactory {
     private let dependencies: LabDependencies
 
-    init(dependencies: LabDependencies) {
+    package init(dependencies: LabDependencies) {
         self.dependencies = dependencies
     }
 
     // The Lab's demos. `reviewsDelay` is how long the demo reviews take to load; `nil` keeps the
     // usual delay.
-    func makeDemos(reviewsDelay: Duration? = nil) -> LabDemoCoordinator {
+    package func makeDemos(reviewsDelay: Duration? = nil) -> LabDemoCoordinator {
         LabDemoCoordinator(
             factory: self,
             navigation: dependencies.navigation,
@@ -32,7 +32,7 @@ struct LabFactory {
         )
     }
 
-    func makeDetailPush(onClose: @escaping () -> Void) -> DetailPushCoordinator {
+    package func makeDetailPush(onClose: @escaping () -> Void) -> DetailPushCoordinator {
         DetailPushCoordinator(
             factory: self,
             navigation: dependencies.navigation,
@@ -41,14 +41,14 @@ struct LabFactory {
     }
 
     // Write a review for `product`, the child flow Detail push pushes on its own stack.
-    func makeDetailReview(for product: Product) -> DetailReviewCoordinator {
+    package func makeDetailReview(for product: Product) -> DetailReviewCoordinator {
         DetailReviewCoordinator(
             product: product,
             factory: self
         )
     }
 
-    func makeTabsDemo(onClose: @escaping () -> Void) -> TabsDemoCoordinator {
+    package func makeTabsDemo(onClose: @escaping () -> Void) -> TabsDemoCoordinator {
         TabsDemoCoordinator(
             factory: self,
             navigation: dependencies.navigation,
@@ -57,7 +57,7 @@ struct LabFactory {
     }
 
     // The coordinator of `tab` in the Tabs story, which holds `demo` without keeping it alive.
-    func makeTabsDemoTab(
+    package func makeTabsDemoTab(
         _ tab: DemoTab,
         demo: TabsDemoCoordinator
     ) -> TabsDemoTabCoordinator {
@@ -68,7 +68,7 @@ struct LabFactory {
         )
     }
 
-    func makeSheetDemo(onClose: @escaping () -> Void) -> SheetDemoCoordinator {
+    package func makeSheetDemo(onClose: @escaping () -> Void) -> SheetDemoCoordinator {
         SheetDemoCoordinator(
             navigation: dependencies.navigation,
             onClose: onClose
@@ -77,7 +77,7 @@ struct LabFactory {
 
     // A branch's list of entries: SwiftUI's in SwiftUI, UIKit's in a view controller.
     @ViewBuilder
-    func makeBranch(
+    package func makeBranch(
         _ branch: Branch,
         onSelect: @escaping (FlowEntry) -> Void
     ) -> some View {
@@ -91,7 +91,7 @@ struct LabFactory {
 
     // The placeholder an entry that isn't built yet shows, of the entry's kind.
     @ViewBuilder
-    func makePlaceholder(for entry: FlowEntry) -> some View {
+    package func makePlaceholder(for entry: FlowEntry) -> some View {
         switch entry.kind {
         case .swiftUI:
             PlaceholderView(entry: entry)
@@ -104,7 +104,7 @@ struct LabFactory {
     // result story's Open reports `onOpenLateResult`. The no-router story is reached here only
     // when the account stack is above it; the Lab opens it full screen instead.
     @ViewBuilder
-    func makeStory(
+    package func makeStory(
         _ story: ViewModelStory,
         demos: LabDemoCoordinator,
         onTry: @escaping (NavigationStyle) -> Void,
@@ -125,12 +125,12 @@ struct LabFactory {
         }
     }
 
-    func makeNoRouter() -> NoRouterView {
+    package func makeNoRouter() -> NoRouterView {
         NoRouterView()
     }
 
     // The navigator demo's model on `router`, which declares the demo shop on that stack.
-    func makeProductModel(
+    package func makeProductModel(
         on router: StackRouter,
         reviewsDelay: Duration,
         onLateOutcome: @escaping (NavigationOutcome) -> Void
@@ -142,32 +142,32 @@ struct LabFactory {
         )
     }
 
-    func makeOutputsProduct(onBuy: @escaping () -> Void) -> OutputsProductView {
+    package func makeOutputsProduct(onBuy: @escaping () -> Void) -> OutputsProductView {
         OutputsProductView(onBuy: onBuy)
     }
 
-    func makeNavigatorProduct(model: LabProductModel) -> NavigatorProductView {
+    package func makeNavigatorProduct(model: LabProductModel) -> NavigatorProductView {
         NavigatorProductView(model: model)
     }
 
-    func makeWrapperProduct() -> WrapperProductView {
+    package func makeWrapperProduct() -> WrapperProductView {
         WrapperProductView()
     }
 
-    func makeLabCart() -> LabCartView {
+    package func makeLabCart() -> LabCartView {
         LabCartView()
     }
 
-    func makeLabReviews() -> LabReviewsView {
+    package func makeLabReviews() -> LabReviewsView {
         LabReviewsView()
     }
 
-    func makeTabsDemoFlow(_ demo: TabsDemoCoordinator) -> TabsDemoFlowView {
+    package func makeTabsDemoFlow(_ demo: TabsDemoCoordinator) -> TabsDemoFlowView {
         TabsDemoFlowView(demo: demo)
     }
 
     // One tab's screen of the Tabs story.
-    func makeTabsDemoScreen(
+    package func makeTabsDemoScreen(
         tab: DemoTab,
         selection: DemoTab,
         showsAllTabs: Bool,
@@ -184,7 +184,7 @@ struct LabFactory {
     }
 
     // The Sheet story's stack, with the sheets and covers it presents.
-    func makeSheetDemoFlow(_ demo: SheetDemoCoordinator) -> SheetDemoStack {
+    package func makeSheetDemoFlow(_ demo: SheetDemoCoordinator) -> SheetDemoStack {
         SheetDemoStack(
             demo: demo,
             router: demo.router,
@@ -192,7 +192,7 @@ struct LabFactory {
         )
     }
 
-    func makeDetailPushList(
+    package func makeDetailPushList(
         onSelect: @escaping (Product) -> Void,
         onClose: @escaping () -> Void
     ) -> DetailPushListView {
@@ -205,7 +205,7 @@ struct LabFactory {
 
     // The product with the route's id, or `nil` when the catalog has none. `postedReview` is the
     // stars a posted review gave it.
-    func makeDetailPushProduct(
+    package func makeDetailPushProduct(
         for route: DetailProductRoute,
         postedReview: (Product) -> Int?,
         onAddToCart: @escaping (Product) -> Void,
@@ -225,18 +225,18 @@ struct LabFactory {
     }
 
     // The cart of the route's product, or `nil` when the catalog has none.
-    func makeDetailPushCart(for route: DetailCartRoute) -> DetailPushCartView? {
+    package func makeDetailPushCart(for route: DetailCartRoute) -> DetailPushCartView? {
         guard let product = dependencies.catalog.product(id: route.productID) else {
             return nil
         }
         return DetailPushCartView(product: product)
     }
 
-    func makeDetailReviewRating(onRate: @escaping (Int) -> Void) -> DetailReviewRatingView {
+    package func makeDetailReviewRating(onRate: @escaping (Int) -> Void) -> DetailReviewRatingView {
         DetailReviewRatingView(onRate: onRate)
     }
 
-    func makeDetailReviewNote(
+    package func makeDetailReviewNote(
         rating: Int,
         onPost: @escaping () -> Void
     ) -> DetailReviewNoteView {

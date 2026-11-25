@@ -13,12 +13,12 @@ import SwiftUI
 // Signed in, the last step of the accounts flow when it opened over another sheet: who is signed
 // in, what carried on, and Done, which the screen only reports. The coordinator that opened the
 // sheets closes them all in one change. Back is hidden, because the reader is signed in now.
-struct SignedInView: View {
-    let name: String
-    let resumedAction: String?
-    let onDone: () -> Void
+package struct SignedInView: View {
+    package let name: String
+    package let resumedAction: String?
+    package let onDone: () -> Void
 
-    var body: some View {
+    package var body: some View {
         VStack(spacing: Spacing.medium) {
             Image(systemName: "checkmark.circle.fill")
                 .font(Typography.display)

@@ -1,15 +1,16 @@
 //
 //  CheckoutBuilderTests.swift
-//  WaypointExampleTests
+//  ExampleCartTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCart
 import ExampleServices
 import ExampleStore
+import ExampleTestSupport
 import Testing
-@testable import WaypointExample
 
 // One checkout's draft (planning #424): the order it places has the cart's products, the chosen
 // address and the card, placing it empties the cart, and with no address it can't be placed.

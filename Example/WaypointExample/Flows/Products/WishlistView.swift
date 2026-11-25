@@ -14,17 +14,29 @@ import SwiftUI
 // The wish list: the products the reader saved. As a sheet it can grow, closes with Done, and
 // suggests a few more products under "You may also like", each with Save, which the sheet only
 // reports. Pushed from Account it has no Done and no suggestions.
-struct WishlistView: View {
+package struct WishlistView: View {
     private static let suggestionsTitle = "You may also like"
     private static let emptyLine = "Nothing saved yet."
     private static let saveTitle = "Save"
 
-    let products: [Product]
-    let suggestions: [Product]
-    let onSave: ((Product) -> Void)?
-    let onDone: (() -> Void)?
+    package let products: [Product]
+    package let suggestions: [Product]
+    package let onSave: ((Product) -> Void)?
+    package let onDone: (() -> Void)?
 
-    var body: some View {
+    package init(
+        products: [Product],
+        suggestions: [Product],
+        onSave: ((Product) -> Void)?,
+        onDone: (() -> Void)?
+    ) {
+        self.products = products
+        self.suggestions = suggestions
+        self.onSave = onSave
+        self.onDone = onDone
+    }
+
+    package var body: some View {
         list
             .navigationTitle("Wish list")
             .navigationBarTitleDisplayMode(.inline)

@@ -11,10 +11,10 @@ import Waypoint
 
 // The demo product in the outputs style: the view knows nothing from Waypoint and reports Add to
 // cart, and the coordinator that made it pushes.
-struct OutputsProductView: View {
-    let onBuy: () -> Void
+package struct OutputsProductView: View {
+    package let onBuy: () -> Void
 
-    var body: some View {
+    package var body: some View {
         LabProductContent(
             note: NavigationStyle.outputs.pusher,
             detail: NavigationStyle.outputs.explanation,
@@ -27,10 +27,10 @@ struct OutputsProductView: View {
 
 // The demo product in the injected-navigator style: the view hands each tap to its model, which
 // navigates with the navigator the stack's destination gave it.
-struct NavigatorProductView: View {
-    let model: LabProductModel
+package struct NavigatorProductView: View {
+    package let model: LabProductModel
 
-    var body: some View {
+    package var body: some View {
         LabProductContent(
             note: NavigationStyle.navigator.pusher,
             detail: detail,
@@ -54,10 +54,10 @@ struct NavigatorProductView: View {
 
 // The demo product in the property-wrapper style: the view finds the nearest `LabShopFlow` stack
 // itself and pushes the cart.
-struct WrapperProductView: View {
+package struct WrapperProductView: View {
     @FlowNavigation(LabShopFlow.self) private var shop
 
-    var body: some View {
+    package var body: some View {
         LabProductContent(
             note: NavigationStyle.wrappers.pusher,
             detail: NavigationStyle.wrappers.explanation,

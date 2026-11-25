@@ -1,14 +1,15 @@
 //
 //  ProductsFactoryTests.swift
-//  WaypointExampleTests
+//  ExampleProductsTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleProducts
+import ExampleTestSupport
 import SwiftUI
 import Testing
-@testable import WaypointExample
 
 // Shop and Search, built by `ProductsFactory` (planning #424): a product page shows the product the
 // route names from the catalog it was given, and a route to a product the catalog lacks draws
