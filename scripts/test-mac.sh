@@ -31,6 +31,9 @@
 # full or coverage run then warms the cache for its tree (`tuist cache`), and a failed warm only
 # warns. The package's own steps never use the cache.
 #
+# The package's own test steps send their results to Tuist's Test Insights too (planning #457), except
+# offline; a failed send only warns.
+#
 # Every run that uses Tuist collects code coverage (`Example/Tuist.swift`, planning #431) and tells Tuist
 # the branch it tests through GITHUB_HEAD_REF, which Tuist reads on any machine: the branch the
 # clone is on, or, on a merge batch's detached commit, the batch's branches joined with `+`. A run
@@ -65,7 +68,7 @@
 #   WAYPOINT_SIMULATOR        the project simulator (default waypoint-01), created when missing.
 #   WAYPOINT_IOS17_SIMULATOR  the iOS 17 simulator for release (default waypoint-02); must exist.
 #   WAYPOINT_JOBS             build jobs (default half the performance cores, at least 2).
-#   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 2;
+#   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 3;
 #                             1 runs them on the simulator itself).
 #   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing, the binary
 #                             cache and uploads (default 0).
@@ -251,7 +254,7 @@ XCODE_TEST_FLAGS=(-quiet -jobs "$JOBS" -parallel-testing-enabled NO)
 
 # The example app's tests run on this many simulator copies at once (planning #427), so they take about
 # half as long.
-UI_WORKERS="${WAYPOINT_UI_WORKERS:-2}"
+UI_WORKERS="${WAYPOINT_UI_WORKERS:-3}"
 if [[ "$UI_WORKERS" -gt 1 ]]; then
     EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled YES -parallel-testing-worker-count "$UI_WORKERS")
 else
@@ -574,15 +577,29 @@ tuist_cmd() {
 # The package's unit tests on the simulator `udid`, built with warnings as errors: the one
 # simulator build checks the warnings and runs the tests. The result bundle `bundle_name` in
 # `.build/results` puts the step's test count and slowest tests in the report, as the example app's
-# steps do.
+# steps do, and then goes to Tuist's Test Insights, passed or failed, so the package's run times and
+# flaky tests sit beside the example app's (planning #457). The step keeps the tests' own result.
 package_tests_on() {
     local udid="$1" bundle_name="$2"
+    local bundle="$RESULTS_DIR/$bundle_name.xcresult" status=0
     mkdir -p "$RESULTS_DIR"
     scripts/package-xcodebuild.sh test "${XCODE_TEST_FLAGS[@]}" \
         -scheme Waypoint-Package \
         -destination "platform=iOS Simulator,id=$udid" \
-        -resultBundlePath "$RESULTS_DIR/$bundle_name.xcresult" \
-        SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+        -resultBundlePath "$bundle" \
+        SWIFT_TREAT_WARNINGS_AS_ERRORS=YES || status=$?
+    send_package_test_results "$bundle" || true
+    return "$status"
+}
+
+# Sends the result bundle `$1` to the project's Tuist dashboard, unless the run is offline or the
+# tests left no bundle. Sending only adds to the dashboard, so a failure warns and never fails a step.
+send_package_test_results() {
+    [[ "$PACKAGE_TEST_INSIGHTS" == on && -d "$1" ]] || return 0
+    # Tuist 4.218.5 takes the bundle as its last argument; `--result-bundle-path` is unknown to it.
+    if ! tuist_cmd inspect test --path Example "$1"; then
+        echo "warning: sending the package's test results to Tuist failed; the run goes on" >&2
+    fi
 }
 
 # Prints the iOS version of the simulator `udid`, such as 27.2, read from its runtime's name.
@@ -638,6 +655,11 @@ example_tests_on() {
     # `Example/Tuist.swift` turns the binary cache's default profile on only with
     # TUIST_WAYPOINT_BINARY_CACHE=1; everywhere else the package builds from source.
     local -x TUIST_WAYPOINT_BINARY_CACHE=0
+    # `tuist test` sends this run's results to Test Insights itself, so the scheme's test
+    # post-action, which sends them for runs in Xcode, skips (planning #456). It goes to xcodebuild as
+    # a build setting, as WAYPOINT_TUIST_OFFLINE does, because the post-action reads the build
+    # settings of the app target, and in the environment too.
+    local -x WAYPOINT_TUIST_TEST_RUN=1
     # Runs warm only simulator slices, and `tuist test` asks for every destination unless told
     # otherwise, so without `--destination simulator` it finds no binary (measured 2026-11-24).
     if [[ "$SELECTIVE_TESTING" != offline && "$BINARY_CACHE" == on ]]; then
@@ -661,7 +683,7 @@ example_tests_on() {
         -T "$bundle" \
         "$@" \
         -- -quiet -jobs "$JOBS" -derivedDataPath "$EXAMPLE_DERIVED_DATA" "${EXAMPLE_PARALLEL_FLAGS[@]}" \
-        ${offline_settings[@]+"${offline_settings[@]}"}
+        WAYPOINT_TUIST_TEST_RUN=1 ${offline_settings[@]+"${offline_settings[@]}"}
 }
 
 # What this run does.
@@ -751,10 +773,16 @@ else
     WARM_BINARY_CACHE=false
 fi
 echo "binary cache: $BINARY_CACHE, release reports binary cache off, warm after a pass $WARM_BINARY_CACHE"
+# The package's test steps send their results to Tuist's Test Insights, except offline (planning #457).
+if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
+    PACKAGE_TEST_INSIGHTS=off
+else
+    PACKAGE_TEST_INSIGHTS=on
+fi
 echo "tuist branch: ${GITHUB_HEAD_REF:-none}"
 echo "tuist pull request: ${TUIST_PULL_REQUEST:-none}"
 if $PLAN_ONLY; then
-    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, binary cache $BINARY_CACHE, warm binary cache $WARM_BINARY_CACHE, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}"
+    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, binary cache $BINARY_CACHE, warm binary cache $WARM_BINARY_CACHE, package test insights $PACKAGE_TEST_INSIGHTS, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}"
     trap - EXIT
     exit 0
 fi
