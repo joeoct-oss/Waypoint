@@ -1,10 +1,13 @@
 # Fails a pull request whose branch doesn't follow the branch rule:
 # <type>/<issue number>-<plain words>, for example fix/462-wishlist-child-flow.
-# - type: feature, fix, docs, test, refactor, chore, ci or spike.
+# - type: one lowercase plain word that names the kind of work. The list is open:
+#   feature, fix, docs, test, refactor, chore, ci and spike are examples, not a fixed set.
 # - The words are lowercase plain English joined by hyphens, with no plan, decision or
-#   issue numbers in them (a person checks that part in review).
-# The same file is in Waypoint, Waypoint-planning and Understudy (Yousef, 2026-11-21 and
-# 2026-11-25: one git rule for every repo).
+#   issue numbers in them (a person checks that part, and that the type fits, in review).
+# - A type that is a tool's own branch prefix (claude, codex, copilot, dependabot) fails, so
+#   generated or tool-assigned names fail even when they carry an issue number.
+# The same file is in every repo (Yousef, 2026-11-21 and 2026-11-25: one git rule for
+# every branch in every repo and project).
 name: Branch name
 
 on:
@@ -23,10 +26,15 @@ jobs:
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
-          pattern='^(feature|fix|docs|test|refactor|chore|ci|spike)/[0-9]+-[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+          pattern='^[a-z]+/[0-9]+-[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+          tool_prefixes='^(claude|codex|copilot|dependabot)/'
+          if [[ "$HEAD_REF" =~ $tool_prefixes ]]; then
+            echo "::error::Branch '$HEAD_REF' starts with a tool's own prefix. Generated or tool-assigned branch names aren't allowed: the type names the kind of work, such as feature, fix or docs. Push the work to a branch with a correct name and open the PR from it."
+            exit 1
+          fi
           if [[ "$HEAD_REF" =~ $pattern ]]; then
             echo "Branch '$HEAD_REF' follows the rule."
             exit 0
           fi
-          echo "::error::Branch '$HEAD_REF' doesn't follow <type>/<issue#>-<plain-words>, for example fix/462-wishlist-child-flow. Types: feature, fix, docs, test, refactor, chore, ci, spike. Push the work to a branch with a correct name and open the PR from it."
+          echo "::error::Branch '$HEAD_REF' doesn't follow <type>/<issue#>-<plain-words>, for example fix/462-wishlist-child-flow. The type is one lowercase word that names the kind of work, such as feature, fix, docs, test, refactor, chore, ci or spike. Push the work to a branch with a correct name and open the PR from it."
           exit 1
