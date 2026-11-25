@@ -144,13 +144,13 @@ else
     fail "the stand-in tuist ran, never the real one"
 fi
 # The example app's tests run through `tuist test` (planning #427): on the project simulator, into a
-# result bundle, with two parallel workers.
+# result bundle, with three parallel workers (planning #447).
 TUIST_CALL=$(grep "^tuist test WaypointExample" "$CALLS" | head -1)
 for part in "--path Example" "--device waypoint-01" \
     "--os 27.2" "--skip-quarantine" \
     "-T .build/results/example-only.xcresult" \
     "--test-targets WaypointExampleUITests/StackTests/testPushAndBack" \
-    "-parallel-testing-enabled YES" "-parallel-testing-worker-count 2"; do
+    "-parallel-testing-enabled YES" "-parallel-testing-worker-count 3"; do
     if [[ "$TUIST_CALL" == *" $part"* ]]; then
         pass "tuist test gets $part"
     else
