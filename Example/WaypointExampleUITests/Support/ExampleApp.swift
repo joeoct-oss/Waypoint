@@ -30,6 +30,8 @@ enum ExampleApp {
         missingDestination: Bool = false,
         labReviewsSeconds: Int? = nil
     ) -> XCUIApplication {
+        // A fresh launch has no offer from an earlier test's sign in.
+        UITestSteps.savePasswordOfferMayCome = false
         let app = XCUIApplication()
         app.launchArguments = arguments(
             signedIn: signedIn,

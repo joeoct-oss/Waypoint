@@ -12,7 +12,8 @@
 # - xcodebuild runs with Tuist's package project (`Waypoint.xcodeproj` and `Derived/`) moved aside;
 # - the project is back after a pass, a failure and a stop with TERM, and `--restore` puts back
 #   what a stopped run left aside;
-# - a committed `Waypoint.xcodeproj` is never moved, and xcodebuild doesn't run.
+# - a committed `Waypoint.xcodeproj` is never moved, and xcodebuild doesn't run;
+# - xcodebuild gets `-skipMacroValidation`, so Understudy's untrusted macros build (planning #506).
 #
 # Each case runs in a copy of the working tree with its own history, so the clone is never touched.
 #
@@ -38,6 +39,7 @@ if [[ -e Waypoint.xcodeproj || -e Derived ]]; then
 else
     echo "project aside" >>"$STUB_CALLS"
 fi
+printf '%s\n' "$@" >>"$STUB_CALLS.args"
 sleep "${STUB_SECONDS:-0}"
 exit "${STUB_STATUS:-0}"
 STUB
@@ -137,6 +139,16 @@ if ! helper scripts/package-xcodebuild.sh test >/dev/null 2>&1 && [[ ! -s "$CALL
     pass "a committed Waypoint.xcodeproj is never moved"
 else
     fail "a committed Waypoint.xcodeproj is never moved"
+fi
+
+# 6. xcodebuild gets -skipMacroValidation beside the arguments given.
+git -C "$TREE" rm -q --cached Waypoint.xcodeproj/project.pbxproj
+: >"$CALLS.args"
+if helper scripts/package-xcodebuild.sh test -scheme Waypoint-Package >/dev/null 2>&1 &&
+    grep -qx -- "-skipMacroValidation" "$CALLS.args" && grep -qx -- "Waypoint-Package" "$CALLS.args"; then
+    pass "xcodebuild gets -skipMacroValidation beside the arguments given"
+else
+    fail "xcodebuild gets -skipMacroValidation beside the arguments given"
 fi
 
 if [[ $FAILURES -gt 0 ]]; then
