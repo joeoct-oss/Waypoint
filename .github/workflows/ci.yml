@@ -1,13 +1,14 @@
-# Runs the Linux checks (scripts/test-linux.sh) on pull requests to main, in two parts: the script
-# checks, which need no Swift, on the runner host in the first job, and the Swift part in the
-# swift:6.4 container.
+# Runs the Linux checks (scripts/test-linux.sh) on pull requests to main, in two parts that run
+# side by side: the script checks, which need no Swift, on the runner host, and the Swift part in
+# the swift:6.4 container. A first short job only lists the changed files (and runs the two
+# Markdown checks on a docs only pull request), so every other job starts as soon as it ends.
 # Every job runs on Tuist runners (`tuist-linux`, planning #433), not GitHub-hosted runners, so CI uses the
 # Tuist account's Linux minutes instead of GitHub Actions minutes. Built to use few of them:
 # - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
 # - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**, docs-theme/**)
-#   skips both Swift jobs, which GitHub counts as passed; the first job, "Changed files and docs
-#   checks" (a required check too), still runs the two checks that read docs. On any other pull
-#   request it runs every script check, once. If that job fails, the Swift jobs run anyway,
+#   skips "Script checks" and both Swift jobs, which GitHub counts as passed; the first job,
+#   "Changed files and docs checks" (a required check too), runs the two checks that read docs
+#   instead. If that job fails, every other job runs in full anyway,
 # - a newer push cancels the run still going for the same PR,
 # - the SwiftPM build folder is cached between runs, keyed by Package.swift and Package.resolved
 #   only, so a pull request saves it once and later pushes restore it without saving again,
@@ -36,7 +37,7 @@ jobs:
     name: Changed files and docs checks
     if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
     runs-on: tuist-linux
-    timeout-minutes: 10
+    timeout-minutes: 5
     outputs:
       code: ${{ steps.files.outputs.code }}
     steps:
@@ -65,16 +66,32 @@ jobs:
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "Swift jobs run: $code"
 
-      # The script checks need no Swift, so they run here, each once. A docs only pull request
-      # runs only the two that read Markdown; any other runs all of them.
+      # A docs only pull request skips the other jobs, so the two checks that read Markdown run here.
       - name: Check comment line width and one import in docs
         if: steps.files.outputs.code == 'false'
         run: |
           scripts/check-comment-width.sh
           scripts/check-single-import.sh
 
+  scripts:
+    name: Script checks
+    needs: changes
+    # Runs unless the first job passed and found docs only, so a failed or cancelled first job
+    # never lets the checks skip.
+    if: >-
+      !cancelled() && vars.CI_ENABLED == 'true' && !github.event.pull_request.draft &&
+      !(needs.changes.result == 'success' && needs.changes.outputs.code == 'false')
+    runs-on: tuist-linux
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The script checks need no Swift, so they run on the runner host, each once, beside the
+      # Swift jobs.
       - name: Run the Linux script checks
-        if: steps.files.outputs.code == 'true'
         run: scripts/test-linux.sh --checks-only
 
   linux:
@@ -106,7 +123,7 @@ jobs:
           restore-keys: |
             linux-swift-6.4-
 
-      # The first job ran the script checks, so this runs only the Swift part.
+      # "Script checks" runs the script part beside this job, so this runs only the Swift part.
       - name: Run the Linux Swift checks
         run: scripts/test-linux.sh --swift-only
 

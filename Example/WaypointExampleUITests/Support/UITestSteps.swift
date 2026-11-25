@@ -24,6 +24,8 @@ enum UITestSteps {
     // lazily, so a row below the fold never shows without a scroll, and a long first wait would be
     // spent in full on every such row.
     static let revealWait: TimeInterval = 1
+    // How many times `reveal(_:)` swipes at least, however long the swipes take.
+    static let revealSwipes = 4
     static let pollInterval: TimeInterval = 0.25
     static let settleTime: TimeInterval = 1
     // How many times `setSwitch(to:)` taps a switch before it gives up.
@@ -33,7 +35,8 @@ enum UITestSteps {
     static let backButtonID = "BackButton"
     // How long a step waits for iOS's offer to save a password after a sign in. iOS 27.2 offers
     // it about 4.5 seconds after the tap, and the step goes on as soon as it shows. iOS 17.5
-    // never offers it, so there the step doesn't wait.
+    // never offers it, so there the step doesn't wait. An offer that comes later still, as it
+    // did once on a Mac under memory load (planning #479), is closed by `tapWhenReady()`.
     static let savePasswordOfferTimeout: TimeInterval = 10
     // The newest major iOS version that never offers to save a password.
     static let lastVersionWithoutSavePasswordOffer = 17
@@ -42,6 +45,10 @@ enum UITestSteps {
     }
     // The offer's button that closes it without saving.
     static let savePasswordNotNow = "Not Now"
+    // Set when `closeSavePasswordOffer()` stopped waiting before the offer showed, so it may still
+    // come and cover the app. Until it is closed, each `tapWhenReady()` looks for it first. Each
+    // test process runs one test at a time, so one flag is enough.
+    @MainActor static var savePasswordOfferMayCome = false
 }
 
 extension XCUIApplication {
@@ -55,8 +62,28 @@ extension XCUIApplication {
         }
         let notNow = buttons[UITestSteps.savePasswordNotNow]
         guard notNow.waitForExistence(timeout: UITestSteps.savePasswordOfferTimeout) else {
+            UITestSteps.savePasswordOfferMayCome = true
             return
         }
+        close(savePasswordOffer: notNow)
+    }
+
+    // Closes a late offer if it shows now, without waiting for it. It looks only while
+    // `savePasswordOfferMayCome` is set, so a test that saw its offer in time pays nothing.
+    @MainActor
+    func closeLateSavePasswordOffer() {
+        guard UITestSteps.savePasswordOfferMayCome else {
+            return
+        }
+        let notNow = buttons[UITestSteps.savePasswordNotNow]
+        if notNow.exists {
+            close(savePasswordOffer: notNow)
+        }
+    }
+
+    @MainActor
+    private func close(savePasswordOffer notNow: XCUIElement) {
+        UITestSteps.savePasswordOfferMayCome = false
         // A tap while the offer still fades in is lost, and the offer still covers the app while it
         // slides away. So the step taps only once the button takes taps, waits for the offer to go,
         // and taps again if it stayed, at most `maxTaps` times.
@@ -73,14 +100,19 @@ extension XCUIApplication {
 }
 
 extension XCUIElement {
-    // Waits for the element, fails the test if it never shows, and taps it.
+    // Waits for the element, fails the test if it never shows, and taps it. On a loaded Mac iOS's
+    // save password offer can come after `closeSavePasswordOffer()` stopped waiting and cover the
+    // app (planning #479), so a late offer is closed first. `reveal(_:)` and `goBack()` do the
+    // same.
     @MainActor
     func tapWhenReady(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
+        let shown = waitForExistence(timeout: UITestSteps.timeout)
+        XCUIApplication().closeLateSavePasswordOffer()
         XCTAssertTrue(
-            waitForExistence(timeout: UITestSteps.timeout),
+            shown,
             "missing \(identifier)",
             file: file,
             line: line
@@ -160,6 +192,7 @@ extension XCUIApplication {
     // when no Back is hittable, the first one that shows is tapped by its middle.
     @MainActor
     func goBack() {
+        closeLateSavePasswordOffer()
         let backs = navigationBars.allElementsBoundByIndex.map { bar in
             let back = bar.buttons[UITestSteps.backButtonID]
             return back.exists ? back : bar.buttons.element(boundBy: 0)
@@ -199,20 +232,24 @@ extension XCUIApplication {
 
     // Lists build rows lazily, so a row below the fold exists only after scrolling to it. Waits
     // briefly (`revealWait`) for a row that was about to show, so it is not scrolled away, then
-    // scrolls, and scrolls back down for a row that ends up under the navigation bar. It keeps
-    // scrolling until `timeout` passes rather than for a fixed number of swipes: a caller often
-    // reveals right after a tap that pushes, and on a loaded Mac the first swipes can land on the
-    // old screen before the new one arrives (planning #479).
+    // scrolls, and scrolls back down for a row that ends up under the navigation bar. It swipes at
+    // least `revealSwipes` times, and goes on until `timeout` passes: a caller often reveals right
+    // after a tap that pushes, so on a loaded Mac the first swipes can land on the old screen
+    // before the new one arrives, and each swipe can take seconds, so a time limit alone can
+    // leave too few swipes to reach a row far down a list (planning #479).
     @MainActor
     func reveal(_ element: XCUIElement) -> Bool {
+        closeLateSavePasswordOffer()
         let deadline = Date().addingTimeInterval(UITestSteps.timeout)
         _ = element.waitForExistence(timeout: UITestSteps.revealWait)
-        while !waitUntilTappable(element), Date() < deadline {
+        var swipes = 0
+        while !waitUntilTappable(element), swipes < UITestSteps.revealSwipes || Date() < deadline {
             if isAboveVisibleArea(element) {
                 swipeDown()
             } else {
                 swipeUp()
             }
+            swipes += 1
         }
         return isTappable(element)
     }
