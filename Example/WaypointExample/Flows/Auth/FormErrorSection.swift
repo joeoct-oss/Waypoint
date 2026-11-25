@@ -12,10 +12,10 @@ import SwiftUI
 
 // The reason a form's last request failed, such as a wrong password, shown as its own section in
 // the design system's error color.
-struct FormErrorSection: View {
-    let message: String?
+package struct FormErrorSection: View {
+    package let message: String?
 
-    var body: some View {
+    package var body: some View {
         if let message {
             makeSection(message)
         }

@@ -13,19 +13,19 @@ import Waypoint
 // Builds Shop and Search from `ProductsDependencies`: each stack's coordinator, Search's view
 // model, and every screen they show, from the catalog they were given. The coordinator passes in
 // what each screen reports, so navigation stays in the coordinator.
-struct ProductsFactory {
+package struct ProductsFactory {
     private static let suggestionCount = 3
 
     // What the feature uses, which its coordinator reads too.
-    let dependencies: ProductsDependencies
+    package let dependencies: ProductsDependencies
 
-    init(dependencies: ProductsDependencies) {
+    package init(dependencies: ProductsDependencies) {
         self.dependencies = dependencies
     }
 
     // A products stack starting at Shop or Search. Waypoint makes its router, which the main tabs
     // make the stack every tab shares.
-    func makeCoordinator(
+    package func makeCoordinator(
         start: ProductsStart,
         cart: ProductsCart
     ) -> ProductsCoordinator {
@@ -37,15 +37,15 @@ struct ProductsFactory {
     }
 
     // Search's view model on `router`, which declares the shop on that stack.
-    func makeSearchModel(on router: StackRouter) -> SearchModel {
+    package func makeSearchModel(on router: StackRouter) -> SearchModel {
         SearchModel.onShopStack(router, catalog: dependencies.catalog)
     }
 
-    func makeSearch(model: SearchModel) -> SearchView {
+    package func makeSearch(model: SearchModel) -> SearchView {
         SearchView(model: model)
     }
 
-    func makeProductList(
+    package func makeProductList(
         cart: [Product],
         onGoToCart: @escaping () -> Void,
         onSelect: @escaping (Product) -> Void,
@@ -62,7 +62,7 @@ struct ProductsFactory {
 
     // The product the route carries: the one the list handed over, else the catalog's with the
     // route's id, or `nil` when the catalog has none.
-    func makeProductDetail<Related: View>(
+    package func makeProductDetail<Related: View>(
         for route: ProductRoute,
         onAddToCart: @escaping (Product) -> Void,
         onSave: @escaping (Product) -> Void,
@@ -80,7 +80,7 @@ struct ProductsFactory {
     }
 
     // The collection the banner handed over, else the one with the route's id, or `nil`.
-    func makeCollection(
+    package func makeCollection(
         for route: CollectionRoute,
         onSelect: @escaping (Product) -> Void
     ) -> CollectionView? {
@@ -95,7 +95,7 @@ struct ProductsFactory {
 
     // The cart Go to cart pushes above a product, showing the Cart tab's `products`: the Cart
     // feature's screen, which the app hands in.
-    func makeCart(
+    package func makeCart(
         products: [Product],
         onCheckout: @escaping () -> Void,
         onShopMore: @escaping () -> Void
@@ -114,7 +114,7 @@ struct ProductsFactory {
     // reviews, which no screen of the stack draws, so the stack shows its missing-destination
     // screen.
     @ViewBuilder
-    func makeRelatedLink(to product: Product) -> some View {
+    package func makeRelatedLink(to product: Product) -> some View {
         let navigation = dependencies.navigation
         let route = ProductRoute(
             id: product.id,
@@ -135,16 +135,16 @@ struct ProductsFactory {
         }
     }
 
-    func makeFilters(onApply: @escaping () -> Void) -> FilterView {
+    package func makeFilters(onApply: @escaping () -> Void) -> FilterView {
         FilterView(onApply: onApply)
     }
 
-    func makeSaved(onViewWishlist: @escaping () -> Void) -> SavedView {
+    package func makeSaved(onViewWishlist: @escaping () -> Void) -> SavedView {
         SavedView(onViewWishlist: onViewWishlist)
     }
 
     // The wish list's flow, on the store's wish list. Done on Signed in over it runs `onCloseAll`.
-    func makeWishlistFlow(onCloseAll: @escaping () -> Void) -> WishlistCoordinator {
+    package func makeWishlistFlow(onCloseAll: @escaping () -> Void) -> WishlistCoordinator {
         WishlistCoordinator(
             factory: self,
             onCloseAll: onCloseAll
@@ -152,7 +152,7 @@ struct ProductsFactory {
     }
 
     // The wish list of `productIDs`, with up to three products not on it as suggestions.
-    func makeWishlist(
+    package func makeWishlist(
         productIDs: [Int],
         onSave: @escaping (Product) -> Void,
         onDone: @escaping () -> Void

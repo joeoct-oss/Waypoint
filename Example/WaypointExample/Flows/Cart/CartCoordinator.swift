@@ -36,28 +36,28 @@ import Waypoint
 // - `Observable` (from `@Observable`), so the cart's root and the tab's badge redraw when the cart
 //   or checkout changes.
 @Observable
-final class CartCoordinator: StackCoordinator {
+package final class CartCoordinator: StackCoordinator {
     private let store: LocalStore
     private let gate: any AccountGating
     private let factory: CartFactory
     private let onShopMore: () -> Void
     // `var` because `add(_:)` adds to it and `placeOrder()` empties it.
-    private(set) var products: [Product]
+    package private(set) var products: [Product]
     // `var` because `showCheckout()` keeps the checkout flow's router that the cart's router
     // presents, and `releaseCheckout()` drops it once the cover has gone, so the cover still draws
     // checkout while it slides down.
-    private(set) var checkoutRouter: StackRouter?
+    package private(set) var checkoutRouter: StackRouter?
     // `var` for the same reason as `checkoutRouter`: the open checkout's draft.
-    private(set) var checkout: CheckoutBuilder?
+    package private(set) var checkout: CheckoutBuilder?
 
     // The tab's root: the cart.
-    var root: some View {
+    package var root: some View {
         makeCartFlow()
     }
 
     // Whether checkout is presented over the cart. Every tab shares one stack, so a sheet another
     // tab presents doesn't count.
-    var isCheckingOut: Bool {
+    package var isCheckingOut: Bool {
         guard let checkoutRouter else {
             return false
         }
@@ -72,11 +72,11 @@ final class CartCoordinator: StackCoordinator {
 
     // The account gate's notice, such as "Signed in as" after a guest's Check out, which the
     // checkout cover would otherwise hide.
-    var accountNotice: Notice? {
+    package var accountNotice: Notice? {
         gate.notice
     }
 
-    init(
+    package init(
         dependencies: CartDependencies,
         factory: CartFactory,
         onShopMore: @escaping () -> Void
@@ -91,11 +91,11 @@ final class CartCoordinator: StackCoordinator {
     }
 
     // Registers checkout, which this stack presents rather than pushes.
-    func registerDestinations(on router: StackRouter) {
+    package func registerDestinations(on router: StackRouter) {
         router.register(CheckoutRoute.self)
     }
 
-    func makeCartFlow() -> some View {
+    package func makeCartFlow() -> some View {
         factory.makeCart(
             products: products,
             onCheckout: { self.checkOut() },
@@ -110,7 +110,7 @@ final class CartCoordinator: StackCoordinator {
     }
 
     @ViewBuilder
-    func makeCheckoutFlow() -> some View {
+    package func makeCheckoutFlow() -> some View {
         if let checkoutRouter, let checkout {
             WaypointStack(flow: CheckoutFlow.self, router: checkoutRouter) {
                 makeAddressStepFlow(checkout)
@@ -122,7 +122,7 @@ final class CartCoordinator: StackCoordinator {
     }
 
     @ViewBuilder
-    func makeStepFlow(
+    package func makeStepFlow(
         for step: CheckoutStep,
         in checkout: CheckoutBuilder
     ) -> some View {
@@ -134,12 +134,12 @@ final class CartCoordinator: StackCoordinator {
         }
     }
 
-    func checkOut() {
+    package func checkOut() {
         gate.requireAccount(for: .checkout) { self.showCheckout() }
     }
 
     // Opens checkout with a new draft from the cart.
-    func showCheckout() {
+    package func showCheckout() {
         let draft = factory.makeCheckoutBuilder()
         router.present(CheckoutRoute(), style: .fullScreenCover, trigger: "checkout_button")
         guard let presented = router.presented, presented !== checkoutRouter else {
@@ -149,27 +149,27 @@ final class CartCoordinator: StackCoordinator {
         checkoutRouter = presented
     }
 
-    func showShop() {
+    package func showShop() {
         onShopMore()
     }
 
-    func showAddAddress() {
+    package func showAddAddress() {
         checkout?.clearSavedNotice()
         checkoutRouter?.push(AddAddressRoute())
     }
 
-    func showPayment() {
+    package func showPayment() {
         checkout?.clearSavedNotice()
         checkoutRouter?.push(CheckoutStep.payment)
     }
 
-    func showReview() {
+    package func showReview() {
         checkoutRouter?.push(CheckoutStep.review)
     }
 
     // Takes the form's result: the draft keeps and chooses the address, and checkout goes back to
     // the address step.
-    func addAddress(
+    package func addAddress(
         _ address: Address,
         keepsIt: Bool
     ) {
@@ -177,7 +177,7 @@ final class CartCoordinator: StackCoordinator {
         checkoutRouter?.pop()
     }
 
-    func add(_ product: Product) {
+    package func add(_ product: Product) {
         guard !products.contains(product) else {
             return
         }
@@ -186,7 +186,7 @@ final class CartCoordinator: StackCoordinator {
     }
 
     // Payment and Review leave the path in the same change that shows Order placed.
-    func placeOrder() {
+    package func placeOrder() {
         guard checkout?.placeOrder() != nil else {
             return
         }
@@ -196,17 +196,17 @@ final class CartCoordinator: StackCoordinator {
         }
     }
 
-    func continueShopping() {
+    package func continueShopping() {
         dismissCheckout()
         showShop()
     }
 
-    func dismissCheckout() {
+    package func dismissCheckout() {
         router.dismiss()
     }
 
     // Takes the system's own dismissal of the cover.
-    func syncCheckout(_ isShowing: Bool) {
+    package func syncCheckout(_ isShowing: Bool) {
         guard !isShowing else {
             return
         }
@@ -214,7 +214,7 @@ final class CartCoordinator: StackCoordinator {
     }
 
     // Drops the checkout router and its draft once the cover has gone.
-    func releaseCheckout() {
+    package func releaseCheckout() {
         checkoutRouter = nil
         checkout = nil
     }

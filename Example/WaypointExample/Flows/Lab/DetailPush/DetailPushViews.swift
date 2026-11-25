@@ -12,10 +12,10 @@ import ExampleStore
 import SwiftUI
 
 // The Detail push flow's shop list: every product, and a tap reports the one picked.
-struct DetailPushListView: View {
-    let products: [Product]
-    let onSelect: (Product) -> Void
-    let onClose: () -> Void
+package struct DetailPushListView: View {
+    package let products: [Product]
+    package let onSelect: (Product) -> Void
+    package let onClose: () -> Void
 
     private var closeItem: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
@@ -24,7 +24,7 @@ struct DetailPushListView: View {
         }
     }
 
-    var body: some View {
+    package var body: some View {
         List {
             ForEach(products) { product in
                 ProductRow(product: product) { onSelect(product) }
@@ -39,15 +39,15 @@ struct DetailPushListView: View {
 // A product in the Detail push flow: its picture and details, the review it got, a banner whose
 // button pops back to the cart, Write a review in the navigation bar, and Add to cart at the
 // bottom. The view only reports taps.
-struct DetailPushProductView: View {
-    let product: Product
+package struct DetailPushProductView: View {
+    package let product: Product
     // The stars of the review posted for this product, or `nil` before one is.
-    let postedReview: Int?
-    let onAddToCart: () -> Void
-    let onBackToCart: () -> Void
-    let onWriteReview: () -> Void
+    package let postedReview: Int?
+    package let onAddToCart: () -> Void
+    package let onBackToCart: () -> Void
+    package let onWriteReview: () -> Void
 
-    var body: some View {
+    package var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 picture
@@ -133,10 +133,10 @@ struct DetailPushProductView: View {
 }
 
 // The cart in the Detail push flow: the product that pushed it, one of it, and the total.
-struct DetailPushCartView: View {
-    let product: Product
+package struct DetailPushCartView: View {
+    package let product: Product
 
-    var body: some View {
+    package var body: some View {
         List {
             Section {
                 ProductRowContent(product: product, detail: "Qty 1")

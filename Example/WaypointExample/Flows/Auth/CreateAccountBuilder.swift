@@ -18,19 +18,19 @@ import Observation
 // Conformances:
 // - `Observable` (from `@Observable`), so Check your email redraws once the account is registered.
 @Observable
-final class CreateAccountBuilder {
-    let draft: SignUpDraft
+package final class CreateAccountBuilder {
+    package let draft: SignUpDraft
     private let service: any AuthService
     // `var` because `register()` keeps the account it registered until the last step finishes.
-    private(set) var account: Account?
+    package private(set) var account: Account?
 
-    init(service: any AuthService) {
+    package init(service: any AuthService) {
         self.service = service
         draft = SignUpDraft()
         account = nil
     }
 
-    func makeStep(
+    package func makeStep(
         _ step: CreateAccountStep,
         isWorking: Bool,
         errorMessage: String?,
@@ -49,7 +49,7 @@ final class CreateAccountBuilder {
 
     // Registers the account the draft describes, and keeps it.
     @discardableResult
-    func register() async throws(AuthError) -> Account {
+    package func register() async throws(AuthError) -> Account {
         let registered = try await service.register(
             name: draft.name,
             email: draft.email,

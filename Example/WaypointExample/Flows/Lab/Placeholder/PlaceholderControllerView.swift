@@ -14,14 +14,14 @@ import SwiftUI
 // Conformances:
 // - `UIViewControllerRepresentable`, so SwiftUI can push a UIKit flow's placeholder like any other
 //   screen.
-struct PlaceholderControllerView: UIViewControllerRepresentable {
-    let entry: FlowEntry
+package struct PlaceholderControllerView: UIViewControllerRepresentable {
+    package let entry: FlowEntry
 
-    func makeUIViewController(context: Context) -> PlaceholderViewController {
+    package func makeUIViewController(context: Context) -> PlaceholderViewController {
         PlaceholderViewController(entry: entry)
     }
 
-    func updateUIViewController(
+    package func updateUIViewController(
         _ controller: PlaceholderViewController,
         context: Context
     ) { }

@@ -1,15 +1,15 @@
 //
 //  DetailReviewCoordinatorTests.swift
-//  WaypointExampleTests
+//  ExampleLabTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleLab
 import ExampleStore
 import Testing
 import Waypoint
-@testable import WaypointExample
 
 // The Lab's Write a review flow, pushed on the Detail push stack (planning #313): its screens
 // follow the product on the parent's stack, Post review finishes with the stars and pops back to

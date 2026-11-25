@@ -15,7 +15,7 @@ import Waypoint
 // The Lab's event log (DB-02): every navigation call the routers logged, newest first, with its
 // outcome, level, time, line and call site. The filter shows all calls or one outcome, and Share
 // sends the shown lines as text. Route values show only in debug builds, as in the console.
-struct EventLogView: View {
+package struct EventLogView: View {
     private static let filters: [EventLogFilter] = [
         .all,
         .outcome(.applied),
@@ -23,7 +23,13 @@ struct EventLogView: View {
         .outcome(.failed),
     ]
 
-    let entries: [EventLogEntry]
+    package let entries: [EventLogEntry]
+
+    package init(
+        entries: [EventLogEntry]
+    ) {
+        self.entries = entries
+    }
 
     @State private var filter = EventLogFilter.all
 
@@ -37,7 +43,7 @@ struct EventLogView: View {
             .joined(separator: "\n")
     }
 
-    var body: some View {
+    package var body: some View {
         List {
             filterSection
             entriesSection
@@ -93,11 +99,11 @@ struct EventLogView: View {
 //
 // Conformances:
 // - `Hashable`, so the segmented picker can select a filter.
-enum EventLogFilter: Hashable {
+package enum EventLogFilter: Hashable {
     case all
     case outcome(EventOutcome)
 
-    var title: String {
+    package var title: String {
         switch self {
         case .all:
             return "All"
@@ -106,7 +112,7 @@ enum EventLogFilter: Hashable {
         }
     }
 
-    func includes(_ entry: EventLogEntry) -> Bool {
+    package func includes(_ entry: EventLogEntry) -> Bool {
         switch self {
         case .all:
             return true
@@ -117,10 +123,10 @@ enum EventLogFilter: Hashable {
 }
 
 // One call in the event log: its outcome in color, its level and time, its line and call site.
-struct EventLogRow: View {
-    let entry: EventLogEntry
+package struct EventLogRow: View {
+    package let entry: EventLogEntry
 
-    var body: some View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: Spacing.extraSmall) {
             header
             Text(entry.text)
@@ -151,7 +157,7 @@ struct EventLogRow: View {
 }
 
 extension EventOutcome {
-    var tint: ColorToken {
+    package var tint: ColorToken {
         switch self {
         case .applied:
             return Palette.success
@@ -166,7 +172,7 @@ extension EventOutcome {
 }
 
 extension EventLogEntry {
-    var sharedLine: String {
+    package var sharedLine: String {
         "\(level.description) \(outcome.title) \(text) \(callSite)"
     }
 }

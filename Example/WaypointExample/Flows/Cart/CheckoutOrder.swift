@@ -13,22 +13,32 @@ import ExampleStore
 //
 // Conformances:
 // - `Equatable`, so a test can compare the order checkout placed.
-struct CheckoutOrder: Equatable {
-    let products: [Product]
-    let address: Address
-    let payment: PaymentCard
+package struct CheckoutOrder: Equatable {
+    package let products: [Product]
+    package let address: Address
+    package let payment: PaymentCard
+
+    package init(
+        products: [Product],
+        address: Address,
+        payment: PaymentCard
+    ) {
+        self.products = products
+        self.address = address
+        self.payment = payment
+    }
 }
 
 // A saved card checkout pays with. The example app has one, `saved`.
 //
 // Conformances:
 // - `Equatable`, so an order's card can be compared.
-nonisolated struct PaymentCard: Equatable {
-    static let saved = PaymentCard(
+package nonisolated struct PaymentCard: Equatable {
+    package static let saved = PaymentCard(
         lastDigits: "4242",
         expiry: "08/29"
     )
 
-    let lastDigits: String
-    let expiry: String
+    package let lastDigits: String
+    package let expiry: String
 }

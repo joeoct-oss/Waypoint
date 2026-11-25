@@ -26,7 +26,7 @@ import Waypoint
 // - `TabCoordinator`, so Waypoint makes its router and hands each tab's coordinator its stack.
 // - `Observable` (from `@Observable`), so the demo redraws when the tabs or the selection change.
 @Observable
-final class TabsDemoCoordinator: TabCoordinator {
+package final class TabsDemoCoordinator: TabCoordinator {
     private static let flowID = FlowID("labTabs")
     private static let fewTabs = [
         DemoTab.shop,
@@ -42,12 +42,12 @@ final class TabsDemoCoordinator: TabCoordinator {
     @ObservationIgnored private var tabCoordinators: [DemoTab: TabsDemoTabCoordinator]
 
     // Whether every tab shows, so the button offers to take two away.
-    var showsAllTabs: Bool {
+    package var showsAllTabs: Bool {
         router.state.tabs.count == DemoTab.allCases.count
     }
 
     // `LabFactory` makes it, and builds each tab's coordinator and screen.
-    init(
+    package init(
         factory: LabFactory,
         navigation: NavigationConfiguration,
         onClose: @escaping () -> Void
@@ -58,7 +58,7 @@ final class TabsDemoCoordinator: TabCoordinator {
         tabCoordinators = [:]
     }
 
-    func makeRouter() -> TabRouter<DemoTab> {
+    package func makeRouter() -> TabRouter<DemoTab> {
         TabRouter(
             tabs: Self.fewTabs,
             selection: .shop,
@@ -67,24 +67,24 @@ final class TabsDemoCoordinator: TabCoordinator {
         )
     }
 
-    func tabCoordinator(for tab: DemoTab) -> any StackCoordinator {
+    package func tabCoordinator(for tab: DemoTab) -> any StackCoordinator {
         child(for: tab)
     }
 
-    func makeTabFlow(for tab: DemoTab) -> some View {
+    package func makeTabFlow(for tab: DemoTab) -> some View {
         child(for: tab).view
     }
 
-    func selectTab(_ tab: DemoTab) {
+    package func selectTab(_ tab: DemoTab) {
         router.select(tab)
     }
 
-    func close() {
+    package func close() {
         onClose()
     }
 
     // Shows all four tabs, or only Shop and Search.
-    func toggleTabs() {
+    package func toggleTabs() {
         if showsAllTabs {
             router.setTabs(Self.fewTabs)
         } else {
@@ -111,14 +111,14 @@ final class TabsDemoCoordinator: TabCoordinator {
 // Conformances:
 // - `StackCoordinator`, so Waypoint makes its router, the tab coordinator makes it the tab's stack,
 //   and Waypoint draws its screen.
-final class TabsDemoTabCoordinator: StackCoordinator {
+package final class TabsDemoTabCoordinator: StackCoordinator {
     private let tab: DemoTab
     private let factory: LabFactory
     // The tab container, which keeps this coordinator, so it is held without keeping it alive.
     // `var` because a weak reference must be one: it reads `nil` once the Lab lets the demo go.
     private weak var demo: TabsDemoCoordinator?
 
-    var root: some View {
+    package var root: some View {
         if let demo {
             factory.makeTabsDemoScreen(
                 tab: tab,
@@ -131,7 +131,7 @@ final class TabsDemoTabCoordinator: StackCoordinator {
     }
 
     // `LabFactory` makes it, and builds its screen.
-    init(
+    package init(
         tab: DemoTab,
         demo: TabsDemoCoordinator,
         factory: LabFactory
@@ -148,13 +148,13 @@ final class TabsDemoTabCoordinator: StackCoordinator {
 // - `String` raw value: gives each tab its name in logs, so its stack's flow is `shop`.
 // - `NavigationTab`, so the demo's tab router selects it, and `TabView` can tag each tab with it.
 // - `CaseIterable`, so Show all four tabs lists every tab from this one declaration.
-enum DemoTab: String, NavigationTab, CaseIterable {
+package enum DemoTab: String, NavigationTab, CaseIterable {
     case shop
     case search
     case cart
     case account
 
-    var title: String {
+    package var title: String {
         switch self {
         case .shop:
             return "Shop"
@@ -167,7 +167,7 @@ enum DemoTab: String, NavigationTab, CaseIterable {
         }
     }
 
-    var symbolName: String {
+    package var symbolName: String {
         switch self {
         case .shop:
             return "bag"

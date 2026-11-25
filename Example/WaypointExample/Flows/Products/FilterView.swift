@@ -11,13 +11,13 @@ import SwiftUI
 
 // The filter sheet: a price range and a sort order, applied with one button. Its sizes come from
 // the router (`AppSheets.filters`): it opens at medium and grows to large.
-struct FilterView: View {
-    let onApply: () -> Void
+package struct FilterView: View {
+    package let onApply: () -> Void
 
     @State private var maximumPrice = 100.0
     @State private var sortsByPrice = false
 
-    var body: some View {
+    package var body: some View {
         Form {
             Section("Price") {
                 Slider(value: $maximumPrice, in: 10...100)

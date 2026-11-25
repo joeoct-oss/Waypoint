@@ -13,12 +13,22 @@ import SwiftUI
 
 // The cart (MA-02): its products, the subtotal, shipping and total, with Check out at the bottom.
 // An empty cart says so and offers Browse the shop instead. The screen reports each choice.
-struct CartView: View {
-    let products: [Product]
-    let onCheckout: () -> Void
-    let onShopMore: () -> Void
+package struct CartView: View {
+    package let products: [Product]
+    package let onCheckout: () -> Void
+    package let onShopMore: () -> Void
 
-    var body: some View {
+    package init(
+        products: [Product],
+        onCheckout: @escaping () -> Void,
+        onShopMore: @escaping () -> Void
+    ) {
+        self.products = products
+        self.onCheckout = onCheckout
+        self.onShopMore = onShopMore
+    }
+
+    package var body: some View {
         if products.isEmpty {
             emptyState
         } else {

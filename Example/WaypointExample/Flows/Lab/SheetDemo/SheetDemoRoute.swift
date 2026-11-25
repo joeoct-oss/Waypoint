@@ -13,13 +13,13 @@ import WaypointCore
 //
 // Conformances:
 // - `TrackableScreen`, a `Route` the journey log names "Sheet level", with its number public.
-struct SheetDemoRoute: TrackableScreen {
-    static let screenName = "Sheet level"
-    static let publicLogFields: Set<String> = [
+package struct SheetDemoRoute: TrackableScreen {
+    package static let screenName = "Sheet level"
+    package static let publicLogFields: Set<String> = [
         "level",
     ]
 
-    let level: Int
+    package let level: Int
 }
 
 // The size the Sheet story gives the next sheet.
@@ -27,7 +27,7 @@ struct SheetDemoRoute: TrackableScreen {
 // Conformances:
 // - `CaseIterable`, so the size picker lists every size.
 // - `Hashable`, so the picker can select one.
-enum SheetDemoSize: CaseIterable, Hashable {
+package enum SheetDemoSize: CaseIterable, Hashable {
     case medium
     case large
     case fitsContent
@@ -42,7 +42,7 @@ enum SheetDemoSize: CaseIterable, Hashable {
         SheetDetent.fitsContent,
     ]
 
-    var title: String {
+    package var title: String {
         switch self {
         case .medium:
             return "Medium"
@@ -53,7 +53,7 @@ enum SheetDemoSize: CaseIterable, Hashable {
         }
     }
 
-    var detents: [SheetDetent] {
+    package var detents: [SheetDetent] {
         switch self {
         case .medium:
             return Self.mediumDetents
@@ -67,9 +67,9 @@ enum SheetDemoSize: CaseIterable, Hashable {
 
 // A sheet or cover the Sheet story presented: its router, the router that presented it, its number
 // and the sizes the presenting router gave it.
-struct SheetDemoLevel {
-    let router: StackRouter
-    let presenter: StackRouter
-    let number: Int
-    let options: SheetOptions?
+package struct SheetDemoLevel {
+    package let router: StackRouter
+    package let presenter: StackRouter
+    package let number: Int
+    package let options: SheetOptions?
 }

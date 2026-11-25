@@ -6,7 +6,10 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAccount
+import ExampleAuth
 import ExampleNavigation
+import ExampleTestSupport
 import Testing
 import WaypointCore
 @testable import WaypointExample

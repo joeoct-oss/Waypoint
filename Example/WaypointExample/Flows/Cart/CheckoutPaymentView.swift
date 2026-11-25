@@ -13,10 +13,10 @@ import SwiftUI
 
 // Checkout's second step: the saved card, chosen, with Continue to review at the bottom. The
 // example app has one card, so there is nothing else to pick. The screen reports Continue.
-struct CheckoutPaymentView: View {
-    let onContinue: () -> Void
+package struct CheckoutPaymentView: View {
+    package let onContinue: () -> Void
 
-    var body: some View {
+    package var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 CheckoutStepHeader(
@@ -54,8 +54,8 @@ struct CheckoutPaymentView: View {
 }
 
 // The example app's one saved card: its last digits and expiry.
-struct PaymentCardLabel: View {
-    var body: some View {
+package struct PaymentCardLabel: View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("Card ending \(PaymentCard.saved.lastDigits)")
                 .font(Typography.headline)

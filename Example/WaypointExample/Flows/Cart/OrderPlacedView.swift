@@ -12,10 +12,10 @@ import SwiftUI
 
 // Order placed, shown in place of checkout once the order goes through, with Continue shopping. The
 // screen reports Continue shopping, and the cart coordinator closes checkout and opens Shop.
-struct OrderPlacedView: View {
-    let onContinueShopping: () -> Void
+package struct OrderPlacedView: View {
+    package let onContinueShopping: () -> Void
 
-    var body: some View {
+    package var body: some View {
         ContentUnavailableView(
             "Thanks for your order",
             systemImage: "checkmark.seal",

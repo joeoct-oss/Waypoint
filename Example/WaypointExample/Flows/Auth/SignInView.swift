@@ -15,14 +15,14 @@ import SwiftUI
 // account or reset the password. The screen reports each choice, and the accounts coordinator
 // decides where it goes. Cancel closes the sheet and drops the action that asked for an account.
 // Sign in closes the keyboard first, so an error and the other ways in stay in view.
-struct SignInView: View {
-    let reason: SignInReason
-    let isWorking: Bool
-    let errorMessage: String?
-    let onSignIn: (String, String) -> Void
-    let onCreateAccount: () -> Void
-    let onForgotPassword: () -> Void
-    let onCancel: () -> Void
+package struct SignInView: View {
+    package let reason: SignInReason
+    package let isWorking: Bool
+    package let errorMessage: String?
+    package let onSignIn: (String, String) -> Void
+    package let onCreateAccount: () -> Void
+    package let onForgotPassword: () -> Void
+    package let onCancel: () -> Void
 
     @State private var email = ""
     @State private var password = ""
@@ -33,7 +33,7 @@ struct SignInView: View {
         !email.isEmpty && !password.isEmpty && !isWorking
     }
 
-    var body: some View {
+    package var body: some View {
         Form {
             credentialFields
             FormErrorSection(message: errorMessage)

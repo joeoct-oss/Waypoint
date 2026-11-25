@@ -16,24 +16,24 @@ import Observation
 // Conformances:
 // - `Observable` (from `@Observable`), so the form redraws when a call starts, ends or fails.
 @Observable
-final class AuthForm {
+package final class AuthForm {
     // `var` because `run(_:)` sets it while a call runs.
-    private(set) var isWorking: Bool
+    package private(set) var isWorking: Bool
     // `var` because a failed call sets it, and `clearError()` clears it.
-    private(set) var errorMessage: String?
+    package private(set) var errorMessage: String?
 
-    init() {
+    package init() {
         isWorking = false
         errorMessage = nil
     }
 
-    func clearError() {
+    package func clearError() {
         errorMessage = nil
     }
 
     // Runs one call to the auth service: the form is busy while it runs, and a failure shows its
     // message.
-    func run(_ call: () async throws(AuthError) -> Void) async {
+    package func run(_ call: () async throws(AuthError) -> Void) async {
         isWorking = true
         defer {
             isWorking = false

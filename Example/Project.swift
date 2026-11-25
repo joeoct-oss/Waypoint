@@ -33,8 +33,8 @@ let infoPlistValues: [String: Plist.Value] = [
     "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
 ]
 
-// The app's own folders. The shared folders are modules of their own (`exampleModules`), so the
-// app's sources leave them out.
+// The app's own folders. The shared folders and the features are modules of their own
+// (`exampleModules`), so the app's sources leave them out.
 let moduleFolders = [
     "Catalog",
     "Store",
@@ -42,6 +42,11 @@ let moduleFolders = [
     "DesignSystem",
     "Navigation",
     "Flows/Addresses",
+    "Flows/Auth",
+    "Flows/Products",
+    "Flows/Lab",
+    "Flows/Cart",
+    "Flows/Account",
 ]
 
 let appSources: SourceFilesList = [
@@ -83,13 +88,19 @@ let appDependencies: [TargetDependency] = [
     .target(name: "ExampleDesignSystem"),
     .target(name: "ExampleNavigation"),
     .target(name: "ExampleAddresses"),
+    .target(name: "ExampleAuth"),
+    .target(name: "ExampleProducts"),
+    .target(name: "ExampleLab"),
+    .target(name: "ExampleCart"),
+    .target(name: "ExampleAccount"),
 ]
 
-// The shared parts of the app as modules (planning #445), lowest first. Each is a static framework
-// built from one folder, main actor by default like the app, and depending only on the modules
-// below it, which `scripts/check-example-module-edges.sh` also checks. Static, like the package's
-// products, so only the app links them and Waypoint, and one copy of each type exists at runtime:
-// a dynamic module would carry its own copy of Waypoint, and casts across copies fail.
+// The shared parts of the app and its features as modules (planning #445), lowest first. Each is
+// a static framework built from one folder, main actor by default like the app, and depending only
+// on the modules below it, which `scripts/check-example-module-edges.sh` also checks. Static, like
+// the package's products, so only the app links them and Waypoint, and one copy of each type
+// exists at runtime: a dynamic module would carry its own copy of Waypoint, and casts across
+// copies fail.
 func exampleModule(
     _ name: String,
     folder: String,
@@ -110,6 +121,24 @@ func exampleModule(
 
 let moduleSettings: SettingsDictionary = [
     "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+]
+
+// Every unit test target is main actor by default, as the app and the modules are. The UI tests
+// keep Swift's own default: XCUITest code isn't app code, and the catalog they share with the app
+// is `nonisolated`.
+let unitTestSettings: SettingsDictionary = [
+    "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+]
+
+// What every feature may use: the shared modules and the package.
+let featureBase: [TargetDependency] = [
+    .target(name: "ExampleCatalog"),
+    .target(name: "ExampleStore"),
+    .target(name: "ExampleServices"),
+    .target(name: "ExampleDesignSystem"),
+    .target(name: "ExampleNavigation"),
+    .external(name: "WaypointCore"),
+    .external(name: "Waypoint"),
 ]
 
 let exampleModules: [Target] = [
@@ -161,6 +190,137 @@ let exampleModules: [Target] = [
             .target(name: "ExampleDesignSystem"),
         ]
     ),
+    exampleModule(
+        "ExampleAuth",
+        folder: "Flows/Auth",
+        dependencies: featureBase
+    ),
+    exampleModule(
+        "ExampleProducts",
+        folder: "Flows/Products",
+        dependencies: featureBase
+    ),
+    exampleModule(
+        "ExampleLab",
+        folder: "Flows/Lab",
+        dependencies: featureBase
+    ),
+    exampleModule(
+        "ExampleCart",
+        folder: "Flows/Cart",
+        dependencies: featureBase + [
+            .target(name: "ExampleAddresses"),
+        ]
+    ),
+    exampleModule(
+        "ExampleAccount",
+        folder: "Flows/Account",
+        dependencies: featureBase + [
+            .target(name: "ExampleAddresses"),
+            .target(name: "ExampleLab"),
+        ]
+    ),
+]
+
+// What tests share: a store of their own and an account gate they control. A static framework like
+// the modules, which only the test targets link.
+let testSupport = Target.target(
+    name: "ExampleTestSupport",
+    destinations: destinations,
+    product: .staticFramework,
+    bundleId: "dev.waypoint.example.testsupport",
+    deploymentTargets: deploymentTargets,
+    infoPlist: .default,
+    sources: ["ModuleTests/Support/**"],
+    dependencies: [
+        .target(name: "ExampleServices"),
+        .target(name: "ExampleDesignSystem"),
+        .target(name: "ExampleNavigation"),
+        .external(name: "Waypoint"),
+    ],
+    settings: .settings(base: moduleSettings)
+)
+
+// A unit test target per module that has tests (planning #445), from `ModuleTests/<folder>`. They
+// run without the app, so selective testing skips a module's tests when nothing it uses changed.
+// They are main actor by default, as the modules are.
+func moduleTests(
+    _ module: String,
+    folder: String,
+    dependencies: [TargetDependency]
+) -> Target {
+    .target(
+        name: "\(module)Tests",
+        destinations: destinations,
+        product: .unitTests,
+        bundleId: "dev.waypoint.example.\(module.lowercased()).tests",
+        deploymentTargets: deploymentTargets,
+        infoPlist: .default,
+        sources: ["ModuleTests/\(folder)/**"],
+        dependencies: [.target(name: module)] + dependencies,
+        settings: .settings(base: unitTestSettings)
+    )
+}
+
+// Understudy gives the products tests their spies. Only test targets take it, so the app never
+// links it.
+let exampleModuleTests: [Target] = [
+    moduleTests(
+        "ExampleCatalog",
+        folder: "Catalog",
+        dependencies: []
+    ),
+    moduleTests(
+        "ExampleServices",
+        folder: "Services",
+        dependencies: [
+            .target(name: "ExampleTestSupport"),
+        ]
+    ),
+    moduleTests(
+        "ExampleAuth",
+        folder: "Auth",
+        dependencies: [
+            .target(name: "ExampleServices"),
+            .target(name: "ExampleStore"),
+            .target(name: "ExampleTestSupport"),
+            .external(name: "Waypoint"),
+        ]
+    ),
+    moduleTests(
+        "ExampleProducts",
+        folder: "Products",
+        dependencies: [
+            .target(name: "ExampleNavigation"),
+            .target(name: "ExampleServices"),
+            .target(name: "ExampleStore"),
+            .target(name: "ExampleTestSupport"),
+            .external(name: "WaypointCore"),
+            .external(name: "Waypoint"),
+            .external(name: "Understudy"),
+        ]
+    ),
+    moduleTests(
+        "ExampleLab",
+        folder: "Lab",
+        dependencies: [
+            .target(name: "ExampleNavigation"),
+            .target(name: "ExampleStore"),
+            .external(name: "WaypointCore"),
+            .external(name: "Waypoint"),
+        ]
+    ),
+    moduleTests(
+        "ExampleCart",
+        folder: "Cart",
+        dependencies: [
+            .target(name: "ExampleNavigation"),
+            .target(name: "ExampleServices"),
+            .target(name: "ExampleStore"),
+            .target(name: "ExampleTestSupport"),
+            .external(name: "WaypointCore"),
+        ]
+    ),
 ]
 
 // The UI tests compile the app's catalog and identifiers too, so a test names a screen with the
@@ -174,28 +334,23 @@ let uiTestDependencies: [TargetDependency] = [
     .target(name: "WaypointExample"),
 ]
 
-// The unit tests run inside the app, so they reach its view models with `@testable import`. They
-// are main actor by default, as the app is. The UI tests keep Swift's own default: XCUITest code
-// isn't app code, and the catalog they share with the app is `nonisolated`.
-let unitTestSettings: SettingsDictionary = [
-    "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
-]
-
 let unitTestSources: SourceFilesList = [
     "WaypointExampleTests/**",
 ]
 
-// Understudy gives the unit tests their spies. Only the test target takes it, so the app never
-// links it.
+// The app's own unit tests run inside the app, so they reach its sources with `@testable import`.
+// They test what wires the modules together: the services, the main tabs and the account factory.
 let unitTestDependencies: [TargetDependency] = [
     .target(name: "WaypointExample"),
     .target(name: "ExampleCatalog"),
     .target(name: "ExampleStore"),
     .target(name: "ExampleServices"),
-    .target(name: "ExampleDesignSystem"),
     .target(name: "ExampleNavigation"),
-    .target(name: "ExampleAddresses"),
-    .external(name: "Understudy"),
+    .target(name: "ExampleAuth"),
+    .target(name: "ExampleProducts"),
+    .target(name: "ExampleCart"),
+    .target(name: "ExampleAccount"),
+    .target(name: "ExampleTestSupport"),
 ]
 
 let app = Target.target(
@@ -240,6 +395,12 @@ let schemeBuildTargets: [TargetReference] = [
 
 let schemeTestTargets: [TestableTarget] = [
     "WaypointExampleTests",
+    "ExampleCatalogTests",
+    "ExampleServicesTests",
+    "ExampleAuthTests",
+    "ExampleProductsTests",
+    "ExampleLabTests",
+    "ExampleCartTests",
     "WaypointExampleUITests",
 ]
 
@@ -299,7 +460,7 @@ let scheme = Scheme.scheme(
     runAction: .runAction(executable: "WaypointExample")
 )
 
-let targets: [Target] = exampleModules + [
+let targets: [Target] = exampleModules + exampleModuleTests + [testSupport] + [
     app,
     unitTests,
     uiTests,

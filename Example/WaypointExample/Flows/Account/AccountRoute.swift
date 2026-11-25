@@ -16,7 +16,7 @@ import WaypointCore
 //
 // Conformances:
 // - `TrackableScreen`, a `Route` the journey log names by its title.
-enum AccountRoute: TrackableScreen {
+package enum AccountRoute: TrackableScreen {
     case orders
     case order(Order)
     case wishlist
@@ -29,7 +29,7 @@ enum AccountRoute: TrackableScreen {
     case labStory(ViewModelStory)
     case labTool(LabTool)
 
-    var title: String {
+    package var title: String {
         switch self {
         case .orders:
             return "Orders"
@@ -56,11 +56,11 @@ enum AccountRoute: TrackableScreen {
         }
     }
 
-    var screenDisplayName: String? {
+    package var screenDisplayName: String? {
         title
     }
 
-    var kind: FlowKind? {
+    package var kind: FlowKind? {
         switch self {
         case .orders, .order, .wishlist, .addresses, .addAddress, .settings, .lab, .labStory, .labTool:
             return nil
@@ -75,7 +75,7 @@ enum AccountRoute: TrackableScreen {
 extension AccountRoute {
     // The path a launch into the Lab starts on: Settings and the Lab, then the launch's branch,
     // then its entry when that entry shows a placeholder. Empty for any other launch.
-    static func launchPath(for launch: LaunchOptions) -> [AccountRoute] {
+    package static func launchPath(for launch: LaunchOptions) -> [AccountRoute] {
         guard launch.opensLab else {
             return []
         }

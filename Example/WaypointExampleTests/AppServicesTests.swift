@@ -6,8 +6,12 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAuth
+import ExampleCart
 import ExampleNavigation
+import ExampleProducts
 import ExampleStore
+import ExampleTestSupport
 import Foundation
 import Testing
 import WaypointCore
