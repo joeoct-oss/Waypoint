@@ -16,7 +16,7 @@
 # A second job builds the package with Swift 6.2, the minimum Package.swift declares (build only, no tests).
 # The Mac stays the full test gate (scripts/test-mac.sh, see TESTING.md); there is no macOS job here.
 # Switched off unless the repository variable CI_ENABLED is "true".
-name: CI
+name: Linux checks on pull requests
 
 on:
   pull_request:
