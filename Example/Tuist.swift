@@ -25,15 +25,20 @@
 //
 // The binary cache's default profile is `none`, so `tuist generate` for work in Xcode keeps the
 // package's sources editable. `scripts/test-mac.sh` sets TUIST_WAYPOINT_BINARY_CACHE=1 for the runs
-// that may take the package's modules as prebuilt binaries (planning #441): Tuist uses one only
-// when it was built from exactly the same sources, build settings and Xcode.
+// that may take prebuilt binaries (planning #441): Tuist uses one only when it was built from
+// exactly the same sources, build settings and Xcode. Those runs use the `example-modules` profile:
+// the package's modules, which `only-external` covers, and the example app's own modules, which
+// carry the `example-module` tag (planning #445), so a run builds from source only the modules a
+// branch changed and those above them.
 
 import ProjectDescription
 
 let tuistProject = "joeoct91/waypoint"
 
+let exampleModulesProfile = "example-modules"
 let binaryCacheProfile: CacheProfileType =
-    Environment.waypointBinaryCache.getBoolean(default: false) ? .onlyExternal : .none
+    Environment.waypointBinaryCache.getBoolean(default: false)
+        ? .custom(exampleModulesProfile) : .none
 
 let tuist = Tuist(
     fullHandle: tuistProject,
@@ -44,6 +49,11 @@ let tuist = Tuist(
             enableCaching: true,
             coverage: .coverage(enabled: true, prefixMapping: true)
         ),
-        cacheOptions: .options(profiles: .profiles(default: binaryCacheProfile))
+        cacheOptions: .options(
+            profiles: .profiles(
+                [exampleModulesProfile: .profile(.onlyExternal, and: ["tag:example-module"])],
+                default: binaryCacheProfile
+            )
+        )
     )
 )

@@ -15,9 +15,10 @@
 # features' tests alone, or selective testing would never skip them. A docs edit must change no
 # hash.
 #
-# The same edits prove that Tuist's binary cache (planning #441) never hands a run a stale package
-# module: an edit in a module changes its cache key (`tuist hash cache`) and the keys of every
-# module that depends on it, so a run builds them from source until a green run warms the new keys.
+# The same edits prove that Tuist's binary cache (planning #441) never hands a run a stale
+# module, the package's or the example app's (planning #445): an edit in a module changes its
+# cache key (`tuist hash cache`) and the keys of every module that depends on it, and no other, so
+# a run builds them from source until a green run warms the new keys.
 #
 # `tuist hash selective-testing` takes no destination, so it lists no hash for the UI tests: Tuist
 # hashes a UI test target only for a run with a destination, which `tuist test --device` gives it.
@@ -75,15 +76,47 @@ hashes_moved_by() {
         *) echo "" ;;
     esac
 }
-# The package's modules, which the binary cache may take as binaries, and the modules whose cache
-# keys an edit in each one must change: the module itself and every module that depends on it.
-CACHED_MODULES=(WaypointCore WaypointOSLog Waypoint WaypointUIKit)
+# The modules the binary cache may take as binaries: the package's, and the example app's own
+# (planning #445). An edit in a part must change the cache keys of the modules built from it and
+# of every module that depends on them, and leave every other key alone.
+CACHED_MODULES=(
+    WaypointCore
+    WaypointOSLog
+    Waypoint
+    WaypointUIKit
+    ExampleCatalog
+    ExampleStore
+    ExampleServices
+    ExampleDesignSystem
+    ExampleNavigation
+    ExampleAddresses
+    ExampleAuth
+    ExampleProducts
+    ExampleLab
+    ExampleCart
+    ExampleAccount
+)
+# The example modules that use the package's Waypoint, directly or through another module: all but
+# the catalog and the store.
+USES_WAYPOINT="ExampleServices ExampleDesignSystem ExampleNavigation ExampleAddresses ExampleAuth
+    ExampleProducts ExampleLab ExampleCart ExampleAccount"
 cache_keys_moved_by() {
     case "$1" in
-        Sources/WaypointCore) echo WaypointCore WaypointOSLog Waypoint WaypointUIKit ;;
-        Sources/WaypointOSLog) echo WaypointOSLog Waypoint WaypointUIKit ;;
-        Sources/Waypoint) echo Waypoint ;;
+        Sources/WaypointCore) echo WaypointCore WaypointOSLog Waypoint WaypointUIKit $USES_WAYPOINT ;;
+        Sources/WaypointOSLog) echo WaypointOSLog Waypoint WaypointUIKit $USES_WAYPOINT ;;
+        Sources/Waypoint) echo Waypoint $USES_WAYPOINT ;;
         Sources/WaypointUIKit) echo WaypointUIKit ;;
+        Example/WaypointExample/Catalog)
+            echo ExampleCatalog ExampleDesignSystem ExampleNavigation ExampleAddresses ExampleAuth \
+                ExampleProducts ExampleLab ExampleCart ExampleAccount
+            ;;
+        Example/WaypointExample/Services)
+            echo ExampleServices ExampleAuth ExampleProducts ExampleLab ExampleCart ExampleAccount
+            ;;
+        Example/WaypointExample/Flows/Auth) echo ExampleAuth ;;
+        Example/WaypointExample/Flows/Products) echo ExampleProducts ;;
+        Example/WaypointExample/Flows/Lab) echo ExampleLab ExampleAccount ;;
+        Example/WaypointExample/Flows/Cart) echo ExampleCart ;;
         *) echo "" ;;
     esac
 }
@@ -133,7 +166,7 @@ hashes() {
     done
 }
 
-# Prints `module key` for each package module, or fails when Tuist lists no key for one.
+# Prints `module key` for each cached module, or fails when Tuist lists no key for one.
 cache_keys() {
     local out module key lines
     out=$(tuist_cmd hash cache --path "$TREE/Example" 2>&1) || {

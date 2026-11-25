@@ -24,12 +24,12 @@
 #   `main`'s own commit, then `tuist coverage complete`, so the Tuist dashboard charts `main`'s
 #   code coverage (planning #431). It refuses any other commit, and runs none of the package's steps.
 #
-# Tuist's binary cache (planning #441): quick and full runs may take the package's modules as
-# prebuilt binaries in the example app's test step, when a binary exists for exactly the same
-# sources, settings (warnings as errors included) and Xcode; any change builds them from source.
-# Release, coverage, offline runs and the release reports step always build from source. A green
-# full or coverage run then warms the cache for its tree (`tuist cache`), and a failed warm only
-# warns. The package's own steps never use the cache.
+# Tuist's binary cache (planning #441): quick and full runs may take the package's modules and the
+# example app's own (planning #445) as prebuilt binaries in the example app's test step, when a
+# binary exists for exactly the same sources, settings (warnings as errors included) and Xcode; any
+# change builds them from source. Release, coverage, offline runs and the release reports step
+# always build from source. A green full or coverage run then warms the cache for its tree (`tuist
+# cache`), and a failed warm only warns. The package's own steps never use the cache.
 #
 # The package's own test steps send their results to Tuist's Test Insights too (planning #457), except
 # offline; a failed send only warns.
@@ -633,22 +633,22 @@ simulator_os() {
 # report reads its slowest tests from (planning #427). Extra arguments go to `tuist test`, such as
 # `--test-targets` or `--configuration`.
 #
-# Tuist's binary cache (planning #441) follows BINARY_CACHE: on, the package's modules may come from
-# a binary built from exactly the same inputs; off, they build from source with warnings as errors. Every run's results go to the project's Tuist dashboard (Test Insights: run
-# times and flaky tests). Selective testing, which skips a test
-# target that already passed with the same hash, is on in quick and full runs unless the branch
-# changes a file the hashes don't cover; release, `--only`, `--ui` and `--all` run every test
-# they name. A run narrowed to a class or a test never records a pass, so only whole targets are
-# ever skipped (planning #429). Tuist's quarantine is never applied (`--skip-quarantine`): a flaky test
-# still runs and still fails the run. All of it uses the Tuist server project in
-# `Example/Tuist.swift`; WAYPOINT_TUIST_OFFLINE=1 turns every server feature off, for a Mac that
-# isn't signed in.
-# The example app builds into a derived data folder of its own in the clone, not Xcode's shared
-# one. On 2026-11-24 the app failed to build in the shared folder after the package moved into
-# Tuist's graph (planning #429): `package` symbols were "inaccessible", although the generated targets set
+# Tuist's binary cache (planning #441) follows BINARY_CACHE: on, the package's modules and the
+# example app's may come from a binary built from exactly the same inputs; off, they build from
+# source with warnings as errors. Every run's results go to the project's Tuist dashboard (Test
+# Insights: run times and flaky tests). Selective testing, which skips a test target that already
+# passed with the same hash, is on in quick and full runs unless the branch changes a file the
+# hashes don't cover; release, `--only`, `--ui` and `--all` run every test they name. A run narrowed
+# to a class or a test never records a pass, so only whole targets are ever skipped (planning #429).
+# Tuist's quarantine is never applied (`--skip-quarantine`): a flaky test still runs and still fails
+# the run. All of it uses the Tuist server project in `Example/Tuist.swift`;
+# WAYPOINT_TUIST_OFFLINE=1 turns every server feature off, for a Mac that isn't signed in.
+# The example app builds into a derived data folder of its own in the clone, not Xcode's shared one.
+# On 2026-11-24 the app failed to build in the shared folder after the package moved into Tuist's
+# graph (planning #429): `package` symbols were "inaccessible", although the generated targets set
 # the package name, and the same build in a fresh folder was clean. Older builds of the same
-# workspace had left module state the new settings didn't invalidate. A folder only these runs
-# use starts clean on every Mac and still builds incrementally from one run to the next.
+# workspace had left module state the new settings didn't invalidate. A folder only these runs use
+# starts clean on every Mac and still builds incrementally from one run to the next.
 EXAMPLE_DERIVED_DATA="$PWD/.build/example-derived-data"
 # The release reports step builds into a folder of its own (planning #431). Tuist reads a run's coverage
 # from one products folder of the derived data, the one holding most of the run's test bundles and
@@ -773,9 +773,9 @@ fi
 # The report says whether a passed target could have been skipped (TESTING.md, Report the result).
 echo "selective testing: $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING"
 
-# Whether the example app's test step may take the package's modules from Tuist's binary cache
-# (planning #441), and whether a green run warms the cache for its tree. A binary is keyed by its
-# sources, build settings (warnings as errors included), configuration and Xcode, so it is never
+# Whether the example app's test step may take the package's and its own modules from Tuist's binary
+# cache (planning #441), and whether a green run warms the cache for its tree. A binary is keyed by
+# its sources, build settings (warnings as errors included), configuration and Xcode, so it is never
 # stale. Release runs build everything from source. So do runs whose coverage someone reads: Tuist
 # caches a package without coverage counters, so a cached module's lines could read as uncovered.
 # That is the `coverage` run, which charts `main`, and a run for a pull request, whose Tuist run
@@ -912,10 +912,11 @@ if [[ -n "$TUIST_PULL_REQUEST" ]] && $RUN_UI && [[ -z "$ONLY_TEST" ]] && ! $RUN_
         tuist_cmd coverage complete --path Example
 fi
 
-# A green full or coverage run warms Tuist's binary cache for its tree (planning #441): it builds the
-# package's modules for the simulator in Debug and uploads them, so a later run on the same inputs
-# can skip building them. It runs last, after every test passed, so a binary only ever comes from a
-# tree whose tests passed. A failed warm warns and leaves the run green: the cache only saves time.
+# A green full or coverage run warms Tuist's binary cache for its tree (planning #441): it builds
+# the package's modules and the example app's for the simulator in Debug and uploads them, so a
+# later run on the same inputs can skip building them. It runs last, after every test passed, so a
+# binary only ever comes from a tree whose tests passed. A failed warm warns and leaves the run
+# green: the cache only saves time.
 warm_binary_cache() {
     if ! tuist_cmd cache --path Example --destination simulator; then
         echo "warning: warming Tuist's binary cache failed; the next run builds the package from source" >&2

@@ -100,7 +100,10 @@ let appDependencies: [TargetDependency] = [
 // on the modules below it, which `scripts/check-example-module-edges.sh` also checks. Static, like
 // the package's products, so only the app links them and Waypoint, and one copy of each type
 // exists at runtime: a dynamic module would carry its own copy of Waypoint, and casts across
-// copies fail.
+// copies fail. The `example-module` tag lets Tuist's binary cache take a module as a prebuilt
+// binary when nothing it is built from changed (`Example/Tuist.swift`).
+let exampleModuleTag = "example-module"
+
 func exampleModule(
     _ name: String,
     folder: String,
@@ -115,7 +118,8 @@ func exampleModule(
         infoPlist: .default,
         sources: ["WaypointExample/\(folder)/**"],
         dependencies: dependencies,
-        settings: .settings(base: moduleSettings)
+        settings: .settings(base: moduleSettings),
+        metadata: .metadata(tags: [exampleModuleTag])
     )
 }
 
