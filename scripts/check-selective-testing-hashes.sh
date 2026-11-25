@@ -53,7 +53,6 @@ FEATURE_TESTS="ExampleAuthTests ExampleProductsTests ExampleLabTests ExampleCart
 HASHED_TARGETS=(
     WaypointExample
     WaypointExampleTests
-    ExampleCatalogTests
     ExampleServicesTests
     ExampleAuthTests
     ExampleProductsTests

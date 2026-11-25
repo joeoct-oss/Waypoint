@@ -85,13 +85,3 @@ struct ResetPasswordCoordinatorTests {
         return AuthFactory(dependencies: dependencies)
     }
 }
-
-// The results a parent flow got from its child flow, oldest first.
-final class ResultLog<Value: Sendable> {
-    // `var` because each ended flow adds its result. Only `record(_:)` changes it.
-    private(set) var values: [FlowResult<Value>] = []
-
-    func record(_ result: FlowResult<Value>) {
-        values.append(result)
-    }
-}
