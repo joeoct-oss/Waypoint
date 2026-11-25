@@ -15,7 +15,8 @@ import WaypointTestSupport
 @Suite("Renderer reports")
 @MainActor
 struct RendererReportTests {
-    /// Counts a renderer may report for its first screen: zero, and below zero, which reads as zero.
+    /// Counts a renderer may report for its first screen: zero, and below zero, which reads as
+    /// zero.
     nonisolated static let firstScreenCounts = [0, -1]
 
     /// How each log format marks a change the user made.
