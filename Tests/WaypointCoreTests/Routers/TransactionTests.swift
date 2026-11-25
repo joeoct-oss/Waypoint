@@ -109,6 +109,83 @@ struct TransactionTests {
     }
 
     @Test
+    func transactionPushesSeveralRoutesAtOnce() {
+        let router = StackRouter(configuration: .permissive)
+
+        let outcome = router.transaction {
+            $0.push {
+                HomeRoute()
+                ProductRoute(id: 1)
+            }
+        }
+
+        #expect(outcome == .applied)
+        let expectedPath = [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 1))]
+        #expect(router.state.path == expectedPath)
+    }
+
+    @Test
+    func transactionPopsToTheLastRouteOfAType() {
+        let router = StackRouter(configuration: .permissive)
+        router.push {
+            ProductRoute(id: 1)
+            ProductRoute(id: 2)
+            SettingsRoute()
+        }
+
+        let outcome = router.transaction {
+            $0.popTo(ProductRoute.self) { $0.id == 1 }
+        }
+
+        #expect(outcome == .applied)
+        let expectedPath = [AnyRoute(ProductRoute(id: 1))]
+        #expect(router.state.path == expectedPath)
+    }
+
+    @Test
+    func transactionDismissesWhatItsRouterPresents() {
+        let router = StackRouter(configuration: .permissive)
+        router.present(SettingsRoute())
+
+        let outcome = router.transaction {
+            $0.dismiss()
+            $0.push(ProductRoute(id: 1))
+        }
+
+        #expect(outcome == .applied)
+        #expect(router.presented == nil)
+        #expect(router.state.path.count == 1)
+    }
+
+    @Test
+    func transactionDismissesThePresentedFlowFromInside() throws {
+        let router = StackRouter(configuration: .permissive)
+        router.present(SettingsRoute())
+        let child = try #require(router.presented)
+
+        let outcome = child.transaction {
+            $0.dismissFlow()
+        }
+
+        #expect(outcome == .applied)
+        #expect(router.presented == nil)
+        #expect(!child.isActive)
+    }
+
+    @Test
+    func stepOnATabOfAStackFailsAndRollsBack() {
+        let router = StackRouter(configuration: .permissive)
+
+        let outcome = router.transaction {
+            $0.push(HomeRoute())
+            $0.router(for: MainTab.shop).push(ProductRoute(id: 1))
+        }
+
+        #expect(outcome.failure?.issue.kind == .unknownTab)
+        #expect(router.state.path.isEmpty)
+    }
+
+    @Test
     func rolledBackPresentationLeavesNoChild() {
         let router = StackRouter(configuration: .permissive)
 

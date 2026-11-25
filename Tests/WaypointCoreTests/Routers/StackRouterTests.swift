@@ -39,6 +39,56 @@ struct StackRouterTests {
     }
 
     @Test
+    func popCountRemovesThatManyFromTheTop() {
+        let router = StackRouter(configuration: .permissive)
+        router.push {
+            HomeRoute()
+            ProductRoute(id: 1)
+            ProductRoute(id: 2)
+        }
+
+        #expect(router.pop(count: 2) == .applied)
+        let expectedPath = [AnyRoute(HomeRoute())]
+        #expect(router.state.path == expectedPath)
+    }
+
+    @Test
+    func popOfZeroIsAlreadyThere() {
+        let router = StackRouter(configuration: .permissive)
+        router.push(HomeRoute())
+
+        #expect(router.pop(count: 0) == .alreadyThere)
+        #expect(router.state.path.count == 1)
+    }
+
+    @Test
+    func pushOfNoRoutesIsAlreadyThere() {
+        let router = StackRouter(configuration: .permissive)
+        let none: [ProductRoute] = []
+
+        let outcome = router.push {
+            for route in none {
+                route
+            }
+        }
+
+        #expect(outcome == .alreadyThere)
+        #expect(router.state.path.isEmpty)
+    }
+
+    @Test
+    func pushUnderAPresentedFlowKeepsIt() throws {
+        let router = StackRouter(configuration: .permissive)
+        router.present(SettingsRoute())
+        let presented = try #require(router.presented)
+
+        #expect(router.push(ProductRoute(id: 1)) == .applied)
+
+        #expect(router.presented === presented)
+        #expect(router.state.path.count == 1)
+    }
+
+    @Test
     func popOnEmptyPathFailsWithIssue() throws {
         let router = StackRouter(flow: FlowID("shop"))
 
@@ -61,6 +111,8 @@ struct StackRouterTests {
         let outcome = router.pop(count: 3)
 
         #expect(outcome.recoveredIssue?.kind == .notEnoughRoutes)
+        let counts = "pop(count: 3) asked for 3 routes, but the path holds 1."
+        #expect(outcome.recoveredIssue?.message.hasPrefix(counts) == true)
         #expect(outcome.description == "recovered notEnoughRoutes by=popToRoot")
         #expect(router.state.path.isEmpty)
     }
@@ -84,6 +136,22 @@ struct StackRouterTests {
         router.push(ProductRoute(id: 1))
 
         #expect(router.popTo(ProductRoute(id: 1)) == .alreadyThere)
+    }
+
+    @Test
+    func popToStopsAtTheLastMatch() {
+        let router = StackRouter(configuration: .permissive)
+        router.push {
+            ProductRoute(id: 1)
+            SettingsRoute()
+            ProductRoute(id: 1)
+            ProductRoute(id: 2)
+        }
+
+        #expect(router.popTo(ProductRoute(id: 1)) == .applied)
+
+        let expectedPath = [AnyRoute(ProductRoute(id: 1)), AnyRoute(SettingsRoute()), AnyRoute(ProductRoute(id: 1))]
+        #expect(router.state.path == expectedPath)
     }
 
     @Test
