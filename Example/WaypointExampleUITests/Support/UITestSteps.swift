@@ -199,18 +199,22 @@ extension XCUIApplication {
 
     // Lists build rows lazily, so a row below the fold exists only after scrolling to it. Waits
     // briefly (`revealWait`) for a row that was about to show, so it is not scrolled away, then
-    // scrolls, and scrolls back down for a row that ends up under the navigation bar.
+    // scrolls, and scrolls back down for a row that ends up under the navigation bar. It keeps
+    // scrolling until `timeout` passes rather than for a fixed number of swipes: a caller often
+    // reveals right after a tap that pushes, and on a loaded Mac the first swipes can land on the
+    // old screen before the new one arrives (planning #479).
     @MainActor
     func reveal(_ element: XCUIElement) -> Bool {
+        let deadline = Date().addingTimeInterval(UITestSteps.timeout)
         _ = element.waitForExistence(timeout: UITestSteps.revealWait)
-        for _ in 0..<4 where !waitUntilTappable(element) {
+        while !waitUntilTappable(element), Date() < deadline {
             if isAboveVisibleArea(element) {
                 swipeDown()
             } else {
                 swipeUp()
             }
         }
-        return waitUntilTappable(element)
+        return isTappable(element)
     }
 
     // Polls for a short while, since a pushed screen's rows reach their place only once the push
