@@ -14,6 +14,9 @@
 # given, and puts them back when it ends, pass, fail or stop. Putting them back matters: an app
 # workspace whose package project is gone builds against stale package products.
 #
+# It also passes `-skipMacroValidation` (planning #506): the test targets take Understudy, whose
+# macros xcodebuild refuses to build until someone trusts them in Xcode, which no script run can.
+#
 # Usage: scripts/package-xcodebuild.sh <xcodebuild arguments>
 #        scripts/package-xcodebuild.sh --restore   (puts back what a stopped run left aside)
 
@@ -55,4 +58,4 @@ for path in "${GENERATED[@]}"; do
     rm -rf "${ASIDE:?}/$path"
     mv "$path" "$ASIDE/$path"
 done
-xcodebuild "$@"
+xcodebuild -skipMacroValidation "$@"

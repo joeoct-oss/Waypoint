@@ -790,6 +790,8 @@ example_tests_on() {
         rm -rf "$EXAMPLE_DERIVED_DATA/Build/Products/Release-iphonesimulator"
     fi
     # The package comes through Tuist's package integration, which `tuist install` resolves.
+    # `-skipMacroValidation`: the unit tests take Understudy, whose macros no script run can trust
+    # in Xcode (planning #506). Tuist builds them as targets of its own, so it is insurance here.
     tuist_cmd install --path Example
     tuist_cmd test WaypointExample \
         --path Example \
@@ -798,7 +800,8 @@ example_tests_on() {
         ${tuist_flags[@]+"${tuist_flags[@]}"} \
         -T "$bundle" \
         "$@" \
-        -- -quiet -jobs "$JOBS" -derivedDataPath "$EXAMPLE_DERIVED_DATA" "${EXAMPLE_PARALLEL_FLAGS[@]}" \
+        -- -quiet -jobs "$JOBS" -skipMacroValidation -derivedDataPath "$EXAMPLE_DERIVED_DATA" \
+        "${EXAMPLE_PARALLEL_FLAGS[@]}" \
         WAYPOINT_TUIST_TEST_RUN=1 ${offline_settings[@]+"${offline_settings[@]}"}
 }
 
