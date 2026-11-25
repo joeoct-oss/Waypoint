@@ -133,26 +133,46 @@ let schemeTestTargets: [TestableTarget] = [
 ]
 
 // After every build, in Xcode or a script, `tuist inspect build` sends the build's timings to the
-// project's Tuist dashboard (Build Insights, planning #427). It runs the Tuist that mise pins,
-// through `mise exec`: a Tuist found on the PATH, such as Homebrew's, sent builds from other
-// versions (planning #431). Without mise it uses whatever Tuist there is. It never fails a build: a
-// Mac that isn't signed in to Tuist just sends nothing, and WAYPOINT_TUIST_OFFLINE=1 sends nothing.
-// It takes the app's build settings, which it reads.
-let buildInsightsScript = """
-if [ "${WAYPOINT_TUIST_OFFLINE:-0}" = 1 ]; then
-    exit 0
-fi
-MISE="$(command -v mise || echo "$HOME/.local/bin/mise")"
-if [ -x "$MISE" ]; then
-    "$MISE" exec -C "$SRCROOT" -- tuist inspect build || true
-elif command -v tuist >/dev/null; then
-    tuist inspect build || true
-fi
-"""
+// project's Tuist dashboard (Build Insights, planning #427), and after every test run in Xcode,
+// `tuist inspect test` sends its results (Test Insights, planning #456). Tuist adds that test
+// post-action only to schemes it generates, and this scheme is our own. Both run the Tuist that
+// mise pins, through `mise exec`: a Tuist found on the PATH, such as Homebrew's, sent builds from
+// other versions (planning #431). Without mise they use whatever Tuist there is. They never fail a
+// build or a test run: a Mac that isn't signed in to Tuist just sends nothing, and
+// WAYPOINT_TUIST_OFFLINE=1 sends nothing. They take the app's build settings, which they read.
+func insightsScript(_ command: String, skippedBy variables: [String]) -> String {
+    let skips = variables.map { variable in
+        """
+        if [ "${\(variable):-0}" = 1 ]; then
+            exit 0
+        fi
+        """
+    }
+    let inspect = """
+    MISE="$(command -v mise || echo "$HOME/.local/bin/mise")"
+    if [ -x "$MISE" ]; then
+        "$MISE" exec -C "$SRCROOT" -- tuist inspect \(command) || true
+    elif command -v tuist >/dev/null; then
+        tuist inspect \(command) || true
+    fi
+    """
+    return (skips + [inspect]).joined(separator: "\n")
+}
 
 let buildInsights = ExecutionAction.executionAction(
     title: "Tuist build insights",
-    scriptText: buildInsightsScript,
+    scriptText: insightsScript("build", skippedBy: ["WAYPOINT_TUIST_OFFLINE"]),
+    target: "WaypointExample"
+)
+
+// `tuist test` already sends its run's results, so `scripts/test-mac.sh` sets
+// WAYPOINT_TUIST_TEST_RUN=1 and the post-action skips, and a run is never counted twice.
+let testInsights = ExecutionAction.executionAction(
+    title: "Tuist test insights",
+    scriptText: insightsScript(
+        "test",
+        skippedBy: ["WAYPOINT_TUIST_OFFLINE", "WAYPOINT_TUIST_TEST_RUN"]
+    ),
     target: "WaypointExample"
 )
 
@@ -164,7 +184,7 @@ let scheme = Scheme.scheme(
         postActions: [buildInsights],
         runPostActionsOnFailure: true
     ),
-    testAction: .targets(schemeTestTargets),
+    testAction: .targets(schemeTestTargets, postActions: [testInsights]),
     runAction: .runAction(executable: "WaypointExample")
 )
 
