@@ -85,9 +85,11 @@ let appDependencies: [TargetDependency] = [
     .target(name: "ExampleAddresses"),
 ]
 
-// The shared parts of the app as modules (planning #445), lowest first. Each is a framework the app
-// links, built from one folder, main actor by default like the app, and depending only on the
-// modules below it, which `scripts/check-example-module-edges.sh` also checks.
+// The shared parts of the app as modules (planning #445), lowest first. Each is a static framework
+// built from one folder, main actor by default like the app, and depending only on the modules
+// below it, which `scripts/check-example-module-edges.sh` also checks. Static, like the package's
+// products, so only the app links them and Waypoint, and one copy of each type exists at runtime:
+// a dynamic module would carry its own copy of Waypoint, and casts across copies fail.
 func exampleModule(
     _ name: String,
     folder: String,
@@ -96,7 +98,7 @@ func exampleModule(
     .target(
         name: name,
         destinations: destinations,
-        product: .framework,
+        product: .staticFramework,
         bundleId: "dev.waypoint.example.\(name.lowercased())",
         deploymentTargets: deploymentTargets,
         infoPlist: .default,
