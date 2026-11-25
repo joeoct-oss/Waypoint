@@ -273,10 +273,12 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(app.reveal(signOut))
         signOut.tap()
 
-        XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
+        // The notice first: it shows for 3 s, and on a loaded Mac the way back to Account can take
+        // longer than that, so it would be gone by the time the test looked for it.
         let notice = app.descendants(matching: .any)[Identifiers.notice]
         XCTAssertTrue(notice.waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(notice.label.contains(Self.signedOut), notice.label)
+        XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(app.navigationBars[Self.accountTitle].exists)
         let orders = app.buttons[Identifiers.ordersButton]
         XCTAssertTrue(orders.label.contains(Self.needsAccount), orders.label)
