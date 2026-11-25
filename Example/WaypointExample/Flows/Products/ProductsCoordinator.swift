@@ -16,10 +16,10 @@ import Waypoint
 // the cart pushed above its first product here (`ShopCartRoute`). Save needs an account, so the
 // account gate asks a guest to sign in first; then the product joins the wish list, which the local
 // store keeps, and a small "Saved to your wish list" sheet offers View wish list. Shop's Wish list
-// button opens the wish list as a sheet for anyone; its "You may also like" Save asks a guest to
-// sign in over the wish list, two sheets deep, and Done on Signed in closes both in one change
-// (`dismissAll`). The wish list's Done closes its own flow (`dismissFlow`), and the saved sheet's
-// Close does the same from the view (`@DismissFlow`).
+// button opens the wish list, a child flow `WishlistCoordinator` runs, as a sheet for anyone; its
+// "You may also like" Save asks a guest to sign in over the wish list, two sheets deep, and Done on
+// Signed in closes both in one change (`dismissAll`). The wish list's Done closes its own flow
+// (`dismissFlow`), and the saved sheet's Close does the same from the view (`@DismissFlow`).
 //
 // The stack runs on Waypoint: `router`, which Waypoint makes and the main tabs make the one stack
 // every tab shares, owns the path. `MainTabView` draws it with `WaypointStack` around the tabs and
@@ -27,10 +27,10 @@ import Waypoint
 // router by itself. `root` draws the tab's root, and `ProductsSheet` its sheets. A product page
 // links to a related product with `WaypointLink`, which pushes through the same router, and a
 // search result pushes from `SearchModel`, a view model holding the stack's navigator scoped to
-// `ShopFlow`, which the stack declares. The router also presents the filters, the saved sheet and
-// the wish list (`FilterRoute`, `SavedRoute`, `WishlistRoute`), each drawn on the presented router
-// with `WaypointStack`; the sheet itself is still SwiftUI's, bound to the router, until Waypoint
-// draws sheets.
+// `ShopFlow`, which the stack declares. The router also presents the filters and the saved sheet
+// (`FilterRoute`, `SavedRoute`) and the wish list's flow, each drawn on the presented router with
+// `WaypointStack`; the sheet itself is still SwiftUI's, bound to the router, until Waypoint draws
+// sheets.
 //
 // Conformances:
 // - `StackCoordinator`, so Waypoint makes its router and the main tabs make it the shared stack.
@@ -59,9 +59,9 @@ final class ProductsCoordinator: StackCoordinator {
     private(set) var sheetRouter: StackRouter?
     // `var` for the same reason as `presentedSheet`: the sizes the router gives the sheet.
     private(set) var sheetOptions: SheetOptions?
-    // `var` because the wish list sheet and Save change it; it copies the local store, which
-    // nothing observes, so the open sheet redraws.
-    private(set) var wishlistProductIDs: [Int]
+    // `var` because `showWishlist()` and `openWishlist()` set it with the flow they present, and
+    // `releaseSheet()` drops it once the sheet has gone.
+    private(set) var wishlist: WishlistCoordinator?
     // `var` because `playLaunchSteps()` plays them once, and the shop appears again on every tab
     // switch.
     private var hasPlayedLaunchSteps: Bool
@@ -114,7 +114,7 @@ final class ProductsCoordinator: StackCoordinator {
         presentedSheet = nil
         sheetRouter = nil
         sheetOptions = nil
-        wishlistProductIDs = store.wishlistProductIDs
+        wishlist = nil
         hasPlayedLaunchSteps = false
     }
 
@@ -126,7 +126,6 @@ final class ProductsCoordinator: StackCoordinator {
         router.register(ShopCartRoute.self)
         router.register(FilterRoute.self)
         router.register(SavedRoute.self)
-        router.register(WishlistRoute.self)
     }
 
     @ViewBuilder
@@ -262,26 +261,23 @@ final class ProductsCoordinator: StackCoordinator {
         )
     }
 
-    // Shop's Wish list button.
+    // Shop's Wish list button: starts the wish list's flow as a sheet.
     func openWishlist() {
-        wishlistProductIDs = store.wishlistProductIDs
-        showSheet(
-            .wishlist,
-            route: WishlistRoute(),
-            style: AppSheets.large
-        )
+        let wishlist = factory.makeWishlistFlow(onCloseAll: { self.dismissAllSheets() })
+        let outcome = router.present(wishlist, style: AppSheets.large) { _ in }
+        guard outcome.didChange else {
+            return
+        }
+        self.wishlist = wishlist
+        takePresentedSheet(.wishlist)
     }
 
-    // The saved sheet's View wish list: one transaction dismisses the saved sheet's flow and
-    // presents the wish list, since a stack shows one presentation at a time. The router changes
-    // once, so the open sheet swaps its content and grows instead of closing and opening again.
+    // The saved sheet's View wish list: dismisses the saved sheet's flow, then starts the wish
+    // list's, since a stack shows one presentation at a time. Both happen before the sheet redraws,
+    // so it swaps its content and grows instead of closing and opening again.
     func showWishlist() {
-        wishlistProductIDs = store.wishlistProductIDs
-        router.transaction {
-            $0.dismiss()
-            $0.present(WishlistRoute(), style: AppSheets.large)
-        }
-        takePresentedSheet(.wishlist)
+        router.dismiss()
+        openWishlist()
     }
 
     func addToCart(_ product: Product) {
@@ -300,19 +296,6 @@ final class ProductsCoordinator: StackCoordinator {
         gate.requireAccount(for: .save) { self.addToWishlist(product) }
     }
 
-    // Save under "You may also like": a guest signs in over the wish list first.
-    func saveFromWishlist(_ product: Product) {
-        guard let sheetRouter else {
-            return
-        }
-        gate.requireAccount(
-            for: .save,
-            over: sheetRouter,
-            then: { self.keep(product) },
-            done: { self.dismissAllSheets() }
-        )
-    }
-
     func dismissSheet() {
         router.dismiss()
     }
@@ -320,12 +303,6 @@ final class ProductsCoordinator: StackCoordinator {
     // Done on Signed in: the wish list and the accounts flow over it close in one change.
     func dismissAllSheets() {
         router.dismissAll()
-    }
-
-    // The wish list's Done: the wish list's own router asks the stack that presented it to close
-    // it.
-    func closeWishlist() {
-        sheetRouter?.dismissFlow()
     }
 
     // Takes the system's own dismissal of the sheet, a swipe down.
@@ -344,6 +321,7 @@ final class ProductsCoordinator: StackCoordinator {
         presentedSheet = nil
         sheetRouter = nil
         sheetOptions = nil
+        wishlist = nil
     }
 
     private func showSheet<R: Route>(
@@ -366,15 +344,10 @@ final class ProductsCoordinator: StackCoordinator {
     }
 
     private func addToWishlist(_ product: Product) {
-        keep(product)
-        showSaved()
-    }
-
-    private func keep(_ product: Product) {
         if !store.wishlistProductIDs.contains(product.id) {
             store.wishlistProductIDs.append(product.id)
         }
-        wishlistProductIDs = store.wishlistProductIDs
+        showSaved()
     }
 
     // Pushes the launch products in one change, then makes the follow-up change while that push
@@ -447,12 +420,11 @@ final class ProductsCoordinator: StackCoordinator {
         factory.makeSaved(onViewWishlist: { self.showWishlist() })
     }
 
+    @ViewBuilder
     private func makeWishlistFlow() -> some View {
-        factory.makeWishlist(
-            productIDs: wishlistProductIDs,
-            onSave: { self.saveFromWishlist($0) },
-            onDone: { self.closeWishlist() }
-        )
+        if let wishlist {
+            wishlist.root
+        }
     }
 
     @ViewBuilder

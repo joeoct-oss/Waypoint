@@ -118,6 +118,14 @@ struct ProductsFactory {
         SavedView(onViewWishlist: onViewWishlist)
     }
 
+    // The wish list's flow, on the store's wish list. Done on Signed in over it runs `onCloseAll`.
+    func makeWishlistFlow(onCloseAll: @escaping () -> Void) -> WishlistCoordinator {
+        WishlistCoordinator(
+            factory: self,
+            onCloseAll: onCloseAll
+        )
+    }
+
     // The wish list of `productIDs`, with up to three products not on it as suggestions.
     func makeWishlist(
         productIDs: [Int],

@@ -100,7 +100,8 @@ struct FilterRoute: TrackableScreen {
     static let screenName = "Filter"
 }
 
-// The wish list, presented as a sheet over a product by the products router.
+// The wish list's name in the journey and the trail. The wish list itself is the flow
+// `WishlistCoordinator` runs, whose root is named after this route.
 //
 // Conformances:
 // - `TrackableScreen`, a `Route` the journey log names "Wish list".
