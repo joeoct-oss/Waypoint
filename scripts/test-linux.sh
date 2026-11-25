@@ -33,6 +33,9 @@ scripts/check-example-isolation.sh
 echo "==> Checking that app code imports Waypoint once"
 scripts/check-single-import.sh
 
+echo "==> Checking the example app's folder order"
+scripts/check-example-module-edges.sh
+
 echo "==> Checking the Mac test script's run lock"
 scripts/check-test-mac-lock.sh
 
