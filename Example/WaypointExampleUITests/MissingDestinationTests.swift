@@ -21,9 +21,6 @@ final class MissingDestinationTests: XCTestCase {
     private static let lampID = 1
     private static let routeName = "ProductReviewsRoute"
 
-    // The stack checks for a missing destination when the push ends, about 0.6 s after the tap.
-    private static let reportTimeout: TimeInterval = 5
-
     func testRouteWithNoDestinationInItsStackIsShownAndReported() {
         let app = ExampleApp.launch(
             signedIn: true,
@@ -36,8 +33,9 @@ final class MissingDestinationTests: XCTestCase {
         XCTAssertTrue(app.reveal(relatedLink))
         relatedLink.tap()
 
+        // The stack checks for a missing destination when the push ends, about 0.6 s after the tap.
         let banner = app.descendants(matching: .any)[Identifiers.navigationIssue]
-        XCTAssertTrue(banner.waitForExistence(timeout: Self.reportTimeout))
+        XCTAssertTrue(banner.waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(banner.label.contains(Self.routeName), banner.label)
         XCTAssertEqual(banner.value as? String, BuildConfiguration.name)
         checkScreen(in: app)
