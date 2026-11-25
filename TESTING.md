@@ -242,6 +242,23 @@ wait "$(cat .build/test-mac.pid)"; echo "exit=$?"
 - `WAYPOINT_JOBS`, `WAYPOINT_BASE`, `WAYPOINT_UI_WORKERS` and `WAYPOINT_TUIST_OFFLINE` stay unset unless the person who asked for the run names a value.
 - `WAYPOINT_PULL_REQUEST` is the number of the pull request the run tests, so Tuist posts its run report there. Leave it out for a merge batch of several pull requests, a `coverage` run, and a run of no pull request.
 
+### Trust the caches
+
+Mac runs reuse earlier work in three ways. Each one must give the result a run from scratch would give, never a false pass and never a false failure:
+
+- **Selective testing** (planning #429): `tuist test` skips a test target that already passed with the same hash.
+- **The binary cache** (planning #441, #445): `tuist test` takes every module outside the tests it runs, the package's and the example app's, as a binary built from exactly the same inputs. It ignores `Example/Tuist.swift`'s cache profile, which decides only `tuist generate` and `tuist cache`.
+- **Xcode's compilation cache and the derived data folders**, which make builds incremental.
+
+What keeps them honest:
+
+1. **The hashes see every part.** `scripts/check-selective-testing-hashes.sh` runs in every `full` and `release` run, before any example test, and a failure stops the run. In a copy of the tree, it edits one file of each part: every package module, every example app folder, the asset catalog and every test folder. It also adds a new file. Each edit must change the hash of every test target that uses that part, and the cache key of every module built from it or above it, and must change nothing else. That proves both directions: a changed part always reruns its tests and rebuilds its modules, and an unchanged one is reused.
+2. **What the hashes can't see, they aren't trusted with.** A branch that changes a file outside the package's and the example app's sources, such as a manifest, `.mise.toml`, a script or CI, runs with selective testing and the binary cache off.
+3. **New tools mean no reuse.** A run records its Xcode, Tuist, macOS and simulator runtimes when it passes with every example test run from source and nothing skipped: a `coverage`, `release` or clean run, or any green run with both caches off. The record lives in `waypoint-clean-run-toolchain` in the clone's git folder. A run whose tools differ from that record, or that finds no record, turns selective testing and the binary cache off. The log says `toolchain since the last green clean run: same | changed | unrecorded`.
+4. **A binary only comes from a green tree.** Only a green `full` or `coverage` run warms the binary cache, as its last step.
+
+**Force a clean run** with `--clean`, on any tier: `WAYPOINT_SIMULATOR=waypoint-01 WAYPOINT_IOS17_SIMULATOR=waypoint-02 scripts/test-mac.sh full --clean`. It skips nothing, takes no binary, turns Xcode's compilation cache off, and builds the example app in fresh derived data folders (`.build/clean-example-derived-data` and `.build/clean-release-reports-derived-data`). The incremental folders stay as they were for the next run. The package's own steps build as they always do, through SwiftPM and xcodebuild with no shared cache. A green clean run records its tools, so later runs trust the caches again. Use it when a result looks wrong (see [When a run fails](#6-when-a-run-fails)), or when the person asking for the run says so.
+
 ### Pass or fail
 
 - **Pass:** it prints `exit=0`, and the log has `All Mac tests passed (<tier>).` after the `Step times` table, where `<tier>` is the tier you ran.
@@ -298,6 +315,8 @@ Find the first row that matches what the log says. Do what it says, once. A retr
 | `error: no simulator named <name>`, or `Creating simulator` | Not a test result: a simulator is missing | Stop the run if it is still going. Don't delete what was created. Report the name. |
 | `error: no iOS simulator runtime installed` | Not a test result: Xcode lacks a runtime | Stop. Report it. |
 | `Unable to boot`, `Failed to install`, `Failed to launch`, `Test runner never began executing`, `Lost connection to the test runner` | Not a test result: the simulator misbehaved | Shut your simulator down by name, then run the same command once more. A second failure: report it as a simulator failure. |
+| `FAIL:` from `scripts/check-selective-testing-hashes.sh` | A real failure: a hash or cache key misses a change, or moves without one, so the caches can't be trusted | No retry. Report the `FAIL:` lines. No pull request merges on a Mac run that skips or reuses anything until it is fixed; until then, gates run with `--clean`. |
+| A build error about the build's own state, not the code: a module or `package` symbol "not found" or "inaccessible" in code that has it, `Undefined symbol` for code that exists, or a stale module file | Maybe not a test result: something an earlier build left | Run the same command once with `--clean`. Green: report it as a cache failure with both logs, and that clean run counts. Red again: it is a real failure, so report it as one. |
 | The run was stopped as hung | Not a test result | Teardown, then report the last `==> ` line and the time it started. No retry. |
 | Anything else | Unknown | Stop. Report the last 30 lines of the log. |
 
@@ -319,6 +338,7 @@ Time: <total seconds>
 Failures: none | <test or step>: <first failure line>, one per line
 Retry: none | <what ran again and what it did>
 Selective testing: off | on: <the targets `tuist test` listed under "Testing the following targets", or "none: no tests to run">
+Caches: toolchain <same | changed | unrecorded>, binary cache <on | off>, clean <yes | no>
 Tuist run report: on pull request <n> | none (<why>)
 Batch: none | <the merge-batch.sh line>
 Step times: <the table from the end of the log, Mac only>

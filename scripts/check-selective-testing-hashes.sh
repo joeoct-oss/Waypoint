@@ -8,12 +8,18 @@
 #
 # Checks that Tuist's selective testing sees every part of the package (planning #429). Selective testing
 # skips a test target that already passed with the same hash, so the hash must change whenever
-# something the tests run changes. In a copy of the working tree, this adds a comment line to one
-# Swift file of each package module and of the example app's parts, one at a time, and checks that
-# each edit changes the hash of every test target that uses that part, and of no other. The module
-# test targets (planning #445) run without the app, so an edit in a feature must leave the other
-# features' tests alone, or selective testing would never skip them. A docs edit must change no
-# hash.
+# something the tests run changes. In a copy of the working tree, this adds a line to one file of
+# each part, one at a time: every package module, every folder of the example app (its modules,
+# the app's own folders and its asset catalog) and every test folder. It checks that each edit
+# changes the hash of every test target that uses that part, and of no other, and that a new file
+# counts as an edit. The module test targets (planning #445) run without the app, so an edit in a
+# feature must leave the other features' tests alone, or selective testing would never skip them.
+# A docs edit must change no hash. Both directions matter: a hash that misses an edit lets a run
+# skip a test that would now fail, and a hash that moves without one reruns tests for nothing.
+#
+# What this can't edit in a copy (the manifests, the tool versions, Xcode) is never trusted to the
+# hashes: `scripts/test-mac.sh` turns selective testing and the binary cache off for a branch that
+# changes a file the hashes don't cover, and after the tools change (TESTING.md, Trust the caches).
 #
 # The same edits prove that Tuist's binary cache (planning #441) never hands a run a stale
 # module, the package's or the example app's (planning #445): an edit in a module changes its
@@ -33,24 +39,43 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# One Swift file of each part that the example app's tests run.
+# One file of each part that the example app's tests run: every package module, every folder of
+# the example app (its modules, the app's own folders and its resources), and every test folder.
 PROBED_PARTS=(
     Sources/WaypointCore
     Sources/WaypointOSLog
     Sources/Waypoint
     Sources/WaypointUIKit
     Example/WaypointExample/App
+    Example/WaypointExample/Resources
     Example/WaypointExample/Catalog
+    Example/WaypointExample/Store
     Example/WaypointExample/Services
+    Example/WaypointExample/DesignSystem
+    Example/WaypointExample/Navigation
+    Example/WaypointExample/Flows/Addresses
     Example/WaypointExample/Flows/Auth
     Example/WaypointExample/Flows/Products
     Example/WaypointExample/Flows/Lab
     Example/WaypointExample/Flows/Cart
+    Example/WaypointExample/Flows/Account
+    Example/WaypointExample/Flows/Main
+    Example/WaypointExample/Flows/Splash
+    Example/ModuleTests/Support
+    Example/ModuleTests/Services
+    Example/ModuleTests/Auth
+    Example/ModuleTests/Products
+    Example/ModuleTests/Lab
+    Example/ModuleTests/Cart
+    Example/WaypointExampleTests
 )
 # The app and every unit test target, and the ones whose hashes an edit in each part must change:
 # every target that uses the part, directly or through a module. The others must keep theirs.
+# `ExampleTestSupport` is under every module test target and the app's unit tests, and it uses the
+# services, the design system and the navigation module, so an edit in any of those, or in what
+# they use, moves every test target.
 APP_TARGETS="WaypointExample WaypointExampleTests"
-FEATURE_TESTS="ExampleAuthTests ExampleProductsTests ExampleLabTests ExampleCartTests"
+MODULE_TESTS="ExampleServicesTests ExampleAuthTests ExampleProductsTests ExampleLabTests ExampleCartTests"
 HASHED_TARGETS=(
     WaypointExample
     WaypointExampleTests
@@ -62,16 +87,26 @@ HASHED_TARGETS=(
 )
 hashes_moved_by() {
     case "$1" in
-        Sources/WaypointCore | Sources/WaypointOSLog | Sources/Waypoint)
-            echo $APP_TARGETS ExampleServicesTests $FEATURE_TESTS
-            ;;
-        Sources/WaypointUIKit | Example/WaypointExample/App) echo $APP_TARGETS ;;
-        Example/WaypointExample/Catalog) echo "${HASHED_TARGETS[@]}" ;;
-        Example/WaypointExample/Services) echo $APP_TARGETS ExampleServicesTests $FEATURE_TESTS ;;
+        Sources/WaypointCore | Sources/WaypointOSLog | Sources/Waypoint) echo $APP_TARGETS $MODULE_TESTS ;;
+        Sources/WaypointUIKit) echo $APP_TARGETS ;;
+        Example/WaypointExample/App | Example/WaypointExample/Resources) echo $APP_TARGETS ;;
+        Example/WaypointExample/Flows/Main | Example/WaypointExample/Flows/Splash) echo $APP_TARGETS ;;
+        Example/WaypointExample/Catalog | Example/WaypointExample/Store) echo $APP_TARGETS $MODULE_TESTS ;;
+        Example/WaypointExample/Services | Example/WaypointExample/DesignSystem) echo $APP_TARGETS $MODULE_TESTS ;;
+        Example/WaypointExample/Navigation) echo $APP_TARGETS $MODULE_TESTS ;;
+        Example/WaypointExample/Flows/Addresses) echo $APP_TARGETS ExampleCartTests ;;
         Example/WaypointExample/Flows/Auth) echo $APP_TARGETS ExampleAuthTests ;;
         Example/WaypointExample/Flows/Products) echo $APP_TARGETS ExampleProductsTests ;;
         Example/WaypointExample/Flows/Lab) echo $APP_TARGETS ExampleLabTests ;;
         Example/WaypointExample/Flows/Cart) echo $APP_TARGETS ExampleCartTests ;;
+        Example/WaypointExample/Flows/Account) echo $APP_TARGETS ;;
+        Example/ModuleTests/Support) echo WaypointExampleTests $MODULE_TESTS ;;
+        Example/ModuleTests/Services) echo ExampleServicesTests ;;
+        Example/ModuleTests/Auth) echo ExampleAuthTests ;;
+        Example/ModuleTests/Products) echo ExampleProductsTests ;;
+        Example/ModuleTests/Lab) echo ExampleLabTests ;;
+        Example/ModuleTests/Cart) echo ExampleCartTests ;;
+        Example/WaypointExampleTests) echo WaypointExampleTests ;;
         *) echo "" ;;
     esac
 }
@@ -94,28 +129,36 @@ CACHED_MODULES=(
     ExampleLab
     ExampleCart
     ExampleAccount
+    ExampleTestSupport
 )
 # The example modules that use the package's Waypoint, directly or through another module: all but
 # the catalog and the store.
 USES_WAYPOINT="ExampleServices ExampleDesignSystem ExampleNavigation ExampleAddresses ExampleAuth
-    ExampleProducts ExampleLab ExampleCart ExampleAccount"
+    ExampleProducts ExampleLab ExampleCart ExampleAccount ExampleTestSupport"
+# The modules above the design system: everything that uses it, the test support included.
+ABOVE_DESIGN_SYSTEM="ExampleNavigation ExampleAddresses ExampleAuth ExampleProducts ExampleLab
+    ExampleCart ExampleAccount ExampleTestSupport"
+FEATURES="ExampleAuth ExampleProducts ExampleLab ExampleCart ExampleAccount"
 cache_keys_moved_by() {
     case "$1" in
         Sources/WaypointCore) echo WaypointCore WaypointOSLog Waypoint WaypointUIKit $USES_WAYPOINT ;;
         Sources/WaypointOSLog) echo WaypointOSLog Waypoint WaypointUIKit $USES_WAYPOINT ;;
         Sources/Waypoint) echo Waypoint $USES_WAYPOINT ;;
         Sources/WaypointUIKit) echo WaypointUIKit ;;
-        Example/WaypointExample/Catalog)
-            echo ExampleCatalog ExampleDesignSystem ExampleNavigation ExampleAddresses ExampleAuth \
-                ExampleProducts ExampleLab ExampleCart ExampleAccount
+        Example/WaypointExample/Catalog) echo ExampleCatalog ExampleDesignSystem $ABOVE_DESIGN_SYSTEM ;;
+        Example/WaypointExample/Store)
+            echo ExampleStore ExampleServices ExampleDesignSystem $ABOVE_DESIGN_SYSTEM
             ;;
-        Example/WaypointExample/Services)
-            echo ExampleServices ExampleAuth ExampleProducts ExampleLab ExampleCart ExampleAccount
-            ;;
+        Example/WaypointExample/Services) echo ExampleServices $FEATURES ExampleTestSupport ;;
+        Example/WaypointExample/DesignSystem) echo ExampleDesignSystem $ABOVE_DESIGN_SYSTEM ;;
+        Example/WaypointExample/Navigation) echo ExampleNavigation $FEATURES ExampleTestSupport ;;
+        Example/WaypointExample/Flows/Addresses) echo ExampleAddresses ExampleCart ExampleAccount ;;
         Example/WaypointExample/Flows/Auth) echo ExampleAuth ;;
         Example/WaypointExample/Flows/Products) echo ExampleProducts ;;
         Example/WaypointExample/Flows/Lab) echo ExampleLab ExampleAccount ;;
         Example/WaypointExample/Flows/Cart) echo ExampleCart ;;
+        Example/WaypointExample/Flows/Account) echo ExampleAccount ;;
+        Example/ModuleTests/Support) echo ExampleTestSupport ;;
         *) echo "" ;;
     esac
 }
@@ -212,13 +255,9 @@ hashes_after_edit() {
     echo "$result"
 }
 
-for part in "${PROBED_PARTS[@]}"; do
-    file=$(cd "$TREE" && find "$part" -name '*.swift' -type f | sort | head -1)
-    if [[ -z "$file" ]]; then
-        fail "$part has a Swift file to edit"
-        continue
-    fi
-    after=$(hashes_after_edit "$file" "// selective testing probe")
+# Checks one edit's hashes and keys against what the edit in `part` must move.
+check_edit() {
+    local part="$1" what="$2" after="$3" hashed moved target module changed
     hashed=" $(hashes_moved_by "$part") "
     for target in "${HASHED_TARGETS[@]}"; do
         changed=false
@@ -227,14 +266,14 @@ for part in "${PROBED_PARTS[@]}"; do
         fi
         if [[ "$hashed" == *" $target "* ]]; then
             if $changed; then
-                pass "an edit in $part changes the hash of $target"
+                pass "$what in $part changes the hash of $target"
             else
-                fail "an edit in $part changes the hash of $target ($file)"
+                fail "$what in $part changes the hash of $target"
             fi
         elif $changed; then
-            fail "an edit in $part leaves the hash of $target alone ($file)"
+            fail "$what in $part leaves the hash of $target alone"
         else
-            pass "an edit in $part leaves the hash of $target alone"
+            pass "$what in $part leaves the hash of $target alone"
         fi
     done
     moved=" $(cache_keys_moved_by "$part") "
@@ -245,17 +284,41 @@ for part in "${PROBED_PARTS[@]}"; do
         fi
         if [[ "$moved" == *" $module "* ]]; then
             if $changed; then
-                pass "an edit in $part changes the cache key of $module"
+                pass "$what in $part changes the cache key of $module"
             else
-                fail "an edit in $part changes the cache key of $module ($file)"
+                fail "$what in $part changes the cache key of $module"
             fi
         elif $changed; then
-            fail "an edit in $part leaves the cache key of $module alone ($file)"
+            fail "$what in $part leaves the cache key of $module alone"
         else
-            pass "an edit in $part leaves the cache key of $module alone"
+            pass "$what in $part leaves the cache key of $module alone"
         fi
     done
+}
+
+for part in "${PROBED_PARTS[@]}"; do
+    # A Swift file where the part has one, so the line is a comment; the resources have none.
+    file=$(cd "$TREE" && find "$part" -name '*.swift' -type f | sort | head -1)
+    line="// selective testing probe"
+    if [[ -z "$file" ]]; then
+        file=$(cd "$TREE" && find "$part" -type f | sort | head -1)
+        line=" "
+    fi
+    if [[ -z "$file" ]]; then
+        fail "$part has a file to edit"
+        continue
+    fi
+    after=$(hashes_after_edit "$file" "$line")
+    check_edit "$part" "an edit" "$after"
 done
+
+# A new file counts as much as an edit: Tuist reads the source folders again, so a file the
+# manifests' globs pick up moves the same hashes and keys as an edit in that folder.
+NEW_FILE="Example/WaypointExample/Flows/Cart/SelectiveTestingProbe.swift"
+echo "// selective testing probe" >"$TREE/$NEW_FILE"
+after=$(hashes && cache_keys)
+rm "$TREE/$NEW_FILE"
+check_edit Example/WaypointExample/Flows/Cart "a new file" "$after"
 
 after=$(hashes_after_edit README.md "Selective testing probe.")
 if [[ "$after" == "$BASE"$'\n'"$BASE_KEYS" ]]; then
