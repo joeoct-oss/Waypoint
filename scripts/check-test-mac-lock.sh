@@ -105,6 +105,12 @@ cat >"$STUBS/sysctl" <<'EOF'
 #!/usr/bin/env bash
 echo 4
 EOF
+# `swift` too, so the package's steps never build or test a copied tree for real: the check
+# needs no Swift toolchain, and CI runs it on a runner host that has none.
+cat >"$STUBS/swift" <<'EOF'
+#!/usr/bin/env bash
+echo "swift $*" >>"${STUB_CALLS:-/dev/null}"
+EOF
 chmod +x "$STUBS"/*
 
 FAILURES=0
@@ -223,6 +229,8 @@ fi
 TREE="$WORK/tree"
 mkdir -p "$TREE"
 git ls-files -z | tar --null -T - -cf - | tar -xf - -C "$TREE"
+# The compile fixtures need a real compiler, so the copy's fixture check is a stand-in.
+printf '#!/usr/bin/env bash\n' >"$TREE/scripts/check-compile-failures.sh"
 git -C "$TREE" init -q -b main
 git -C "$TREE" add -A
 git -C "$TREE" -c user.name=check -c user.email=check@example.invalid commit -q -m base
