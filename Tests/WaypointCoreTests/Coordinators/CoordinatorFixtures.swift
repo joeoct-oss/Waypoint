@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import Understudy
 import WaypointCore
 import WaypointTestSupport
 
@@ -55,7 +56,7 @@ final class StoredRouterCoordinator: StackCoordinating {
     let router: StackRouter
 
     /// Each router its destinations were registered on.
-    let registrations = Recorder<StackRouter>()
+    let registrations = Spy<StackRouter, Void>()
 
     /// Creates a coordinator that keeps `router`.
     init(router: StackRouter) {
@@ -64,7 +65,7 @@ final class StoredRouterCoordinator: StackCoordinating {
 
     /// Registers the product route, and records the router.
     func registerDestinations(on router: StackRouter) {
-        registrations.record(router)
+        registrations(router)
         router.register(ProductRoute.self)
     }
 }
@@ -97,13 +98,13 @@ final class OuterCoordinator: StackCoordinating {
 @MainActor
 final class DeinitReadingCoordinator: StackCoordinating {
     /// What the push in `deinit` returned, and the router it went to.
-    let outcomes: Recorder<(NavigationOutcome, StackRouter)>
+    let outcomes: Spy<(NavigationOutcome, StackRouter), Void>
 
     /// The router `makeRouter()` returns, or `nil` for a new one.
     let madeRouter: StackRouter?
 
     /// Creates a coordinator that records into `outcomes`.
-    init(outcomes: Recorder<(NavigationOutcome, StackRouter)>, madeRouter: StackRouter? = nil) {
+    init(outcomes: Spy<(NavigationOutcome, StackRouter), Void>, madeRouter: StackRouter? = nil) {
         self.outcomes = outcomes
         self.madeRouter = madeRouter
     }
@@ -114,7 +115,7 @@ final class DeinitReadingCoordinator: StackCoordinating {
     deinit {
         MainActor.assumeIsolated {
             let router = router
-            outcomes.record((router.push(ProductRoute(id: 1)), router))
+            outcomes((router.push(ProductRoute(id: 1)), router))
         }
     }
 

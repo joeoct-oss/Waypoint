@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -20,13 +21,13 @@ struct StackNavigatorTests {
     func stackNavigatorPushesOnRouter() {
         let viaRouter = StackRouter(configuration: .permissive)
         let viaNavigator = StackRouter(configuration: .permissive)
-        let routerBatches = Recorder<[AppliedChange]>()
-        let navigatorBatches = Recorder<[AppliedChange]>()
+        let routerBatches = Spy<[AppliedChange], Void>()
+        let navigatorBatches = Spy<[AppliedChange], Void>()
         viaRouter.tree.onApplied { changes in
-            routerBatches.record(changes)
+            routerBatches(changes)
         }
         viaNavigator.tree.onApplied { changes in
-            navigatorBatches.record(changes)
+            navigatorBatches(changes)
         }
 
         viaRouter.push(ProductRoute(id: 1))
@@ -34,8 +35,8 @@ struct StackNavigatorTests {
 
         #expect(outcome == .applied)
         #expect(viaNavigator.state.path == viaRouter.state.path)
-        let routerChanges = routerBatches.values.flatMap { $0.map(\.change) }
-        let navigatorChanges = navigatorBatches.values.flatMap { $0.map(\.change) }
+        let routerChanges = routerBatches.calls.flatMap { $0.map(\.change) }
+        let navigatorChanges = navigatorBatches.calls.flatMap { $0.map(\.change) }
         #expect(navigatorChanges == routerChanges)
     }
 
@@ -110,10 +111,10 @@ struct StackNavigatorTests {
 
     @Test
     func missingNavigatorFailsAndReports() throws {
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         let message = "@StackNavigation found no Waypoint stack above it."
         let navigation = StackNavigator(missing: message) { issue in
-            reported.record(issue)
+            reported(issue)
         }
 
         let outcome = navigation.push(HomeRoute())
@@ -123,7 +124,7 @@ struct StackNavigatorTests {
         #expect(failure.issue.message == message)
         #expect(failure.issue.callSite.hasPrefix("StackNavigatorTests.swift:"))
         let expected = [failure.issue]
-        #expect(reported.values == expected)
+        #expect(reported.calls == expected)
         #expect(!navigation.isActive)
     }
 

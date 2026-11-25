@@ -8,6 +8,7 @@
 
 import Foundation
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -123,9 +124,9 @@ struct GuardedChangeTests {
     @Test
     func pushFallbackOnlySetsForRouteNotInPath() {
         let router = StackRouter(configuration: .permissive)
-        let reported = Recorder<NavigationIssue.Kind>()
+        let reported = Spy<NavigationIssue.Kind, Void>()
         router.tree.onReported { issue in
-            reported.record(issue.kind)
+            reported(issue.kind)
         }
 
         router.setFallback(.push, for: .emptyPath)
@@ -134,6 +135,6 @@ struct GuardedChangeTests {
         #expect(router.fallbackPolicy[.emptyPath] == nil)
         #expect(router.fallbackPolicy[.routeNotInPath] == .push)
         let expectedKinds: [NavigationIssue.Kind] = [.invalidSetting]
-        #expect(reported.values == expectedKinds)
+        #expect(reported.calls == expectedKinds)
     }
 }

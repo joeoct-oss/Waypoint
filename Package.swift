@@ -13,6 +13,11 @@ let package = Package(
         .library(name: "Waypoint", targets: ["Waypoint"]),
         .library(name: "WaypointUIKit", targets: ["WaypointUIKit"]),
     ],
+    dependencies: [
+        // Test doubles for the test targets only; no product depends on it, so apps never fetch
+        // it.
+        .package(url: "https://github.com/joeoct-oss/Understudy", .upToNextMinor(from: "0.1.0")),
+    ],
     targets: [
         // UI-agnostic state engine. Foundation and Observation only, so it builds and tests on
         // Linux.
@@ -29,14 +34,30 @@ let package = Package(
         // files are wrapped in `#if canImport(UIKit)`, so it compiles empty on Linux.
         .target(name: "WaypointUIKit", dependencies: ["WaypointCore", "WaypointOSLog"]),
         // Shared fixtures for the test targets. Internal test code, not a product.
-        .target(name: "WaypointTestSupport", dependencies: ["WaypointCore"], path: "Tests/WaypointTestSupport"),
-        .testTarget(name: "WaypointCoreTests", dependencies: ["WaypointCore", "WaypointTestSupport"]),
+        .target(
+            name: "WaypointTestSupport",
+            dependencies: ["WaypointCore", .product(name: "Understudy", package: "Understudy")],
+            path: "Tests/WaypointTestSupport"
+        ),
+        .testTarget(
+            name: "WaypointCoreTests",
+            dependencies: ["WaypointCore", "WaypointTestSupport", .product(name: "Understudy", package: "Understudy")]
+        ),
         // Renderer tests compile empty where SwiftUI or UIKit is missing, like the renderers
         // themselves.
-        .testTarget(name: "WaypointTests", dependencies: ["Waypoint", "WaypointTestSupport"]),
-        .testTarget(name: "WaypointUIKitTests", dependencies: ["WaypointUIKit", "WaypointTestSupport"]),
+        .testTarget(
+            name: "WaypointTests",
+            dependencies: ["Waypoint", "WaypointTestSupport", .product(name: "Understudy", package: "Understudy")]
+        ),
+        .testTarget(
+            name: "WaypointUIKitTests",
+            dependencies: ["WaypointUIKit", "WaypointTestSupport", .product(name: "Understudy", package: "Understudy")]
+        ),
         // Unified log tests compile empty where `os` is missing, like the target itself.
-        .testTarget(name: "WaypointOSLogTests", dependencies: ["WaypointOSLog", "WaypointTestSupport"]),
+        .testTarget(
+            name: "WaypointOSLogTests",
+            dependencies: ["WaypointOSLog", "WaypointTestSupport", .product(name: "Understudy", package: "Understudy")]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

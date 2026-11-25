@@ -4,6 +4,10 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ## Unreleased
 
+### Changed
+
+- The test targets use Understudy 0.1.x (test targets only, so apps never fetch it): `Spy` replaces `WaypointTestSupport`'s `Recorder`, which is gone. `scripts/test-mac.sh` now fails a run on any warning in Waypoint's own `Sources/` and `Tests/`, found in the xcodebuild log, instead of passing `SWIFT_TREAT_WARNINGS_AS_ERRORS`, which also failed on warnings in packages Waypoint depends on.
+
 ### Added
 
 - Orbit Shop's wish list is a child flow (planning #462, step 4). `WishlistCoordinator` runs it: Shop presents it as a sheet with `present(_:style:onFinish:)`, its Save asks a guest to sign in over it, Done closes it with its own router's `dismissFlow()`, and Done on Signed in closes it and the accounts flow in one change. Shop no longer keeps the wish list's products or its Save and Done by hand. The saved sheet's View wish list now dismisses the saved sheet, then starts the wish list's flow. New `WishlistCoordinatorTests` (`guestSaveSignsInOverTheWishlist`, `signedInSaveAddsToTheWishlist`, `doneClosesTheWishlist`).

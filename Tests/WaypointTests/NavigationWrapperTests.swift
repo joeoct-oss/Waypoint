@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import Understudy
+
 // Draws real SwiftUI views in a window, so these run on the iOS simulator only. The lookup rules
 // behind the wrappers are tested on Linux in `NavigatorLookupTests`.
 
@@ -48,14 +50,14 @@
         @Test
         func environmentProvidesNearestRouter() throws {
             let router = StackRouter(configuration: .permissive)
-            let seen = Recorder<StackNavigator>()
+            let seen = Spy<StackNavigator, Void>()
             let window = Self.host(
                 WaypointStack(router) {
                     StackProbe(seen: seen)
                 }
             )
 
-            let navigation = try #require(seen.last)
+            let navigation = try #require(seen.lastCall)
             let outcome = navigation.push(HomeRoute())
 
             #expect(outcome == .applied)
@@ -67,28 +69,28 @@
         @Test
         func environmentStillOffersTheRouter() throws {
             let router = StackRouter(configuration: .permissive)
-            let seen = Recorder<StackRouter>()
+            let seen = Spy<StackRouter, Void>()
             let window = Self.host(
                 WaypointStack(router) {
                     RouterProbe(seen: seen)
                 }
             )
 
-            #expect(seen.last === router)
+            #expect(seen.lastCall === router)
             withExtendedLifetime(window) { }
         }
 
         @Test
         func flowStackDeclaresItsFlowForFlowNavigation() throws {
             let router = StackRouter(configuration: .permissive)
-            let seen = Recorder<FlowNavigator<ShopFlow>>()
+            let seen = Spy<FlowNavigator<ShopFlow>, Void>()
             let window = Self.host(
                 WaypointStack(flow: ShopFlow.self, router: router) {
                     ShopProbe(seen: seen)
                 }
             )
 
-            let shop = try #require(seen.last)
+            let shop = try #require(seen.lastCall)
             let outcome = shop.push(CartRoute())
 
             #expect(router.declaredFlow == ShopFlow.self)
@@ -101,14 +103,14 @@
         @Test
         func flowNavigationIgnoresAStackOfAnotherFlow() throws {
             let router = StackRouter(configuration: .permissive)
-            let seen = Recorder<FlowNavigator<ShopFlow>>()
+            let seen = Spy<FlowNavigator<ShopFlow>, Void>()
             let window = Self.host(
                 WaypointStack(flow: SettingsFlow.self, router: router) {
                     ShopProbe(seen: seen)
                 }
             )
 
-            let shop = try #require(seen.last)
+            let shop = try #require(seen.lastCall)
             let outcome = shop.push(CartRoute())
 
             let failure = try #require(outcome.failure)
@@ -120,10 +122,10 @@
 
         @Test
         func missingRouterReportsIssue() throws {
-            let seen = Recorder<StackNavigator>()
+            let seen = Spy<StackNavigator, Void>()
             let window = Self.host(StackProbe(seen: seen))
 
-            let navigation = try #require(seen.last)
+            let navigation = try #require(seen.lastCall)
             let outcome = navigation.push(HomeRoute())
 
             let failure = try #require(outcome.failure)
@@ -138,14 +140,14 @@
             let root = StackRouter(configuration: .permissive)
             root.present(SettingsRoute())
             let settings = try #require(root.presented)
-            let seen = Recorder<DismissFlowAction>()
+            let seen = Spy<DismissFlowAction, Void>()
             let window = Self.host(
                 WaypointStack(settings) {
                     DismissProbe(seen: seen)
                 }
             )
 
-            let dismissFlow = try #require(seen.last)
+            let dismissFlow = try #require(seen.lastCall)
             let outcome = dismissFlow()
 
             #expect(outcome == .applied)
@@ -155,13 +157,13 @@
 
         @Test
         func previewHelperProvidesRouters() throws {
-            let stackSeen = Recorder<StackNavigator>()
-            let shopSeen = Recorder<FlowNavigator<ShopFlow>>()
+            let stackSeen = Spy<StackNavigator, Void>()
+            let shopSeen = Spy<FlowNavigator<ShopFlow>, Void>()
             let stackWindow = Self.host(StackProbe(seen: stackSeen).waypointPreview())
             let shopWindow = Self.host(ShopProbe(seen: shopSeen).waypointPreview(flow: ShopFlow.self))
 
-            let navigation = try #require(stackSeen.last)
-            let shop = try #require(shopSeen.last)
+            let navigation = try #require(stackSeen.lastCall)
+            let shop = try #require(shopSeen.lastCall)
 
             #expect(navigation.push(HomeRoute()) == .applied)
             #expect(shop.push(CartRoute()) == .applied)
@@ -172,7 +174,7 @@
         @Test
         func destinationHandsTheScreenItsNavigator() async throws {
             let router = StackRouter(configuration: .permissive)
-            let seen = Recorder<StackNavigator>()
+            let seen = Spy<StackNavigator, Void>()
             let window = Self.host(
                 WaypointStack(router) {
                     Color.clear
@@ -184,10 +186,10 @@
 
             router.push(ProductRoute(id: 1))
             try await Self.waitUntil(window) {
-                seen.count > 0
+                seen.callCount > 0
             }
 
-            let navigation = try #require(seen.last)
+            let navigation = try #require(seen.lastCall)
             navigation.push(HomeRoute())
             let expected = [
                 AnyRoute(ProductRoute(id: 1)),
@@ -201,10 +203,10 @@
     private struct StackProbe: View {
         @StackNavigation private var navigation
 
-        let seen: Recorder<StackNavigator>
+        let seen: Spy<StackNavigator, Void>
 
         var body: some View {
-            let _ = seen.record(navigation)
+            let _ = seen(navigation)
             Color.clear
         }
     }
@@ -213,10 +215,10 @@
     private struct ShopProbe: View {
         @FlowNavigation(ShopFlow.self) private var shop
 
-        let seen: Recorder<FlowNavigator<ShopFlow>>
+        let seen: Spy<FlowNavigator<ShopFlow>, Void>
 
         var body: some View {
-            let _ = seen.record(shop)
+            let _ = seen(shop)
             Color.clear
         }
     }
@@ -225,10 +227,10 @@
     private struct DismissProbe: View {
         @DismissFlow private var dismissFlow
 
-        let seen: Recorder<DismissFlowAction>
+        let seen: Spy<DismissFlowAction, Void>
 
         var body: some View {
-            let _ = seen.record(dismissFlow)
+            let _ = seen(dismissFlow)
             Color.clear
         }
     }
@@ -237,10 +239,10 @@
     private struct RouterProbe: View {
         @Environment(StackRouter.self) private var router
 
-        let seen: Recorder<StackRouter>
+        let seen: Spy<StackRouter, Void>
 
         var body: some View {
-            let _ = seen.record(router)
+            let _ = seen(router)
             Color.clear
         }
     }
@@ -248,10 +250,10 @@
     /// Records the navigator a destination closure handed it each time it draws.
     private struct NavigatorProbe: View {
         let navigation: StackNavigator
-        let seen: Recorder<StackNavigator>
+        let seen: Spy<StackNavigator, Void>
 
         var body: some View {
-            let _ = seen.record(navigation)
+            let _ = seen(navigation)
             Color.clear
         }
     }
