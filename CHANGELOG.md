@@ -4,6 +4,10 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ## Unreleased
 
+### Added
+
+- Dependabot opens one grouped pull request a month for the GitHub Actions in the workflows and one for the packages in `Package.swift` (`.github/dependabot.yml`, planning #511).
+
 ### Changed
 
 - Every Swift Testing test in the package and the example app has a display name that states the promise it pins as a plain sentence, such as "A pop on an empty path fails with an issue naming the flow and call site", so a test report reads as a list of what Waypoint promises (planning #510). Function names are unchanged, so `swift test --filter` and `--only` still find each test. `CODE_STYLE.md` states the rule in [Every test names the promise it pins](CODE_STYLE.md#every-test-names-the-promise-it-pins).
