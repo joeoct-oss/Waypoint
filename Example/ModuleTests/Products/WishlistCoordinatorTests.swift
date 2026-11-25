@@ -19,7 +19,7 @@ import Waypoint
 struct WishlistCoordinatorTests {
     private static let lampID = 1
 
-    @Test
+    @Test("A guest's save asks to sign in over the wishlist")
     func guestSaveSignsInOverTheWishlist() throws {
         let store = TestStore.make()
         defer {
@@ -39,7 +39,7 @@ struct WishlistCoordinatorTests {
         #expect(store.wishlistProductIDs.isEmpty)
     }
 
-    @Test
+    @Test("A signed-in save adds to the wishlist")
     func signedInSaveAddsToTheWishlist() throws {
         let store = TestStore.make()
         defer {
@@ -58,7 +58,7 @@ struct WishlistCoordinatorTests {
         #expect(store.wishlistProductIDs == expected)
     }
 
-    @Test
+    @Test("Done closes the wishlist")
     func doneClosesTheWishlist() {
         let store = TestStore.make()
         defer {

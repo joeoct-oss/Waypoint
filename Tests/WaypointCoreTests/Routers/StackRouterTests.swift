@@ -16,7 +16,7 @@ import WaypointTestSupport
 @Suite("Stack router")
 @MainActor
 struct StackRouterTests {
-    @Test
+    @Test("A push appends the route")
     func pushAppendsRoute() {
         let router = StackRouter(configuration: .permissive)
 
@@ -27,7 +27,7 @@ struct StackRouterTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("A pop removes the last route")
     func popRemovesLast() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -38,7 +38,7 @@ struct StackRouterTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("A pop with a count removes that many from the top")
     func popCountRemovesThatManyFromTheTop() {
         let router = StackRouter(configuration: .permissive)
         router.push {
@@ -52,7 +52,7 @@ struct StackRouterTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("A pop of zero is already there")
     func popOfZeroIsAlreadyThere() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -61,7 +61,7 @@ struct StackRouterTests {
         #expect(router.state.path.count == 1)
     }
 
-    @Test
+    @Test("A push of no routes is already there")
     func pushOfNoRoutesIsAlreadyThere() {
         let router = StackRouter(configuration: .permissive)
         let none: [ProductRoute] = []
@@ -76,7 +76,7 @@ struct StackRouterTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A push under a presented flow keeps the flow")
     func pushUnderAPresentedFlowKeepsIt() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -88,7 +88,7 @@ struct StackRouterTests {
         #expect(router.state.path.count == 1)
     }
 
-    @Test
+    @Test("A pop on an empty path fails with an issue naming the flow and call site")
     func popOnEmptyPathFailsWithIssue() throws {
         let router = StackRouter(flow: FlowID("shop"))
 
@@ -103,7 +103,7 @@ struct StackRouterTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("Popping too many recovers by going to the root")
     func popTooManyRecoversToRoot() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -117,7 +117,7 @@ struct StackRouterTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("popTo a route not in the path fails and leaves the path")
     func popToMissingRouteFailsWithIssue() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -130,7 +130,7 @@ struct StackRouterTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("popTo the top route is already there")
     func popToTopRouteIsAlreadyThere() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -138,7 +138,7 @@ struct StackRouterTests {
         #expect(router.popTo(ProductRoute(id: 1)) == .alreadyThere)
     }
 
-    @Test
+    @Test("popTo stops at the last match")
     func popToStopsAtTheLastMatch() {
         let router = StackRouter(configuration: .permissive)
         router.push {
@@ -154,7 +154,7 @@ struct StackRouterTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("popTo the root screen's route pops to the root")
     func popToRootScreenPopsToRoot() {
         let router = StackRouter(root: HomeRoute(), configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -164,7 +164,7 @@ struct StackRouterTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("popToRoot empties the path, and again is already there")
     func popToRootEmptiesPath() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -174,7 +174,7 @@ struct StackRouterTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("An unregistered route fails while registered ones push")
     func unregisteredRouteFailsBesideRegisteredOnes() {
         let router = StackRouter()
         router.register(HomeRoute.self)
@@ -187,7 +187,7 @@ struct StackRouterTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("An empty strict registry refuses pushes and presents")
     func emptyStrictRegistryRejectsPush() {
         let router = StackRouter()
 
@@ -199,7 +199,7 @@ struct StackRouterTests {
         #expect(router.registry.mode == .strict)
     }
 
-    @Test
+    @Test("A permissive registry accepts any route")
     func permissiveRegistryAcceptsAnyRoute() {
         let router = StackRouter(configuration: NavigationConfiguration(registry: .permissive))
 
@@ -207,7 +207,7 @@ struct StackRouterTests {
         #expect(router.present(SettingsRoute()) == .applied)
     }
 
-    @Test
+    @Test("Registering routes doesn't change the registry's mode")
     func registeringDoesNotChangeMode() {
         let strict = StackRouter()
         let permissive = StackRouter(configuration: NavigationConfiguration(registry: .permissive))
@@ -222,7 +222,7 @@ struct StackRouterTests {
         #expect(permissive.registry.isRegistered(HomeRoute.self))
     }
 
-    @Test
+    @Test("An unregistered route runs its fallback")
     func unregisteredRouteRunsItsFallback() {
         let router = StackRouter()
         router.register(HomeRoute.self)
@@ -234,7 +234,7 @@ struct StackRouterTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("Registering fills the registry the whole tree shares")
     func registeringFillsTheTreeRegistry() {
         let router = StackRouter()
         router.register(ProductRoute.self)
@@ -247,7 +247,7 @@ struct StackRouterTests {
         #expect(router.presented?.registry.isRegistered(ProductRoute.self) == true)
     }
 
-    @Test
+    @Test("Observation fires once per call")
     func observationFiresOncePerCall() {
         let router = StackRouter(configuration: .permissive)
         let fired = FireCounter()
@@ -262,7 +262,7 @@ struct StackRouterTests {
         #expect(fired.calls == 1)
     }
 
-    @Test
+    @Test("A failed call doesn't touch observed state")
     func failedCallDoesNotTouchState() {
         let router = StackRouter(configuration: .permissive)
         let fired = FireCounter()
@@ -277,7 +277,7 @@ struct StackRouterTests {
         #expect(fired.calls == 0)
     }
 
-    @Test
+    @Test("A root router has no parent and no children")
     func rootRouterHasNoParent() {
         let router = StackRouter(flow: FlowID("main"))
 

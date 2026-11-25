@@ -19,7 +19,7 @@ struct DetailReviewCoordinatorTests {
     private static let productID = 1
     private static let rating = 4
 
-    @Test
+    @Test("Posting the review finishes with the stars and pops back")
     func postingTheReviewFinishesWithTheStarsAndPopsBack() throws {
         let product = try #require(Product.find(id: Self.productID))
         let parent = StackRouter()
@@ -44,7 +44,7 @@ struct DetailReviewCoordinatorTests {
         #expect(parent.state.path == expectedParentPath)
     }
 
-    @Test
+    @Test("A posted review is shown and a cancelled one is not")
     func postedReviewIsShownAndALeftOneIsNot() throws {
         let product = try #require(Product.find(id: Self.productID))
         let detailPush = TestLab.makeFactory().makeDetailPush(onClose: { })
@@ -57,7 +57,7 @@ struct DetailReviewCoordinatorTests {
         #expect(detailPush.postedReviews[product.id] == Self.rating)
     }
 
-    @Test
+    @Test("Write a review pushes its flow above the product")
     func writeReviewPushesTheFlowAboveTheProduct() throws {
         let product = try #require(Product.find(id: Self.productID))
         let detailPush = TestLab.makeFactory().makeDetailPush(onClose: { })

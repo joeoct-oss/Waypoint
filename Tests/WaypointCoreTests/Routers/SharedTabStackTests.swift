@@ -16,7 +16,7 @@ import WaypointTestSupport
 @Suite("Shared tab stack")
 @MainActor
 struct SharedTabStackTests {
-    @Test
+    @Test("One stack per tab is the default")
     func perTabIsTheDefault() {
         let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
 
@@ -24,7 +24,7 @@ struct SharedTabStackTests {
         #expect(tabs.router(for: .home) !== tabs.router(for: .shop))
     }
 
-    @Test
+    @Test("With a shared stack every tab gets the same router")
     func everyTabGetsTheSameRouter() {
         let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
 
@@ -38,7 +38,7 @@ struct SharedTabStackTests {
         #expect(tabs.children.count == 1)
     }
 
-    @Test
+    @Test("A push from any tab lands on the shared stack")
     func aPushFromAnyTabLandsOnTheSharedStack() {
         let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
 
@@ -48,7 +48,7 @@ struct SharedTabStackTests {
         #expect(tabs.router(for: .home).state.path == expectedPath)
     }
 
-    @Test
+    @Test("Selecting another tab pops the shared stack in one change")
     func selectingAnotherTabPopsThePushedScreens() {
         let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
         let shared = tabs.router(for: .home)
@@ -68,7 +68,7 @@ struct SharedTabStackTests {
         #expect(fired.calls == 1)
     }
 
-    @Test
+    @Test("Reselecting the selected tab keeps the pushed screens when pop to root is off")
     func reselectingTheSelectedTabKeepsThePushedScreensWithoutPopToRoot() {
         let tabs = TabRouter(
             selection: MainTab.home,
@@ -84,7 +84,7 @@ struct SharedTabStackTests {
         #expect(shared.state.path.count == 1)
     }
 
-    @Test
+    @Test("Selecting a tab then setting the path in one transaction keeps the path")
     func selectingThenSettingThePathInOneTransactionKeepsThePath() {
         let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
         tabs.router(for: .home).push(SettingsRoute())
@@ -101,7 +101,7 @@ struct SharedTabStackTests {
         #expect(tabs.router(for: .home).state.path == expectedPath)
     }
 
-    @Test
+    @Test("Setting the path before selecting another tab in one transaction pops it")
     func settingThePathBeforeSelectingAnotherTabInOneTransactionPopsIt() {
         let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
 
@@ -116,7 +116,7 @@ struct SharedTabStackTests {
         #expect(tabs.router(for: .shop).state.path.isEmpty)
     }
 
-    @Test
+    @Test("A tab added later gets the shared stack")
     func anAddedTabGetsTheSharedStack() {
         let tabs = TabRouter(
             tabs: MainTab.homeAndShop,
@@ -132,7 +132,7 @@ struct SharedTabStackTests {
         #expect(tabs.children.count == 1)
     }
 
-    @Test
+    @Test("Removing a tab keeps the shared stack")
     func removingATabKeepsTheSharedStack() {
         let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
         let shared = tabs.router(for: .home)
@@ -145,7 +145,7 @@ struct SharedTabStackTests {
         #expect(shared.state.path.count == 1)
     }
 
-    @Test
+    @Test("Removing the selected tab pops the shared stack")
     func removingTheSelectedTabPopsTheSharedStack() {
         let tabs = TabRouter(selection: MainTab.profile, stacks: .shared, configuration: .permissive)
         let shared = tabs.router(for: .profile)
@@ -157,7 +157,7 @@ struct SharedTabStackTests {
         #expect(shared.state.path.isEmpty)
     }
 
-    @Test
+    @Test("The debug tree shows the shared stack once")
     func theTreeShowsTheSharedStackOnce() {
         let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
 

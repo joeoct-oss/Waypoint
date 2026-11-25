@@ -23,7 +23,7 @@ struct DuplicatePushTests {
         return router
     }
 
-    @Test
+    @Test("A second equal push while the first is in flight is skipped")
     func secondEqualPushInFlightIsSkipped() {
         let route = ProductRoute(id: 1)
         let router = Self.routerPushing(route)
@@ -35,7 +35,7 @@ struct DuplicatePushTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("An equal push after the transition ends is pushed")
     func equalPushAfterTransitionEndsIsPushed() {
         let route = ProductRoute(id: 1)
         let router = Self.routerPushing(route)
@@ -47,7 +47,7 @@ struct DuplicatePushTests {
         #expect(router.state.path.count == 2)
     }
 
-    @Test
+    @Test("An equal push is pushed when no screen reports transitions")
     func equalPushWithoutRendererReportIsPushed() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -58,7 +58,7 @@ struct DuplicatePushTests {
         #expect(router.state.path.count == 2)
     }
 
-    @Test
+    @Test("A different route while one is in flight is pushed")
     func differentRouteInFlightIsPushed() {
         let router = Self.routerPushing(ProductRoute(id: 1))
 
@@ -69,7 +69,7 @@ struct DuplicatePushTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("An equal push after a pop is pushed")
     func equalPushAfterPopIsPushed() {
         let route = ProductRoute(id: 1)
         let router = Self.routerPushing(route)
@@ -82,7 +82,7 @@ struct DuplicatePushTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("A push of several routes is never skipped")
     func pushOfSeveralRoutesIsNeverSkipped() {
         let route = ProductRoute(id: 1)
         let router = Self.routerPushing(route)
@@ -96,7 +96,7 @@ struct DuplicatePushTests {
         #expect(router.state.path.count == 3)
     }
 
-    @Test
+    @Test("The end report of an older push doesn't end the newer one")
     func endReportOfAnOlderPushIsIgnored() {
         let router = Self.routerPushing(ProductRoute(id: 1))
         router.push(ProductRoute(id: 2))
@@ -108,7 +108,7 @@ struct DuplicatePushTests {
         #expect(outcome == .alreadyThere)
     }
 
-    @Test
+    @Test("The allow rule pushes both")
     func allowRulePushesBoth() {
         let route = ProductRoute(id: 1)
         let router = Self.routerPushing(route)
@@ -120,14 +120,14 @@ struct DuplicatePushTests {
         #expect(router.state.path.count == 2)
     }
 
-    @Test
+    @Test("Skipping while in flight is the default rule")
     func skipWhileInFlightIsTheDefault() {
         let router = StackRouter(configuration: .permissive)
 
         #expect(router.duplicatePushRule == .skipWhileInFlight)
     }
 
-    @Test
+    @Test("A duplicate push rule applies to its flow and its children")
     func ruleScopesToFlowAndChildren() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -142,7 +142,7 @@ struct DuplicatePushTests {
         #expect(grandchild.duplicatePushRule == .allow)
     }
 
-    @Test
+    @Test("A tab container's rule reaches its stacks")
     func tabRuleReachesItsStacks() {
         let tabs = TabRouter(selection: MainTab.shop, configuration: .permissive)
         tabs.setDuplicatePushRule(.allow)
@@ -152,7 +152,7 @@ struct DuplicatePushTests {
         #expect(shop.duplicatePushRule == .allow)
     }
 
-    @Test
+    @Test("The readable log names the skipped push at debug")
     func readableLogNamesTheSkippedPush() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration().withHandler(handler).withMinimumLevel(.debug)
@@ -167,7 +167,7 @@ struct DuplicatePushTests {
         #expect(handler.messages.last?.level == .debug)
     }
 
-    @Test
+    @Test("The structured log names the skipped push")
     func structuredLogNamesTheSkippedPush() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(format: .structured).withHandler(handler).withMinimumLevel(.debug)

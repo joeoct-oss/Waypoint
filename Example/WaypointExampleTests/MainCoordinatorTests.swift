@@ -23,7 +23,7 @@ import WaypointCore
 struct MainCoordinatorTests {
     private static let lampID = 1
 
-    @Test
+    @Test("Every tab drives the shared stack")
     func everyTabDrivesTheSharedStack() throws {
         let store = TestStore.make()
         defer {
@@ -45,7 +45,7 @@ struct MainCoordinatorTests {
         #expect(stack.state.path == expected)
     }
 
-    @Test
+    @Test("Add to cart opens the cart with the product and updates its badge")
     func addToCartOpensCartWithTheProduct() throws {
         let store = TestStore.make()
         defer {
@@ -64,7 +64,7 @@ struct MainCoordinatorTests {
         #expect(main.badge(for: .cart) == expected.count)
     }
 
-    @Test
+    @Test("Launching into the lab opens the account tab on the lab")
     func labLaunchOpensAccountOnTheLab() {
         let store = TestStore.make()
         defer {

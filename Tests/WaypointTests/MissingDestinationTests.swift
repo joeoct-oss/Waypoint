@@ -33,7 +33,7 @@ struct MissingDestinationTests {
         return reported
     }
 
-    @Test
+    @Test("A route with a destination in the stack is not missing")
     func routeWithADestinationInTheStackIsNotMissing() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -50,7 +50,7 @@ struct MissingDestinationTests {
         #expect(reported.callCount == 0)
     }
 
-    @Test
+    @Test("A route with no destination is reported missing once the push ends")
     func routeWithNoDestinationInTheStackIsMissingOnceThePushEnds() throws {
         let router = StackRouter(flow: FlowID("shop"), configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -73,7 +73,7 @@ struct MissingDestinationTests {
         #expect(reported.calls == expectedIssues)
     }
 
-    @Test
+    @Test("A missing route type is reported once")
     func aMissingTypeIsReportedOnce() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -91,7 +91,7 @@ struct MissingDestinationTests {
         #expect(reported.callCount == 1)
     }
 
-    @Test
+    @Test("A destination registered later clears the missing type")
     func aDestinationRegisteredLaterClearsTheMissingType() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -109,7 +109,7 @@ struct MissingDestinationTests {
         #expect(mirror.missingDestinations.isEmpty)
     }
 
-    @Test
+    @Test("A restored path is checked once the stack is drawn")
     func aRestoredPathIsCheckedOnceTheStackIsDrawn() {
         let router = StackRouter(configuration: .permissive)
         router.push {
@@ -129,7 +129,7 @@ struct MissingDestinationTests {
         #expect(!mirror.isMissingDestination(AnyRoute(HomeRoute())))
     }
 
-    @Test
+    @Test("A stack that never appears reports nothing")
     func aMirrorThatNeverAppearsReportsNothing() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -144,7 +144,7 @@ struct MissingDestinationTests {
         #expect(clock.scheduledCount == 0)
     }
 
-    @Test
+    @Test("A pop checks nothing")
     func aPopChecksNothing() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()

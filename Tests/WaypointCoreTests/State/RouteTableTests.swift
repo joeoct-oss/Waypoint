@@ -14,7 +14,7 @@ import WaypointTestSupport
 /// article).
 @Suite("Route table")
 struct RouteTableTests {
-    @Test
+    @Test("A route table looks up by route type")
     func routeTableLooksUpByType() {
         let table = RouteTable<String>()
             .registering(ProductRoute.self) { route in
@@ -28,7 +28,7 @@ struct RouteTableTests {
         #expect(table.payload(for: AnyRoute(HomeRoute())) == "home")
     }
 
-    @Test
+    @Test("An unregistered route has no entry")
     func unregisteredRouteHasNoPayload() {
         let table = RouteTable<String>()
 
@@ -36,7 +36,7 @@ struct RouteTableTests {
         #expect(!table.contains(SettingsRoute.self))
     }
 
-    @Test
+    @Test("Registering a route again replaces its entry")
     func registeringAgainReplacesDestination() {
         let table = RouteTable<String>()
             .registering(HomeRoute.self) { _ in
@@ -50,7 +50,7 @@ struct RouteTableTests {
         #expect(table.registeredTypes.count == 1)
     }
 
-    @Test
+    @Test("A route table registers its routes for decoding")
     func routeTableRegistersForDecoding() {
         let table = RouteTable<Int>()
             .registering(ProductRoute.self) { route in

@@ -23,7 +23,7 @@ struct RendererReportTests {
     /// How each log format marks a change the user made.
     nonisolated static let userMarkers = [(LogFormat.readable, ", by user"), (LogFormat.structured, "origin=user")]
 
-    @Test
+    @Test("A swipe back pops one screen as a user change")
     func swipeBackPopsOne() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -44,7 +44,7 @@ struct RendererReportTests {
         #expect(batches.calls == expectedBatches)
     }
 
-    @Test
+    @Test("The back menu pops several screens in one user change")
     func backMenuPopsMany() {
         let router = StackRouter(configuration: .permissive)
         router.push {
@@ -67,7 +67,7 @@ struct RendererReportTests {
     }
 
     /// A count below zero reads as zero.
-    @Test(arguments: Self.firstScreenCounts)
+    @Test("Going back to the first screen empties the path", arguments: Self.firstScreenCounts)
     func backToFirstScreenEmptiesPath(count: Int) {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -77,7 +77,7 @@ struct RendererReportTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A report that matches the state changes nothing")
     func reportMatchingStateIsNoOp() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -95,7 +95,7 @@ struct RendererReportTests {
         #expect(reported.callCount == 0)
     }
 
-    @Test
+    @Test("A stale count keeps the path and reports a mismatch")
     func staleCountKeepsPathWithIssue() {
         let router = StackRouter(flow: FlowID("shop"), configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -114,7 +114,7 @@ struct RendererReportTests {
         #expect(reported.lastCall?.line == line)
     }
 
-    @Test
+    @Test("Dragging a sheet down dismisses it as a user change")
     func sheetDragDismisses() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -131,14 +131,14 @@ struct RendererReportTests {
         #expect(batches.lastCall?.map(\.origin) == [.user])
     }
 
-    @Test
+    @Test("A dismiss with nothing presented is already there")
     func dismissWithNothingPresentedIsNoOp() {
         let router = StackRouter(configuration: .permissive)
 
         #expect(router.rendererDidDismiss() == .alreadyThere)
     }
 
-    @Test
+    @Test("A tab tap selects the tab as a user change")
     func tabTapSelectsTab() {
         let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
         let batches = Spy<[AppliedChange], Void>()
@@ -153,7 +153,7 @@ struct RendererReportTests {
         #expect(batches.calls == expectedBatches)
     }
 
-    @Test
+    @Test("A tab tap on a shared stack pops it to its root")
     func tabTapOnASharedStackPopsIt() {
         let tabs = TabRouter(selection: MainTab.home, stacks: .shared, configuration: .permissive)
         let shared = tabs.router(for: .home)
@@ -165,7 +165,7 @@ struct RendererReportTests {
         #expect(shared.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A tap on the selected tab changes nothing")
     func tabTapOnSelectedTabIsNoOp() {
         let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
         let shopRouter = tabs.router(for: .home)
@@ -175,7 +175,7 @@ struct RendererReportTests {
         #expect(shopRouter.state.path.count == 1)
     }
 
-    @Test
+    @Test("A tap on an unknown tab fails and keeps the selection")
     func tabTapOnUnknownTabFails() {
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
 
@@ -185,7 +185,7 @@ struct RendererReportTests {
         #expect(tabs.selection == .home)
     }
 
-    @Test
+    @Test("Dragging down a sheet over tabs dismisses it")
     func tabContainerSheetDragDismisses() {
         let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
         tabs.present(SettingsRoute())
@@ -194,7 +194,7 @@ struct RendererReportTests {
         #expect(tabs.presented == nil)
     }
 
-    @Test
+    @Test("A detached router ignores the screen's reports")
     func detachedRouterIgnoresReports() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -206,7 +206,7 @@ struct RendererReportTests {
     }
 
     /// The readable log says "by user", the structured log `origin=user`.
-    @Test(arguments: Self.userMarkers)
+    @Test("Changes the user made are logged as the user's", arguments: Self.userMarkers)
     func userChangesAreLoggedAsTheUsers(format: LogFormat, marker: String) {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withFormat(format)
@@ -218,7 +218,7 @@ struct RendererReportTests {
         #expect(handler.texts.contains { $0.contains(marker) })
     }
 
-    @Test
+    @Test("A missing destination is reported with the fix, and the path is kept")
     func missingDestinationIsReportedWithTheFix() {
         let router = StackRouter(flow: FlowID("shop"), configuration: .permissive)
         router.push(ProductRoute(id: 7))
