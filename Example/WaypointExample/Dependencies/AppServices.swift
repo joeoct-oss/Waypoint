@@ -124,6 +124,7 @@ final class AppServices {
     ) -> AccountDependencies {
         let lab = labDependencies()
         return AccountDependencies(
+            catalog: catalog,
             session: session,
             store: store,
             addresses: addresses,

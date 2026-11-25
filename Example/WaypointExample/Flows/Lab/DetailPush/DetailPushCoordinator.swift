@@ -31,6 +31,7 @@ final class DetailPushCoordinator: StackCoordinator {
     private static let missingCartTitle = "Cart wasn't in the stack"
 
     private let navigation: NavigationConfiguration
+    private let catalog: any ProductCatalog
     private let onClose: () -> Void
     // `var` because `backToCart()` shows a toast for a recovered pop, and the toast's timer hides
     // it.
@@ -47,6 +48,7 @@ final class DetailPushCoordinator: StackCoordinator {
 
     var root: some View {
         DetailPushListView(
+            products: catalog.products,
             onSelect: { self.showProduct($0) },
             onClose: { self.close() }
         )
@@ -65,9 +67,11 @@ final class DetailPushCoordinator: StackCoordinator {
 
     init(
         navigation: NavigationConfiguration,
+        catalog: any ProductCatalog,
         onClose: @escaping () -> Void
     ) {
         self.navigation = navigation
+        self.catalog = catalog
         self.onClose = onClose
         toast = nil
         toastTimer = nil
@@ -82,7 +86,7 @@ final class DetailPushCoordinator: StackCoordinator {
 
     @ViewBuilder
     func makeProductScreen(_ route: DetailProductRoute) -> some View {
-        if let product = Product.find(id: route.productID) {
+        if let product = catalog.product(id: route.productID) {
             DetailPushProductView(
                 product: product,
                 postedReview: postedReviews[product.id],
@@ -101,7 +105,7 @@ final class DetailPushCoordinator: StackCoordinator {
 
     @ViewBuilder
     func makeCartScreen(_ route: DetailCartRoute) -> some View {
-        if let product = Product.find(id: route.productID) {
+        if let product = catalog.product(id: route.productID) {
             DetailPushCartView(product: product)
                 .screenChrome(
                     title: "Cart",

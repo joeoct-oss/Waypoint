@@ -9,17 +9,17 @@
 import SwiftUI
 import Waypoint
 
-// The account tab: the profile at the root (or Sign in for a guest), orders, the wish list,
-// addresses and settings pushed above it, and the Navigation Lab under settings with the twenty
-// demo entries and its tools: the whole tree as `describeTree` prints it, and the event log from
-// `events`. Orders, the wish list and Addresses need an account, so the account gate asks a guest
+// The account tab, which `AccountFactory` builds with its screens: the profile at the root (or
+// Sign in for a guest), orders, the wish list, addresses and settings pushed above it, and the
+// Navigation Lab under settings with the twenty demo entries and its tools: the whole tree and the
+// event log. Orders, the wish list and Addresses need an account, so the account gate asks a guest
 // to sign in first. Add a new address pushes the form; saving keeps the address in the address
 // book, which checkout shares, and goes back to the list. Sign out, in Settings, ends the session
 // and goes back to Account, which then shows the guest prompt; the reader stays in the app.
 // Settings also shows the app's navigation rules, and tries the two calls their fallbacks recover:
 // going back to a screen that isn't in the stack, and opening sign in while it is up, and one no
-// fallback covers, closing the tab's stack, which `onNavigationFailure` counts. Clear
-// all data reports to the app coordinator, which clears the store and starts the window over.
+// fallback covers, closing the tab's stack, which `onNavigationFailure` counts. Clear all data
+// reports to the app coordinator, which clears the store and starts the window over.
 //
 // The stack runs on Waypoint: `router` is the one stack every main tab shares, which `MainTabView`
 // draws with `WaypointStack` around the tabs. `AccountFlowView` draws the tab's root, and each
@@ -29,50 +29,35 @@ import Waypoint
 // - `Observable` (from `@Observable`), so `AccountFlowView` redraws when the account changes.
 @Observable
 final class AccountCoordinator {
-    // The pushed wish list suggests nothing; only the wish list sheet on Shop does.
-    private static let noSuggestions: [Product] = []
     // How long Open Orders twice waits before its second push: long enough for the stack to start
     // the first push, well inside its animation.
     private static let secondPushDelay = Duration.milliseconds(150)
 
     let router: StackRouter
-    private let session: Session
-    private let store: LocalStore
     private let addressBook: AddressBook
     private let gate: AccountGate
+    private let factory: AccountFactory
     private let onClearAllData: () -> Void
-    private let events: EventLog
     private let rules: NavigationRules
     private let issues: IssueLog
-    private let describeTree: () -> String
     // Runs the Lab's view and view-model demos, each full screen on a Waypoint stack of its own.
     let labDemos: LabDemoCoordinator
 
     init(
         router: StackRouter,
         launch: LaunchOptions,
-        session: Session,
-        store: LocalStore,
-        addressBook: AddressBook,
-        gate: AccountGate,
-        navigation: NavigationConfiguration,
-        rules: NavigationRules,
-        issues: IssueLog,
-        events: EventLog,
-        describeTree: @escaping () -> String,
+        dependencies: AccountDependencies,
+        factory: AccountFactory,
         onClearAllData: @escaping () -> Void
     ) {
-        self.session = session
-        self.store = store
-        self.addressBook = addressBook
-        self.gate = gate
+        addressBook = dependencies.addresses
+        gate = dependencies.gate
+        self.factory = factory
         self.onClearAllData = onClearAllData
-        self.events = events
-        self.rules = rules
-        self.issues = issues
-        self.describeTree = describeTree
+        rules = dependencies.rules
+        issues = dependencies.issues
         self.router = router
-        labDemos = LabDemoCoordinator(navigation: navigation, reviewsDelay: launch.labReviewsDelay)
+        labDemos = factory.makeLabDemos(reviewsDelay: launch.labReviewsDelay)
         router.setRootName(MainTab.account.title)
         router.setCoordinator(self)
         openLaunchPath(launch)
@@ -111,9 +96,7 @@ final class AccountCoordinator {
     }
 
     func makeAccountFlow() -> some View {
-        AccountView(
-            account: session.account,
-            wishlistCount: { self.store.wishlistProductIDs.count },
+        factory.makeAccount(
             onSignIn: { self.showSignIn() },
             onShowOrders: { self.openOrders() },
             onShowWishlist: { self.openWishlist() },
@@ -290,39 +273,27 @@ final class AccountCoordinator {
     }
 
     private func makeOrdersFlow() -> some View {
-        OrdersView(onSelect: { self.showOrder($0) })
+        factory.makeOrders(onSelect: { self.showOrder($0) })
     }
 
     private func makeOrderFlow(_ order: Order) -> some View {
-        OrderDetailView(order: order)
+        factory.makeOrder(order)
     }
 
     private func makeWishlistFlow() -> some View {
-        WishlistView(
-            products: Product.products(withIDs: store.wishlistProductIDs),
-            suggestions: Self.noSuggestions,
-            onSave: nil,
-            onDone: nil
-        )
+        factory.makeWishlist()
     }
 
     private func makeAddressesFlow() -> some View {
-        AddressesView(
-            addresses: addressBook.addresses,
-            onAddAddress: { self.showAddAddress() }
-        )
+        factory.makeAddresses(onAddAddress: { self.showAddAddress() })
     }
 
     private func makeAddAddressFlow() -> some View {
-        AddAddressView(
-            asksToKeep: false,
-            onSave: { address, _ in self.addAddress(address) }
-        )
+        factory.makeAddAddress(onSave: { self.addAddress($0) })
     }
 
     private func makeSettingsFlow() -> some View {
-        SettingsView(
-            isSignedIn: session.account != nil,
+        factory.makeSettings(
             onShowLab: { self.showLab() },
             onClearAllData: { self.clearAllData() },
             onSignOut: { self.signOut() },
@@ -340,10 +311,9 @@ final class AccountCoordinator {
     }
 
     private func makeLabFlow() -> some View {
-        LabView(
+        factory.makeLab(
             onSelectBranch: { self.showLabBranch($0) },
             onSelectStory: { self.showLabStory($0) },
-            eventCount: events.entries.count,
             onSelectTool: { self.showLabTool($0) }
         )
     }
@@ -401,11 +371,11 @@ final class AccountCoordinator {
     }
 
     private func makeNavigationTreeFlow() -> some View {
-        NavigationTreeView(tree: describeTree())
+        factory.makeNavigationTree()
     }
 
     private func makeEventLogFlow() -> some View {
-        EventLogView(entries: events.entries)
+        factory.makeEventLog()
     }
 
     private func makeNavigationStyleFlow() -> some View {
