@@ -78,6 +78,7 @@ echo "tuist $*" >>"$STUB_CALLS"
 if [[ "$1" == test ]]; then
     echo "GITHUB_REF seen by tuist test: ${GITHUB_REF:-}" >>"$STUB_CALLS"
     echo "TUIST_WAYPOINT_BINARY_CACHE seen by tuist test: ${TUIST_WAYPOINT_BINARY_CACHE:-}" >>"$STUB_CALLS"
+    echo "WAYPOINT_TUIST_TEST_RUN seen by tuist test: ${WAYPOINT_TUIST_TEST_RUN:-}" >>"$STUB_CALLS"
     "$(dirname "$0")/stub-grandchild" "${STUB_SECONDS:-0}"
     exit "${STUB_STATUS:-0}"
 fi
@@ -164,6 +165,13 @@ if [[ "$TUIST_CALL" != *"--no-binary-cache"* && "$TUIST_CALL" == *" --destinatio
     pass "a quick run's example step may use the binary cache"
 else
     fail "a quick run's example step may use the binary cache (call: $TUIST_CALL)"
+fi
+# `tuist test` sends its own results, so the scheme's Test Insights post-action must skip (planning #456).
+if grep -q "^WAYPOINT_TUIST_TEST_RUN seen by tuist test: 1$" "$CALLS" &&
+    [[ "$TUIST_CALL" == *" -- "*" WAYPOINT_TUIST_TEST_RUN=1"* ]]; then
+    pass "tuist test tells the scheme's test post-action to skip"
+else
+    fail "tuist test tells the scheme's test post-action to skip"
 fi
 if ! grep -q "^tuist cache" "$CALLS"; then
     pass "a quick run doesn't warm the binary cache"
@@ -303,6 +311,29 @@ expect_cache "an offline full run builds from source and doesn't warm" \
 # A pull request's run report shows its coverage, which cached package modules would leave out.
 expect_cache "a full run for a pull request builds from source and warms" \
     "binary cache off, warm binary cache true" full WAYPOINT_PULL_REQUEST=42 STUB_PR_BRANCH=main
+# The package's own test steps send their result bundles to Tuist's Test Insights (planning #457),
+# except offline, and a failed send never fails the step.
+expect_package_insights() {
+    local name="$1" want="$2" got
+    shift 2
+    got=$(cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+        "${@:2}" scripts/test-mac.sh "$1" --plan 2>/dev/null | grep '^plan:' || true)
+    if [[ "$got" == *", package test insights $want, "* ]]; then
+        pass "$name"
+    else
+        fail "$name (plan: ${got:-none})"
+    fi
+}
+expect_package_insights "a quick run sends the package's test results to Tuist" on quick
+expect_package_insights "a release run sends the package's test results to Tuist" on release
+expect_package_insights "an offline run sends the package's results nowhere" off full WAYPOINT_TUIST_OFFLINE=1
+if grep -A16 "^package_tests_on()" scripts/test-mac.sh | grep -q 'send_package_test_results "$bundle" || true' &&
+    grep -A8 "^send_package_test_results()" scripts/test-mac.sh |
+    grep -q 'tuist_cmd inspect test --path Example "$1"; then'; then
+    pass "each package test step sends its result bundle, and a failed send doesn't fail it"
+else
+    fail "each package test step sends its result bundle, and a failed send doesn't fail it"
+fi
 if grep -q "local BINARY_CACHE=off" scripts/test-mac.sh &&
     grep -A3 "^release_reports_on()" scripts/test-mac.sh | grep -q "local BINARY_CACHE=off"; then
     pass "the release reports step never uses the binary cache"
@@ -603,12 +634,16 @@ else
 fi
 : >"$CALLS"
 
-# 1f. The Build Insights post-action runs the Tuist that mise pins (planning #431), not one on the PATH.
-if grep -q '"$MISE" exec -C "$SRCROOT" -- tuist inspect build' Example/Project.swift &&
-    ! grep -q 'activate -C "$SRCROOT"' Example/Project.swift; then
-    pass "the Build Insights post-action runs Tuist through mise exec"
+# 1f. The Build and Test Insights post-actions run the Tuist that mise pins (planning #431), not one on
+# the PATH, and the test one skips runs `tuist test` already reports (planning #456).
+if grep -q '"$MISE" exec -C "$SRCROOT" -- tuist inspect \\(command)' Example/Project.swift &&
+    ! grep -q 'activate -C "$SRCROOT"' Example/Project.swift &&
+    grep -q 'insightsScript("build", skippedBy: \["WAYPOINT_TUIST_OFFLINE"\])' Example/Project.swift &&
+    grep -q 'skippedBy: \["WAYPOINT_TUIST_OFFLINE", "WAYPOINT_TUIST_TEST_RUN"\]' Example/Project.swift &&
+    grep -q 'testAction: .targets(schemeTestTargets, postActions: \[testInsights\])' Example/Project.swift; then
+    pass "the Build and Test Insights post-actions run Tuist through mise exec"
 else
-    fail "the Build Insights post-action runs Tuist through mise exec"
+    fail "the Build and Test Insights post-actions run Tuist through mise exec"
 fi
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
