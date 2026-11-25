@@ -141,7 +141,7 @@ struct FallbackTests {
         #expect(failures.callCount == 1)
     }
 
-    @Test("A fallback runs once and never chains another")
+    @Test("A fallback that fails doesn't chain to another")
     func fallbackRunsOnceNoChain() {
         let router = StackRouter(configuration: .permissive)
         router.setFallback(.popToRoot, for: .emptyPath)
