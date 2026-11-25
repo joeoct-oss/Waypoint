@@ -8,8 +8,8 @@
 
 import WaypointCore
 
-// Every route the example app's trail names, which the app gives `RouterTrail.stepTypes` at launch.
-// A route left out reads by its type name.
+// Every route the example app's trail names, which `AppWindow` puts in the environment for the
+// screen chrome. A route left out reads by its type name.
 enum TrailSteps {
     static let all: [any TrailStep.Type] = [
         ProductRoute.self,

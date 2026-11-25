@@ -31,8 +31,17 @@ struct ScreenChrome: ViewModifier {
 
     let title: String
     let kind: FlowKind?
-    let trail: [String]
-    let isRoot: Bool
+    let router: StackRouter
+    let route: AnyRoute?
+    @Environment(\.trailStepTypes) private var trailStepTypes
+
+    private var trail: [String] {
+        RouterTrail(stepTypes: trailStepTypes).steps(on: router, at: route)
+    }
+
+    private var isRoot: Bool {
+        RouterTrail.isRoot(on: router, at: route)
+    }
 
     private var titleDisplayMode: NavigationBarItem.TitleDisplayMode {
         isRoot ? .large : .inline
@@ -106,8 +115,8 @@ extension View {
         let chrome = ScreenChrome(
             title: title,
             kind: kind,
-            trail: RouterTrail.steps(on: router, at: route),
-            isRoot: RouterTrail.isRoot(on: router, at: route)
+            router: router,
+            route: route
         )
         return modifier(chrome)
     }

@@ -17,7 +17,6 @@ struct WaypointExampleApp: App {
     private let services: AppServices
 
     init() {
-        RouterTrail.stepTypes = TrailSteps.all
         let launch = LaunchOptions(defaults: .standard)
         self.launch = launch
         services = AppServices(launch: launch)

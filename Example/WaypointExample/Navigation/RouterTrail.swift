@@ -6,7 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-import WaypointCore
+import SwiftUI
+import Waypoint
 
 // Reads a screen's route trail from its stack router, so the trail is always the real path: the
 // main tabs, the tab or the flow that presented the stack, then each route up to the screen, by
@@ -16,19 +17,18 @@ import WaypointCore
 // `main › cart › checkout`. A stack with no router above it, such as a Lab demo, starts with its
 // root name.
 //
-// The routes it names come from `stepTypes`, which the app fills at launch (`TrailSteps.all`), so
-// this file names no feature's routes and the features can live in their own modules
-// (planning #445). A route left out reads by its type name.
-enum RouterTrail {
+// The routes it names are `stepTypes`, which the screen chrome reads from the environment and the
+// app's window sets (`TrailSteps.all`), so this file names no feature's routes and the features can
+// live in their own modules (planning #445). A route left out reads by its type name.
+struct RouterTrail {
     static let tabsName = "main"
     private static let unnamedRoot = "flow"
 
-    // Every route type the trail names. The app sets it once, before the first screen draws.
-    static var stepTypes: [any TrailStep.Type] = []
+    let stepTypes: [any TrailStep.Type]
 
     // The trail of the screen that shows `route` on `router`, or of the stack's root screen when
     // `route` is `nil`.
-    static func steps(
+    func steps(
         on router: StackRouter,
         at route: AnyRoute?
     ) -> [String] {
@@ -50,10 +50,10 @@ enum RouterTrail {
         return !(router.parent is StackRouter)
     }
 
-    private static func rootSteps(of router: StackRouter) -> [String] {
+    private func rootSteps(of router: StackRouter) -> [String] {
         switch router.parent {
         case let tabs as TabRouter<MainTab>:
-            return [tabsName, tabName(of: router, in: tabs)]
+            return [Self.tabsName, tabName(of: router, in: tabs)]
         case let presenter as StackRouter:
             return steps(on: presenter, at: presenter.state.path.last) + [rootName(of: router)]
         default:
@@ -62,7 +62,7 @@ enum RouterTrail {
     }
 
     // The tab the stack belongs to, or the flow's own name when the tabs present it.
-    private static func tabName(
+    private func tabName(
         of router: StackRouter,
         in tabs: TabRouter<MainTab>
     ) -> String {
@@ -77,23 +77,23 @@ enum RouterTrail {
     }
 
     // The presented route's name, else the name the coordinator gave the root.
-    private static func rootName(of router: StackRouter) -> String {
+    private func rootName(of router: StackRouter) -> String {
         if let route = router.rootRoute {
             return name(of: route)
         }
-        return router.rootName?.lowercased() ?? unnamedRoot
+        return router.rootName?.lowercased() ?? Self.unnamedRoot
     }
 
-    private static func name(of route: AnyRoute) -> String {
+    private func name(of route: AnyRoute) -> String {
         for type in stepTypes {
             if let name = name(of: route, as: type) {
                 return name
             }
         }
-        return readableName(of: route.routeKey.typeName)
+        return Self.readableName(of: route.routeKey.typeName)
     }
 
-    private static func name<Step: TrailStep>(
+    private func name<Step: TrailStep>(
         of route: AnyRoute,
         as type: Step.Type
     ) -> String? {
@@ -126,4 +126,9 @@ extension TrailStep where Self: TrackableScreen {
     var trailName: String {
         (screenDisplayName ?? Self.screenName).lowercased()
     }
+}
+
+extension EnvironmentValues {
+    // Every route type the route trail names, which the app's window sets for every screen.
+    @Entry var trailStepTypes: [any TrailStep.Type] = []
 }
