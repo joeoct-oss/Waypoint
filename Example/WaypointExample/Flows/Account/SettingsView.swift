@@ -142,6 +142,14 @@ struct SettingsView: View {
     }
 }
 
+// The four calls Settings' navigation rules section tries, which the account coordinator makes.
+struct SettingsTries {
+    let pushTwice: () -> Void
+    let missingPop: () -> Void
+    let presentTwice: () -> Void
+    let unrecovered: () -> Void
+}
+
 // What Settings shows of the app's navigation rules, and what it reports.
 struct SettingsRules {
     // Whether the duplicate push rule is `.allow`, so a second push of the same route goes ahead.

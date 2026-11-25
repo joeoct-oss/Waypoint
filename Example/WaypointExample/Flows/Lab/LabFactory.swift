@@ -73,42 +73,58 @@ struct LabFactory {
         )
     }
 
-    func makeSwiftUIBranch(onSelect: @escaping (FlowEntry) -> Void) -> SwiftUIBranchView {
-        SwiftUIBranchView(onSelect: onSelect)
+    // A branch's list of entries: SwiftUI's in SwiftUI, UIKit's in a view controller.
+    @ViewBuilder
+    func makeBranch(
+        _ branch: Branch,
+        onSelect: @escaping (FlowEntry) -> Void
+    ) -> some View {
+        switch branch {
+        case .swiftUI:
+            SwiftUIBranchView(onSelect: onSelect)
+        case .uiKit:
+            UIKitBranchView(onSelect: onSelect)
+        }
     }
 
-    func makeUIKitBranch(onSelect: @escaping (FlowEntry) -> Void) -> UIKitBranchView {
-        UIKitBranchView(onSelect: onSelect)
+    // The placeholder an entry that isn't built yet shows, of the entry's kind.
+    @ViewBuilder
+    func makePlaceholder(for entry: FlowEntry) -> some View {
+        switch entry.kind {
+        case .swiftUI:
+            PlaceholderView(entry: entry)
+        case .uiKit:
+            PlaceholderControllerView(entry: entry)
+        }
     }
 
-    func makePlaceholder(_ entry: FlowEntry) -> PlaceholderView {
-        PlaceholderView(entry: entry)
-    }
-
-    func makePlaceholderController(_ entry: FlowEntry) -> PlaceholderControllerView {
-        PlaceholderControllerView(entry: entry)
-    }
-
-    func makeNavigationStyle(onTry: @escaping (NavigationStyle) -> Void) -> NavigationStyleView {
-        NavigationStyleView(onTry: onTry)
-    }
-
-    func makeLateResult(
+    // A Views and view models story's screen. Navigation style's Try reports `onTry`, and the late
+    // result story's Open reports `onOpenLateResult`. The no-router story is reached here only
+    // when the account stack is above it; the Lab opens it full screen instead.
+    @ViewBuilder
+    func makeStory(
+        _ story: ViewModelStory,
         demos: LabDemoCoordinator,
-        onOpen: @escaping () -> Void
-    ) -> LateResultView {
-        LateResultView(
-            demos: demos,
-            onOpen: onOpen
-        )
+        onTry: @escaping (NavigationStyle) -> Void,
+        onOpenLateResult: @escaping () -> Void
+    ) -> some View {
+        switch story {
+        case .style:
+            NavigationStyleView(onTry: onTry)
+        case .lateResult:
+            LateResultView(
+                demos: demos,
+                onOpen: onOpenLateResult
+            )
+        case .noRouter:
+            makeNoRouter()
+        case .preview:
+            PreviewHelpView()
+        }
     }
 
     func makeNoRouter() -> NoRouterView {
         NoRouterView()
-    }
-
-    func makePreviewHelp() -> PreviewHelpView {
-        PreviewHelpView()
     }
 
     // The navigator demo's model on `router`, which declares the demo shop on that stack.

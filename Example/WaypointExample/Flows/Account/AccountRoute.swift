@@ -68,3 +68,21 @@ enum AccountRoute: TrackableScreen {
         }
     }
 }
+
+extension AccountRoute {
+    // The path a launch into the Lab starts on: Settings and the Lab, then the launch's branch,
+    // then its entry when that entry shows a placeholder. Empty for any other launch.
+    static func launchPath(for launch: LaunchOptions) -> [AccountRoute] {
+        guard launch.opensLab else {
+            return []
+        }
+        let lab: [AccountRoute] = [.settings, .lab]
+        guard let branch = launch.branch else {
+            return lab
+        }
+        guard let entry = launch.entry, !entry.isRunnable else {
+            return lab + [.labBranch(branch)]
+        }
+        return lab + [.labBranch(branch), .labFlow(entry)]
+    }
+}

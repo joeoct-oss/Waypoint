@@ -103,9 +103,20 @@ struct AccountFactory {
         onShowLab: @escaping () -> Void,
         onClearAllData: @escaping () -> Void,
         onSignOut: @escaping () -> Void,
-        rules: SettingsRules
+        tries: SettingsTries
     ) -> SettingsView {
-        SettingsView(
+        let navigationRules = dependencies.rules
+        let rules = SettingsRules(
+            pushesTwice: navigationRules.duplicatePushRule == .allow,
+            queueLimit: navigationRules.queueLimit,
+            failureCount: dependencies.issues.failureCount,
+            onSetPushesTwice: { navigationRules.setPushesTwice($0) },
+            onTryPushTwice: tries.pushTwice,
+            onTryMissingPop: tries.missingPop,
+            onTryPresentTwice: tries.presentTwice,
+            onTryUnrecovered: tries.unrecovered
+        )
+        return SettingsView(
             isSignedIn: dependencies.session.account != nil,
             onShowLab: onShowLab,
             onClearAllData: onClearAllData,
@@ -127,11 +138,14 @@ struct AccountFactory {
         )
     }
 
-    func makeNavigationTree() -> NavigationTreeView {
-        NavigationTreeView(tree: dependencies.describeTree())
-    }
-
-    func makeEventLog() -> EventLogView {
-        EventLogView(entries: dependencies.events.entries)
+    // A Lab tool: the window's navigation tree as text, or the event log.
+    @ViewBuilder
+    func makeLabTool(_ tool: LabTool) -> some View {
+        switch tool {
+        case .navigationTree:
+            NavigationTreeView(tree: dependencies.describeTree())
+        case .eventLog:
+            EventLogView(entries: dependencies.events.entries)
+        }
     }
 }
