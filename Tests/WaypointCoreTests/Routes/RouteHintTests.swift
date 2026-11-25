@@ -99,6 +99,27 @@ struct RouteHintTests {
     }
 
     @Test
+    func aSavedHintIsDroppedOnRestore() throws {
+        let saved = Data(#"{"id":42,"preview":{"name":"Orbit Lamp"}}"#.utf8)
+
+        let route = try JSONDecoder().decode(HintedProductRoute.self, from: saved)
+
+        #expect(route == HintedProductRoute(id: 42))
+        #expect(route.preview == nil)
+    }
+
+    @Test
+    func aHintOnItsOwnSavesAsNullAndRestoresEmpty() throws {
+        let hint = RouteHint(wrappedValue: LoadedProduct(name: "Orbit Lamp"))
+
+        let data = try JSONEncoder().encode(hint)
+        let restored = try JSONDecoder().decode(RouteHint<LoadedProduct>.self, from: data)
+
+        #expect(String(decoding: data, as: UTF8.self) == "null")
+        #expect(restored.wrappedValue == nil)
+    }
+
+    @Test
     func linkBuiltRouteHasNoHint() throws {
         let linkValues = Data(#"{"id":42}"#.utf8)
 
