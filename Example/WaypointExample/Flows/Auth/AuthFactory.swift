@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
+import ExampleStore
 import SwiftUI
 
 // Builds the accounts flow and its screens from `AuthDependencies`: the flow's coordinator, its

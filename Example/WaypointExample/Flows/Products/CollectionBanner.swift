@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 
 // The banner at the top of Shop for a new collection: a night-sky gradient with the collection's

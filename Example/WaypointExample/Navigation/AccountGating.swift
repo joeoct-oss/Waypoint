@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleDesignSystem
 import SwiftUI
 import Waypoint
 
@@ -16,7 +17,7 @@ import Waypoint
 //
 // Conformances:
 // - `AnyObject`, so a feature shares the window's one gate, and reading `notice` follows it.
-protocol AccountGating: AnyObject {
+package protocol AccountGating: AnyObject {
     var notice: Notice? { get }
 
     func requireAccount(
@@ -31,7 +32,7 @@ protocol AccountGating: AnyObject {
 //
 // Conformances:
 // - `AccountGating`, so the feature asks for an account the same way over the stack.
-protocol SheetAccountGating: AccountGating {
+package protocol SheetAccountGating: AccountGating {
     var authSheetOptions: SheetOptions? { get }
 
     // Like `requireAccount(for:then:)`, but over `presenter`, the router of the sheet the action is
@@ -60,7 +61,7 @@ protocol SheetAccountGating: AccountGating {
 //
 // Conformances:
 // - `AccountGating`, so Account asks for an account the same way the other tabs do.
-protocol SessionAccountGating: AccountGating {
+package protocol SessionAccountGating: AccountGating {
     func showSignIn(
         for reason: SignInReason,
         then action: (() -> Void)?

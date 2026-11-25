@@ -14,13 +14,13 @@
 // - `Codable` (from the raw values), so a story can sit in an account route.
 // - `CaseIterable`, so the Lab lists every story from this one declaration.
 // - `Hashable` (from the raw values), so the account stack can push a story's screen.
-nonisolated enum ViewModelStory: String, CaseIterable, Codable {
+package nonisolated enum ViewModelStory: String, CaseIterable, Codable {
     case style
     case lateResult
     case noRouter
     case preview
 
-    var code: String {
+    package var code: String {
         switch self {
         case .style:
             return "VM-01"
@@ -33,7 +33,7 @@ nonisolated enum ViewModelStory: String, CaseIterable, Codable {
         }
     }
 
-    var title: String {
+    package var title: String {
         switch self {
         case .style:
             return "Navigation style"
@@ -46,7 +46,7 @@ nonisolated enum ViewModelStory: String, CaseIterable, Codable {
         }
     }
 
-    var summary: String {
+    package var summary: String {
         switch self {
         case .style:
             return "Outputs, an injected navigator or property wrappers"
@@ -59,7 +59,7 @@ nonisolated enum ViewModelStory: String, CaseIterable, Codable {
         }
     }
 
-    var symbolName: String {
+    package var symbolName: String {
         switch self {
         case .style:
             return "slider.horizontal.3"

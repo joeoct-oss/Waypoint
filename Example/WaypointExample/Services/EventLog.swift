@@ -14,17 +14,17 @@ import WaypointCore
 // `EventLogHandler` fills it from the routers' log, so the screen shows exactly what the console
 // shows, one line per call. It keeps the newest `capacity` entries.
 @Observable
-final class EventLog {
+package final class EventLog {
     private static let capacity = 300
 
     // `var` because each logged call adds an entry at the front. Only `record(_:)` changes it.
-    private(set) var entries: [EventLogEntry]
+    package private(set) var entries: [EventLogEntry]
 
-    init() {
+    package init() {
         entries = []
     }
 
-    func record(_ entry: EventLogEntry) {
+    package func record(_ entry: EventLogEntry) {
         entries = Array(([entry] + entries).prefix(Self.capacity))
     }
 }
@@ -34,13 +34,13 @@ final class EventLog {
 // Conformances:
 // - `Identifiable`, so the log's list tells its rows apart.
 // - `Hashable`, so SwiftUI can compare rows.
-nonisolated struct EventLogEntry: Identifiable, Hashable {
-    let id: UUID
-    let date: Date
-    let level: LogLevel
-    let outcome: EventOutcome
-    let text: String
-    let callSite: String
+package nonisolated struct EventLogEntry: Identifiable, Hashable {
+    package let id: UUID
+    package let date: Date
+    package let level: LogLevel
+    package let outcome: EventOutcome
+    package let text: String
+    package let callSite: String
 }
 
 // What a logged call did, as the event log names and colors it.
@@ -48,7 +48,7 @@ nonisolated struct EventLogEntry: Identifiable, Hashable {
 // Conformances:
 // - `CaseIterable`, so the log's filters list the outcomes.
 // - `Hashable`, so a filter can be picked and compared.
-nonisolated enum EventOutcome: CaseIterable, Hashable {
+package nonisolated enum EventOutcome: CaseIterable, Hashable {
     case applied
     case recovered
     case queued
@@ -56,7 +56,7 @@ nonisolated enum EventOutcome: CaseIterable, Hashable {
     case alreadyThere
     case failed
 
-    var title: String {
+    package var title: String {
         switch self {
         case .applied:
             return "applied"
@@ -80,7 +80,7 @@ nonisolated enum EventOutcome: CaseIterable, Hashable {
 //
 // Conformances:
 // - `LogHandler`, so `AppLogHandler` can pass it the routers' log.
-nonisolated struct EventLogHandler: LogHandler {
+package nonisolated struct EventLogHandler: LogHandler {
     private static let changeCategories: Set<LogCategory> = [
         .navigation,
         .presentation,
@@ -101,13 +101,13 @@ nonisolated struct EventLogHandler: LogHandler {
         "stack",
     ]
 
-    let events: EventLog
+    package let events: EventLog
 
-    func isEnabled(level: LogLevel, category: LogCategory) -> Bool {
+    package func isEnabled(level: LogLevel, category: LogCategory) -> Bool {
         category == .issues || Self.changeCategories.contains(category)
     }
 
-    func log(_ message: LogMessage) {
+    package func log(_ message: LogMessage) {
         guard let entry = Self.makeEntry(for: message) else {
             return
         }
@@ -116,9 +116,9 @@ nonisolated struct EventLogHandler: LogHandler {
         }
     }
 
-    func beginInterval(_ interval: LogInterval) { }
+    package func beginInterval(_ interval: LogInterval) { }
 
-    func endInterval(_ interval: LogInterval) { }
+    package func endInterval(_ interval: LogInterval) { }
 
     private static func makeEntry(for message: LogMessage) -> EventLogEntry? {
         guard let outcome = outcome(of: message) else {
@@ -171,6 +171,6 @@ nonisolated struct EventLogHandler: LogHandler {
 }
 
 // The name the readable log puts at the start of each line.
-nonisolated enum ReadableLogName {
-    static let prefix = "Waypoint"
+package nonisolated enum ReadableLogName {
+    package static let prefix = "Waypoint"
 }

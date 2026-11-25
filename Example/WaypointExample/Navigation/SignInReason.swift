@@ -9,7 +9,7 @@
 // Why the accounts sheet opened (AU-02): the action the account gate holds, or `account` when the
 // reader tapped Sign in on Account and nothing is held. The sheet's first line says it, and once
 // the reader signs in, the "Signed in as" toast says the action carries on.
-enum SignInReason {
+package enum SignInReason {
     case checkout
     case save
     case orders
@@ -17,7 +17,7 @@ enum SignInReason {
     case addresses
     case account
 
-    var line: String {
+    package var line: String {
         switch self {
         case .checkout:
             return "Sign in to check out. Your cart stays as it is."
@@ -35,7 +35,7 @@ enum SignInReason {
     }
 
     // What the toast says carries on after sign in, or `nil` when nothing was held.
-    var resumedAction: String? {
+    package var resumedAction: String? {
         switch self {
         case .checkout:
             return "Carrying on to checkout"

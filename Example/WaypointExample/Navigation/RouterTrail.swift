@@ -20,15 +20,15 @@ import Waypoint
 // The routes it names are `stepTypes`, which the screen chrome reads from the environment and the
 // app's window sets (`TrailSteps.all`), so this file names no feature's routes and the features can
 // live in their own modules (planning #445). A route left out reads by its type name.
-struct RouterTrail {
-    static let tabsName = "main"
+package struct RouterTrail {
+    package static let tabsName = "main"
     private static let unnamedRoot = "flow"
 
-    let stepTypes: [any TrailStep.Type]
+    package let stepTypes: [any TrailStep.Type]
 
     // The trail of the screen that shows `route` on `router`, or of the stack's root screen when
     // `route` is `nil`.
-    func steps(
+    package func steps(
         on router: StackRouter,
         at route: AnyRoute?
     ) -> [String] {
@@ -40,7 +40,7 @@ struct RouterTrail {
 
     // Whether the screen is the root of a tab, or of a flow with nothing above it but the tabs.
     // Such a screen shows a large title and no trail.
-    static func isRoot(
+    package static func isRoot(
         on router: StackRouter,
         at route: AnyRoute?
     ) -> Bool {
@@ -117,13 +117,13 @@ struct RouterTrail {
 //
 // Conformances:
 // - `Route`, so `RouterTrail` can find it in a router's path.
-protocol TrailStep: Route {
+package protocol TrailStep: Route {
     var trailName: String { get }
 }
 
 extension TrailStep where Self: TrackableScreen {
     // The journey's name for the screen, in lower case: the display name, else the screen name.
-    var trailName: String {
+    package var trailName: String {
         (screenDisplayName ?? Self.screenName).lowercased()
     }
 }
@@ -131,4 +131,12 @@ extension TrailStep where Self: TrackableScreen {
 extension EnvironmentValues {
     // Every route type the route trail names, which the app's window sets for every screen.
     @Entry var trailStepTypes: [any TrailStep.Type] = []
+}
+
+extension View {
+    // Has the route trail of every screen inside this view name `stepTypes`. The app's window
+    // sets it once, with every route the app's trail names.
+    package func trailStepTypes(_ stepTypes: [any TrailStep.Type]) -> some View {
+        environment(\.trailStepTypes, stepTypes)
+    }
 }

@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 
 // A product: its illustration on a wide backdrop, name, price and description, its reviews, a

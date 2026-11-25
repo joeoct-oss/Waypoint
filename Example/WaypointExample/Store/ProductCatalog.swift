@@ -8,7 +8,7 @@
 
 // The products the shop sells. The app's catalog is `SampleCatalog`, the fixed sample products; a
 // test passes a catalog of its own, so a screen can be tried with other products.
-protocol ProductCatalog {
+package protocol ProductCatalog {
     // Every product, in the order the shop lists them.
     var products: [Product] { get }
 
@@ -18,7 +18,7 @@ protocol ProductCatalog {
 
 extension ProductCatalog {
     // The products with these ids, in the same order, leaving out ids the catalog has none for.
-    func products(withIDs ids: [Int]) -> [Product] {
+    package func products(withIDs ids: [Int]) -> [Product] {
         ids.compactMap { product(id: $0) }
     }
 }
@@ -27,12 +27,14 @@ extension ProductCatalog {
 //
 // Conformances:
 // - `ProductCatalog`, so the app hands it to every feature that lists products.
-struct SampleCatalog: ProductCatalog {
-    var products: [Product] {
+package struct SampleCatalog: ProductCatalog {
+    package init() { }
+
+    package var products: [Product] {
         Product.all
     }
 
-    func product(id: Int) -> Product? {
+    package func product(id: Int) -> Product? {
         Product.find(id: id)
     }
 }

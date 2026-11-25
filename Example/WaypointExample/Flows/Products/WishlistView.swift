@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 
 // The wish list: the products the reader saved. As a sheet it can grow, closes with Done, and

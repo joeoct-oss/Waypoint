@@ -14,11 +14,11 @@
 // - `Codable` (from the raw values), so a tool can sit in an account route.
 // - `CaseIterable`, so the Lab lists every tool from this one declaration.
 // - `Hashable` (from the raw values), so the account stack can push a tool's screen.
-nonisolated enum LabTool: String, CaseIterable, Codable {
+package nonisolated enum LabTool: String, CaseIterable, Codable {
     case navigationTree
     case eventLog
 
-    var title: String {
+    package var title: String {
         switch self {
         case .navigationTree:
             return "Navigation tree"
@@ -27,7 +27,7 @@ nonisolated enum LabTool: String, CaseIterable, Codable {
         }
     }
 
-    var summary: String {
+    package var summary: String {
         switch self {
         case .navigationTree:
             return "Every router and route in the app, as text"
@@ -36,7 +36,7 @@ nonisolated enum LabTool: String, CaseIterable, Codable {
         }
     }
 
-    var symbolName: String {
+    package var symbolName: String {
         switch self {
         case .navigationTree:
             return "point.3.connected.trianglepath.dotted"

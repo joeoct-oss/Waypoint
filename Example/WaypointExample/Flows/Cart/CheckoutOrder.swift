@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleStore
+
 // The order checkout places: the cart's products, the address it goes to and the card that pays
 // for it.
 //

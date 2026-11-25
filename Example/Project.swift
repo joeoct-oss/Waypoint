@@ -18,9 +18,13 @@ let destinations: Destinations = [
 
 let deploymentTargets = DeploymentTargets.iOS("17.0")
 
+// Every target shares one Swift package name, so the example's modules share their `package`
+// symbols with each other, the app and the tests, and with nothing else (planning #445). The UI
+// tests compile the catalog's sources, which use `package`, so they take it too.
 let baseSettings: SettingsDictionary = [
     "SWIFT_VERSION": "6.0",
     "SWIFT_STRICT_CONCURRENCY": "complete",
+    "SWIFT_PACKAGE_NAME": "WaypointExample",
 ]
 
 let infoPlistValues: [String: Plist.Value] = [
@@ -29,8 +33,22 @@ let infoPlistValues: [String: Plist.Value] = [
     "UISupportedInterfaceOrientations": ["UIInterfaceOrientationPortrait"],
 ]
 
+// The app's own folders. The shared folders are modules of their own (`exampleModules`), so the
+// app's sources leave them out.
+let moduleFolders = [
+    "Catalog",
+    "Store",
+    "Services",
+    "DesignSystem",
+    "Navigation",
+    "Flows/Addresses",
+]
+
 let appSources: SourceFilesList = [
-    "WaypointExample/**",
+    .glob(
+        "WaypointExample/**",
+        excluding: moduleFolders.map { "WaypointExample/\($0)/**" }
+    ),
 ]
 
 // The asset catalog holds the app icon: the identity's day icon, and its night icon in dark mode.
@@ -59,6 +77,88 @@ let appDependencies: [TargetDependency] = [
     .external(name: "WaypointCore"),
     .external(name: "Waypoint"),
     .external(name: "WaypointUIKit"),
+    .target(name: "ExampleCatalog"),
+    .target(name: "ExampleStore"),
+    .target(name: "ExampleServices"),
+    .target(name: "ExampleDesignSystem"),
+    .target(name: "ExampleNavigation"),
+    .target(name: "ExampleAddresses"),
+]
+
+// The shared parts of the app as modules (planning #445), lowest first. Each is a framework the app
+// links, built from one folder, main actor by default like the app, and depending only on the
+// modules below it, which `scripts/check-example-module-edges.sh` also checks.
+func exampleModule(
+    _ name: String,
+    folder: String,
+    dependencies: [TargetDependency]
+) -> Target {
+    .target(
+        name: name,
+        destinations: destinations,
+        product: .framework,
+        bundleId: "dev.waypoint.example.\(name.lowercased())",
+        deploymentTargets: deploymentTargets,
+        infoPlist: .default,
+        sources: ["WaypointExample/\(folder)/**"],
+        dependencies: dependencies,
+        settings: .settings(base: moduleSettings)
+    )
+}
+
+let moduleSettings: SettingsDictionary = [
+    "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+]
+
+let exampleModules: [Target] = [
+    exampleModule(
+        "ExampleCatalog",
+        folder: "Catalog",
+        dependencies: []
+    ),
+    exampleModule(
+        "ExampleStore",
+        folder: "Store",
+        dependencies: []
+    ),
+    exampleModule(
+        "ExampleServices",
+        folder: "Services",
+        dependencies: [
+            .target(name: "ExampleStore"),
+            .external(name: "WaypointCore"),
+            .external(name: "Waypoint"),
+        ]
+    ),
+    exampleModule(
+        "ExampleDesignSystem",
+        folder: "DesignSystem",
+        dependencies: [
+            .target(name: "ExampleCatalog"),
+            .target(name: "ExampleStore"),
+            .external(name: "Waypoint"),
+        ]
+    ),
+    exampleModule(
+        "ExampleNavigation",
+        folder: "Navigation",
+        dependencies: [
+            .target(name: "ExampleCatalog"),
+            .target(name: "ExampleStore"),
+            .target(name: "ExampleDesignSystem"),
+            .external(name: "WaypointCore"),
+            .external(name: "Waypoint"),
+        ]
+    ),
+    exampleModule(
+        "ExampleAddresses",
+        folder: "Flows/Addresses",
+        dependencies: [
+            .target(name: "ExampleCatalog"),
+            .target(name: "ExampleStore"),
+            .target(name: "ExampleDesignSystem"),
+        ]
+    ),
 ]
 
 // The UI tests compile the app's catalog and identifiers too, so a test names a screen with the
@@ -87,6 +187,12 @@ let unitTestSources: SourceFilesList = [
 // links it.
 let unitTestDependencies: [TargetDependency] = [
     .target(name: "WaypointExample"),
+    .target(name: "ExampleCatalog"),
+    .target(name: "ExampleStore"),
+    .target(name: "ExampleServices"),
+    .target(name: "ExampleDesignSystem"),
+    .target(name: "ExampleNavigation"),
+    .target(name: "ExampleAddresses"),
     .external(name: "Understudy"),
 ]
 
@@ -191,7 +297,7 @@ let scheme = Scheme.scheme(
     runAction: .runAction(executable: "WaypointExample")
 )
 
-let targets: [Target] = [
+let targets: [Target] = exampleModules + [
     app,
     unitTests,
     uiTests,

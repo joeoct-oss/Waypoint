@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleStore
 import WaypointCore
 
 // What the Navigation Lab's demo flows use, from `AppServices.labDependencies()`: the catalog its

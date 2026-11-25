@@ -12,39 +12,49 @@
 // Conformances:
 // - `Hashable`, so the app coordinator can keep an entry in its navigation path.
 // - `Codable`, so an entry can sit in an account route, which Waypoint can save and restore.
-nonisolated struct FlowEntry: Hashable, Codable {
+package nonisolated struct FlowEntry: Hashable, Codable {
     // The entries that run for real so far, all of the SwiftUI kind from the SwiftUI branch:
     // Detail push, Tabs and Sheet. The others open a placeholder until the APIs they need are
     // built.
-    static let detailPush = FlowEntry(
+    package static let detailPush = FlowEntry(
         branch: .swiftUI,
         flow: .detailPush,
         kind: .swiftUI
     )
-    static let tabs = FlowEntry(
+    package static let tabs = FlowEntry(
         branch: .swiftUI,
         flow: .tabs,
         kind: .swiftUI
     )
-    static let sheet = FlowEntry(
+    package static let sheet = FlowEntry(
         branch: .swiftUI,
         flow: .sheet,
         kind: .swiftUI
     )
 
-    static var all: [FlowEntry] {
+    package static var all: [FlowEntry] {
         Branch.allCases.flatMap(entries(in:))
     }
 
-    let branch: Branch
-    let flow: ExampleFlow
-    let kind: FlowKind
+    package let branch: Branch
+    package let flow: ExampleFlow
+    package let kind: FlowKind
 
-    var isRunnable: Bool {
+    package init(
+        branch: Branch,
+        flow: ExampleFlow,
+        kind: FlowKind
+    ) {
+        self.branch = branch
+        self.flow = flow
+        self.kind = kind
+    }
+
+    package var isRunnable: Bool {
         self == Self.detailPush || self == Self.tabs || self == Self.sheet
     }
 
-    static func entries(in branch: Branch) -> [FlowEntry] {
+    package static func entries(in branch: Branch) -> [FlowEntry] {
         ExampleFlow.allCases.flatMap { flow in
             FlowKind.allCases.map { FlowEntry(branch: branch, flow: flow, kind: $0) }
         }

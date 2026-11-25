@@ -14,8 +14,8 @@ import Foundation
 // Conformances:
 // - `Hashable`, so a product can sit in a navigation path and tell itself apart from the others.
 // - `Identifiable`, so lists can show products without naming an id key path.
-nonisolated struct Product: Hashable, Identifiable {
-    static let all = [
+package nonisolated struct Product: Hashable, Identifiable {
+    package static let all = [
         Product(
             id: 1,
             name: "Orbit Lamp",
@@ -66,28 +66,28 @@ nonisolated struct Product: Hashable, Identifiable {
         ),
     ]
 
-    static func products(withIDs ids: [Int]) -> [Product] {
+    package static func products(withIDs ids: [Int]) -> [Product] {
         ids.compactMap(find(id:))
     }
 
-    static func find(id: Int) -> Product? {
+    package static func find(id: Int) -> Product? {
         all.first { $0.id == id }
     }
 
-    static func total(of products: [Product]) -> Decimal {
+    package static func total(of products: [Product]) -> Decimal {
         products.reduce(0) { $0 + $1.price }
     }
 
-    let id: Int
-    let name: String
-    let category: String
-    let price: Decimal
-    let artwork: ProductArtwork
-    let summary: String
+    package let id: Int
+    package let name: String
+    package let category: String
+    package let price: Decimal
+    package let artwork: ProductArtwork
+    package let summary: String
 
     // The next product in the shop, after the last one the first, shown on a product's page as
     // something the reader might also like.
-    var related: Product {
+    package var related: Product {
         let index = Self.all.firstIndex(of: self) ?? 0
         return Self.all[(index + 1) % Self.all.count]
     }

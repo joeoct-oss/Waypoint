@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
 import Waypoint
 
 // Builds the main tabs from the app's services: the main coordinator, its tab router, the account

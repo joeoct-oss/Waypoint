@@ -6,14 +6,25 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 
 // The new-address form: Label, Street, City and Postcode, then Save address once every field has
 // text. In checkout it also asks whether to save the address for next time; in Account, saving is
 // the point, so it doesn't ask. The screen reports the address and the choice.
-struct AddAddressView: View {
-    let asksToKeep: Bool
-    let onSave: (Address, Bool) -> Void
+package struct AddAddressView: View {
+    package let asksToKeep: Bool
+    package let onSave: (Address, Bool) -> Void
+
+    package init(
+        asksToKeep: Bool,
+        onSave: @escaping (Address, Bool) -> Void
+    ) {
+        self.asksToKeep = asksToKeep
+        self.onSave = onSave
+    }
 
     @State private var label = ""
     @State private var street = ""
@@ -31,7 +42,7 @@ struct AddAddressView: View {
         return fields.allSatisfy { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
-    var body: some View {
+    package var body: some View {
         Form {
             Section {
                 TextField("Label", text: $label, prompt: Text("Home, Work, Studio"))

@@ -12,7 +12,7 @@
 // Conformances:
 // - `Hashable`, so a product that holds one stays hashable.
 // - `CaseIterable`, so a preview can show every illustration.
-nonisolated enum ProductArtwork: Hashable, CaseIterable {
+package nonisolated enum ProductArtwork: Hashable, CaseIterable {
     case orbitLamp
     case cometMug
     case nebulaThrow
@@ -22,7 +22,7 @@ nonisolated enum ProductArtwork: Hashable, CaseIterable {
 
     // The two colors of the illustration's backdrop, from its top-left corner to its bottom-right
     // one.
-    var backdrop: (start: UInt32, end: UInt32) {
+    package var backdrop: (start: UInt32, end: UInt32) {
         switch self {
         case .orbitLamp:
             return (0xE9EBFF, 0xFFE9D6)

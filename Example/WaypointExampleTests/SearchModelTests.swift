@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleServices
+import ExampleStore
 import Foundation
 import Testing
 import Understudy

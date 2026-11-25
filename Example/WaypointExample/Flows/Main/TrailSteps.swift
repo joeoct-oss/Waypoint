@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
 import WaypointCore
 
 // Every route the example app's trail names, which `AppWindow` puts in the environment for the

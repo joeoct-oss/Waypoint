@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
 import UIKit
 
 // The UIKit placeholder for a flow: the same content as `PlaceholderView`, built with UIKit views.

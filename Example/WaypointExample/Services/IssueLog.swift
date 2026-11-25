@@ -17,23 +17,23 @@ import WaypointCore
 // Conformances:
 // - `Observable` (from `@Observable`), so the banner appears when an issue arrives.
 @Observable
-final class IssueLog {
+package final class IssueLog {
     // `var` because each issue logged replaces it. Only `record(_:)` changes it.
-    private(set) var latest: String?
+    package private(set) var latest: String?
     // `var` because the configuration's `onNavigationFailure` counts each call no fallback
     // recovered. Only `recordFailure(_:)` changes it.
-    private(set) var failureCount: Int
+    package private(set) var failureCount: Int
 
-    init() {
+    package init() {
         latest = nil
         failureCount = 0
     }
 
-    func record(_ text: String) {
+    package func record(_ text: String) {
         latest = text
     }
 
-    func recordFailure(_ failure: NavigationFailure) {
+    package func recordFailure(_ failure: NavigationFailure) {
         failureCount += 1
     }
 }
@@ -42,14 +42,14 @@ final class IssueLog {
 //
 // Conformances:
 // - `LogHandler`, so the app's navigation configuration can log to it.
-nonisolated struct IssueLogHandler: LogHandler {
-    let issues: IssueLog
+package nonisolated struct IssueLogHandler: LogHandler {
+    package let issues: IssueLog
 
-    func isEnabled(level: LogLevel, category: LogCategory) -> Bool {
+    package func isEnabled(level: LogLevel, category: LogCategory) -> Bool {
         category == .issues && level >= .error
     }
 
-    func log(_ message: LogMessage) {
+    package func log(_ message: LogMessage) {
         let text = message.text
         Task { @MainActor in
             issues.record(text)

@@ -16,26 +16,26 @@ import Waypoint
 //
 // Conformances:
 // - `LogHandler`, so the app's navigation configuration can log to it.
-nonisolated struct AppLogHandler: LogHandler {
-    let system: OSLogHandler
-    let systemLevel: LogLevel
-    let issues: IssueLogHandler
-    let events: EventLogHandler
+package nonisolated struct AppLogHandler: LogHandler {
+    package let system: OSLogHandler
+    package let systemLevel: LogLevel
+    package let issues: IssueLogHandler
+    package let events: EventLogHandler
 
-    init(systemLevel: LogLevel, issues: IssueLog, events: EventLog) {
+    package init(systemLevel: LogLevel, issues: IssueLog, events: EventLog) {
         system = OSLogHandler()
         self.systemLevel = systemLevel
         self.issues = IssueLogHandler(issues: issues)
         self.events = EventLogHandler(events: events)
     }
 
-    func isEnabled(level: LogLevel, category: LogCategory) -> Bool {
+    package func isEnabled(level: LogLevel, category: LogCategory) -> Bool {
         sendsToSystem(level: level, category: category)
             || issues.isEnabled(level: level, category: category)
             || events.isEnabled(level: level, category: category)
     }
 
-    func log(_ message: LogMessage) {
+    package func log(_ message: LogMessage) {
         if sendsToSystem(level: message.level, category: message.category) {
             system.log(message)
         }
@@ -47,11 +47,11 @@ nonisolated struct AppLogHandler: LogHandler {
         }
     }
 
-    func beginInterval(_ interval: LogInterval) {
+    package func beginInterval(_ interval: LogInterval) {
         system.beginInterval(interval)
     }
 
-    func endInterval(_ interval: LogInterval) {
+    package func endInterval(_ interval: LogInterval) {
         system.endInterval(interval)
     }
 

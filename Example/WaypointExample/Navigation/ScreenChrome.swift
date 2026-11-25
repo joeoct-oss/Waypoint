@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
 import SwiftUI
 import Waypoint
 
@@ -25,14 +27,14 @@ import Waypoint
 // Conformances:
 // - `ViewModifier`, so the app coordinator gives every screen the same chrome with
 //   `.screenChrome(...)`.
-struct ScreenChrome: ViewModifier {
+package struct ScreenChrome: ViewModifier {
     // The strip's material stays inside the safe area, so it never covers the navigation bar.
     private static let trailBackdropEdges: Edge.Set = []
 
-    let title: String
-    let kind: FlowKind?
-    let router: StackRouter
-    let route: AnyRoute?
+    package let title: String
+    package let kind: FlowKind?
+    package let router: StackRouter
+    package let route: AnyRoute?
     @Environment(\.trailStepTypes) private var trailStepTypes
 
     private var trail: [String] {
@@ -68,7 +70,7 @@ struct ScreenChrome: ViewModifier {
     }
 
     @ViewBuilder
-    func body(content: Content) -> some View {
+    package func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
             makeGlassChrome(content)
         } else {
@@ -106,7 +108,7 @@ struct ScreenChrome: ViewModifier {
 extension View {
     // The chrome of the screen that shows `route` on `router`, or of the stack's root screen when
     // `route` is `nil`.
-    func screenChrome(
+    package func screenChrome(
         title: String,
         kind: FlowKind?,
         router: StackRouter,
