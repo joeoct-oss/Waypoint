@@ -6,6 +6,8 @@
 #   issue numbers in them (a person checks that part, and that the type fits, in review).
 # - A type that is a tool's own branch prefix (claude, codex, copilot, dependabot) fails, so
 #   generated or tool-assigned names fail even when they carry an issue number.
+# - One exception: a dependabot/ branch passes when Dependabot itself opened the PR
+#   (Yousef, 2026-11-25), since it names its own branches. Anyone else's dependabot/ fails.
 # The same file is in every repo (Yousef, 2026-11-21 and 2026-11-25: one git rule for
 # every branch in every repo and project).
 name: Branch name
@@ -19,13 +21,18 @@ permissions: {}
 jobs:
   branch-name:
     name: Branch name
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Check the branch name
         env:
           HEAD_REF: ${{ github.head_ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
+          if [[ "$PR_AUTHOR" == "dependabot[bot]" && "$HEAD_REF" == dependabot/* ]]; then
+            echo "Branch '$HEAD_REF' was opened by Dependabot, which names its own branches."
+            exit 0
+          fi
           pattern='^[a-z]+/[0-9]+-[a-z][a-z0-9]*(-[a-z0-9]+)*$'
           tool_prefixes='^(claude|codex|copilot|dependabot)/'
           if [[ "$HEAD_REF" =~ $tool_prefixes ]]; then
