@@ -92,22 +92,19 @@ struct ProductsFactory {
         )
     }
 
-    // The cart Go to cart pushes above a product, showing the Cart tab's `products`.
+    // The cart Go to cart pushes above a product, showing the Cart tab's `products`: the Cart
+    // feature's screen, which the app hands in.
     func makeCart(
         products: [Product],
         onCheckout: @escaping () -> Void,
         onShopMore: @escaping () -> Void
-    ) -> CartView {
-        CartView(
+    ) -> AnyView {
+        let screen = ShopCartScreen(
             products: products,
             onCheckout: onCheckout,
             onShopMore: onShopMore
         )
-    }
-
-    // Draws the accounts flow `auth`, in the sheet the gate presents over a products sheet.
-    func makeAuthFlow(_ auth: AuthCoordinator) -> AuthFlowView {
-        AuthFlowView(auth: auth)
+        return dependencies.cartScreen(screen)
     }
 
     // Links to `product` with `WaypointLink`, which pushes through the stack it is drawn on. When a
