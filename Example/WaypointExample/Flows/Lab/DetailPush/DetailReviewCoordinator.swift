@@ -23,6 +23,7 @@ final class DetailReviewCoordinator: FlowCoordinator {
     typealias Output = Int
 
     private let product: Product
+    private let factory: LabFactory
 
     // The journey's name for the flow's first screen.
     var rootName: String {
@@ -30,7 +31,7 @@ final class DetailReviewCoordinator: FlowCoordinator {
     }
 
     var root: some View {
-        DetailReviewRatingView(onRate: { self.showNote(rating: $0) })
+        factory.makeDetailReviewRating(onRate: { self.showNote(rating: $0) })
             .screenChrome(
                 title: rootName,
                 kind: .swiftUI,
@@ -43,12 +44,17 @@ final class DetailReviewCoordinator: FlowCoordinator {
         Destination(DetailReviewNoteRoute.self) { self.makeNoteScreen($0) }
     }
 
-    init(product: Product) {
+    // `LabFactory` makes it, and builds its screens.
+    init(
+        product: Product,
+        factory: LabFactory
+    ) {
         self.product = product
+        self.factory = factory
     }
 
     func makeNoteScreen(_ route: DetailReviewNoteRoute) -> some View {
-        DetailReviewNoteView(
+        factory.makeDetailReviewNote(
             rating: route.rating,
             onPost: { self.post(rating: route.rating) }
         )

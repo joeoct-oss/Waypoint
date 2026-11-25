@@ -30,8 +30,8 @@ final class DetailPushCoordinator: StackCoordinator {
     private static let toastDuration = Duration.seconds(4)
     private static let missingCartTitle = "Cart wasn't in the stack"
 
+    private let factory: LabFactory
     private let navigation: NavigationConfiguration
-    private let catalog: any ProductCatalog
     private let onClose: () -> Void
     // `var` because `backToCart()` shows a toast for a recovered pop, and the toast's timer hides
     // it.
@@ -47,8 +47,7 @@ final class DetailPushCoordinator: StackCoordinator {
     }
 
     var root: some View {
-        DetailPushListView(
-            products: catalog.products,
+        factory.makeDetailPushList(
             onSelect: { self.showProduct($0) },
             onClose: { self.close() }
         )
@@ -65,13 +64,14 @@ final class DetailPushCoordinator: StackCoordinator {
         Destination(DetailCartRoute.self) { self.makeCartScreen($0) }
     }
 
+    // `LabFactory` makes it, and builds its screens and the review flow.
     init(
+        factory: LabFactory,
         navigation: NavigationConfiguration,
-        catalog: any ProductCatalog,
         onClose: @escaping () -> Void
     ) {
+        self.factory = factory
         self.navigation = navigation
-        self.catalog = catalog
         self.onClose = onClose
         toast = nil
         toastTimer = nil
@@ -86,16 +86,16 @@ final class DetailPushCoordinator: StackCoordinator {
 
     @ViewBuilder
     func makeProductScreen(_ route: DetailProductRoute) -> some View {
-        if let product = catalog.product(id: route.productID) {
-            DetailPushProductView(
-                product: product,
-                postedReview: postedReviews[product.id],
-                onAddToCart: { self.showCart(for: product) },
-                onBackToCart: { self.backToCart() },
-                onWriteReview: { self.writeReview(for: product) }
-            )
-            .screenChrome(
-                title: product.name,
+        let screen = factory.makeDetailPushProduct(
+            for: route,
+            postedReview: { self.postedReviews[$0.id] },
+            onAddToCart: { self.showCart(for: $0) },
+            onBackToCart: { self.backToCart() },
+            onWriteReview: { self.writeReview(for: $0) }
+        )
+        if let screen {
+            screen.screenChrome(
+                title: screen.product.name,
                 kind: .swiftUI,
                 router: router,
                 route: AnyRoute(route)
@@ -105,14 +105,13 @@ final class DetailPushCoordinator: StackCoordinator {
 
     @ViewBuilder
     func makeCartScreen(_ route: DetailCartRoute) -> some View {
-        if let product = catalog.product(id: route.productID) {
-            DetailPushCartView(product: product)
-                .screenChrome(
-                    title: "Cart",
-                    kind: .swiftUI,
-                    router: router,
-                    route: AnyRoute(route)
-                )
+        if let screen = factory.makeDetailPushCart(for: route) {
+            screen.screenChrome(
+                title: "Cart",
+                kind: .swiftUI,
+                router: router,
+                route: AnyRoute(route)
+            )
         }
     }
 
@@ -130,7 +129,7 @@ final class DetailPushCoordinator: StackCoordinator {
 
     // Pushes the review flow above the product; its result comes back once.
     func writeReview(for product: Product) {
-        router.push(DetailReviewCoordinator(product: product)) { result in
+        router.push(factory.makeDetailReview(for: product)) { result in
             self.reviewEnded(result, for: product)
         }
     }

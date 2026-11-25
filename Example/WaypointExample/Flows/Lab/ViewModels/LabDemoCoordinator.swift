@@ -86,8 +86,10 @@ final class LabDemoCoordinator {
             makeTabsFlow()
         case .sheet:
             makeSheetFlow()
-        case .style, .lateResult:
-            makeShopFlow(for: demo)
+        case .style(let style):
+            makeShopFlow { self.makeStyleFlow(style) }
+        case .lateResult:
+            makeShopFlow { self.makeNavigatorFlow() }
         }
     }
 
@@ -126,13 +128,14 @@ final class LabDemoCoordinator {
         lateOutcome = outcome.description
     }
 
+    // A product demo: `root` on the demo's own stack, with Close.
     @ViewBuilder
-    private func makeShopFlow(for demo: LabDemo) -> some View {
+    private func makeShopFlow<Root: View>(@ViewBuilder root: () -> Root) -> some View {
         if let router {
             WaypointStack(flow: LabShopFlow.self, router: router) {
-                makeRootFlow(for: demo)
-                    .destination(LabCartRoute.self) { _ in LabCartView() }
-                    .destination(LabReviewsRoute.self) { _ in LabReviewsView() }
+                root()
+                    .destination(LabCartRoute.self) { _ in self.factory.makeLabCart() }
+                    .destination(LabReviewsRoute.self) { _ in self.factory.makeLabReviews() }
                     .toolbar { closeItem }
             }
         }
@@ -152,7 +155,7 @@ final class LabDemoCoordinator {
     @ViewBuilder
     private func makeTabsFlow() -> some View {
         if let tabsDemo {
-            TabsDemoFlowView(demo: tabsDemo)
+            factory.makeTabsDemoFlow(tabsDemo)
         }
     }
 
@@ -160,11 +163,7 @@ final class LabDemoCoordinator {
     @ViewBuilder
     private func makeSheetFlow() -> some View {
         if let sheetDemo {
-            SheetDemoStack(
-                demo: sheetDemo,
-                router: sheetDemo.router,
-                level: nil
-            )
+            factory.makeSheetDemoFlow(sheetDemo)
         }
     }
 
@@ -188,24 +187,10 @@ final class LabDemoCoordinator {
         }
     }
 
-    // Only the shop demos reach here: the no-router demo, Detail push, Tabs and Sheet draw their
-    // own stacks in `makeDemoFlow(for:)`.
-    @ViewBuilder
-    private func makeRootFlow(for demo: LabDemo) -> some View {
-        switch demo {
-        case .style(let style):
-            makeStyleFlow(style)
-        case .lateResult:
-            makeNavigatorFlow()
-        case .noRouter, .detailPush, .tabs, .sheet:
-            EmptyView()
-        }
-    }
-
     // A plain SwiftUI stack, so the view's `@StackNavigation` finds no Waypoint stack above it.
     private func makeNoRouterFlow() -> some View {
         NavigationStack {
-            NoRouterView()
+            factory.makeNoRouter()
                 .navigationTitle(ViewModelStory.noRouter.title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { closeItem }
@@ -225,7 +210,7 @@ final class LabDemoCoordinator {
     }
 
     private func makeOutputsFlow() -> some View {
-        OutputsProductView(onBuy: { self.showCart() })
+        factory.makeOutputsProduct(onBuy: { self.showCart() })
             .navigationTitle(LabProductContent.product.name)
             .navigationBarTitleDisplayMode(.inline)
     }
@@ -233,14 +218,14 @@ final class LabDemoCoordinator {
     @ViewBuilder
     private func makeNavigatorFlow() -> some View {
         if let productModel {
-            NavigatorProductView(model: productModel)
+            factory.makeNavigatorProduct(model: productModel)
                 .navigationTitle(LabProductContent.product.name)
                 .navigationBarTitleDisplayMode(.inline)
         }
     }
 
     private func makeWrappersFlow() -> some View {
-        WrapperProductView()
+        factory.makeWrapperProduct()
             .navigationTitle(LabProductContent.product.name)
             .navigationBarTitleDisplayMode(.inline)
     }
@@ -253,8 +238,8 @@ final class LabDemoCoordinator {
     }
 
     private func makeProductModel(_ router: StackRouter) -> LabProductModel {
-        LabProductModel(
-            navigation: router.navigator(for: LabShopFlow.self),
+        factory.makeProductModel(
+            on: router,
             reviewsDelay: reviewsDelay,
             onLateOutcome: { self.recordLateOutcome($0) }
         )
