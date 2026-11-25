@@ -6,6 +6,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ### Added
 
+- `await router.present(child, style:)` and the lazy `await router.present(style:) { child }`, on `StackRouter` and `TabRouter`, return a child flow's `FlowResult` once the flow ends, with the same results as the `onFinish:` forms in every ending path. A start that never starts a flow (failed, already there, ignored, or a fallback that started no flow) returns `.cancelled` at once, so an `await` never hangs. Cancelling the awaiting task returns `.cancelled` at once and leaves the flow up, so an `await` in a screen's `.task` doesn't end the flow it showed; when that flow ends, its result is logged at debug level in the `flows` category as `result not delivered`. The "Coordinators and child flows" article says when to await and when to use `onFinish:`.
 - Dependabot opens one grouped pull request a month for the GitHub Actions in the workflows and one for the packages in `Package.swift` (`.github/dependabot.yml`, planning #511).
 
 ### Changed
