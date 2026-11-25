@@ -64,6 +64,8 @@ EOF
 cat >"$STUBS/xcodebuild" <<'EOF'
 #!/usr/bin/env bash
 echo "xcodebuild $*" >>"$STUB_CALLS"
+# What the build prints, such as a compiler warning.
+[[ -z "${STUB_XCODEBUILD_OUTPUT:-}" ]] || echo "$STUB_XCODEBUILD_OUTPUT"
 # The wait runs in a grandchild of test-mac.sh, as a step's script and its tools do.
 "$(dirname "$0")/stub-grandchild" "${STUB_SECONDS:-0}"
 exit "${STUB_STATUS:-0}"
@@ -472,6 +474,28 @@ if pr_run >"$WORK/1j.log" 2>&1 &&
     pass "a pull request's run completes its commit's coverage after its tests"
 else
     fail "a pull request's run completes its commit's coverage after its tests (calls: $(tr '\n' ';' <"$CALLS"))"
+fi
+# The package's xcodebuild steps fail on a warning in Waypoint's own code, and only there: a
+# remote package such as Understudy is built with its warnings suppressed, which the compiler
+# refuses alongside warnings as errors on the command line, so the script reads the build's output.
+if pr_run STUB_XCODEBUILD_OUTPUT="$TREE/Sources/WaypointCore/Probe.swift:3:5: warning: probe" \
+    >"$WORK/1w.log" 2>&1; then
+    fail "a warning in Waypoint's own code fails the package's xcodebuild step"
+elif grep -q "warnings in Waypoint's own code" "$WORK/1w.log"; then
+    pass "a warning in Waypoint's own code fails the package's xcodebuild step"
+else
+    fail "a warning in Waypoint's own code fails the package's xcodebuild step (log: $(tail -3 "$WORK/1w.log"))"
+fi
+if pr_run STUB_XCODEBUILD_OUTPUT="$TREE/.build/checkouts/Understudy/Sources/Understudy/Spy.swift:3:5: warning: probe" \
+    >"$WORK/1x.log" 2>&1; then
+    pass "a warning in a dependency doesn't fail the package's xcodebuild step"
+else
+    fail "a warning in a dependency doesn't fail the package's xcodebuild step (log: $(tail -3 "$WORK/1x.log"))"
+fi
+if grep -v "^ *#" scripts/test-mac.sh | grep -q "SWIFT_TREAT_WARNINGS_AS_ERRORS"; then
+    fail "no xcodebuild step passes warnings as errors to every target"
+else
+    pass "no xcodebuild step passes warnings as errors to every target"
 fi
 : >"$CALLS"
 if pr_run STUB_STATUS=1 >"$WORK/1j.log" 2>&1; then
