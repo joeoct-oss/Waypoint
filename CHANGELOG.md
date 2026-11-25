@@ -6,7 +6,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ### Changed
 
-- `scripts/test-mac.sh` prints a phase timeline (the clock time each step started), free memory and swap at the start and end of every run, runs the release reports step on the project simulator with no simulator copies, at the end shuts down and deletes, by UDID, only the simulator copies the run made, and warns when the project simulator holds 5 GB or more, which makes every copy slow (planning #489).
+- `scripts/test-mac.sh` prints a phase timeline (the clock time each step started), free memory and swap at the start and end of every run, runs the release reports step on the project simulator with no simulator copies, at the end deletes, by UDID, only the shut-down simulator copies the run made, and warns when the project simulator holds 5 GB or more, which makes every copy slow (planning #489).
 - The test targets use Understudy 0.1.x (test targets only, so apps never fetch it): `Spy` replaces `WaypointTestSupport`'s `Recorder`, which is gone. `scripts/test-mac.sh` now fails a run on any warning in Waypoint's own `Sources/` and `Tests/`, found in the xcodebuild log, instead of passing `SWIFT_TREAT_WARNINGS_AS_ERRORS`, which also failed on warnings in packages Waypoint depends on.
 
 ### Added

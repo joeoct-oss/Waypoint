@@ -60,7 +60,14 @@ cat >"$STUBS/xcrun" <<'EOF'
 echo "xcrun $*" >>"$STUB_CALLS"
 # Xcode's own device set lists the copies in STUB_CLONES, a file the stand-in tuist may change.
 if [[ "$1 $2" == "simctl --set" ]]; then
-    [[ "$*" == *"list devices"* ]] && cat "${STUB_CLONES:-/dev/null}"
+    if [[ "$*" == *"list devices"* ]]; then
+        # STUB_CLONES_FAIL makes the first listing fail, as simctl can.
+        if [[ -n "${STUB_CLONES_FAIL:-}" && ! -e "$STUB_CLONES_FAIL" ]]; then
+            touch "$STUB_CLONES_FAIL"
+            exit 1
+        fi
+        cat "${STUB_CLONES:-/dev/null}"
+    fi
     exit 0
 fi
 if [[ "$1 $2" == "simctl shutdown" && -L "$WAYPOINT_RUN_LOCK" ]]; then
@@ -839,8 +846,9 @@ else
     fail "the release reports step runs without parallel workers"
 fi
 
-# 8c. A run removes, by UDID, only the copies it made: a copy there before the run (such as one of
-# Xcode's own test runs) stays, booted or not, and the pool simulators are never touched.
+# 8c. A run removes, by UDID, only the shut-down copies it made: a copy there before the run stays,
+# booted or not, a copy still booted at the end (someone else's test run) stays, and the pool
+# simulators are never touched.
 DEVICES="$WORK/XCTestDevices"
 mkdir -p "$DEVICES"
 clone() {
@@ -848,12 +856,12 @@ clone() {
 }
 pool='{"name":"waypoint-01","udid":"POOL-UDID","state":"Booted"}'
 echo "{\"devices\":{\"iOS-27-2\":[$(clone 1 Booted),$(clone 2 Shutdown),$pool]}}" >"$WORK/clones"
-echo "{\"devices\":{\"iOS-27-2\":[$(clone 1 Booted),$(clone 2 Shutdown),$(clone 3 Booted),$(clone 4 Shutdown),$pool]}}" >"$WORK/clones-during"
+echo "{\"devices\":{\"iOS-27-2\":[$(clone 1 Booted),$(clone 2 Shutdown),$(clone 3 Booted),$(clone 4 Shutdown),$(clone 5 Shutdown),$pool]}}" >"$WORK/clones-during"
 : >"$CALLS"
 if run_script WAYPOINT_TEST_DEVICES="$DEVICES" STUB_CLONES="$WORK/clones" \
     STUB_CLONES_DURING="$WORK/clones-during" >"$WORK/8c.log" 2>&1; then
     touched=$(grep "^xcrun simctl --set $DEVICES \(shutdown\|delete\|erase\)" "$CALLS" | sort || true)
-    expected=$(printf '%s\n' "delete CLONE-3" "delete CLONE-4" "shutdown CLONE-3" "shutdown CLONE-4" |
+    expected=$(printf '%s\n' "delete CLONE-4" "delete CLONE-5" |
         sed "s|^|xcrun simctl --set $DEVICES |")
     if [[ "$touched" == "$expected" ]]; then
         pass "a run removes only the copies it made, by UDID"
@@ -867,6 +875,18 @@ if run_script WAYPOINT_TEST_DEVICES="$DEVICES" STUB_CLONES="$WORK/clones" \
     fi
 else
     fail "a run with simulator copies passes (log: $(tail -3 "$WORK/8c.log"))"
+fi
+
+# 8d. When the copies can't be listed at the start, the run removes none of them.
+cp "$WORK/clones" "$WORK/clones-8d"
+: >"$CALLS"
+if run_script WAYPOINT_TEST_DEVICES="$DEVICES" STUB_CLONES="$WORK/clones-8d" \
+    STUB_CLONES_DURING="$WORK/clones-during" STUB_CLONES_FAIL="$WORK/listing-failed" >"$WORK/8d.log" 2>&1 &&
+    ! grep -q "^xcrun simctl --set $DEVICES \(shutdown\|delete\)" "$CALLS" &&
+    grep -q "this run removes none" "$WORK/8d.log"; then
+    pass "a run that can't list the copies at the start removes none"
+else
+    fail "a run that can't list the copies at the start removes none (calls: $(grep -- '--set' "$CALLS" | tail -3))"
 fi
 
 if [[ $FAILURES -gt 0 ]]; then

@@ -336,37 +336,60 @@ report_slowest_tests() {
 # Prints free memory and swap, so a report shows how loaded the Mac was (planning #489). Only a
 # report: it never fails the run, and prints nothing where the tools don't exist.
 report_memory() {
-    local label="$1" swap free_pages
+    local label="$1" swap free_mb
     swap=$(sysctl -n vm.swapusage 2>/dev/null || true)
-    free_pages=$(vm_stat 2>/dev/null | awk '/Pages free/ { gsub(/\./, "", $3); print $3 }' || true)
-    echo "Memory $label: ${free_pages:+$((free_pages * 16384 / 1048576)) MB free, }swap ${swap:-unknown}"
+    # vm_stat counts pages and names the page size in its first line.
+    free_mb=$(vm_stat 2>/dev/null | awk '
+        NR == 1 { for (i = 1; i <= NF; i++) if ($i == "of") size = $(i + 1) }
+        /Pages free/ { gsub(/\./, "", $3); if (size) print int($3 * size / 1048576) }' || true)
+    echo "Memory $label: ${free_mb:+$free_mb MB free, }swap ${swap:-unknown}"
 }
 
 # Xcode makes the simulator copies parallel tests run on ("Clone N of <simulator>") in a device set of
 # its own, new for every run, and leaves one of them behind each time, shut down, as big as the
 # simulator it copies (measured 2026-11-25: 43 copies of about 20 GB each, none reused). A run
 # remembers which copies were there when it started, and at the end shuts down and deletes, by UDID,
-# only the copies made since. A copy that was there before, such as one Xcode's own test run is
-# using, and the pool simulators are never touched, and nothing runs `shutdown all` (planning #489).
+# only the copies made since that are shut down. A copy that was there before, and a copy still
+# booted at the end, which only someone else's test run, such as Yousef's own in Xcode, can be
+# using, are never touched; Xcode shuts its copies down when a step ends. The pool simulators
+# are never touched, and nothing runs `shutdown all` (planning #489). Without a good listing at the
+# start, nothing is removed.
 TEST_DEVICES="${WAYPOINT_TEST_DEVICES:-$HOME/Library/Developer/XCTestDevices}"
 CLONES_AT_START=""
+CLONES_RECORDED=false
+# Prints "<udid> <state>" for each copy in the set, or fails when the set can't be listed.
 clones() {
     [[ -d "$TEST_DEVICES" ]] || return 0
-    xcrun simctl --set "$TEST_DEVICES" list devices -j 2>/dev/null |
-        /usr/bin/python3 -c 'import json,sys
-for r in json.load(sys.stdin).get("devices", {}).values():
+    local listing
+    listing=$(xcrun simctl --set "$TEST_DEVICES" list devices -j 2>/dev/null) || return 1
+    /usr/bin/python3 -c 'import json,sys
+for r in json.load(sys.stdin)["devices"].values():
     for x in r:
-        if x.get("name", "").startswith("Clone "): print(x["udid"])' 2>/dev/null || true
+        if x["name"].startswith("Clone "): print(x["udid"], x["state"])' <<<"$listing" 2>/dev/null
+}
+record_clones() {
+    local listing
+    if listing=$(clones); then
+        CLONES_AT_START=$(cut -d' ' -f1 <<<"$listing")
+        CLONES_RECORDED=true
+    else
+        echo "warning: couldn't list Xcode's simulator copies; this run removes none" >&2
+    fi
 }
 remove_own_clones() {
-    local udid
-    for udid in $(clones); do
-        if ! grep -qx "$udid" <<<"$CLONES_AT_START"; then
-            echo "Removing simulator copy $udid, made by this run"
-            xcrun simctl --set "$TEST_DEVICES" shutdown "$udid" >/dev/null 2>&1 || true
-            xcrun simctl --set "$TEST_DEVICES" delete "$udid" >/dev/null 2>&1 || true
+    $CLONES_RECORDED || return 0
+    local listing udid state
+    listing=$(clones) || return 0
+    while read -r udid state; do
+        [[ -n "$udid" ]] || continue
+        grep -qx "$udid" <<<"$CLONES_AT_START" && continue
+        if [[ "$state" != Shutdown ]]; then
+            echo "Leaving simulator copy $udid alone: it is $state, so another test run may be using it"
+            continue
         fi
-    done
+        echo "Removing simulator copy $udid, made by this run"
+        xcrun simctl --set "$TEST_DEVICES" delete "$udid" >/dev/null 2>&1 || true
+    done <<<"$listing"
 }
 
 # Xcode copies the project simulator for every worker, so the larger its data, the longer each copy
@@ -488,7 +511,7 @@ take_run_lock() {
 if ! $PLAN_ONLY; then
     take_run_lock
     report_memory "at the start"
-    CLONES_AT_START=$(clones)
+    record_clones
 fi
 # The result bundles of an earlier run would show in this run's report.
 rm -rf "$RESULTS_DIR"
