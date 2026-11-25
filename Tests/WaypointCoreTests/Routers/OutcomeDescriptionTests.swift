@@ -126,8 +126,9 @@ struct OutcomeDescriptionTests {
     @Test
     func levelsAndCategoriesReadAsTheirNames() {
         let levels: [LogLevel] = [.debug, .info, .notice, .error, .fault]
+        let names = ["debug", "info", "notice", "error", "fault"]
 
-        #expect(levels.map(\.description) == ["debug", "info", "notice", "error", "fault"])
+        #expect(levels.map(\.description) == names)
         #expect(LogCategory.renderer.description == "renderer")
         #expect("\(LogCategory("checkout"))" == "checkout")
     }
