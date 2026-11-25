@@ -6,7 +6,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ### Changed
 
-- `LabTests.testPopToMissingRouteRecovers` reads the recovered toast before it waits for the pop to finish (planning #479). The toast shows for 4 s, and on a loaded Mac the pop took longer, so the test failed twice on 2026-11-25 with the toast already gone.
+- `LabTests.testPopToMissingRouteRecovers` and `JourneyTests.testSignOutStaysAsGuest` read their toast before they wait for the screen change under it (planning #479). The toasts show for 4 s and 3 s, and on a loaded Mac the screen change took longer, so the tests failed on 2026-11-25 with the toast already gone.
 - The test targets use Understudy 0.1.x (test targets only, so apps never fetch it): `Spy` replaces `WaypointTestSupport`'s `Recorder`, which is gone. `scripts/test-mac.sh` now fails a run on any warning in Waypoint's own `Sources/` and `Tests/`, found in the xcodebuild log, instead of passing `SWIFT_TREAT_WARNINGS_AS_ERRORS`, which also failed on warnings in packages Waypoint depends on.
 
 ### Added
