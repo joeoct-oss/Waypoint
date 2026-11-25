@@ -107,12 +107,120 @@ struct TabRouterTests {
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, configuration: .permissive)
         let shop = tabs.router(for: .shop)
         let newTabs: [MainTab] = [.home, .profile]
+        let applied = Recorder<[AppliedChange]>()
+        tabs.tree.onApplied { changes in
+            applied.record(changes)
+        }
 
         #expect(tabs.setTabs(newTabs) == .applied)
 
         #expect(tabs.selection == .home)
+        let moved = [AppliedChange(flow: tabs.flowID, change: .tabSelected(from: "shop", to: "home"))]
+        let movedBatches = [moved]
+        #expect(applied.values == movedBatches)
         #expect(shop.push(ProductRoute(id: 1)) == .ignored)
         #expect(tabs.router(for: .profile).isActive)
+    }
+
+    @Test
+    func setTabsKeepsTheSelectionWhenItStays() {
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, configuration: .permissive)
+        let newTabs: [MainTab] = [.shop, .profile]
+
+        #expect(tabs.setTabs(newTabs) == .applied)
+
+        #expect(tabs.state.tabs == newTabs)
+        #expect(tabs.selection == .shop)
+    }
+
+    @Test
+    func setTabsWithTheSameTabsIsAlreadyThere() {
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
+
+        #expect(tabs.setTabs(MainTab.homeAndShop) == .alreadyThere)
+    }
+
+    @Test
+    func setTabsWithNoTabsFails() throws {
+        let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
+        let noTabs: [MainTab] = []
+
+        let issue = try #require(tabs.setTabs(noTabs).failure?.issue)
+
+        #expect(issue.message.hasPrefix("A tab container needs at least one tab"))
+        #expect(tabs.state.tabs == MainTab.homeAndShop)
+        #expect(tabs.selection == .home)
+    }
+
+    @Test
+    func dismissClosesTheFlowOverTheTabs() {
+        let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
+        tabs.present(SettingsRoute())
+
+        #expect(tabs.dismiss() == .applied)
+
+        #expect(tabs.presented == nil)
+        #expect(tabs.dismiss() == .alreadyThere)
+    }
+
+    @Test
+    func dismissAllClosesEveryFlowAboveTheTabs() throws {
+        let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
+        tabs.present(SettingsRoute())
+        let child = try #require(tabs.presented)
+        child.present(HomeRoute())
+        let grandchild = try #require(child.presented)
+
+        #expect(tabs.dismissAll() == .applied)
+
+        #expect(tabs.presented == nil)
+        #expect(!child.isActive)
+        #expect(!grandchild.isActive)
+    }
+
+    @Test
+    func tabStacksNameTheContainerAsParentAndRoot() {
+        let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
+        let stack = tabs.router(for: .home)
+
+        #expect(tabs.parent == nil)
+        #expect(tabs.root === tabs)
+        #expect(stack.parent === tabs)
+        #expect(stack.root === tabs)
+    }
+
+    @Test
+    func pushFallbackOnTheTabsOnlySetsForRouteNotInPath() {
+        let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
+        let reported = Recorder<NavigationIssue.Kind>()
+        tabs.tree.onReported { issue in
+            reported.record(issue.kind)
+        }
+
+        tabs.setFallback(.push, for: .emptyPath)
+        tabs.setFallback(.push, for: .routeNotInPath)
+
+        #expect(tabs.fallbackPolicy[.emptyPath] == nil)
+        #expect(tabs.fallbackPolicy[.routeNotInPath] == .push)
+        let expectedKinds: [NavigationIssue.Kind] = [.invalidSetting]
+        #expect(reported.values == expectedKinds)
+    }
+
+    @Test
+    func sheetOverTheTabsTakesTheirPresentationDefaults() throws {
+        let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
+        let detents: [SheetDetent] = [.medium]
+        let defaults = PresentationDefaults(sheet: SheetOptions(detents: detents))
+
+        tabs.setPresentationDefaults(defaults)
+        tabs.present(SettingsRoute())
+
+        #expect(tabs.presentationDefaults == defaults)
+        let child = try #require(tabs.presented)
+        #expect(child.presentationDefaults == defaults)
+        #expect(tabs.router(for: .home).presentationDefaults == defaults)
+        let presentation = try #require(tabs.state.presentation)
+        #expect(tabs.sheetOptions(for: presentation) == defaults.sheet)
     }
 
     @Test
