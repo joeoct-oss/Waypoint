@@ -24,6 +24,8 @@ enum UITestSteps {
     // lazily, so a row below the fold never shows without a scroll, and a long first wait would be
     // spent in full on every such row.
     static let revealWait: TimeInterval = 1
+    // How many times `reveal(_:)` swipes at least, however long the swipes take.
+    static let revealSwipes = 4
     static let pollInterval: TimeInterval = 0.25
     static let settleTime: TimeInterval = 1
     // How many times `setSwitch(to:)` taps a switch before it gives up.
@@ -230,21 +232,24 @@ extension XCUIApplication {
 
     // Lists build rows lazily, so a row below the fold exists only after scrolling to it. Waits
     // briefly (`revealWait`) for a row that was about to show, so it is not scrolled away, then
-    // scrolls, and scrolls back down for a row that ends up under the navigation bar. It keeps
-    // scrolling until `timeout` passes rather than for a fixed number of swipes: a caller often
-    // reveals right after a tap that pushes, and on a loaded Mac the first swipes can land on the
-    // old screen before the new one arrives (planning #479).
+    // scrolls, and scrolls back down for a row that ends up under the navigation bar. It swipes at
+    // least `revealSwipes` times, and goes on until `timeout` passes: a caller often reveals right
+    // after a tap that pushes, so on a loaded Mac the first swipes can land on the old screen
+    // before the new one arrives, and each swipe can take seconds, so a time limit alone can
+    // leave too few swipes to reach a row far down a list (planning #479).
     @MainActor
     func reveal(_ element: XCUIElement) -> Bool {
         closeLateSavePasswordOffer()
         let deadline = Date().addingTimeInterval(UITestSteps.timeout)
         _ = element.waitForExistence(timeout: UITestSteps.revealWait)
-        while !waitUntilTappable(element), Date() < deadline {
+        var swipes = 0
+        while !waitUntilTappable(element), swipes < UITestSteps.revealSwipes || Date() < deadline {
             if isAboveVisibleArea(element) {
                 swipeDown()
             } else {
                 swipeUp()
             }
+            swipes += 1
         }
         return isTappable(element)
     }
