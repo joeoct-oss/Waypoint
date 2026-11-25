@@ -1,12 +1,13 @@
 //
 //  FlowEntryCatalogTests.swift
-//  ExampleCatalogTests
+//  ExampleLabTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
 import ExampleCatalog
+import ExampleLab
 import Testing
 
 // The Navigation Lab's catalog: twenty entries, each a flow of one kind on one branch. Only the

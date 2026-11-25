@@ -226,8 +226,8 @@ let exampleModules: [Target] = [
     ),
 ]
 
-// What tests share: a store of their own and an account gate they control. A static framework like
-// the modules, which only the test targets link.
+// What tests share: a store of their own, an account gate they control and a log of flow results.
+// A static framework like the modules, which only the test targets link.
 let testSupport = Target.target(
     name: "ExampleTestSupport",
     destinations: destinations,
@@ -270,11 +270,6 @@ func moduleTests(
 // links it.
 let exampleModuleTests: [Target] = [
     moduleTests(
-        "ExampleCatalog",
-        folder: "Catalog",
-        dependencies: []
-    ),
-    moduleTests(
         "ExampleServices",
         folder: "Services",
         dependencies: [
@@ -308,8 +303,10 @@ let exampleModuleTests: [Target] = [
         "ExampleLab",
         folder: "Lab",
         dependencies: [
+            .target(name: "ExampleCatalog"),
             .target(name: "ExampleNavigation"),
             .target(name: "ExampleStore"),
+            .target(name: "ExampleTestSupport"),
             .external(name: "WaypointCore"),
             .external(name: "Waypoint"),
         ]
@@ -399,7 +396,6 @@ let schemeBuildTargets: [TargetReference] = [
 
 let schemeTestTargets: [TestableTarget] = [
     "WaypointExampleTests",
-    "ExampleCatalogTests",
     "ExampleServicesTests",
     "ExampleAuthTests",
     "ExampleProductsTests",

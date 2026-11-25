@@ -11,6 +11,7 @@ import ExampleProducts
 import ExampleServices
 import ExampleStore
 import SwiftUI
+import Waypoint
 
 // A catalog of the products a test picks, so it knows exactly what the screens can list.
 //

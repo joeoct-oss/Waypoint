@@ -40,10 +40,10 @@ package struct ProductRoute: TrackableScreen {
 
     package init(
         id: Int,
-        preview: Product?
+        preview: Product? = nil
     ) {
         self.id = id
-        self.preview = preview
+        _preview = RouteHint(wrappedValue: preview)
     }
 
     package var screenDisplayName: String? {

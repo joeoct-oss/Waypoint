@@ -8,6 +8,7 @@
 
 import ExampleLab
 import ExampleStore
+import ExampleTestSupport
 import Testing
 import Waypoint
 
