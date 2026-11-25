@@ -23,7 +23,7 @@ struct DetailReviewCoordinatorTests {
         let parent = StackRouter()
         parent.register(DetailProductRoute.self)
         parent.push(DetailProductRoute(productID: product.id))
-        let review = DetailReviewCoordinator(product: product)
+        let review = TestLab.makeFactory().makeDetailReview(for: product)
         let results = ResultLog<Int>()
 
         let outcome = parent.push(review) { result in

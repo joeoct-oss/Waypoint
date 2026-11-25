@@ -11,13 +11,14 @@ import Waypoint
 
 // Builds the Account tab from `AccountDependencies`: the tab's coordinator, Account, orders, the
 // wish list, the addresses and the new address form, Settings, the Navigation Lab and its tools,
-// and the Lab's demos through `LabFactory`. The coordinator passes in what each screen reports, so
-// navigation stays in the coordinator.
+// and the Lab's screens and demos through `LabFactory`. The coordinator passes in what each screen
+// reports, so navigation stays in the coordinator.
 struct AccountFactory {
     // The pushed wish list suggests nothing; only the wish list sheet on Shop does.
     private static let noSuggestions: [Product] = []
 
-    private let dependencies: AccountDependencies
+    // What the feature uses, which its coordinator reads too.
+    let dependencies: AccountDependencies
 
     init(dependencies: AccountDependencies) {
         self.dependencies = dependencies
@@ -30,16 +31,20 @@ struct AccountFactory {
         onClearAllData: @escaping () -> Void
     ) -> AccountCoordinator {
         AccountCoordinator(
-            launch: launch,
-            dependencies: dependencies,
             factory: self,
+            launch: launch,
             onClearAllData: onClearAllData
         )
     }
 
+    // Builds the Lab's screens and demos, which the Account tab shows.
+    var lab: LabFactory {
+        LabFactory(dependencies: dependencies.lab)
+    }
+
     // The Lab's demos, whose reviews take `reviewsDelay` to load, or the usual delay for `nil`.
     func makeLabDemos(reviewsDelay: Duration?) -> LabDemoCoordinator {
-        LabFactory(dependencies: dependencies.lab).makeDemos(reviewsDelay: reviewsDelay)
+        lab.makeDemos(reviewsDelay: reviewsDelay)
     }
 
     func makeAccount(

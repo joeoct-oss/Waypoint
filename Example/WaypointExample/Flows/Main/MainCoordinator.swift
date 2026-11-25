@@ -42,13 +42,11 @@ final class MainCoordinator: TabCoordinator {
     // which the tab's coordinator then joins. Never set again.
     private(set) lazy var shop = factory.makeShop(
         gate: gate,
-        onAddToCart: { [weak self] in self?.addToCart($0) },
         cart: makeProductsCart()
     )
     // `lazy var` for the same reason as `shop`.
     private(set) lazy var search = factory.makeSearch(
         gate: gate,
-        onAddToCart: { [weak self] in self?.addToCart($0) },
         cart: makeProductsCart()
     )
     // `lazy var` for the same reason as `shop`.
@@ -123,10 +121,11 @@ final class MainCoordinator: TabCoordinator {
         router.select(tab)
     }
 
-    // What Shop and Search show of the cart, and where their cart buttons go.
+    // What Shop and Search show of the cart, and where Add to cart and their cart buttons go.
     private func makeProductsCart() -> ProductsCart {
         ProductsCart(
             products: { [weak self] in self?.cart.products ?? [] },
+            onAddToCart: { [weak self] in self?.addToCart($0) },
             onGoToCart: { [weak self] in self?.goToCart() },
             onCheckout: { [weak self] in self?.checkOut() }
         )

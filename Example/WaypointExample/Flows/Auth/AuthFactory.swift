@@ -12,7 +12,8 @@ import SwiftUI
 // Create account builder, Sign in, Signed in, the terms and Reset password's coordinator. The
 // coordinator passes in what each screen reports, so navigation stays in the coordinator.
 struct AuthFactory {
-    private let dependencies: AuthDependencies
+    // What the feature uses, which its coordinator reads too.
+    let dependencies: AuthDependencies
 
     init(dependencies: AuthDependencies) {
         self.dependencies = dependencies
@@ -25,11 +26,11 @@ struct AuthFactory {
         signedInStep: SignedInStep? = nil
     ) -> AuthCoordinator {
         AuthCoordinator(
-            dependencies: dependencies,
             factory: self,
-            builder: makeCreateAccountBuilder(),
-            reason: reason,
-            signedInStep: signedInStep
+            request: AuthRequest(
+                reason: reason,
+                signedInStep: signedInStep
+            )
         )
     }
 
