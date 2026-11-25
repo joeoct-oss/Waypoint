@@ -17,13 +17,18 @@
 # - A UI test that failed every try blocks, unless it is in quarantine and its entry hasn't
 #   expired: then it is printed as `Quarantined: <test>` and doesn't block.
 # - A unit test that failed any try blocks: only UI tests may pass on a retry.
-# - A step that failed with no failed test (a build error, a runner that never started) blocks.
+# - A step that failed with no failed test (a build error, a runner that never started) blocks, and
+#   so does a failed step with a failure outside its tests (a runner that crashed between tests, a
+#   build error the bundle records, given as `--other-errors`), whatever its tests did.
+# - Without `--quarantine` nothing is quarantined: `test-mac.sh --only` passes none, so the one test
+#   it runs always counts.
 #
 # Exit status: 0 when nothing blocks, 1 when something does, 2 when the quarantine file is wrong.
 #
 # Usage:
 #   xcrun xcresulttool get test-results tests --path <bundle> |
-#       scripts/flaky-tests.py --step-status <n> [--quarantine <file>] [--today YYYY-MM-DD] [--out <json>]
+#       scripts/flaky-tests.py --step-status <n> [--other-errors <n>] [--quarantine <file>]
+#           [--today YYYY-MM-DD] [--out <json>]
 #   scripts/flaky-tests.py --check-quarantine <file> [--today YYYY-MM-DD]
 #   scripts/flaky-tests.py --summary <results folder>
 
@@ -133,8 +138,23 @@ def test_cases(nodes, bundle=None, suite=None):
             yield from test_cases(node.get("children", []), bundle, suite)
 
 
-def judge(data, step_status, active, expired):
-    """The step's verdict: (blocking lines, records for the report)."""
+def loose_failures(nodes):
+    """Failure messages outside every test case, such as a runner that crashed between tests."""
+    for node in nodes:
+        if node.get("nodeType") == "Test Case":
+            continue
+        if node.get("nodeType") == "Failure Message":
+            yield node.get("name", "").strip()
+        else:
+            yield from loose_failures(node.get("children", []) or [])
+
+
+def judge(data, step_status, active, expired, other_errors=0):
+    """The step's verdict: (blocking lines, records for the report).
+
+    A failed step passes only when its failed tests account for every failure: a failure outside
+    the tests (`loose_failures`, or `other_errors` from the bundle's build results) keeps it failed.
+    """
     blocking, records = [], []
     failed_any = False
     for name, is_ui, tries, failure in test_cases(data.get("testNodes", [])):
@@ -161,6 +181,12 @@ def judge(data, step_status, active, expired):
                 print(f"Quarantine expired: {name} was quarantined until {expired[name]['until']}, "
                       "so it blocks again")
             blocking.append(f"{name} failed every try ({len(tries)}){detail}")
+    if step_status != 0:
+        for line in loose_failures(data.get("testNodes", [])):
+            blocking.append(f"the step failed outside its tests: {line}")
+        if other_errors > 0:
+            blocking.append(f"the step failed with {other_errors} error(s) outside its tests "
+                            "(the bundle's build results)")
     if step_status != 0 and not failed_any:
         blocking.append(f"the step failed (status {step_status}) and no test failed: it isn't a "
                         "test result, so it fails as it is")
@@ -184,6 +210,7 @@ def summary(folder):
 def main():
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument("--step-status", type=int)
+    parser.add_argument("--other-errors", type=int, default=0)
     parser.add_argument("--quarantine")
     parser.add_argument("--today")
     parser.add_argument("--out")
@@ -223,7 +250,7 @@ def main():
         # No readable results: the step's own status stands.
         print(f"note: no test results to judge ({error}); the step's own status stands")
         return 0 if args.step_status == 0 else 1
-    blocking, records = judge(data, args.step_status, active, expired)
+    blocking, records = judge(data, args.step_status, active, expired, args.other_errors)
     if args.out:
         with open(args.out, "w", encoding="utf-8") as handle:
             json.dump(records, handle, indent=2)

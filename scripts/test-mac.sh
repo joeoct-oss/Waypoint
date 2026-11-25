@@ -86,6 +86,8 @@
 #                             quick runs and whether selective testing is on.
 #   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
 #                             script's own checks set it, and WAYPOINT_RUN_LOCK_TEST_PAUSE.
+#   WAYPOINT_QUARANTINE_FILE  the quarantine list (default Example/quarantine.json); only the
+#                             script's own checks set it.
 
 set -euo pipefail
 
@@ -279,7 +281,7 @@ else
     EXAMPLE_RETRY_FLAGS=(-retry-tests-on-failure -test-iterations 2)
     RETRY=on
 fi
-QUARANTINE_FILE=Example/quarantine.json
+QUARANTINE_FILE="${WAYPOINT_QUARANTINE_FILE:-Example/quarantine.json}"
 
 # The steps run so far, with the seconds each took, printed when the script ends.
 STEP_NAMES=()
@@ -747,7 +749,7 @@ example_tests_on() {
 # printed, and listed in `.build/results/<bundle>-flaky.json` for the report. Without a result
 # bundle, or without results in it, the step's own status stands.
 judged_example_tests_on() {
-    local bundle="$RESULTS_DIR/$3.xcresult" status=0 status_after=0 results
+    local bundle="$RESULTS_DIR/$3.xcresult" status=0 status_after=0 results other_errors quarantine
     example_tests_on "$@" || status=$?
     if [[ ! -d "$bundle" ]]; then
         return "$status"
@@ -758,7 +760,18 @@ judged_example_tests_on() {
         echo "note: no test results in $bundle to judge; the step's own status stands"
         return "$status"
     fi
-    scripts/flaky-tests.py --step-status "$status" --quarantine "$QUARANTINE_FILE" \
+    # A build error the bundle records is a failure outside the tests, so the tests can't excuse it.
+    other_errors=$(xcrun xcresulttool get build-results --path "$bundle" 2>/dev/null |
+        /usr/bin/python3 -c 'import json,sys; print(int(json.load(sys.stdin).get("errorCount", 0)))' \
+            2>/dev/null || true)
+    [[ "$other_errors" =~ ^[0-9]+$ ]] || other_errors=0
+    # `--only` is how a person looks at one test, so the quarantine never excuses it there.
+    quarantine=()
+    if [[ -z "$ONLY_TEST" ]]; then
+        quarantine=(--quarantine "$QUARANTINE_FILE")
+    fi
+    scripts/flaky-tests.py --step-status "$status" --other-errors "$other_errors" \
+        ${quarantine[@]+"${quarantine[@]}"} \
         --out "$RESULTS_DIR/$3-flaky.json" <"$results" || status_after=$?
     rm -f "$results"
     return "$status_after"

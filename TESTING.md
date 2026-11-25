@@ -307,7 +307,7 @@ Find the first row that matches what the log says. Do what it says, once. Beside
 
 A UI test that sometimes fails and sometimes passes on the same code is **flaky**. One flaky test must not turn a gate red on its own, and a real failure must still block. So:
 
-1. **Retry once.** Every example app test step runs with `-retry-tests-on-failure -test-iterations 2`: a failed test runs once more, and no more. `--only` never retries, since it is how a person looks at one test.
+1. **Retry once.** Every example app test step runs with `-retry-tests-on-failure -test-iterations 2`: a failed test runs once more, and no more. `--only` never retries and ignores the quarantine, since it is how a person looks at one test.
 2. **The verdict.** After each example step, `scripts/flaky-tests.py` reads the step's result bundle and `Example/quarantine.json` and decides the step, whatever `tuist test` said:
 
    | The bundle shows | The step | The log says |
@@ -317,6 +317,7 @@ A UI test that sometimes fails and sometimes passes on the same code is **flaky*
    | A UI test failed both tries, and is quarantined | passes | `Quarantined: <test> failed every try; it doesn't block until <date>, issue #<n>` |
    | A unit test failed, on any try | fails | `error: <test> passed only on a retry, which only a UI test may`, or `failed every try` |
    | The step failed, and no test failed (a build error, a runner that never started) | fails | `error: the step failed (status <n>) and no test failed` |
+| The step failed with a failure outside its tests (a runner that crashed between tests, a build error the bundle records), whatever its tests did | fails | `error: the step failed outside its tests: <line>`, or `with <n> error(s) outside its tests` |
 
    The log ends with a `Flaky tests:` list of every flaky and quarantined test of the run, after the slowest tests.
 3. **An issue for every flaky test.** After every Mac run, whoever reports it opens or updates one issue in the package repo for each test in the `Flaky tests:` list, with the GitHub tools from the cloud (the Mac never writes to GitHub). Its title is `Flaky UI test: <Class>/<test>`, its label `flaky test`, and its body keeps a dated list of the test's flakes: date, commit, run (gate, stress or coverage) and first failure line. A test that flaked before gets a new line in its open issue.

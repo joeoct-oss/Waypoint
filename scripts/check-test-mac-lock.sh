@@ -62,6 +62,10 @@ if [[ "$*" == "xcresulttool get test-results tests"* ]]; then
     [[ -n "${STUB_BUNDLE_JSON:-}" ]] && cat "$STUB_BUNDLE_JSON"
     exit 0
 fi
+if [[ "$*" == "xcresulttool get build-results"* ]]; then
+    echo "{\"errorCount\": ${STUB_BUILD_ERRORS:-0}}"
+    exit 0
+fi
 if [[ "$*" == *"list devices"* ]]; then
     echo '{"devices":{"com.apple.CoreSimulator.SimRuntime.iOS-27-2":[{"name":"waypoint-01","udid":"STUB-UDID","state":"Shutdown"}]}}'
 fi
@@ -746,6 +750,24 @@ if ! run_script STUB_BUNDLE_JSON="$WORK/bundle.json" STUB_STATUS=0 >"$WORK/1j2.l
     pass "a UI test that failed both tries fails the run, whatever tuist test said"
 else
     fail "a UI test that failed both tries fails the run (log: $(tail -8 "$WORK/1j2.log"))"
+fi
+ui_tries_bundle Failed Passed
+if ! run_script STUB_BUNDLE_JSON="$WORK/bundle.json" STUB_BUILD_ERRORS=1 STUB_STATUS=65 \
+    >"$WORK/1j3.log" 2>&1 && grep -q "1 error(s) outside its tests" "$WORK/1j3.log"; then
+    pass "a build error in the bundle fails the run, even when its only failed test was flaky"
+else
+    fail "a build error in the bundle fails the run (log: $(tail -8 "$WORK/1j3.log"))"
+fi
+# `--only` is how a person looks at one test, so the quarantine never excuses it there.
+cat >"$WORK/quarantine.json" <<JSON
+{ "tests": [ { "test": "WaypointExampleUITests/StackTests/testPushAndBack", "issue": 1, "since": "$(date +%F)" } ] }
+JSON
+ui_tries_bundle Failed Failed
+if ! run_script STUB_BUNDLE_JSON="$WORK/bundle.json" WAYPOINT_QUARANTINE_FILE="$WORK/quarantine.json" \
+    STUB_STATUS=65 >"$WORK/1j4.log" 2>&1 && grep -q "failed every try" "$WORK/1j4.log"; then
+    pass "a quarantined test that fails under --only fails the run"
+else
+    fail "a quarantined test that fails under --only fails the run (log: $(tail -8 "$WORK/1j4.log"))"
 fi
 : >"$CALLS"
 

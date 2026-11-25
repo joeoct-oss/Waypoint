@@ -12,7 +12,7 @@
 # - a UI test that passes on its retry doesn't block, and is listed as flaky;
 # - a UI test that fails both tries blocks, unless it is quarantined and its entry hasn't expired;
 # - a unit test that needed a retry blocks;
-# - a step that failed with no failed test blocks;
+# - a step that failed with no failed test, or with a failure outside its tests, blocks;
 # - a quarantine file with too many tests, a test without an issue, a bad or future date, or a
 #   test listed twice is refused.
 #
@@ -154,6 +154,30 @@ if [[ $VERDICT -eq 1 ]]; then
     pass "a failed step with no readable results keeps its failure"
 else
     fail "a failed step with no readable results keeps its failure"
+fi
+
+# A failed step passes only when its tests account for every failure.
+VERDICT=0
+bundle Failed,Passed Passed | python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+data["testNodes"][0]["children"][0]["children"].append(
+    {"nodeType": "Failure Message", "name": "Test runner crashed between tests"})
+print(json.dumps(data))' |
+    scripts/flaky-tests.py --step-status 65 --today "$TODAY" >"$WORK/verdict.log" 2>&1 || VERDICT=$?
+if [[ $VERDICT -eq 1 ]] && grep -q "failed outside its tests: Test runner crashed" "$WORK/verdict.log"; then
+    pass "a failure outside the tests keeps a failed step failed, even beside a flaky test"
+else
+    fail "a failure outside the tests keeps a failed step failed ($(cat "$WORK/verdict.log"))"
+fi
+VERDICT=0
+bundle Failed,Passed Passed |
+    scripts/flaky-tests.py --step-status 65 --other-errors 1 --today "$TODAY" >"$WORK/verdict.log" 2>&1 ||
+    VERDICT=$?
+if [[ $VERDICT -eq 1 ]] && grep -q "1 error(s) outside its tests" "$WORK/verdict.log"; then
+    pass "a build error in the bundle keeps a failed step failed, even beside a flaky test"
+else
+    fail "a build error in the bundle keeps a failed step failed ($(cat "$WORK/verdict.log"))"
 fi
 
 quarantine <<EOF
