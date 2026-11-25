@@ -33,6 +33,7 @@ final class TabsDemoCoordinator: TabCoordinator {
         DemoTab.search,
     ]
 
+    private let factory: LabFactory
     private let navigation: NavigationConfiguration
     private let onClose: () -> Void
     // `var` because each tab's coordinator is made the first time Waypoint asks for it or its tab
@@ -45,10 +46,13 @@ final class TabsDemoCoordinator: TabCoordinator {
         router.state.tabs.count == DemoTab.allCases.count
     }
 
+    // `LabFactory` makes it, and builds each tab's coordinator and screen.
     init(
+        factory: LabFactory,
         navigation: NavigationConfiguration,
         onClose: @escaping () -> Void
     ) {
+        self.factory = factory
         self.navigation = navigation
         self.onClose = onClose
         tabCoordinators = [:]
@@ -93,7 +97,7 @@ final class TabsDemoCoordinator: TabCoordinator {
         if let kept = tabCoordinators[tab] {
             return kept
         }
-        let child = TabsDemoTabCoordinator(tab: tab, demo: self)
+        let child = factory.makeTabsDemoTab(tab, demo: self)
         tabCoordinators[tab] = child
         return child
     }
@@ -109,13 +113,14 @@ final class TabsDemoCoordinator: TabCoordinator {
 //   and Waypoint draws its screen.
 final class TabsDemoTabCoordinator: StackCoordinator {
     private let tab: DemoTab
+    private let factory: LabFactory
     // The tab container, which keeps this coordinator, so it is held without keeping it alive.
     // `var` because a weak reference must be one: it reads `nil` once the Lab lets the demo go.
     private weak var demo: TabsDemoCoordinator?
 
     var root: some View {
         if let demo {
-            TabsDemoView(
+            factory.makeTabsDemoScreen(
                 tab: tab,
                 selection: demo.router.selection,
                 showsAllTabs: demo.showsAllTabs,
@@ -125,9 +130,15 @@ final class TabsDemoTabCoordinator: StackCoordinator {
         }
     }
 
-    init(tab: DemoTab, demo: TabsDemoCoordinator) {
+    // `LabFactory` makes it, and builds its screen.
+    init(
+        tab: DemoTab,
+        demo: TabsDemoCoordinator,
+        factory: LabFactory
+    ) {
         self.tab = tab
         self.demo = demo
+        self.factory = factory
     }
 }
 

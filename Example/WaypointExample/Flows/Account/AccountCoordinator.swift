@@ -337,11 +337,11 @@ final class AccountCoordinator: StackCoordinator {
     }
 
     private func makeSwiftUIBranchFlow() -> some View {
-        SwiftUIBranchView(onSelect: { self.showLabFlow($0) })
+        factory.lab.makeSwiftUIBranch(onSelect: { self.showLabFlow($0) })
     }
 
     private func makeUIKitBranchFlow() -> some View {
-        UIKitBranchView(onSelect: { self.showLabFlow($0) })
+        factory.lab.makeUIKitBranch(onSelect: { self.showLabFlow($0) })
     }
 
     @ViewBuilder
@@ -387,11 +387,11 @@ final class AccountCoordinator: StackCoordinator {
     }
 
     private func makeNavigationStyleFlow() -> some View {
-        NavigationStyleView(onTry: { self.showLabDemo(.style($0)) })
+        factory.lab.makeNavigationStyle(onTry: { self.showLabDemo(.style($0)) })
     }
 
     private func makeLateResultFlow() -> some View {
-        LateResultView(
+        factory.lab.makeLateResult(
             demos: labDemos,
             onOpen: { self.showLabDemo(.lateResult) }
         )
@@ -400,18 +400,18 @@ final class AccountCoordinator: StackCoordinator {
     // Not reached from the Lab, which opens this story full screen (see `showLabStory(_:)`). Here
     // the account stack is above the view, so its push finds that router.
     private func makeNoRouterFlow() -> some View {
-        NoRouterView()
+        factory.lab.makeNoRouter()
     }
 
     private func makePreviewHelpFlow() -> some View {
-        PreviewHelpView()
+        factory.lab.makePreviewHelp()
     }
 
     private func makeSwiftUIPlaceholder(_ entry: FlowEntry) -> some View {
-        PlaceholderView(entry: entry)
+        factory.lab.makePlaceholder(entry)
     }
 
     private func makeUIKitPlaceholder(_ entry: FlowEntry) -> some View {
-        PlaceholderControllerView(entry: entry)
+        factory.lab.makePlaceholderController(entry)
     }
 }
