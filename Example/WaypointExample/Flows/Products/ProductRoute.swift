@@ -83,6 +83,28 @@ enum ProductsStart {
     case search
 }
 
+extension ProductsStart {
+    // The product steps Shop plays the first time it appears; Search plays none.
+    var launchSteps: ShopLaunchSteps {
+        switch self {
+        case .browse(let steps):
+            return steps
+        case .search:
+            return .none
+        }
+    }
+
+    // Names the stack's first screen in the journey lines.
+    var rootName: String {
+        switch self {
+        case .browse:
+            return "Product list"
+        case .search:
+            return "Search"
+        }
+    }
+}
+
 // The cart, pushed above a product on Shop by Go to cart, so Back goes to the product. It shows the
 // Cart tab's products.
 //
