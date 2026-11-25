@@ -11,19 +11,10 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The `.replacePresentation` fallback and the outcome helpers (planning #347).
+/// The `.replacePresentation` fallback (planning #347).
 @Suite("Replace presentation")
 @MainActor
 struct ReplacePresentationTests {
-    /// An issue for building outcomes by hand.
-    let issue = NavigationIssue(
-        kind: .alreadyPresenting,
-        flow: FlowID("main"),
-        message: "Already presenting settings.",
-        file: #fileID,
-        line: #line
-    )
-
     @Test
     func replacePresentationDismissesThenPresents() throws {
         let router = StackRouter(configuration: .permissive)
@@ -152,29 +143,5 @@ struct ReplacePresentationTests {
         let failure = try #require(outcome.failure)
         #expect(failure.issue.kind == .unregisteredRoute)
         #expect(router.presented === settings)
-    }
-
-    @Test
-    func didChangeMatchesEveryOutcome() {
-        let failure = NavigationFailure(issue: issue)
-
-        #expect(NavigationOutcome.applied.didChange)
-        #expect(NavigationOutcome.recovered(issue, by: .popToRoot).didChange)
-        #expect(!NavigationOutcome.alreadyThere.didChange)
-        #expect(!NavigationOutcome.queued.didChange)
-        #expect(!NavigationOutcome.ignored.didChange)
-        #expect(!NavigationOutcome.failed(failure).didChange)
-    }
-
-    @Test
-    func failureMatchesEveryOutcome() {
-        let failure = NavigationFailure(issue: issue)
-
-        #expect(NavigationOutcome.failed(failure).failure == failure)
-        #expect(NavigationOutcome.applied.failure == nil)
-        #expect(NavigationOutcome.recovered(issue, by: .popToRoot).failure == nil)
-        #expect(NavigationOutcome.alreadyThere.failure == nil)
-        #expect(NavigationOutcome.queued.failure == nil)
-        #expect(NavigationOutcome.ignored.failure == nil)
     }
 }

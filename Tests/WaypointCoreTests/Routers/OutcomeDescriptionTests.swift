@@ -77,4 +77,58 @@ struct OutcomeDescriptionTests {
         #expect(message.hasPrefix("SettingsRoute is not in the path [ProductRoute(id: <private>)]."))
         #expect(!message.contains("7"))
     }
+
+    @Test
+    func didChangeMatchesEveryOutcome() {
+        let failure = NavigationFailure(issue: issue)
+
+        #expect(NavigationOutcome.applied.didChange)
+        #expect(NavigationOutcome.recovered(issue, by: .popToRoot).didChange)
+        #expect(!NavigationOutcome.alreadyThere.didChange)
+        #expect(!NavigationOutcome.queued.didChange)
+        #expect(!NavigationOutcome.ignored.didChange)
+        #expect(!NavigationOutcome.failed(failure).didChange)
+    }
+
+    @Test
+    func failureMatchesEveryOutcome() {
+        let failure = NavigationFailure(issue: issue)
+
+        #expect(NavigationOutcome.failed(failure).failure == failure)
+        #expect(NavigationOutcome.applied.failure == nil)
+        #expect(NavigationOutcome.recovered(issue, by: .popToRoot).failure == nil)
+        #expect(NavigationOutcome.alreadyThere.failure == nil)
+        #expect(NavigationOutcome.queued.failure == nil)
+        #expect(NavigationOutcome.ignored.failure == nil)
+    }
+
+    @Test
+    func failureDebugDescriptionAddsEachIssuesMessage() {
+        let fallbackIssue = NavigationIssue(
+            kind: .fallbackFailed,
+            flow: FlowID("shop"),
+            message: "The fallback push has no route to push.",
+            file: "Shop/ShopCoordinator.swift",
+            line: 42
+        )
+        let failure = NavigationFailure(issue: issue, fallback: .push, fallbackIssue: fallbackIssue)
+
+        let lines = failure.debugDescription(revealingPrivateValues: false).split(separator: "\n")
+
+        let expected = [
+            Substring(failure.description),
+            "  HomeRoute is not in the path [].",
+            "  The fallback push has no route to push.",
+        ]
+        #expect(lines == expected)
+    }
+
+    @Test
+    func levelsAndCategoriesReadAsTheirNames() {
+        let levels: [LogLevel] = [.debug, .info, .notice, .error, .fault]
+
+        #expect(levels.map(\.description) == ["debug", "info", "notice", "error", "fault"])
+        #expect(LogCategory.renderer.description == "renderer")
+        #expect("\(LogCategory("checkout"))" == "checkout")
+    }
 }
