@@ -35,6 +35,11 @@ struct AuthFactory {
         )
     }
 
+    // What Sign in and Create account show of a call to the auth service, for one accounts flow.
+    func makeForm() -> AuthForm {
+        AuthForm()
+    }
+
     // A new Create account journey, which keeps what the reader types across its steps.
     func makeCreateAccountBuilder() -> CreateAccountBuilder {
         CreateAccountBuilder(service: dependencies.service)

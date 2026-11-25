@@ -40,8 +40,6 @@ final class AccountCoordinator: StackCoordinator {
     private let gate: AccountGate
     private let factory: AccountFactory
     private let onClearAllData: () -> Void
-    private let rules: NavigationRules
-    private let issues: IssueLog
     // Runs the Lab's view and view-model demos, each full screen on a Waypoint stack of its own.
     let labDemos: LabDemoCoordinator
 
@@ -61,8 +59,6 @@ final class AccountCoordinator: StackCoordinator {
         gate = dependencies.gate
         self.factory = factory
         self.onClearAllData = onClearAllData
-        rules = dependencies.rules
-        issues = dependencies.issues
         self.launch = launch
         labDemos = factory.makeLabDemos(reviewsDelay: launch.labReviewsDelay)
     }
@@ -76,7 +72,7 @@ final class AccountCoordinator: StackCoordinator {
     // A launch that opens the Lab starts on it, or on one of its branches or entries. The main tabs
     // call it once their shared stack is made, so the path lands on that stack.
     func openLaunchPath() {
-        let path = Self.makePath(for: launch)
+        let path = AccountRoute.launchPath(for: launch)
         guard !path.isEmpty else {
             return
         }
@@ -88,20 +84,6 @@ final class AccountCoordinator: StackCoordinator {
         if let demo = launch.entry?.demo {
             showLabDemo(demo)
         }
-    }
-
-    private static func makePath(for launch: LaunchOptions) -> [AccountRoute] {
-        guard launch.opensLab else {
-            return []
-        }
-        let lab: [AccountRoute] = [.settings, .lab]
-        guard let branch = launch.branch else {
-            return lab
-        }
-        guard let entry = launch.entry, !entry.isRunnable else {
-            return lab + [.labBranch(branch)]
-        }
-        return lab + [.labBranch(branch), .labFlow(entry)]
     }
 
     func makeAccountFlow() -> some View {
@@ -257,48 +239,28 @@ final class AccountCoordinator: StackCoordinator {
     private func makeScreen(for screen: AccountRoute) -> some View {
         switch screen {
         case .orders:
-            makeOrdersFlow()
+            factory.makeOrders(onSelect: { self.showOrder($0) })
         case .order(let order):
-            makeOrderFlow(order)
+            factory.makeOrder(order)
         case .wishlist:
-            makeWishlistFlow()
+            factory.makeWishlist()
         case .addresses:
-            makeAddressesFlow()
+            factory.makeAddresses(onAddAddress: { self.showAddAddress() })
         case .addAddress:
-            makeAddAddressFlow()
+            factory.makeAddAddress(onSave: { self.addAddress($0) })
         case .settings:
             makeSettingsFlow()
         case .lab:
             makeLabFlow()
         case .labBranch(let branch):
-            makeLabBranchFlow(branch)
+            factory.lab.makeBranch(branch, onSelect: { self.showLabFlow($0) })
         case .labFlow(let entry):
-            makeLabPlaceholderFlow(entry)
+            factory.lab.makePlaceholder(for: entry)
         case .labStory(let story):
             makeLabStoryFlow(story)
         case .labTool(let tool):
-            makeLabToolFlow(tool)
+            factory.makeLabTool(tool)
         }
-    }
-
-    private func makeOrdersFlow() -> some View {
-        factory.makeOrders(onSelect: { self.showOrder($0) })
-    }
-
-    private func makeOrderFlow(_ order: Order) -> some View {
-        factory.makeOrder(order)
-    }
-
-    private func makeWishlistFlow() -> some View {
-        factory.makeWishlist()
-    }
-
-    private func makeAddressesFlow() -> some View {
-        factory.makeAddresses(onAddAddress: { self.showAddAddress() })
-    }
-
-    private func makeAddAddressFlow() -> some View {
-        factory.makeAddAddress(onSave: { self.addAddress($0) })
     }
 
     private func makeSettingsFlow() -> some View {
@@ -306,15 +268,11 @@ final class AccountCoordinator: StackCoordinator {
             onShowLab: { self.showLab() },
             onClearAllData: { self.clearAllData() },
             onSignOut: { self.signOut() },
-            rules: SettingsRules(
-                pushesTwice: rules.duplicatePushRule == .allow,
-                queueLimit: rules.queueLimit,
-                failureCount: issues.failureCount,
-                onSetPushesTwice: { self.rules.setPushesTwice($0) },
-                onTryPushTwice: { self.showPushTwice() },
-                onTryMissingPop: { self.showMissingPop() },
-                onTryPresentTwice: { self.showPresentTwice() },
-                onTryUnrecovered: { self.showUnrecovered() }
+            tries: SettingsTries(
+                pushTwice: { self.showPushTwice() },
+                missingPop: { self.showMissingPop() },
+                presentTwice: { self.showPresentTwice() },
+                unrecovered: { self.showUnrecovered() }
             )
         )
     }
@@ -327,92 +285,12 @@ final class AccountCoordinator: StackCoordinator {
         )
     }
 
-    @ViewBuilder
-    private func makeLabBranchFlow(_ branch: Branch) -> some View {
-        switch branch {
-        case .swiftUI:
-            makeSwiftUIBranchFlow()
-        case .uiKit:
-            makeUIKitBranchFlow()
-        }
-    }
-
-    private func makeSwiftUIBranchFlow() -> some View {
-        factory.lab.makeSwiftUIBranch(onSelect: { self.showLabFlow($0) })
-    }
-
-    private func makeUIKitBranchFlow() -> some View {
-        factory.lab.makeUIKitBranch(onSelect: { self.showLabFlow($0) })
-    }
-
-    @ViewBuilder
-    private func makeLabPlaceholderFlow(_ entry: FlowEntry) -> some View {
-        switch entry.kind {
-        case .swiftUI:
-            makeSwiftUIPlaceholder(entry)
-        case .uiKit:
-            makeUIKitPlaceholder(entry)
-        }
-    }
-
-    @ViewBuilder
     private func makeLabStoryFlow(_ story: ViewModelStory) -> some View {
-        switch story {
-        case .style:
-            makeNavigationStyleFlow()
-        case .lateResult:
-            makeLateResultFlow()
-        case .noRouter:
-            makeNoRouterFlow()
-        case .preview:
-            makePreviewHelpFlow()
-        }
-    }
-
-    @ViewBuilder
-    private func makeLabToolFlow(_ tool: LabTool) -> some View {
-        switch tool {
-        case .navigationTree:
-            makeNavigationTreeFlow()
-        case .eventLog:
-            makeEventLogFlow()
-        }
-    }
-
-    private func makeNavigationTreeFlow() -> some View {
-        factory.makeNavigationTree()
-    }
-
-    private func makeEventLogFlow() -> some View {
-        factory.makeEventLog()
-    }
-
-    private func makeNavigationStyleFlow() -> some View {
-        factory.lab.makeNavigationStyle(onTry: { self.showLabDemo(.style($0)) })
-    }
-
-    private func makeLateResultFlow() -> some View {
-        factory.lab.makeLateResult(
+        factory.lab.makeStory(
+            story,
             demos: labDemos,
-            onOpen: { self.showLabDemo(.lateResult) }
+            onTry: { self.showLabDemo(.style($0)) },
+            onOpenLateResult: { self.showLabDemo(.lateResult) }
         )
-    }
-
-    // Not reached from the Lab, which opens this story full screen (see `showLabStory(_:)`). Here
-    // the account stack is above the view, so its push finds that router.
-    private func makeNoRouterFlow() -> some View {
-        factory.lab.makeNoRouter()
-    }
-
-    private func makePreviewHelpFlow() -> some View {
-        factory.lab.makePreviewHelp()
-    }
-
-    private func makeSwiftUIPlaceholder(_ entry: FlowEntry) -> some View {
-        factory.lab.makePlaceholder(entry)
-    }
-
-    private func makeUIKitPlaceholder(_ entry: FlowEntry) -> some View {
-        factory.lab.makePlaceholderController(entry)
     }
 }

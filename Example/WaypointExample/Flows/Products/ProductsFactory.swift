@@ -110,6 +110,33 @@ struct ProductsFactory {
         AuthFlowView(auth: auth)
     }
 
+    // Links to `product` with `WaypointLink`, which pushes through the stack it is drawn on. When a
+    // UI test passes the `systemLinks` launch argument, it gets a system `NavigationLink` instead,
+    // which Waypoint refuses and reports. With `missingDestination`, the link pushes the product's
+    // reviews, which no screen of the stack draws, so the stack shows its missing-destination
+    // screen.
+    @ViewBuilder
+    func makeRelatedLink(to product: Product) -> some View {
+        let navigation = dependencies.navigation
+        let route = ProductRoute(
+            id: product.id,
+            preview: product
+        )
+        if navigation.linksToMissingDestination {
+            WaypointLink(value: ProductReviewsRoute(productID: product.id)) {
+                RelatedProductRow(product: product)
+            }
+        } else if navigation.usesSystemLinks {
+            NavigationLink(value: route) {
+                RelatedProductRow(product: product)
+            }
+        } else {
+            WaypointLink(value: route) {
+                RelatedProductRow(product: product)
+            }
+        }
+    }
+
     func makeFilters(onApply: @escaping () -> Void) -> FilterView {
         FilterView(onApply: onApply)
     }

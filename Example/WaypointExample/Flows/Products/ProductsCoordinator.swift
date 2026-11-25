@@ -45,20 +45,15 @@ final class ProductsCoordinator: StackCoordinator {
     private let gate: any SheetAccountGating
     private let factory: ProductsFactory
     private let launchSteps: ShopLaunchSteps
-    private let navigation: ProductsNavigation
     private let cart: ProductsCart
     // `var` because Search's view model is made the first time Search's root draws, on the router
     // Waypoint has made by then, and kept. Only `searchModel` changes it. Not observed, because it
     // changes while the root draws.
     @ObservationIgnored private var madeSearchModel: SearchModel?
-    // `var` because `showFilters()`, `showSaved()` and `showWishlist()` set it with the router they
-    // present, and `releaseSheet()` clears both once the sheet has slid away, so it still draws
-    // meanwhile.
-    private(set) var presentedSheet: ProductSheet?
-    // `var` for the same reason as `presentedSheet`: the presented sheet's router.
-    private(set) var sheetRouter: StackRouter?
-    // `var` for the same reason as `presentedSheet`: the sizes the router gives the sheet.
-    private(set) var sheetOptions: SheetOptions?
+    // The filters, the saved sheet or the wish list, which `showFilters()`, `showSaved()` and
+    // `openWishlist()` keep and `releaseSheet()` drops once the sheet has slid away, so it still
+    // draws meanwhile.
+    let sheet: PresentedSheet<ProductSheet>
     // `var` because `showWishlist()` and `openWishlist()` set it with the flow they present, and
     // `releaseSheet()` drops it once the sheet has gone.
     private(set) var wishlist: WishlistCoordinator?
@@ -90,10 +85,7 @@ final class ProductsCoordinator: StackCoordinator {
     // Whether this coordinator's filters, saved sheet or wish list is presented over the stack.
     // Shop and Search share one stack, so a presentation the other tab made doesn't count.
     var isShowingSheet: Bool {
-        guard let sheetRouter else {
-            return false
-        }
-        return router.presented === sheetRouter
+        sheet.isShowing(over: router)
     }
 
     // `ProductsFactory` makes it, and hands it the feature's dependencies.
@@ -108,12 +100,9 @@ final class ProductsCoordinator: StackCoordinator {
         gate = dependencies.gate
         self.factory = factory
         launchSteps = start.launchSteps
-        navigation = dependencies.navigation
         self.cart = cart
         madeSearchModel = nil
-        presentedSheet = nil
-        sheetRouter = nil
-        sheetOptions = nil
+        sheet = PresentedSheet()
         wishlist = nil
         hasPlayedLaunchSteps = false
     }
@@ -171,7 +160,7 @@ final class ProductsCoordinator: StackCoordinator {
             for: route,
             onAddToCart: { self.addToCart($0) },
             onSave: { self.save($0) },
-            related: { self.makeRelatedLink(to: $0.related) }
+            related: { self.factory.makeRelatedLink(to: $0.related) }
         )
     }
 
@@ -195,11 +184,11 @@ final class ProductsCoordinator: StackCoordinator {
     // in.
     @ViewBuilder
     func makeSheetFlow() -> some View {
-        if let sheetRouter, let presentedSheet {
+        if let sheetRouter = sheet.router, let presentedSheet = sheet.sheet {
             WaypointStack(sheetRouter) {
                 makeSheetScreen(for: presentedSheet)
             }
-            .sheetOptions(sheetOptions)
+            .sheetOptions(sheet.options)
             .sheet(
                 isPresented: Binding(reading: gate.isShowingAuth(over: sheetRouter), writing: gate.syncAuth),
                 onDismiss: { self.gate.finishAuth(over: sheetRouter) }
@@ -269,7 +258,7 @@ final class ProductsCoordinator: StackCoordinator {
             return
         }
         self.wishlist = wishlist
-        takePresentedSheet(.wishlist)
+        sheet.keep(.wishlist, presentedBy: router)
     }
 
     // The saved sheet's View wish list: dismisses the saved sheet's flow, then starts the wish
@@ -315,12 +304,10 @@ final class ProductsCoordinator: StackCoordinator {
 
     // Drops the sheet's router once the sheet has gone.
     func releaseSheet() {
-        if let sheetRouter {
+        if let sheetRouter = sheet.router {
             gate.finishAuth(over: sheetRouter)
         }
-        presentedSheet = nil
-        sheetRouter = nil
-        sheetOptions = nil
+        sheet.release()
         wishlist = nil
     }
 
@@ -330,17 +317,7 @@ final class ProductsCoordinator: StackCoordinator {
         style: PresentationStyle
     ) {
         router.present(route, style: style)
-        takePresentedSheet(sheet)
-    }
-
-    // Keeps the router the stack now presents, so the sheet draws it.
-    private func takePresentedSheet(_ sheet: ProductSheet) {
-        guard let presented = router.presented else {
-            return
-        }
-        presentedSheet = sheet
-        sheetRouter = presented
-        sheetOptions = router.state.presentation.map { router.sheetOptions(for: $0) }
+        self.sheet.keep(sheet, presentedBy: router)
     }
 
     private func addToWishlist(_ product: Product) {
@@ -432,53 +409,6 @@ final class ProductsCoordinator: StackCoordinator {
         if let auth = gate.auth(over: sheetRouter) {
             factory.makeAuthFlow(auth)
                 .sheetOptions(gate.authSheetOptions)
-        }
-    }
-
-    // Links to `product` with `WaypointLink`, which pushes through `router`. When a UI test passes
-    // the `systemLinks` launch argument, it gets a system `NavigationLink` instead, which Waypoint
-    // refuses and reports. With `missingDestination`, the link pushes the product's reviews, which
-    // no screen of the stack draws, so the stack shows its missing-destination screen.
-    @ViewBuilder
-    private func makeRelatedLink(to product: Product) -> some View {
-        let route = ProductRoute(
-            id: product.id,
-            preview: product
-        )
-        if navigation.linksToMissingDestination {
-            WaypointLink(value: ProductReviewsRoute(productID: product.id)) {
-                RelatedProductRow(product: product)
-            }
-        } else if navigation.usesSystemLinks {
-            NavigationLink(value: route) {
-                RelatedProductRow(product: product)
-            }
-        } else {
-            WaypointLink(value: route) {
-                RelatedProductRow(product: product)
-            }
-        }
-    }
-}
-
-extension ProductsStart {
-    // The product steps Shop plays the first time it appears; Search plays none.
-    var launchSteps: ShopLaunchSteps {
-        switch self {
-        case .browse(let steps):
-            return steps
-        case .search:
-            return .none
-        }
-    }
-
-    // Names the stack's first screen in the journey lines.
-    var rootName: String {
-        switch self {
-        case .browse:
-            return "Product list"
-        case .search:
-            return "Search"
         }
     }
 }
