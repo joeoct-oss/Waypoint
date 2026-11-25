@@ -1,0 +1,32 @@
+# Fails a pull request whose branch doesn't follow the branch rule:
+# <type>/<issue number>-<plain words>, for example fix/462-wishlist-child-flow.
+# - type: feature, fix, docs, test, refactor, chore, ci or spike.
+# - The words are lowercase plain English joined by hyphens, with no plan, decision or
+#   issue numbers in them (a person checks that part in review).
+# The same file is in Waypoint, Waypoint-planning and Understudy (Yousef, 2026-11-21 and
+# 2026-11-25: one git rule for every repo).
+name: Branch name
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  branch-name:
+    name: Branch name
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check the branch name
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          pattern='^(feature|fix|docs|test|refactor|chore|ci|spike)/[0-9]+-[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+          if [[ "$HEAD_REF" =~ $pattern ]]; then
+            echo "Branch '$HEAD_REF' follows the rule."
+            exit 0
+          fi
+          echo "::error::Branch '$HEAD_REF' doesn't follow <type>/<issue#>-<plain-words>, for example fix/462-wishlist-child-flow. Types: feature, fix, docs, test, refactor, chore, ci, spike. Push the work to a branch with a correct name and open the PR from it."
+          exit 1
