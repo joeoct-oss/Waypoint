@@ -15,8 +15,8 @@
 # - the lock is gone after a pass, a failure, and a stop with TERM.
 #
 # It also checks the phase timeline and the memory lines every report prints, that the release
-# reports step runs without parallel workers, and that a run shuts down only the simulator copies it
-# booted, by UDID, and never deletes one (planning #489).
+# reports step runs without parallel workers, and that a run removes only the simulator copies it
+# made, by UDID (planning #489).
 #
 # It also checks what the script hands Tuist: selective testing per tier (planning #429), the derived data
 # folder after `--` (planning #430), the branch through GITHUB_HEAD_REF and the `coverage` tier on `main`
@@ -839,29 +839,31 @@ else
     fail "the release reports step runs without parallel workers"
 fi
 
-# 8c. A run shuts down, by UDID, only the copies it booted: a copy booted before the run (such as
-# one of Xcode's own test runs) and a copy that is shut down stay as they are, and none is deleted.
+# 8c. A run removes, by UDID, only the copies it made: a copy there before the run (such as one of
+# Xcode's own test runs) stays, booted or not, and the pool simulators are never touched.
 DEVICES="$WORK/XCTestDevices"
 mkdir -p "$DEVICES"
 clone() {
     echo "{\"name\":\"Clone $1 of waypoint-01\",\"udid\":\"CLONE-$1\",\"state\":\"$2\"}"
 }
 pool='{"name":"waypoint-01","udid":"POOL-UDID","state":"Booted"}'
-echo "{\"devices\":{\"iOS-27-2\":[$(clone 1 Booted),$(clone 2 Shutdown),$(clone 3 Shutdown),$pool]}}" >"$WORK/clones"
-echo "{\"devices\":{\"iOS-27-2\":[$(clone 1 Booted),$(clone 2 Booted),$(clone 3 Shutdown),$pool]}}" >"$WORK/clones-during"
+echo "{\"devices\":{\"iOS-27-2\":[$(clone 1 Booted),$(clone 2 Shutdown),$pool]}}" >"$WORK/clones"
+echo "{\"devices\":{\"iOS-27-2\":[$(clone 1 Booted),$(clone 2 Shutdown),$(clone 3 Booted),$(clone 4 Shutdown),$pool]}}" >"$WORK/clones-during"
 : >"$CALLS"
 if run_script WAYPOINT_TEST_DEVICES="$DEVICES" STUB_CLONES="$WORK/clones" \
     STUB_CLONES_DURING="$WORK/clones-during" >"$WORK/8c.log" 2>&1; then
-    shutdowns=$(grep "^xcrun simctl --set $DEVICES shutdown" "$CALLS" || true)
-    if [[ "$shutdowns" == "xcrun simctl --set $DEVICES shutdown CLONE-2" ]]; then
-        pass "a run shuts down only the copy it booted, by UDID"
+    touched=$(grep "^xcrun simctl --set $DEVICES \(shutdown\|delete\|erase\)" "$CALLS" | sort || true)
+    expected=$(printf '%s\n' "delete CLONE-3" "delete CLONE-4" "shutdown CLONE-3" "shutdown CLONE-4" |
+        sed "s|^|xcrun simctl --set $DEVICES |")
+    if [[ "$touched" == "$expected" ]]; then
+        pass "a run removes only the copies it made, by UDID"
     else
-        fail "a run shuts down only the copy it booted (calls: ${shutdowns:-none})"
+        fail "a run removes only the copies it made (calls: ${touched:-none})"
     fi
-    if ! grep -Eq "simctl (--set [^ ]+ )?(delete|erase)|shutdown all" "$CALLS"; then
-        pass "a run deletes no copy and never shuts everything down"
+    if ! grep -Eq "simctl (shutdown|delete|erase) .*(POOL-UDID|waypoint-0)|shutdown all|delete (all|unavailable)" "$CALLS"; then
+        pass "a run never removes a pool simulator or everything at once"
     else
-        fail "a run deletes no copy and never shuts everything down"
+        fail "a run never removes a pool simulator or everything at once"
     fi
 else
     fail "a run with simulator copies passes (log: $(tail -3 "$WORK/8c.log"))"

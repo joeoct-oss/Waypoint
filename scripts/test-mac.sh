@@ -76,7 +76,7 @@
 #                             Tuist's run report; unset for a merge batch of several branches.
 #   WAYPOINT_BASE             what the branch is compared with (default origin/main), for what
 #                             quick runs and whether selective testing is on.
-#   WAYPOINT_TEST_DEVICES     Xcode's own device set, where it keeps the simulator copies parallel
+#   WAYPOINT_TEST_DEVICES     Xcode's own device set, where it makes the simulator copies parallel
 #                             tests run on (default ~/Library/Developer/XCTestDevices).
 #   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
 #                             script's own checks set it, and WAYPOINT_RUN_LOCK_TEST_PAUSE.
@@ -342,29 +342,44 @@ report_memory() {
     echo "Memory $label: ${free_pages:+$((free_pages * 16384 / 1048576)) MB free, }swap ${swap:-unknown}"
 }
 
-# Xcode keeps the simulator copies parallel tests run on ("Clone N of <simulator>") in a device set
-# of its own and reuses them from run to run; Xcode's own test runs use the same copies. A run
-# remembers which of them were booted when it started, and at the end shuts down, by UDID, only the
-# ones booted since. It never deletes a copy, so the next run doesn't have to clone again, and it
-# never touches the pool simulators (planning #489).
+# Xcode makes the simulator copies parallel tests run on ("Clone N of <simulator>") in a device set of
+# its own, new for every run, and leaves one of them behind each time, shut down, as big as the
+# simulator it copies (measured 2026-11-25: 43 copies of about 20 GB each, none reused). A run
+# remembers which copies were there when it started, and at the end shuts down and deletes, by UDID,
+# only the copies made since. A copy that was there before, such as one Xcode's own test run is
+# using, and the pool simulators are never touched, and nothing runs `shutdown all` (planning #489).
 TEST_DEVICES="${WAYPOINT_TEST_DEVICES:-$HOME/Library/Developer/XCTestDevices}"
-CLONES_BOOTED_AT_START=""
-booted_clones() {
+CLONES_AT_START=""
+clones() {
     [[ -d "$TEST_DEVICES" ]] || return 0
     xcrun simctl --set "$TEST_DEVICES" list devices -j 2>/dev/null |
         /usr/bin/python3 -c 'import json,sys
 for r in json.load(sys.stdin).get("devices", {}).values():
     for x in r:
-        if x.get("state") == "Booted" and x.get("name", "").startswith("Clone "): print(x["udid"])' 2>/dev/null || true
+        if x.get("name", "").startswith("Clone "): print(x["udid"])' 2>/dev/null || true
 }
-shut_down_own_clones() {
+remove_own_clones() {
     local udid
-    for udid in $(booted_clones); do
-        if ! grep -qx "$udid" <<<"$CLONES_BOOTED_AT_START"; then
-            echo "Shutting down simulator copy $udid, booted by this run"
+    for udid in $(clones); do
+        if ! grep -qx "$udid" <<<"$CLONES_AT_START"; then
+            echo "Removing simulator copy $udid, made by this run"
             xcrun simctl --set "$TEST_DEVICES" shutdown "$udid" >/dev/null 2>&1 || true
+            xcrun simctl --set "$TEST_DEVICES" delete "$udid" >/dev/null 2>&1 || true
         fi
     done
+}
+
+# Xcode copies the project simulator for every worker, so the larger its data, the longer each copy
+# takes: on 2026-11-25 waypoint-01 held 21 GB, 16 GB of it the wallpaper store, and each copy took
+# 33 to 72 s, one after another. Only a report: it never fails the run or changes the simulator.
+SIMULATOR_DATA_WARN_GB=5
+report_simulator_size() {
+    local udid="$1" name="$2" kb
+    kb=$(du -sk "$HOME/Library/Developer/CoreSimulator/Devices/$udid/data" 2>/dev/null | cut -f1 || true)
+    [[ -n "$kb" ]] || return 0
+    if [[ $((kb / 1048576)) -ge $SIMULATOR_DATA_WARN_GB ]]; then
+        echo "warning: $name holds $((kb / 1048576)) GB of data, so each simulator copy is slow to make; erase it with \`xcrun simctl erase $name\` when no run uses it" >&2
+    fi
 }
 
 finish() {
@@ -380,7 +395,7 @@ finish() {
         xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true
     done
     if $OWNS_RUN_LOCK; then
-        shut_down_own_clones
+        remove_own_clones
     fi
     for lock in ${LOCK_DIRS[@]+"${LOCK_DIRS[@]}"}; do
         rm -rf "$lock"
@@ -473,7 +488,7 @@ take_run_lock() {
 if ! $PLAN_ONLY; then
     take_run_lock
     report_memory "at the start"
-    CLONES_BOOTED_AT_START=$(booted_clones)
+    CLONES_AT_START=$(clones)
 fi
 # The result bundles of an earlier run would show in this run's report.
 rm -rf "$RESULTS_DIR"
@@ -893,6 +908,9 @@ fi
 if $RUN_SIMULATOR || $RUN_UI; then
     UDID=$(project_simulator_udid)
     claim_simulator "$SIMULATOR_NAME" "$UDID"
+    if $RUN_UI && [[ "$UI_WORKERS" -gt 1 ]]; then
+        report_simulator_size "$UDID" "$SIMULATOR_NAME"
+    fi
 fi
 
 if $RUN_SIMULATOR; then
