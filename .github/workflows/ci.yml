@@ -1,13 +1,18 @@
-# Runs the Linux checks (scripts/test-linux.sh) on pull requests to main.
+# Runs the Linux checks (scripts/test-linux.sh) on pull requests to main, in two parts: the script
+# checks, which need no Swift, on the runner host in the first job, and the Swift part in the
+# swift:6.4 container.
 # Every job runs on Tuist runners (`tuist-linux`, planning #433), not GitHub-hosted runners, so CI uses the
 # Tuist account's Linux minutes instead of GitHub Actions minutes. Built to use few of them:
 # - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
 # - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**, docs-theme/**)
 #   skips both Swift jobs, which GitHub counts as passed; the first job, "Changed files and docs
-#   checks" (a required check too), still runs the two checks that read docs. If that job fails,
-#   the Swift jobs run anyway,
+#   checks" (a required check too), still runs the two checks that read docs. On any other pull
+#   request it runs every script check, once. If that job fails, the Swift jobs run anyway,
 # - a newer push cancels the run still going for the same PR,
-# - the SwiftPM build folder is cached between runs.
+# - the SwiftPM build folder is cached between runs, keyed by Package.swift and Package.resolved
+#   only, so a pull request saves it once and later pushes restore it without saving again,
+# - the script checks run on the runner host, which has bash, git, perl, python3 and procps, so
+#   the Swift container installs nothing.
 # A second job builds the package with Swift 6.2, the minimum Package.swift declares (build only, no tests).
 # The Mac stays the full test gate (scripts/test-mac.sh, see TESTING.md); there is no macOS job here.
 # Switched off unless the repository variable CI_ENABLED is "true".
@@ -31,7 +36,7 @@ jobs:
     name: Changed files and docs checks
     if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
     runs-on: tuist-linux
-    timeout-minutes: 5
+    timeout-minutes: 10
     outputs:
       code: ${{ steps.files.outputs.code }}
     steps:
@@ -60,13 +65,17 @@ jobs:
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "Swift jobs run: $code"
 
-      # The two Linux checks that read Markdown need no Swift, so they run here on every pull
-      # request, docs only included. scripts/test-linux.sh runs them again with the rest.
-      - name: Check comment line width
-        run: scripts/check-comment-width.sh
+      # The script checks need no Swift, so they run here, each once. A docs only pull request
+      # runs only the two that read Markdown; any other runs all of them.
+      - name: Check comment line width and one import in docs
+        if: steps.files.outputs.code == 'false'
+        run: |
+          scripts/check-comment-width.sh
+          scripts/check-single-import.sh
 
-      - name: Check that app code and docs snippets import Waypoint once
-        run: scripts/check-single-import.sh
+      - name: Run the Linux script checks
+        if: steps.files.outputs.code == 'true'
+        run: scripts/test-linux.sh --checks-only
 
   linux:
     name: Linux checks
@@ -82,38 +91,24 @@ jobs:
       image: swift:6.4
       # The thread sanitizer turns off address randomization for itself, which Docker's default
       # seccomp profile forbids; without this it stops with "incompatible memory layout".
-      # --init runs a small init process as PID 1, which reaps the processes the run lock check
-      # stops; without it they stay as zombies and that check waits on them.
-      options: --security-opt seccomp=unconfined --init
+      options: --security-opt seccomp=unconfined
     steps:
       - name: Check out
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install the tools the check scripts use
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          missing=""
-          command -v pgrep >/dev/null && command -v pkill >/dev/null && command -v ps >/dev/null \
-            || missing="$missing procps"
-          [ -x /usr/bin/python3 ] || missing="$missing python3"
-          command -v perl >/dev/null || missing="$missing perl"
-          if [ -n "$missing" ]; then
-            apt-get update -qq
-            apt-get install -y -qq $missing
-          fi
-
       - name: Restore the build cache
         uses: actions/cache@v4
         with:
           path: .build
-          key: linux-swift-6.4-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ github.sha }}
+          key: linux-swift-6.4-${{ hashFiles('Package.swift', 'Package.resolved') }}
           restore-keys: |
-            linux-swift-6.4-${{ hashFiles('Package.swift', 'Package.resolved') }}-
+            linux-swift-6.4-
 
-      - name: Run the Linux checks
-        run: scripts/test-linux.sh
+      # The first job ran the script checks, so this runs only the Swift part.
+      - name: Run the Linux Swift checks
+        run: scripts/test-linux.sh --swift-only
 
   minimum-swift:
     name: Builds with Swift 6.2
@@ -134,9 +129,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .build
-          key: linux-swift-6.2-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ github.sha }}
+          key: linux-swift-6.2-${{ hashFiles('Package.swift', 'Package.resolved') }}
           restore-keys: |
-            linux-swift-6.2-${{ hashFiles('Package.swift', 'Package.resolved') }}-
+            linux-swift-6.2-
 
       - name: swift build
         run: swift build
