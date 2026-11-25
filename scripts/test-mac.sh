@@ -683,8 +683,10 @@ example_tests_on() {
         off) tuist_flags=(--no-selective-testing --skip-quarantine) ;;
         on) tuist_flags=(--skip-quarantine) ;;
     esac
-    # `Example/Tuist.swift` turns the binary cache's default profile on only with
-    # TUIST_WAYPOINT_BINARY_CACHE=1; everywhere else the package builds from source.
+    # TUIST_WAYPOINT_BINARY_CACHE=1 turns on the default profile in `Example/Tuist.swift`, which
+    # decides `tuist generate` and `tuist cache` only. `tuist test` ignores it and takes as a binary
+    # every target outside the tests it runs (planning #445). What keeps a run on source is
+    # `--no-binary-cache` below, and `--destination simulator` is what lets a binary be found.
     local -x TUIST_WAYPOINT_BINARY_CACHE=0
     # `tuist test` sends this run's results to Test Insights itself, so the scheme's test
     # post-action, which sends them for runs in Xcode, skips (planning #456). It goes to xcodebuild as
