@@ -100,7 +100,8 @@ extension XCUIApplication {
 extension XCUIElement {
     // Waits for the element, fails the test if it never shows, and taps it. On a loaded Mac iOS's
     // save password offer can come after `closeSavePasswordOffer()` stopped waiting and cover the
-    // app (planning #479), so a late offer is closed first. `reveal(_:)` does the same.
+    // app (planning #479), so a late offer is closed first. `reveal(_:)` and `goBack()` do the
+    // same.
     @MainActor
     func tapWhenReady(
         file: StaticString = #filePath,
@@ -189,6 +190,7 @@ extension XCUIApplication {
     // when no Back is hittable, the first one that shows is tapped by its middle.
     @MainActor
     func goBack() {
+        closeLateSavePasswordOffer()
         let backs = navigationBars.allElementsBoundByIndex.map { bar in
             let back = bar.buttons[UITestSteps.backButtonID]
             return back.exists ? back : bar.buttons.element(boundBy: 0)

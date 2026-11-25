@@ -59,6 +59,7 @@ final class NestedSheetTests: XCTestCase {
 
         let done = app.buttons[Identifiers.signedInDone]
         XCTAssertTrue(done.waitForExistence(timeout: UITestSteps.timeout), "signing in didn't show Signed in")
+        app.closeLateSavePasswordOffer()
         done.tap()
 
         let wishlist = app.descendants(matching: .any)[Identifiers.wishlist]
