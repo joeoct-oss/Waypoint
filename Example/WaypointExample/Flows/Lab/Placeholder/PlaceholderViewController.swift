@@ -11,20 +11,20 @@ import ExampleDesignSystem
 import UIKit
 
 // The UIKit placeholder for a flow: the same content as `PlaceholderView`, built with UIKit views.
-final class PlaceholderViewController: UIViewController {
+package final class PlaceholderViewController: UIViewController {
     private let entry: FlowEntry
 
-    init(entry: FlowEntry) {
+    package init(entry: FlowEntry) {
         self.entry = entry
         super.init(nibName: nil, bundle: nil)
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    package required init?(coder: NSCoder) {
         fatalError("PlaceholderViewController is built in code")
     }
 
-    override func viewDidLoad() {
+    package override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Palette.background.uiColor
         view.accessibilityIdentifier = Identifiers.placeholder(entry)

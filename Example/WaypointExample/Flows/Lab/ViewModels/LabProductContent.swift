@@ -14,16 +14,16 @@ import SwiftUI
 // The demo product page every navigation style draws: the Orbit Lamp, a note on who pushes, and
 // Reviews (when the style shows them) and Add to cart at the bottom. The content only reports taps;
 // each style's view decides what a tap does.
-struct LabProductContent: View {
-    static let product = Product.all[0]
+package struct LabProductContent: View {
+    package static let product = Product.all[0]
 
-    let note: String
-    let detail: String
-    let isLoadingReviews: Bool
-    let onReviews: (() -> Void)?
-    let onAddToCart: () -> Void
+    package let note: String
+    package let detail: String
+    package let isLoadingReviews: Bool
+    package let onReviews: (() -> Void)?
+    package let onAddToCart: () -> Void
 
-    var body: some View {
+    package var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 picture
@@ -89,11 +89,11 @@ struct LabProductContent: View {
 }
 
 // A note in the Lab's demos: a bold line saying what happened, and a line saying why.
-struct LabNote: View {
-    let title: String
-    let detail: String
+package struct LabNote: View {
+    package let title: String
+    package let detail: String
 
-    var body: some View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: Spacing.extraSmall) {
             Text(title)
                 .font(Typography.callout.weight(.semibold))
@@ -110,8 +110,8 @@ struct LabNote: View {
 }
 
 // The demo cart the product pushes, in every style.
-struct LabCartView: View {
-    var body: some View {
+package struct LabCartView: View {
+    package var body: some View {
         ContentUnavailableView(
             "Added to cart",
             systemImage: "cart.badge.plus",
@@ -122,8 +122,8 @@ struct LabCartView: View {
 }
 
 // The demo reviews the product's view model pushes once they load.
-struct LabReviewsView: View {
-    var body: some View {
+package struct LabReviewsView: View {
+    package var body: some View {
         ContentUnavailableView(
             "4.8 out of 5",
             systemImage: "star.bubble",

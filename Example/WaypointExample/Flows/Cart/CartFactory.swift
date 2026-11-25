@@ -14,16 +14,16 @@ import Waypoint
 // Builds the Cart tab and checkout from `CartDependencies`: the tab's coordinator, the cart, a new
 // checkout draft, the new address form and Order placed. The coordinator passes in what each
 // screen reports, so navigation stays in the coordinator.
-struct CartFactory {
+package struct CartFactory {
     private let dependencies: CartDependencies
 
-    init(dependencies: CartDependencies) {
+    package init(dependencies: CartDependencies) {
         self.dependencies = dependencies
     }
 
     // The Cart tab. Waypoint makes its router, which the main tabs make the stack every tab
     // shares. Keep shopping runs `onShopMore`.
-    func makeCoordinator(onShopMore: @escaping () -> Void) -> CartCoordinator {
+    package func makeCoordinator(onShopMore: @escaping () -> Void) -> CartCoordinator {
         CartCoordinator(
             dependencies: dependencies,
             factory: self,
@@ -31,7 +31,7 @@ struct CartFactory {
         )
     }
 
-    func makeCart(
+    package func makeCart(
         products: [Product],
         onCheckout: @escaping () -> Void,
         onShopMore: @escaping () -> Void
@@ -44,18 +44,18 @@ struct CartFactory {
     }
 
     // A new checkout, from the cart as the store keeps it now.
-    func makeCheckoutBuilder() -> CheckoutBuilder {
+    package func makeCheckoutBuilder() -> CheckoutBuilder {
         CheckoutBuilder(dependencies: dependencies)
     }
 
-    func makeAddAddress(onSave: @escaping (Address, Bool) -> Void) -> AddAddressView {
+    package func makeAddAddress(onSave: @escaping (Address, Bool) -> Void) -> AddAddressView {
         AddAddressView(
             asksToKeep: true,
             onSave: onSave
         )
     }
 
-    func makeOrderPlaced(onContinueShopping: @escaping () -> Void) -> OrderPlacedView {
+    package func makeOrderPlaced(onContinueShopping: @escaping () -> Void) -> OrderPlacedView {
         OrderPlacedView(onContinueShopping: onContinueShopping)
     }
 }

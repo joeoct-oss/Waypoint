@@ -13,17 +13,17 @@ import SwiftUI
 
 // The banner at the top of Shop for a new collection: a night-sky gradient with the collection's
 // name, its tagline and a small constellation. The banner reports a tap.
-struct CollectionBanner: View {
+package struct CollectionBanner: View {
     private static let skyColors = [
         Color(artHex: 0x1B1F4A),
         Color(artHex: 0x4F5BD5),
         Color(artHex: 0xD62F86),
     ]
 
-    let collection: ProductCollection
-    let onSelect: () -> Void
+    package let collection: ProductCollection
+    package let onSelect: () -> Void
 
-    var body: some View {
+    package var body: some View {
         Button(action: onSelect) {
             content
         }

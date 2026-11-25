@@ -12,12 +12,12 @@ import SwiftUI
 
 // One flow in the SwiftUI branch: its icon, name and summary, and a button for each kind. The row
 // reports the entry the reader picks.
-struct FlowRow: View {
-    let branch: Branch
-    let flow: ExampleFlow
-    let onSelect: (FlowEntry) -> Void
+package struct FlowRow: View {
+    package let branch: Branch
+    package let flow: ExampleFlow
+    package let onSelect: (FlowEntry) -> Void
 
-    var body: some View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: Spacing.medium) {
             HStack(spacing: Spacing.medium) {
                 icon

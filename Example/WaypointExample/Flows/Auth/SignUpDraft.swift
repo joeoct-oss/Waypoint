@@ -14,30 +14,30 @@ import Observation
 // Conformances:
 // - `Observable` (from `@Observable`), so each step redraws as its fields change.
 @Observable
-final class SignUpDraft {
-    static let codeLength = 6
+package final class SignUpDraft {
+    package static let codeLength = 6
 
     // `var` because the details step's fields write it.
-    var name: String
+    package var name: String
     // `var` because the details step's fields write it.
-    var email: String
+    package var email: String
     // `var` because the password step's field writes it.
-    var password: String
+    package var password: String
     // `var` because the password step's toggle writes it.
-    var acceptsTerms: Bool
+    package var acceptsTerms: Bool
     // `var` because the check-your-email step's field writes it.
-    var code: String
+    package var code: String
 
-    var canContinueFromPassword: Bool {
+    package var canContinueFromPassword: Bool {
         acceptsTerms && !password.isEmpty
     }
 
     // The code from the email is six digits.
-    var hasFullCode: Bool {
+    package var hasFullCode: Bool {
         code.count == Self.codeLength && code.allSatisfy(\.isNumber)
     }
 
-    init() {
+    package init() {
         name = ""
         email = ""
         password = ""

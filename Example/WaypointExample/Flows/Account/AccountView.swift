@@ -15,16 +15,16 @@ import SwiftUI
 // prompt, then Orders and Wish list with their counts, Addresses for a signed-in reader, and
 // Settings. For a guest, Orders and Wish list say "Needs an account". The screen reports each
 // choice; the account coordinator decides what needs an account. Sign out lives in Settings.
-struct AccountView: View {
+package struct AccountView: View {
     private static let needsAccount = "Needs an account"
 
-    let account: Account?
-    let wishlistCount: () -> Int
-    let onSignIn: () -> Void
-    let onShowOrders: () -> Void
-    let onShowWishlist: () -> Void
-    let onShowAddresses: () -> Void
-    let onShowSettings: () -> Void
+    package let account: Account?
+    package let wishlistCount: () -> Int
+    package let onSignIn: () -> Void
+    package let onShowOrders: () -> Void
+    package let onShowWishlist: () -> Void
+    package let onShowAddresses: () -> Void
+    package let onShowSettings: () -> Void
 
     // `var` because the wish list changes in other tabs, so the screen reads its count each time it
     // appears.
@@ -38,7 +38,7 @@ struct AccountView: View {
         account == nil ? Self.needsAccount : "\(savedCount) saved"
     }
 
-    var body: some View {
+    package var body: some View {
         List {
             Section {
                 header

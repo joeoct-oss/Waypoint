@@ -9,8 +9,11 @@
 # Checks that Tuist's selective testing sees every part of the package (planning #429). Selective testing
 # skips a test target that already passed with the same hash, so the hash must change whenever
 # something the tests run changes. In a copy of the working tree, this adds a comment line to one
-# Swift file of each package module and of the example app, one at a time, and checks that each
-# edit changes the hashes of the example app and its unit tests. A docs edit must change neither.
+# Swift file of each package module and of the example app's parts, one at a time, and checks that
+# each edit changes the hash of every test target that uses that part, and of no other. The module
+# test targets (planning #445) run without the app, so an edit in a feature must leave the other
+# features' tests alone, or selective testing would never skip them. A docs edit must change no
+# hash.
 #
 # The same edits prove that Tuist's binary cache (planning #441) never hands a run a stale package
 # module: an edit in a module changes its cache key (`tuist hash cache`) and the keys of every
@@ -35,10 +38,42 @@ PROBED_PARTS=(
     Sources/WaypointOSLog
     Sources/Waypoint
     Sources/WaypointUIKit
-    Example/WaypointExample
+    Example/WaypointExample/App
+    Example/WaypointExample/Catalog
+    Example/WaypointExample/Services
+    Example/WaypointExample/Flows/Auth
+    Example/WaypointExample/Flows/Products
+    Example/WaypointExample/Flows/Lab
+    Example/WaypointExample/Flows/Cart
 )
-# The targets whose hashes must change with each of them.
-HASHED_TARGETS=(WaypointExample WaypointExampleTests)
+# The app and every unit test target, and the ones whose hashes an edit in each part must change:
+# every target that uses the part, directly or through a module. The others must keep theirs.
+APP_TARGETS="WaypointExample WaypointExampleTests"
+FEATURE_TESTS="ExampleAuthTests ExampleProductsTests ExampleLabTests ExampleCartTests"
+HASHED_TARGETS=(
+    WaypointExample
+    WaypointExampleTests
+    ExampleServicesTests
+    ExampleAuthTests
+    ExampleProductsTests
+    ExampleLabTests
+    ExampleCartTests
+)
+hashes_moved_by() {
+    case "$1" in
+        Sources/WaypointCore | Sources/WaypointOSLog | Sources/Waypoint)
+            echo $APP_TARGETS ExampleServicesTests $FEATURE_TESTS
+            ;;
+        Sources/WaypointUIKit | Example/WaypointExample/App) echo $APP_TARGETS ;;
+        Example/WaypointExample/Catalog) echo "${HASHED_TARGETS[@]}" ;;
+        Example/WaypointExample/Services) echo $APP_TARGETS ExampleServicesTests $FEATURE_TESTS ;;
+        Example/WaypointExample/Flows/Auth) echo $APP_TARGETS ExampleAuthTests ;;
+        Example/WaypointExample/Flows/Products) echo $APP_TARGETS ExampleProductsTests ;;
+        Example/WaypointExample/Flows/Lab) echo $APP_TARGETS ExampleLabTests ;;
+        Example/WaypointExample/Flows/Cart) echo $APP_TARGETS ExampleCartTests ;;
+        *) echo "" ;;
+    esac
+}
 # The package's modules, which the binary cache may take as binaries, and the modules whose cache
 # keys an edit in each one must change: the module itself and every module that depends on it.
 CACHED_MODULES=(WaypointCore WaypointOSLog Waypoint WaypointUIKit)
@@ -151,11 +186,22 @@ for part in "${PROBED_PARTS[@]}"; do
         continue
     fi
     after=$(hashes_after_edit "$file" "// selective testing probe")
+    hashed=" $(hashes_moved_by "$part") "
     for target in "${HASHED_TARGETS[@]}"; do
+        changed=false
         if [[ "$(grep "^$target " <<<"$BASE")" != "$(grep "^$target " <<<"$after")" ]]; then
-            pass "an edit in $part changes the hash of $target"
+            changed=true
+        fi
+        if [[ "$hashed" == *" $target "* ]]; then
+            if $changed; then
+                pass "an edit in $part changes the hash of $target"
+            else
+                fail "an edit in $part changes the hash of $target ($file)"
+            fi
+        elif $changed; then
+            fail "an edit in $part leaves the hash of $target alone ($file)"
         else
-            fail "an edit in $part changes the hash of $target ($file)"
+            pass "an edit in $part leaves the hash of $target alone"
         fi
     done
     moved=" $(cache_keys_moved_by "$part") "

@@ -10,11 +10,11 @@ import ExampleCatalog
 
 // The text a placeholder screen shows until its flow is built.
 extension FlowEntry {
-    var placeholderLine: String {
+    package var placeholderLine: String {
         "placeholder branch=\(branch.rawValue) flow=\(flow.rawValue) kind=\(kind.rawValue)"
     }
 
-    var placeholderNote: String {
+    package var placeholderNote: String {
         "This \(kind.title) flow is a placeholder. The real \(flow.title.lowercased()) flow replaces it."
     }
 }

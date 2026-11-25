@@ -27,7 +27,7 @@ import Waypoint
 // - `Observable` (from `@Observable`), so the Lab redraws when a demo opens or closes, and when a
 //   late result arrives.
 @Observable
-final class LabDemoCoordinator {
+package final class LabDemoCoordinator {
     private static let shopFlowID = FlowID("labShop")
     private static let defaultReviewsDelay = Duration.milliseconds(2500)
 
@@ -36,20 +36,20 @@ final class LabDemoCoordinator {
     private let reviewsDelay: Duration
     // `var` because `showDemo(_:)` and `dismissDemo()` change it, and `syncDemo(_:)` takes the
     // system's own dismissal.
-    private(set) var presentedDemo: LabDemo?
+    package private(set) var presentedDemo: LabDemo?
     // `var` because `showDemo(_:)` makes a fresh router for each demo and `releaseDemo()` drops it.
-    private(set) var router: StackRouter?
+    package private(set) var router: StackRouter?
     // `var` because `showDemo(_:)` makes the navigator demo's model and `releaseDemo()` drops it.
-    private(set) var productModel: LabProductModel?
+    package private(set) var productModel: LabProductModel?
     // `var` because `showDemo(_:)` makes the Detail push coordinator and `releaseDemo()` drops it.
-    private(set) var detailPush: DetailPushCoordinator?
+    package private(set) var detailPush: DetailPushCoordinator?
     // `var` because `showDemo(_:)` makes the Tabs story's coordinator and `releaseDemo()` drops it.
-    private(set) var tabsDemo: TabsDemoCoordinator?
+    package private(set) var tabsDemo: TabsDemoCoordinator?
     // `var` because `showDemo(_:)` makes the Sheet story's coordinator and `releaseDemo()` drops
     // it.
-    private(set) var sheetDemo: SheetDemoCoordinator?
+    package private(set) var sheetDemo: SheetDemoCoordinator?
     // `var` because `recordLateOutcome(_:)` keeps the newest result a closed demo's model reported.
-    private(set) var lateOutcome: String?
+    package private(set) var lateOutcome: String?
 
     private var closeItem: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
@@ -60,7 +60,7 @@ final class LabDemoCoordinator {
 
     // `LabFactory` makes it. `reviewsDelay` is how long the demo reviews take to load; `nil` keeps
     // the usual delay.
-    init(
+    package init(
         factory: LabFactory,
         navigation: NavigationConfiguration,
         reviewsDelay: Duration?
@@ -78,7 +78,7 @@ final class LabDemoCoordinator {
     }
 
     @ViewBuilder
-    func makeDemoFlow(for demo: LabDemo) -> some View {
+    package func makeDemoFlow(for demo: LabDemo) -> some View {
         switch demo {
         case .noRouter:
             makeNoRouterFlow()
@@ -97,7 +97,7 @@ final class LabDemoCoordinator {
 
     // Detail push, Tabs and Sheet make their own routers, so they get no stack router here and no
     // product model.
-    func showDemo(_ demo: LabDemo) {
+    package func showDemo(_ demo: LabDemo) {
         let ownsRouter = demo == .detailPush || demo == .tabs || demo == .sheet
         let router = ownsRouter ? nil : makeRouter()
         lateOutcome = nil
@@ -109,16 +109,16 @@ final class LabDemoCoordinator {
         presentedDemo = demo
     }
 
-    func dismissDemo() {
+    package func dismissDemo() {
         presentedDemo = nil
     }
 
-    func syncDemo(_ demo: LabDemo?) {
+    package func syncDemo(_ demo: LabDemo?) {
         presentedDemo = demo
     }
 
     // Drops the closed demo's router and model, once the cover has gone.
-    func releaseDemo() {
+    package func releaseDemo() {
         router = nil
         productModel = nil
         detailPush = nil
@@ -126,7 +126,7 @@ final class LabDemoCoordinator {
         sheetDemo = nil
     }
 
-    func recordLateOutcome(_ outcome: NavigationOutcome) {
+    package func recordLateOutcome(_ outcome: NavigationOutcome) {
         lateOutcome = outcome.description
     }
 
@@ -259,7 +259,7 @@ final class LabDemoCoordinator {
 // Conformances:
 // - `Hashable`, so `.fullScreenCover(item:)` can tell one demo from another.
 // - `Identifiable`, so `.fullScreenCover(item:)` shows one demo at a time.
-enum LabDemo: Hashable, Identifiable {
+package enum LabDemo: Hashable, Identifiable {
     case style(NavigationStyle)
     case lateResult
     case noRouter
@@ -267,7 +267,7 @@ enum LabDemo: Hashable, Identifiable {
     case tabs
     case sheet
 
-    var id: Self {
+    package var id: Self {
         self
     }
 }

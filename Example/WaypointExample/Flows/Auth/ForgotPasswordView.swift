@@ -13,15 +13,15 @@ import SwiftUI
 // email to the accounts coordinator, which asks the auth service to send the link, and turns the
 // sheet into its Link sent state. Done there (or Cancel before sending) reports to the coordinator,
 // which closes the sheet.
-struct ForgotPasswordView: View {
-    let onSend: (String) -> Void
-    let onDone: () -> Void
-    let onCancel: () -> Void
+package struct ForgotPasswordView: View {
+    package let onSend: (String) -> Void
+    package let onDone: () -> Void
+    package let onCancel: () -> Void
 
     @State private var email = ""
     @State private var isSent = false
 
-    var body: some View {
+    package var body: some View {
         content
             .navigationTitle(isSent ? "Link sent" : "Reset password")
             .navigationBarTitleDisplayMode(.inline)

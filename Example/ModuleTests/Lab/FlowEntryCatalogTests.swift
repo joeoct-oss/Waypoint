@@ -1,14 +1,14 @@
 //
 //  FlowEntryCatalogTests.swift
-//  WaypointExampleTests
+//  ExampleLabTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
 import ExampleCatalog
+import ExampleLab
 import Testing
-@testable import WaypointExample
 
 // The Navigation Lab's catalog: twenty entries, each a flow of one kind on one branch. Only the
 // three flows built so far run a demo; every other entry opens its own placeholder, which names the

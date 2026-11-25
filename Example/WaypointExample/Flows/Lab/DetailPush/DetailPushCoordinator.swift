@@ -28,7 +28,7 @@ import Waypoint
 // - `StackCoordinator`, so Waypoint makes, names and keeps its router, and draws its screens.
 // - `Observable` (from `@Observable`), so the demo redraws when a toast appears or goes.
 @Observable
-final class DetailPushCoordinator: StackCoordinator {
+package final class DetailPushCoordinator: StackCoordinator {
     private static let flowID = FlowID("detailPush")
     private static let toastDuration = Duration.seconds(4)
     private static let missingCartTitle = "Cart wasn't in the stack"
@@ -38,18 +38,18 @@ final class DetailPushCoordinator: StackCoordinator {
     private let onClose: () -> Void
     // `var` because `backToCart()` shows a toast for a recovered pop, and the toast's timer hides
     // it.
-    private(set) var toast: RecoveredToastContent?
+    package private(set) var toast: RecoveredToastContent?
     // `var` because each toast replaces the timer of the one before it.
     private var toastTimer: Task<Void, Never>?
     // `var` because the review flow finishes with the stars posted for each product. Only
     // `reviewEnded(_:for:)` changes it.
-    private(set) var postedReviews: [Int: Int]
+    package private(set) var postedReviews: [Int: Int]
 
-    var rootName: String {
+    package var rootName: String {
         MainTab.shop.title
     }
 
-    var root: some View {
+    package var root: some View {
         factory.makeDetailPushList(
             onSelect: { self.showProduct($0) },
             onClose: { self.close() }
@@ -62,13 +62,13 @@ final class DetailPushCoordinator: StackCoordinator {
         )
     }
 
-    var destinations: some Destinations {
+    package var destinations: some Destinations {
         Destination(DetailProductRoute.self) { self.makeProductScreen($0) }
         Destination(DetailCartRoute.self) { self.makeCartScreen($0) }
     }
 
     // `LabFactory` makes it, and builds its screens and the review flow.
-    init(
+    package init(
         factory: LabFactory,
         navigation: NavigationConfiguration,
         onClose: @escaping () -> Void
@@ -81,14 +81,14 @@ final class DetailPushCoordinator: StackCoordinator {
         postedReviews = [:]
     }
 
-    func makeRouter() -> StackRouter {
+    package func makeRouter() -> StackRouter {
         let router = StackRouter(flow: Self.flowID, configuration: navigation)
         router.declareFlow(DetailPushFlow.self)
         return router
     }
 
     @ViewBuilder
-    func makeProductScreen(_ route: DetailProductRoute) -> some View {
+    package func makeProductScreen(_ route: DetailProductRoute) -> some View {
         let screen = factory.makeDetailPushProduct(
             for: route,
             postedReview: { self.postedReviews[$0.id] },
@@ -107,7 +107,7 @@ final class DetailPushCoordinator: StackCoordinator {
     }
 
     @ViewBuilder
-    func makeCartScreen(_ route: DetailCartRoute) -> some View {
+    package func makeCartScreen(_ route: DetailCartRoute) -> some View {
         if let screen = factory.makeDetailPushCart(for: route) {
             screen.screenChrome(
                 title: "Cart",
@@ -118,27 +118,27 @@ final class DetailPushCoordinator: StackCoordinator {
         }
     }
 
-    func close() {
+    package func close() {
         onClose()
     }
 
-    func showProduct(_ product: Product) {
+    package func showProduct(_ product: Product) {
         router.push(DetailProductRoute(productID: product.id))
     }
 
-    func showCart(for product: Product) {
+    package func showCart(for product: Product) {
         router.push(DetailCartRoute(productID: product.id))
     }
 
     // Pushes the review flow above the product; its result comes back once.
-    func writeReview(for product: Product) {
+    package func writeReview(for product: Product) {
         router.push(factory.makeDetailReview(for: product)) { result in
             self.reviewEnded(result, for: product)
         }
     }
 
     // Keeps the stars a posted review gave; a review left with Back changes nothing.
-    func reviewEnded(_ result: FlowResult<Int>, for product: Product) {
+    package func reviewEnded(_ result: FlowResult<Int>, for product: Product) {
         guard case .finished(let rating) = result else {
             return
         }
@@ -146,7 +146,7 @@ final class DetailPushCoordinator: StackCoordinator {
     }
 
     // Pops to the cart, or back to the shop list when the cart isn't in the stack.
-    func backToCart() {
+    package func backToCart() {
         let outcome = router.popTo(DetailCartRoute.self, else: .popToRoot)
         showToast(for: outcome, title: Self.missingCartTitle)
     }

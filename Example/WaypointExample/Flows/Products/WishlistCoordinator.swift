@@ -23,22 +23,22 @@ import Waypoint
 //   Waypoint makes its router inside Shop's tree.
 // - `Observable` (from `@Observable`), so the wish list redraws when Save adds a product.
 @Observable
-final class WishlistCoordinator: FlowCoordinator {
+package final class WishlistCoordinator: FlowCoordinator {
     // The wish list finishes with nothing: Done and a swipe both just close it.
-    typealias Output = Void
+    package typealias Output = Void
 
     private let factory: ProductsFactory
     private let onCloseAll: () -> Void
     // `var` because Save adds a product; it copies the local store, which nothing observes, so the
     // open wish list redraws. Only `keep(_:)` changes it.
-    private(set) var productIDs: [Int]
+    package private(set) var productIDs: [Int]
 
     // The journey's name for the flow's only screen.
-    var rootName: String {
+    package var rootName: String {
         WishlistRoute.screenName
     }
 
-    var root: some View {
+    package var root: some View {
         factory.makeWishlist(
             productIDs: productIDs,
             onSave: { self.save($0) },
@@ -48,7 +48,7 @@ final class WishlistCoordinator: FlowCoordinator {
 
     // `ProductsFactory` makes it, hands it the store and the account gate, and builds its screen.
     // Done on Signed in runs `onCloseAll`.
-    init(
+    package init(
         factory: ProductsFactory,
         onCloseAll: @escaping () -> Void
     ) {
@@ -58,7 +58,7 @@ final class WishlistCoordinator: FlowCoordinator {
     }
 
     // Save under "You may also like": a guest signs in over the wish list first.
-    func save(_ product: Product) {
+    package func save(_ product: Product) {
         factory.dependencies.gate.requireAccount(
             for: .save,
             over: router,
@@ -68,7 +68,7 @@ final class WishlistCoordinator: FlowCoordinator {
     }
 
     // Done: the wish list's own router asks the stack that presented it to close it.
-    func done() {
+    package func done() {
         router.dismissFlow()
     }
 

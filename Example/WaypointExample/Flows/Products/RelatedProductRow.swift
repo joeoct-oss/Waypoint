@@ -12,10 +12,10 @@ import SwiftUI
 
 // A product the reader might also like, under a product's description: its illustration, name and
 // price, with a chevron, because a tap opens it.
-struct RelatedProductRow: View {
-    let product: Product
+package struct RelatedProductRow: View {
+    package let product: Product
 
-    var body: some View {
+    package var body: some View {
         HStack(spacing: Spacing.medium) {
             ProductIllustration(artwork: product.artwork, drawsBackdrop: true)
                 .frame(width: Size.rowIcon, height: Size.rowIcon)
