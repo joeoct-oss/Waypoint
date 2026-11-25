@@ -4,7 +4,7 @@ Pick the style that suits your team: outputs, injected navigators or property wr
 
 ## Overview
 
-> Note: Built in planning #279: the navigators, flow scoping, `WaypointStack(flow:)`, the navigator destination, `@StackNavigation`, `@FlowNavigation`, `@DismissFlow` and the preview helper. `@FinishFlow` lands with coordinators (planning #313) and `@TabSelection` with tabs (planning #267).
+> Note: Built in planning #279: the navigators, flow scoping, `WaypointStack(flow:)`, the navigator destination, `@StackNavigation`, `@FlowNavigation`, `@DismissFlow` and the preview helper. `@FinishFlow` landed with flow results (planning #314); `@TabSelection` lands with tabs (planning #267).
 
 There is one router and three ways to reach it. All three call the same router methods, so guards, events, outcomes and restoration behave the same whichever you use, and you can mix them in one app.
 
@@ -56,7 +56,7 @@ The view model imports only `WaypointCore` and is tested with a real router, on 
 
 ### Property wrappers
 
-They are thin, read the router from the environment, and hold no state of their own. All are optional. `@FinishFlow` is planned with coordinators (planning #313), and `@TabSelection` with tabs (planning #267).
+They are thin, read the router from the environment, and hold no state of their own. All are optional. `@TabSelection` is planned with tabs (planning #267).
 
 ```swift
 /// The nearest stack's navigator.
@@ -98,7 +98,7 @@ They are thin, read the router from the environment, and hold no state of their 
 @propertyWrapper public struct FinishFlow<Flow: FlowCoordinator>: DynamicProperty {
     public var wrappedValue: FinishFlowAction<Flow.Output> { get }
 
-    public init(_ flow: Flow.Type)
+    public init(_ flow: Flow.Type, file: StaticString = #fileID, line: UInt = #line)
 }
 
 /// The selected tab, settable. `$tab` is a `Binding`.
@@ -126,8 +126,19 @@ They are thin, read the router from the environment, and hold no state of their 
 /// - `Output: Sendable`, because the result travels from the child flow to the task that awaits
 ///   it.
 @MainActor public struct FinishFlowAction<Output: Sendable> {
-    public func callAsFunction(_ output: Output)
+    /// Whether the view is in a running flow of the coordinator's type.
+    public var isActive: Bool { get }
+
+    @discardableResult public func callAsFunction(_ output: Output) -> NavigationOutcome
 }
+```
+
+`@FinishFlow(ReviewCoordinator.self)` ends the nearest flow of `ReviewCoordinator` above the view, however deep the view is in it, as the coordinator's `finish(with:)` does: the parent gets `.finished(output)` in its `onFinish:` or its `await`, and the flow is dismissed, or popped when it was pushed. Only `ReviewCoordinator.Output` compiles. Outside that flow the call changes nothing and fails with `noRouterInScope`:
+
+```text
+@FinishFlow(ReviewCoordinator.self) in ReviewView.swift:12 found no ReviewCoordinator flow above
+its view, so nothing finished. Use it in a screen of ReviewCoordinator's flow, or call
+finish(with:) on the coordinator.
 ```
 
 ```swift

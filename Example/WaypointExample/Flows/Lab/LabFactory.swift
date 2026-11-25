@@ -236,13 +236,7 @@ package struct LabFactory {
         DetailReviewRatingView(onRate: onRate)
     }
 
-    package func makeDetailReviewNote(
-        rating: Int,
-        onPost: @escaping () -> Void
-    ) -> DetailReviewNoteView {
-        DetailReviewNoteView(
-            rating: rating,
-            onPost: onPost
-        )
+    package func makeDetailReviewNote(rating: Int) -> DetailReviewNoteView {
+        DetailReviewNoteView(rating: rating)
     }
 }

@@ -9,6 +9,7 @@
 import ExampleCatalog
 import ExampleDesignSystem
 import SwiftUI
+import Waypoint
 
 // The Write a review flow's first screen: one button for each number of stars, and a tap reports
 // the stars picked.
@@ -33,18 +34,21 @@ package struct DetailReviewRatingView: View {
     }
 }
 
-// The Write a review flow's note: the stars picked, and Post review, which finishes the flow.
+// The Write a review flow's note: the stars picked, and Post review, which finishes the flow from
+// the view with `@FinishFlow`. The action takes only the flow's `Output`, the stars.
 package struct DetailReviewNoteView: View {
     package let rating: Int
-    package let onPost: () -> Void
+
+    // `var` because a property wrapper needs one; it finds the review flow above the view.
+    @FinishFlow(DetailReviewCoordinator.self) private var finishFlow
 
     package var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 LabNote(
                     title: DetailReviewText.stars(rating),
-                    detail: "Post review calls finish(with:), which pops back to the product and "
-                        + "hands the stars to the Detail push flow."
+                    detail: "Post review calls this view's @FinishFlow action, which pops back to "
+                        + "the product and hands the stars to the Detail push flow."
                 )
             }
             .padding(Spacing.large)
@@ -58,7 +62,7 @@ package struct DetailReviewNoteView: View {
         PrimaryActionButton(
             title: "Post review",
             identifier: Identifiers.detailReviewPost,
-            action: onPost
+            action: { finishFlow(rating) }
         )
     }
 }

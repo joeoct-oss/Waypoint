@@ -87,4 +87,63 @@ extension StackRouter {
     ) -> NavigationOutcome {
         pushFlow(trigger: trigger, else: fallback, file: file, line: line, onFinish: onFinish, makeChild)
     }
+
+    /// Pushes the flow of `child`, a coordinator, on this stack, and returns the flow's result
+    /// once it ends.
+    ///
+    /// ```swift
+    /// if case .finished(let review) = await router.push(ReviewCoordinator(product: product)) {
+    ///     showThanks(for: review)
+    /// }
+    /// ```
+    ///
+    /// It returns what ``push(_:trigger:else:file:line:onFinish:)`` would give its `onFinish`:
+    /// `.finished(value)` when the child finishes, and `.cancelled` when the user goes back past
+    /// its first screen or this router changes its own path. A push that fails, is ignored or is
+    /// skipped as a double tap returns `.cancelled` at once. Cancelling the awaiting task returns
+    /// `.cancelled` at once and leaves the flow up, as for
+    /// `present(_:style:trigger:else:file:line:)`. A screen's `.task` is cancelled when the
+    /// pushed screen hides it, so await from the coordinator, and use the `onFinish:` form from a
+    /// screen.
+    ///
+    /// - Parameters:
+    ///   - child: The coordinator of the pushed flow.
+    ///   - trigger: What in the screen started it, written in the journey box. Default: `nil`.
+    ///   - fallback: What to do if the push fails. Default: the flow's policy.
+    ///   - file: The calling file, where an issue points. Leave the default.
+    ///   - line: The calling line, where an issue points. Leave the default.
+    /// - Returns: The flow's result, once it ends, or `.cancelled` when it never started.
+    public func push<Child: FlowCoordinator>(
+        _ child: Child,
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line
+    ) async -> FlowResult<Child.Output> {
+        await pushFlow(trigger: trigger, else: fallback, file: file, line: line) {
+            child
+        }
+    }
+
+    /// Pushes the flow of the coordinator `makeChild` returns on this stack, building it only
+    /// when the push happens, and returns the flow's result once it ends. A push that is refused
+    /// or skipped builds nothing and returns `.cancelled` at once. Otherwise this behaves as
+    /// ``push(_:trigger:else:file:line:)``.
+    ///
+    /// - Parameters:
+    ///   - trigger: What in the screen started it, written in the journey box. Default: `nil`.
+    ///   - fallback: What to do if the push fails. Default: the flow's policy.
+    ///   - file: The calling file, where an issue points. Leave the default.
+    ///   - line: The calling line, where an issue points. Leave the default.
+    ///   - makeChild: Builds the coordinator of the pushed flow.
+    /// - Returns: The flow's result, once it ends, or `.cancelled` when it never started.
+    public func push<Child: FlowCoordinator>(
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil,
+        file: StaticString = #fileID,
+        line: UInt = #line,
+        _ makeChild: @escaping @MainActor () -> Child
+    ) async -> FlowResult<Child.Output> {
+        await pushFlow(trigger: trigger, else: fallback, file: file, line: line, makeChild)
+    }
 }

@@ -13,13 +13,14 @@ import Testing
 import Waypoint
 
 // The Lab's Write a review flow, pushed on the Detail push stack (planning #313): its screens
-// follow the product on the parent's stack, Post review finishes with the stars and pops back to
-// the product, and the Detail push flow keeps the stars a posted review gave.
+// follow the product on the parent's stack, finishing with the stars pops back to the product, and
+// the Detail push flow keeps the stars a posted review gave. Post review finishes from the note
+// view with `@FinishFlow`, which the Lab's UI test drives (`LabTests`).
 struct DetailReviewCoordinatorTests {
     private static let productID = 1
     private static let rating = 4
 
-    @Test("Posting the review finishes with the stars and pops back")
+    @Test("The note shows on the review's own stack, and finishing with the stars pops back")
     func postingTheReviewFinishesWithTheStarsAndPopsBack() throws {
         let product = try #require(Product.find(id: Self.productID))
         let parent = StackRouter()
@@ -33,7 +34,7 @@ struct DetailReviewCoordinatorTests {
         }
         review.showNote(rating: Self.rating)
         let reviewPath = review.router.state.path
-        review.post(rating: Self.rating)
+        review.finish(with: Self.rating)
 
         #expect(outcome == .applied)
         let expectedReviewPath = [AnyRoute(DetailReviewNoteRoute(rating: Self.rating))]

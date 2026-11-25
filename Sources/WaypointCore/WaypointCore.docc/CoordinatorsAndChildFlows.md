@@ -30,7 +30,7 @@ A stack or flow coordinator doesn't declare its router. Waypoint makes it the fi
 
 > Warning: Don't read a coordinator's router in `deinit`. A coordinator going away gets an inert router: its calls return `.ignored` and log `staleNavigator`. A coordinator that subclasses `NSObject` traps there instead.
 
-Built so far in planning #313: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`; `TabCoordinating` in `WaypointCore` and `TabCoordinator` in `Waypoint`, with the router, `makeRouter()`, each tab's coordinator and `navigator(for:)`; and `FlowCoordinating` in `WaypointCore` and `FlowCoordinator` in `Waypoint`, with `finish(with:)`, presenting a child flow with `onFinish:` in both forms, and `FlowResult`; and, from planning #314, the `await` forms of `present` on stack and tab routers. The rest of this article is still planned.
+Built so far in planning #313: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`; `TabCoordinating` in `WaypointCore` and `TabCoordinator` in `Waypoint`, with the router, `makeRouter()`, each tab's coordinator and `navigator(for:)`; and `FlowCoordinating` in `WaypointCore` and `FlowCoordinator` in `Waypoint`, with `finish(with:)`, presenting a child flow with `onFinish:` in both forms, and `FlowResult`; and, from planning #314, the `await` forms of `present` on stack and tab routers, of `push` in `Waypoint`, and `@FinishFlow`. The rest of this article is still planned.
 
 There is one coordinator protocol for each kind, and it is the same in SwiftUI and UIKit apps. The `Waypoint` product adds the screens: `root` and `destinations`, which take SwiftUI views or UIKit view controllers, and `view`, the whole flow drawn by a renderer you can choose. See "Coordinators and renderers" in the `Waypoint` catalog. The parts below have no UI, so a coordinator's logic is tested on Linux.
 
@@ -303,7 +303,6 @@ Cancelling the task that awaits returns `.cancelled` at once and leaves the flow
 ```swift
 extension StackRouter {
     /// Presents a child flow, and returns its result once it ends.
-    @discardableResult
     public func present<Child: FlowCoordinating>(
         _ child: Child,
         style: PresentationStyle = .sheet,
@@ -312,7 +311,6 @@ extension StackRouter {
     ) async -> FlowResult<Child.Output>
 
     /// The same, building the child only when the present happens.
-    @discardableResult
     public func present<Child: FlowCoordinating>(
         style: PresentationStyle = .sheet,
         trigger: String? = nil,
@@ -322,7 +320,9 @@ extension StackRouter {
 }
 ```
 
-`TabRouter` has the same two forms, which present above the whole container.
+`TabRouter` has the same two forms, which present above the whole container. `Waypoint` adds the two `await` forms of `push`, `await router.push(child)` and `await router.push { child }`, for a `FlowCoordinator`. They return `.cancelled` at once for a push that is refused or skipped as a double tap. A screen's `.task` is cancelled when the pushed screen hides it, so await a push from the coordinator.
+
+A view inside the flow can end it too, without a closure from its coordinator: `@FinishFlow(ReviewCoordinator.self)` in `Waypoint` gives an action that takes only the flow's `Output` and does what `finish(with:)` does. See "Navigating from views and view models" in `Waypoint`.
 
 To start a flow without passing its coordinator, give it a `Flow(...)` entry and call `router.show(_:)`.
 
