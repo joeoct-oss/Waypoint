@@ -90,6 +90,8 @@
 #                             quick runs and whether selective testing is on.
 #   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
 #                             script's own checks set it, and WAYPOINT_RUN_LOCK_TEST_PAUSE.
+#   WAYPOINT_QUARANTINE_FILE  the quarantine list (default Example/quarantine.json); only the
+#                             script's own checks set it.
 
 set -euo pipefail
 
@@ -293,7 +295,7 @@ else
     EXAMPLE_RETRY_FLAGS=(-retry-tests-on-failure -test-iterations 2)
     RETRY=on
 fi
-QUARANTINE_FILE=Example/quarantine.json
+QUARANTINE_FILE="${WAYPOINT_QUARANTINE_FILE:-Example/quarantine.json}"
 # How many times in a row a stress run runs each quarantined test, after the full run's one try.
 STRESS_REPEATS=5
 
@@ -763,7 +765,7 @@ example_tests_on() {
 # printed, and listed in `.build/results/<bundle>-flaky.json` for the report. Without a result
 # bundle, or without results in it, the step's own status stands.
 judged_example_tests_on() {
-    local bundle="$RESULTS_DIR/$3.xcresult" status=0 status_after=0 results
+    local bundle="$RESULTS_DIR/$3.xcresult" status=0 status_after=0 results other_errors quarantine
     example_tests_on "$@" || status=$?
     if [[ ! -d "$bundle" ]]; then
         return "$status"
@@ -774,10 +776,42 @@ judged_example_tests_on() {
         echo "note: no test results in $bundle to judge; the step's own status stands"
         return "$status"
     fi
-    scripts/flaky-tests.py --step-status "$status" --quarantine "$QUARANTINE_FILE" \
+    # A build error the bundle records is a failure outside the tests, so the tests can't excuse it.
+    other_errors=$(xcrun xcresulttool get build-results --path "$bundle" 2>/dev/null |
+        /usr/bin/python3 -c 'import json,sys; print(int(json.load(sys.stdin).get("errorCount", 0)))' \
+            2>/dev/null || true)
+    [[ "$other_errors" =~ ^[0-9]+$ ]] || other_errors=0
+    # `--only` is how a person looks at one test, so the quarantine never excuses it there.
+    quarantine=()
+    if [[ -z "$ONLY_TEST" ]]; then
+        quarantine=(--quarantine "$QUARANTINE_FILE")
+    fi
+    scripts/flaky-tests.py --step-status "$status" --other-errors "$other_errors" \
+        ${quarantine[@]+"${quarantine[@]}"} \
         --out "$RESULTS_DIR/$3-flaky.json" <"$results" || status_after=$?
     rm -f "$results"
     return "$status_after"
+}
+
+# In a stress run, a failed example step is written down and the run goes on, so one flake of
+# another test (no retry, 4 workers) never stops the night before the quarantined tests' repeats.
+# The run still fails at its end ("Checking the stress run's example steps"). Other tiers run the
+# command as it is.
+STRESS_FAILED_STEPS="$RESULTS_DIR/stress-failed-steps"
+stress_carries_on() {
+    local status=0
+    "$@" || status=$?
+    if [[ "$TIER" != stress || $status -eq 0 ]]; then
+        return "$status"
+    fi
+    echo "$4 (status $status)" >>"$STRESS_FAILED_STEPS"
+    echo "note: $4 failed (status $status); a stress run carries on to the quarantined tests"
+}
+stress_failed_steps() {
+    [[ -f "$STRESS_FAILED_STEPS" ]] || return 0
+    echo "error: these example steps failed earlier in the stress run:" >&2
+    sed 's/^/  /' "$STRESS_FAILED_STEPS" >&2
+    return 1
 }
 
 # What this run does.
@@ -940,7 +974,7 @@ if $RUN_UI; then
             judged_example_tests_on "$UDID" "$SIMULATOR_NAME" example-only --test-targets "$ONLY_TEST"
     else
         step "tuist test example app on $SIMULATOR_NAME" \
-            judged_example_tests_on "$UDID" "$SIMULATOR_NAME" example
+            stress_carries_on judged_example_tests_on "$UDID" "$SIMULATOR_NAME" example
     fi
 fi
 
@@ -997,10 +1031,14 @@ release_reports_on() {
 }
 if $RUN_RELEASE_REPORTS; then
     step "tuist test release reports (Release) on $SIMULATOR_NAME" \
-        release_reports_on "$UDID" "$SIMULATOR_NAME" release-reports \
+        stress_carries_on release_reports_on "$UDID" "$SIMULATOR_NAME" release-reports \
         --configuration Release \
         --test-targets WaypointExampleUITests/SystemLinkTests \
         --test-targets WaypointExampleUITests/MissingDestinationTests
+fi
+
+if [[ "$TIER" == stress ]]; then
+    step "Checking the stress run's example steps" stress_failed_steps
 fi
 
 # The minimum iOS version runs last, on its own simulator, which the script never creates: it

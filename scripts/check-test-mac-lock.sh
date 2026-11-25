@@ -62,6 +62,10 @@ if [[ "$*" == "xcresulttool get test-results tests"* ]]; then
     [[ -n "${STUB_BUNDLE_JSON:-}" ]] && cat "$STUB_BUNDLE_JSON"
     exit 0
 fi
+if [[ "$*" == "xcresulttool get build-results"* ]]; then
+    echo "{\"errorCount\": ${STUB_BUILD_ERRORS:-0}}"
+    exit 0
+fi
 if [[ "$*" == *"list devices"* ]]; then
     echo '{"devices":{"com.apple.CoreSimulator.SimRuntime.iOS-27-2":[{"name":"waypoint-01","udid":"STUB-UDID","state":"Shutdown"}]}}'
 fi
@@ -369,6 +373,42 @@ if ! (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WA
 else
     fail "a stress run takes no pull request ($(cat "$WORK/stress-pr.log"))"
 fi
+
+# A stress run carries on past a failed example step, so one flake of another test never stops the
+# night before the quarantined tests' repeats, and still fails at its end. The copy's hash check is
+# a stand-in, since it needs the real Tuist.
+printf '#!/usr/bin/env bash\n' >"$TREE/scripts/check-selective-testing-hashes.sh"
+cat >"$WORK/stress-bundle.json" <<'JSON'
+{"testNodes": [{"nodeType": "UI test bundle", "name": "WaypointExampleUITests", "children": [
+  {"nodeType": "Test Suite", "name": "SheetTests", "children": [
+    {"nodeType": "Test Case", "name": "testOther()", "result": "Failed"}]}]}]}
+JSON
+cat >"$WORK/stress-quarantine.json" <<JSON
+{ "tests": [ { "test": "WaypointExampleUITests/StackTests/testPushAndBack", "issue": 1, "since": "$TODAY_DATE" } ] }
+JSON
+STRESS_STATUS=0
+: >"$CALLS"
+(cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" STUB_CALLS="$CALLS" \
+    WAYPOINT_RUN_LOCK="$LOCK" WAYPOINT_SIMULATOR=waypoint-01 WAYPOINT_BASE=HEAD \
+    STUB_BUNDLE_JSON="$WORK/stress-bundle.json" WAYPOINT_QUARANTINE_FILE="$WORK/stress-quarantine.json" \
+    scripts/test-mac.sh stress >"$WORK/stress.log" 2>&1) || STRESS_STATUS=$?
+git -C "$TREE" checkout -q -- scripts/check-selective-testing-hashes.sh
+if [[ $STRESS_STATUS -ne 0 ]] &&
+    grep -q "^note: example failed (status 1); a stress run carries on" "$WORK/stress.log" &&
+    grep -q "^==> tuist test WaypointExampleUITests/StackTests/testPushAndBack 5 times" "$WORK/stress.log" &&
+    grep -q "^  Failed: WaypointExampleUITests/SheetTests/testOther (example)" "$WORK/stress.log" &&
+    grep -q "^Mac tests failed (stress).$" "$WORK/stress.log"; then
+    pass "a stress run carries on past another test's failure to the repeats, and still fails at its end"
+else
+    fail "a stress run carries on past another test's failure (log: $(grep -E '^==>|note|error' "$WORK/stress.log" | tail -8))"
+fi
+if grep "^tuist test" "$CALLS" | grep "testPushAndBack" | grep -q -- "-test-iterations 5 -run-tests-until-failure" &&
+    ! grep "^tuist test" "$CALLS" | grep -q -- "-retry-tests-on-failure"; then
+    pass "a stress run repeats the quarantined test 5 times and never retries"
+else
+    fail "a stress run repeats the quarantined test 5 times and never retries"
+fi
+: >"$CALLS"
 
 expect_cache "a quick run uses the binary cache and doesn't warm it" \
     "binary cache on, warm binary cache false" quick
@@ -771,6 +811,24 @@ if ! run_script STUB_BUNDLE_JSON="$WORK/bundle.json" STUB_STATUS=0 >"$WORK/1j2.l
     pass "a UI test that failed both tries fails the run, whatever tuist test said"
 else
     fail "a UI test that failed both tries fails the run (log: $(tail -8 "$WORK/1j2.log"))"
+fi
+ui_tries_bundle Failed Passed
+if ! run_script STUB_BUNDLE_JSON="$WORK/bundle.json" STUB_BUILD_ERRORS=1 STUB_STATUS=65 \
+    >"$WORK/1j3.log" 2>&1 && grep -q "1 error(s) outside its tests" "$WORK/1j3.log"; then
+    pass "a build error in the bundle fails the run, even when its only failed test was flaky"
+else
+    fail "a build error in the bundle fails the run (log: $(tail -8 "$WORK/1j3.log"))"
+fi
+# `--only` is how a person looks at one test, so the quarantine never excuses it there.
+cat >"$WORK/quarantine.json" <<JSON
+{ "tests": [ { "test": "WaypointExampleUITests/StackTests/testPushAndBack", "issue": 1, "since": "$(date +%F)" } ] }
+JSON
+ui_tries_bundle Failed Failed
+if ! run_script STUB_BUNDLE_JSON="$WORK/bundle.json" WAYPOINT_QUARANTINE_FILE="$WORK/quarantine.json" \
+    STUB_STATUS=65 >"$WORK/1j4.log" 2>&1 && grep -q "failed every try" "$WORK/1j4.log"; then
+    pass "a quarantined test that fails under --only fails the run"
+else
+    fail "a quarantined test that fails under --only fails the run (log: $(tail -8 "$WORK/1j4.log"))"
 fi
 : >"$CALLS"
 
