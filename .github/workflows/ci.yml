@@ -42,7 +42,7 @@ jobs:
       code: ${{ steps.files.outputs.code }}
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -85,7 +85,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -111,12 +111,12 @@ jobs:
       options: --security-opt seccomp=unconfined
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Restore the build cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .build
           key: linux-swift-6.4-${{ hashFiles('Package.swift', 'Package.resolved') }}
@@ -140,10 +140,10 @@ jobs:
     container: swift:6.2
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Restore the build cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .build
           key: linux-swift-6.2-${{ hashFiles('Package.swift', 'Package.resolved') }}
