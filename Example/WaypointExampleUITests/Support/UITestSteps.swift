@@ -32,9 +32,12 @@ enum UITestSteps {
     // The identifier UIKit gives a navigation bar's Back button.
     static let backButtonID = "BackButton"
     // How long a step waits for iOS's offer to save a password after a sign in. iOS 27.2 offers
-    // it about 4.5 seconds after the tap, and the step goes on as soon as it shows. iOS 17.5
-    // never offers it, so there the step doesn't wait.
-    static let savePasswordOfferTimeout: TimeInterval = 10
+    // it about 4.5 seconds after the tap, and the step goes on as soon as it shows, so a passing
+    // test doesn't spend the rest. On a Mac under memory load it once came more than 10 s after
+    // the tap, after the step had stopped waiting, and covered the app for every later step
+    // (planning #479), so the step waits up to 20 s. iOS 17.5 never offers it, so there the step
+    // doesn't wait.
+    static let savePasswordOfferTimeout: TimeInterval = 20
     // The newest major iOS version that never offers to save a password.
     static let lastVersionWithoutSavePasswordOffer = 17
     static var offersToSavePassword: Bool {
