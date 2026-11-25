@@ -356,7 +356,9 @@ finish() {
     if $OWNS_RUN_LOCK; then
         report_slowest_tests
     fi
-    if [[ $status -eq 0 ]]; then
+    if [[ -n "$STOPPED_BY" ]]; then
+        echo "Mac tests stopped by $STOPPED_BY before they finished ($TIER)." >&2
+    elif [[ $status -eq 0 ]]; then
         echo "All Mac tests passed ($TIER)."
     else
         echo "Mac tests failed ($TIER)." >&2
@@ -367,6 +369,15 @@ finish() {
     fi
 }
 trap finish EXIT
+# A run stopped with TERM or Ctrl-C reports that it stopped, never that it passed: the EXIT trap alone
+# can see the status of the last command that finished, which is 0 while a step is being waited on.
+STOPPED_BY=""
+stop_run() {
+    STOPPED_BY="$1"
+    exit "$2"
+}
+trap 'stop_run TERM 143' TERM
+trap 'stop_run INT 130' INT
 
 # Whether `pid` is a running test-mac.sh, so a lock pointing at it is a live run's.
 is_test_run() {
