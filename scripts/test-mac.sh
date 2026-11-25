@@ -76,6 +76,8 @@
 #                             Tuist's run report; unset for a merge batch of several branches.
 #   WAYPOINT_BASE             what the branch is compared with (default origin/main), for what
 #                             quick runs and whether selective testing is on.
+#   WAYPOINT_TEST_DEVICES     Xcode's own device set, where it keeps the simulator copies parallel
+#                             tests run on (default ~/Library/Developer/XCTestDevices).
 #   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
 #                             script's own checks set it, and WAYPOINT_RUN_LOCK_TEST_PAUSE.
 
@@ -261,8 +263,10 @@ else
     EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled NO)
 fi
 
-# The steps run so far, with the seconds each took, printed when the script ends.
+# The steps run so far, with the clock time each started and the seconds it took, printed when the
+# script ends as the run's phase timeline (planning #489).
 STEP_NAMES=()
+STEP_STARTS=()
 STEP_SECONDS=()
 # The simulators this run booted or locked, released when the script ends.
 BOOTED_UDIDS=()
@@ -329,6 +333,40 @@ report_slowest_tests() {
     done
 }
 
+# Prints free memory and swap, so a report shows how loaded the Mac was (planning #489). Only a
+# report: it never fails the run, and prints nothing where the tools don't exist.
+report_memory() {
+    local label="$1" swap free_pages
+    swap=$(sysctl -n vm.swapusage 2>/dev/null || true)
+    free_pages=$(vm_stat 2>/dev/null | awk '/Pages free/ { gsub(/\./, "", $3); print $3 }' || true)
+    echo "Memory $label: ${free_pages:+$((free_pages * 16384 / 1048576)) MB free, }swap ${swap:-unknown}"
+}
+
+# Xcode keeps the simulator copies parallel tests run on ("Clone N of <simulator>") in a device set
+# of its own and reuses them from run to run; Xcode's own test runs use the same copies. A run
+# remembers which of them were booted when it started, and at the end shuts down, by UDID, only the
+# ones booted since. It never deletes a copy, so the next run doesn't have to clone again, and it
+# never touches the pool simulators (planning #489).
+TEST_DEVICES="${WAYPOINT_TEST_DEVICES:-$HOME/Library/Developer/XCTestDevices}"
+CLONES_BOOTED_AT_START=""
+booted_clones() {
+    [[ -d "$TEST_DEVICES" ]] || return 0
+    xcrun simctl --set "$TEST_DEVICES" list devices -j 2>/dev/null |
+        /usr/bin/python3 -c 'import json,sys
+for r in json.load(sys.stdin).get("devices", {}).values():
+    for x in r:
+        if x.get("state") == "Booted" and x.get("name", "").startswith("Clone "): print(x["udid"])' 2>/dev/null || true
+}
+shut_down_own_clones() {
+    local udid
+    for udid in $(booted_clones); do
+        if ! grep -qx "$udid" <<<"$CLONES_BOOTED_AT_START"; then
+            echo "Shutting down simulator copy $udid, booted by this run"
+            xcrun simctl --set "$TEST_DEVICES" shutdown "$udid" >/dev/null 2>&1 || true
+        fi
+    done
+}
+
 finish() {
     local status=$?
     local udid lock index
@@ -341,20 +379,25 @@ finish() {
     for udid in ${BOOTED_UDIDS[@]+"${BOOTED_UDIDS[@]}"}; do
         xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true
     done
+    if $OWNS_RUN_LOCK; then
+        shut_down_own_clones
+    fi
     for lock in ${LOCK_DIRS[@]+"${LOCK_DIRS[@]}"}; do
         rm -rf "$lock"
     done
     if [[ ${#STEP_NAMES[@]} -gt 0 ]]; then
         echo
-        echo "Step times ($TIER, $JOBS jobs):"
+        echo "Step times ($TIER, $JOBS jobs), with the clock time each started:"
         for index in "${!STEP_NAMES[@]}"; do
-            printf '  %5ss  %s\n' "${STEP_SECONDS[$index]}" "${STEP_NAMES[$index]}"
+            printf '  %s  %5ss  %s\n' "${STEP_STARTS[$index]}" "${STEP_SECONDS[$index]}" "${STEP_NAMES[$index]}"
         done
-        printf '  %5ss  total\n' "$SECONDS"
+        printf '  %s  %5ss  total\n' "$(date +%H:%M:%S)" "$SECONDS"
     fi
     # A run turned away at the run lock reports nothing of the run that holds it.
     if $OWNS_RUN_LOCK; then
         report_slowest_tests
+        echo
+        report_memory "at the end"
     fi
     if [[ $status -eq 0 ]]; then
         echo "All Mac tests passed ($TIER)."
@@ -429,6 +472,8 @@ take_run_lock() {
 }
 if ! $PLAN_ONLY; then
     take_run_lock
+    report_memory "at the start"
+    CLONES_BOOTED_AT_START=$(booted_clones)
 fi
 # The result bundles of an earlier run would show in this run's report.
 rm -rf "$RESULTS_DIR"
@@ -437,8 +482,9 @@ rm -rf "$RESULTS_DIR"
 step() {
     local name="$1"
     shift
-    echo "==> $name"
-    local start=$SECONDS status=0
+    local start=$SECONDS status=0 clock
+    clock=$(date +%H:%M:%S)
+    echo "==> $clock $name"
     # Each step runs in a process group of its own, so stopping the run stops everything the
     # step started, a script's own tools included (`stop_step_tools`).
     set -m
@@ -451,6 +497,7 @@ step() {
     fi
     STEP_PID=""
     STEP_NAMES+=("$name")
+    STEP_STARTS+=("$clock")
     STEP_SECONDS+=($((SECONDS - start)))
 }
 
@@ -880,6 +927,9 @@ release_reports_on() {
     local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
     local EXAMPLE_DERIVED_DATA="$RELEASE_REPORTS_DERIVED_DATA"
     local BINARY_CACHE=off
+    # Two test classes gain nothing from parallel workers, and each worker costs a simulator copy
+    # (planning #489), so they run on the project simulator itself.
+    local EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled NO)
     TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 example_tests_on "$@"
 }
 if $RUN_RELEASE_REPORTS; then
