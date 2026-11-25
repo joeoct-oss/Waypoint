@@ -13,9 +13,10 @@ import XCTest
 // account (Check out, Save, Orders) asks for one in a sheet, then carries on.
 @MainActor
 final class JourneyTests: XCTestCase {
-    // XCTest takes a few seconds to launch the app and wait for it to settle, longer than the usual
-    // splash, so the launch test holds the splash up for 5 seconds.
-    private static let splashSeconds = 5
+    // XCTest's launch returns only once the app settles, which takes a few seconds and, on a Mac
+    // under memory load, most of 5 (planning #479). The splash is timed from the app's start, so
+    // the launch test holds it up for 10 seconds, long enough to outlast a slow launch.
+    private static let splashSeconds = 10
     private static let shopTitle = "Shop"
     private static let searchTitle = "Search"
     private static let cartTitle = "Cart"
@@ -361,7 +362,7 @@ final class JourneyTests: XCTestCase {
         XCTAssertTrue(terms.waitForExistence(timeout: UITestSteps.timeout))
         // The terms sheet is locked (planning #412): a swipe leaves it, and only Done closes it.
         terms.swipeDown(velocity: .fast)
-        XCTAssertFalse(terms.waitForNonExistence(timeout: UITestSteps.timeout), "a swipe closed the terms")
+        XCTAssertFalse(terms.waitForNonExistence(timeout: UITestSteps.stayTime), "a swipe closed the terms")
         app.buttons[Identifiers.termsDone].tapWhenReady()
         XCTAssertTrue(terms.waitForNonExistence(timeout: UITestSteps.timeout), "Done didn't close the terms")
         app.switches[Identifiers.signUpAcceptTerms].turnOn()

@@ -34,7 +34,7 @@ final class LabSheetTests: XCTestCase {
         let first = level(1, in: app)
         XCTAssertTrue(first.waitForExistence(timeout: UITestSteps.timeout), "Present sheet opened nothing")
         first.swipeDown(velocity: .fast)
-        XCTAssertFalse(first.waitForNonExistence(timeout: UITestSteps.timeout), "a swipe closed a locked sheet")
+        XCTAssertFalse(first.waitForNonExistence(timeout: UITestSteps.stayTime), "a swipe closed a locked sheet")
 
         first.buttons[Identifiers.sheetDemoPresentOnTop].tapWhenReady()
         let second = level(2, in: app)

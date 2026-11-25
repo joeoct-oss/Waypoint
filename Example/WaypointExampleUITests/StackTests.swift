@@ -36,8 +36,6 @@ final class StackTests: XCTestCase {
         3,
     ]
 
-    // How long the screen gets to settle after a held change, which waits for the push to end.
-    private static let settleTimeout: TimeInterval = 3
     // How long a mid-transition test waits for its final screen, counted from the launch, so it
     // covers the app starting, the launch push and the held change on a busy Mac (planning #419). A
     // lost change never shows the final screen, so a longer wait can't turn a lost change into a
@@ -79,7 +77,7 @@ final class StackTests: XCTestCase {
         XCTAssertTrue(lampRow.waitForExistence(timeout: UITestSteps.timeout))
 
         lampRow.doubleTap()
-        XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: Self.settleTimeout))
+        XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: UITestSteps.timeout))
         app.goBack()
 
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
