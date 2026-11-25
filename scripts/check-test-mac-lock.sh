@@ -167,7 +167,8 @@ else
     fail "a quick run's example step may use the binary cache (call: $TUIST_CALL)"
 fi
 # `tuist test` sends its own results, so the scheme's Test Insights post-action must skip (planning #456).
-if grep -q "^WAYPOINT_TUIST_TEST_RUN seen by tuist test: 1$" "$CALLS"; then
+if grep -q "^WAYPOINT_TUIST_TEST_RUN seen by tuist test: 1$" "$CALLS" &&
+    [[ "$TUIST_CALL" == *" -- "*" WAYPOINT_TUIST_TEST_RUN=1"* ]]; then
     pass "tuist test tells the scheme's test post-action to skip"
 else
     fail "tuist test tells the scheme's test post-action to skip"

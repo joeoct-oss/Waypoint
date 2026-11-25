@@ -639,7 +639,9 @@ example_tests_on() {
     # TUIST_WAYPOINT_BINARY_CACHE=1; everywhere else the package builds from source.
     local -x TUIST_WAYPOINT_BINARY_CACHE=0
     # `tuist test` sends this run's results to Test Insights itself, so the scheme's test
-    # post-action, which sends them for runs in Xcode, skips (planning #456).
+    # post-action, which sends them for runs in Xcode, skips (planning #456). It goes to xcodebuild as
+    # a build setting, as WAYPOINT_TUIST_OFFLINE does, because the post-action reads the build
+    # settings of the app target, and in the environment too.
     local -x WAYPOINT_TUIST_TEST_RUN=1
     # Runs warm only simulator slices, and `tuist test` asks for every destination unless told
     # otherwise, so without `--destination simulator` it finds no binary (measured 2026-11-24).
@@ -664,7 +666,7 @@ example_tests_on() {
         -T "$bundle" \
         "$@" \
         -- -quiet -jobs "$JOBS" -derivedDataPath "$EXAMPLE_DERIVED_DATA" "${EXAMPLE_PARALLEL_FLAGS[@]}" \
-        ${offline_settings[@]+"${offline_settings[@]}"}
+        WAYPOINT_TUIST_TEST_RUN=1 ${offline_settings[@]+"${offline_settings[@]}"}
 }
 
 # What this run does.
