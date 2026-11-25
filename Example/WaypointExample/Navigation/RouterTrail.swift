@@ -15,9 +15,16 @@ import WaypointCore
 // A stack presented from another stack starts with that stack's whole trail, so checkout reads
 // `main › cart › checkout`. A stack with no router above it, such as a Lab demo, starts with its
 // root name.
+//
+// The routes it names come from `stepTypes`, which the app fills at launch (`TrailSteps.all`), so
+// this file names no feature's routes and the features can live in their own modules
+// (planning #445). A route left out reads by its type name.
 enum RouterTrail {
     static let tabsName = "main"
     private static let unnamedRoot = "flow"
+
+    // Every route type the trail names. The app sets it once, before the first screen draws.
+    static var stepTypes: [any TrailStep.Type] = []
 
     // The trail of the screen that shows `route` on `router`, or of the stack's root screen when
     // `route` is `nil`.
@@ -78,7 +85,7 @@ enum RouterTrail {
     }
 
     private static func name(of route: AnyRoute) -> String {
-        for type in TrailStepTypes.all {
+        for type in stepTypes {
             if let name = name(of: route, as: type) {
                 return name
             }
@@ -118,74 +125,5 @@ extension TrailStep where Self: TrackableScreen {
     // The journey's name for the screen, in lower case: the display name, else the screen name.
     var trailName: String {
         (screenDisplayName ?? Self.screenName).lowercased()
-    }
-}
-
-// Every route the example app's trail names. A route left out reads by its type name.
-enum TrailStepTypes {
-    static let all: [any TrailStep.Type] = [
-        ProductRoute.self,
-        CollectionRoute.self,
-        ShopCartRoute.self,
-        FilterRoute.self,
-        SavedRoute.self,
-        WishlistRoute.self,
-        CheckoutRoute.self,
-        CheckoutStep.self,
-        AddAddressRoute.self,
-        OrderPlacedRoute.self,
-        AccountRoute.self,
-        CreateAccountRoute.self,
-        TermsRoute.self,
-        SignedInRoute.self,
-        SheetDemoRoute.self,
-        DetailProductRoute.self,
-        DetailCartRoute.self,
-    ]
-}
-
-// Conformances:
-// - `TrailStep`, so the trail names the screen as the journey does.
-extension ProductRoute: TrailStep { }
-extension CollectionRoute: TrailStep { }
-extension ShopCartRoute: TrailStep { }
-extension FilterRoute: TrailStep { }
-extension SavedRoute: TrailStep { }
-extension WishlistRoute: TrailStep { }
-extension CheckoutRoute: TrailStep { }
-extension AddAddressRoute: TrailStep { }
-extension OrderPlacedRoute: TrailStep { }
-extension AccountRoute: TrailStep { }
-extension CreateAccountRoute: TrailStep { }
-extension TermsRoute: TrailStep { }
-extension SignedInRoute: TrailStep { }
-extension SheetDemoRoute: TrailStep { }
-
-// Conformances:
-// - `TrailStep`, so the trail names the step: `payment` or `review`.
-extension CheckoutStep: TrailStep {
-    var trailName: String {
-        switch self {
-        case .payment:
-            return "payment"
-        case .review:
-            return "review"
-        }
-    }
-}
-
-// Conformances:
-// - `TrailStep`, so the trail shows which product the Detail push story pushed.
-extension DetailProductRoute: TrailStep {
-    var trailName: String {
-        "product \(productID)"
-    }
-}
-
-// Conformances:
-// - `TrailStep`, so the trail shows the cart the Detail push story pops back to.
-extension DetailCartRoute: TrailStep {
-    var trailName: String {
-        "cart"
     }
 }
