@@ -198,6 +198,6 @@ final class MainCoordinator: TabCoordinator {
     }
 
     func makeAuthFlow(_ auth: AuthCoordinator) -> some View {
-        AuthFlowView(auth: auth)
+        factory.makeAuthFlow(auth)
     }
 }

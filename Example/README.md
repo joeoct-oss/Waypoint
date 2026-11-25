@@ -33,7 +33,7 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 
 | Folder | What it holds |
 |---|---|
-| `App/` | The `App`, the app coordinator and its roots, and launch arguments |
+| `App/` | The `App`, the app coordinator and its roots, `AppFactory`, which builds the splash, the main tabs and their coordinator, and launch arguments |
 | `Dependencies/` | `AppServices`, the one container the `App` makes, and one dependency struct per feature (`ProductsDependencies`, `CartDependencies`, `AccountDependencies`, `AuthDependencies`, `LabDependencies`) listing what that feature uses. A feature's factory takes its struct (`AuthFactory`, `CartFactory`, `ProductsFactory`, `AccountFactory`, `LabFactory`) and builds the feature's coordinator and screens from it (planning #424) |
 | `Services/` | The local store, the session, the saved addresses, the auth service protocol and its mock, and the issue and event logs |
 | `Store/` | The product catalog (`ProductCatalog`, with `SampleCatalog` for the fixed sample products), orders, and the account type |

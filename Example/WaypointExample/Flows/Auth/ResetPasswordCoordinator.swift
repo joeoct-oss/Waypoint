@@ -24,6 +24,7 @@ final class ResetPasswordCoordinator: FlowCoordinator {
     // The email the reset link went to.
     typealias Output = String
 
+    private let factory: AuthFactory
     private let service: any AuthService
     // `var` because Send link keeps the email the link went to, for Done to finish with. Only
     // `sendLink(to:)` changes it.
@@ -35,15 +36,17 @@ final class ResetPasswordCoordinator: FlowCoordinator {
     }
 
     var root: some View {
-        ForgotPasswordView(
+        factory.makeForgotPassword(
             onSend: { self.sendLink(to: $0) },
             onDone: { self.done() },
             onCancel: { self.cancel() }
         )
     }
 
-    init(service: any AuthService) {
-        self.service = service
+    // `AuthFactory` makes it, hands it the auth service and builds its screen.
+    init(factory: AuthFactory) {
+        self.factory = factory
+        service = factory.dependencies.service
         sentTo = nil
     }
 

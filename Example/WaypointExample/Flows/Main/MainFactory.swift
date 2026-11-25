@@ -108,6 +108,11 @@ struct MainFactory {
         )
     }
 
+    // Draws the accounts flow `auth`, in the sheet the gate presents over the tabs.
+    func makeAuthFlow(_ auth: AuthCoordinator) -> AuthFlowView {
+        AuthFlowView(auth: auth)
+    }
+
     private func makeProductsFactory(gate: AccountGate) -> ProductsFactory {
         ProductsFactory(dependencies: services.productsDependencies(gate: gate, launch: launch))
     }

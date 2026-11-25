@@ -179,7 +179,7 @@ final class ProductsCoordinator: StackCoordinator {
     // The cart Go to cart pushes above a product. Check out and Keep shopping report like the Cart
     // tab's: Check out opens checkout from the Cart tab, and Keep shopping goes back to Shop.
     func makeCartFlow() -> some View {
-        CartView(
+        factory.makeCart(
             products: cart.products(),
             onCheckout: { self.cart.onCheckout() },
             onShopMore: { self.showShop() }
@@ -458,7 +458,7 @@ final class ProductsCoordinator: StackCoordinator {
     @ViewBuilder
     private func makeAuthFlow(over sheetRouter: StackRouter) -> some View {
         if let auth = gate.auth(over: sheetRouter) {
-            AuthFlowView(auth: auth)
+            factory.makeAuthFlow(auth)
                 .sheetOptions(gate.authSheetOptions)
         }
     }

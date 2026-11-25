@@ -31,23 +31,24 @@ final class AppCoordinator {
     ) -> some View {
         AppWindow {
             AppCoordinator(
-                services: services,
+                factory: AppFactory(services: services),
                 launch: launch
             )
         }
     }
 
-    private let services: AppServices
+    private let factory: AppFactory
     // `var` because Clear all data starts the window over without the launch's own destination.
     private var launch: LaunchOptions
     // `var` because `showMainFlow()` and `startOver()` switch it.
     private(set) var root: AppRoot
 
+    // `factory` builds the splash, the main tabs and their coordinator.
     init(
-        services: AppServices,
+        factory: AppFactory,
         launch: LaunchOptions
     ) {
-        self.services = services
+        self.factory = factory
         self.launch = launch
         root = .splash
     }
@@ -63,26 +64,27 @@ final class AppCoordinator {
     }
 
     func showMainFlow() {
-        let main = MainFactory(services: services, launch: launch).makeCoordinator(
+        let main = factory.makeMain(
+            launch: launch,
             onClearAllData: { [weak self] in self?.startOver() }
         )
         root = .main(main)
     }
 
     func startOver() {
-        services.clearAll()
+        factory.services.clearAll()
         launch = launch.startingOver()
         root = .splash
     }
 
     private func makeSplashFlow() -> some View {
-        SplashView(
+        factory.makeSplash(
             duration: launch.splashDuration,
             onFinished: { self.showMainFlow() }
         )
     }
 
     private func makeMainFlow(_ main: MainCoordinator) -> some View {
-        MainTabView(main: main)
+        factory.makeMainTabs(main)
     }
 }
