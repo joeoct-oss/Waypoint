@@ -32,12 +32,10 @@ enum UITestSteps {
     // The identifier UIKit gives a navigation bar's Back button.
     static let backButtonID = "BackButton"
     // How long a step waits for iOS's offer to save a password after a sign in. iOS 27.2 offers
-    // it about 4.5 seconds after the tap, and the step goes on as soon as it shows, so a passing
-    // test doesn't spend the rest. On a Mac under memory load it once came more than 10 s after
-    // the tap, after the step had stopped waiting, and covered the app for every later step
-    // (planning #479), so the step waits up to 20 s. iOS 17.5 never offers it, so there the step
-    // doesn't wait.
-    static let savePasswordOfferTimeout: TimeInterval = 20
+    // it about 4.5 seconds after the tap, and the step goes on as soon as it shows. iOS 17.5
+    // never offers it, so there the step doesn't wait. An offer that comes later still, as it
+    // did once on a Mac under memory load (planning #479), is closed by `tapWhenReady()`.
+    static let savePasswordOfferTimeout: TimeInterval = 10
     // The newest major iOS version that never offers to save a password.
     static let lastVersionWithoutSavePasswordOffer = 17
     static var offersToSavePassword: Bool {
@@ -45,6 +43,10 @@ enum UITestSteps {
     }
     // The offer's button that closes it without saving.
     static let savePasswordNotNow = "Not Now"
+    // Set when `closeSavePasswordOffer()` stopped waiting before the offer showed, so it may still
+    // come and cover the app. Until it is closed, each `tapWhenReady()` looks for it first. Each
+    // test process runs one test at a time, so one flag is enough.
+    @MainActor static var savePasswordOfferMayCome = false
 }
 
 extension XCUIApplication {
@@ -58,8 +60,28 @@ extension XCUIApplication {
         }
         let notNow = buttons[UITestSteps.savePasswordNotNow]
         guard notNow.waitForExistence(timeout: UITestSteps.savePasswordOfferTimeout) else {
+            UITestSteps.savePasswordOfferMayCome = true
             return
         }
+        close(savePasswordOffer: notNow)
+    }
+
+    // Closes a late offer if it shows now, without waiting for it. It looks only while
+    // `savePasswordOfferMayCome` is set, so a test that saw its offer in time pays nothing.
+    @MainActor
+    func closeLateSavePasswordOffer() {
+        guard UITestSteps.savePasswordOfferMayCome else {
+            return
+        }
+        let notNow = buttons[UITestSteps.savePasswordNotNow]
+        if notNow.exists {
+            close(savePasswordOffer: notNow)
+        }
+    }
+
+    @MainActor
+    private func close(savePasswordOffer notNow: XCUIElement) {
+        UITestSteps.savePasswordOfferMayCome = false
         // A tap while the offer still fades in is lost, and the offer still covers the app while it
         // slides away. So the step taps only once the button takes taps, waits for the offer to go,
         // and taps again if it stayed, at most `maxTaps` times.
@@ -76,14 +98,18 @@ extension XCUIApplication {
 }
 
 extension XCUIElement {
-    // Waits for the element, fails the test if it never shows, and taps it.
+    // Waits for the element, fails the test if it never shows, and taps it. On a loaded Mac iOS's
+    // save password offer can come after `closeSavePasswordOffer()` stopped waiting and cover the
+    // app (planning #479), so a late offer is closed first. `reveal(_:)` does the same.
     @MainActor
     func tapWhenReady(
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
+        let shown = waitForExistence(timeout: UITestSteps.timeout)
+        XCUIApplication().closeLateSavePasswordOffer()
         XCTAssertTrue(
-            waitForExistence(timeout: UITestSteps.timeout),
+            shown,
             "missing \(identifier)",
             file: file,
             line: line
@@ -208,6 +234,7 @@ extension XCUIApplication {
     // old screen before the new one arrives (planning #479).
     @MainActor
     func reveal(_ element: XCUIElement) -> Bool {
+        closeLateSavePasswordOffer()
         let deadline = Date().addingTimeInterval(UITestSteps.timeout)
         _ = element.waitForExistence(timeout: UITestSteps.revealWait)
         while !waitUntilTappable(element), Date() < deadline {
