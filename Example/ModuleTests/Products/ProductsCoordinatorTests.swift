@@ -1,17 +1,18 @@
 //
 //  ProductsCoordinatorTests.swift
-//  WaypointExampleTests
+//  ExampleProductsTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
 import ExampleNavigation
+import ExampleProducts
 import ExampleServices
 import ExampleStore
+import ExampleTestSupport
 import Testing
 import WaypointCore
-@testable import WaypointExample
 
 // Save on a product (planning #424): a guest is asked to sign in first and the wish list stays as
 // it is, and a signed-in reader's Save adds the product to the wish list the store keeps.

@@ -1,18 +1,19 @@
 //
 //  SearchModelTests.swift
-//  WaypointExampleTests
+//  ExampleProductsTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleProducts
 import ExampleServices
 import ExampleStore
+import ExampleTestSupport
 import Foundation
 import Testing
 import Understudy
 import WaypointCore
-@testable import WaypointExample
 
 // Search's view model navigates on its own (planning #417): a tapped result pushes the product
 // through the stack's navigator scoped to the shop, on a real router with no screen. Each test

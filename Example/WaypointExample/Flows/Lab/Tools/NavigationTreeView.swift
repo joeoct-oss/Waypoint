@@ -14,16 +14,22 @@ import UIKit
 // The whole app's navigation tree as the routers print it with `debugTree()`: the tab router,
 // each tab's stack with its routes, and any flow presented over them. Route values stay private.
 // Copy puts the text on the pasteboard for a bug report.
-struct NavigationTreeView: View {
+package struct NavigationTreeView: View {
     // A deep tree is wider than the screen, so the text scrolls both ways.
     private static let scrollAxes: Axis.Set = [
         .vertical,
         .horizontal,
     ]
 
-    let tree: String
+    package let tree: String
 
-    var body: some View {
+    package init(
+        tree: String
+    ) {
+        self.tree = tree
+    }
+
+    package var body: some View {
         ScrollView(Self.scrollAxes) {
             Text(tree)
                 .font(Typography.code)

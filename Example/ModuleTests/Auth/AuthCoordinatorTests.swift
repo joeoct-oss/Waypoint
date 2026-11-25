@@ -1,16 +1,17 @@
 //
 //  AuthCoordinatorTests.swift
-//  WaypointExampleTests
+//  ExampleAuthTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAuth
 import ExampleServices
 import ExampleStore
+import ExampleTestSupport
 import Testing
 import Waypoint
-@testable import WaypointExample
 
 // The accounts flow, built by `AuthFactory` (planning #424): Create account keeps what the reader
 // typed when they go back a step, and its last step signs the new account in and finishes the flow

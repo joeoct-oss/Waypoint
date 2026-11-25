@@ -13,14 +13,14 @@ import SwiftUI
 //
 // Conformances:
 // - `UIViewControllerRepresentable`, so SwiftUI can push the UIKit branch like any other screen.
-struct UIKitBranchView: UIViewControllerRepresentable {
-    let onSelect: (FlowEntry) -> Void
+package struct UIKitBranchView: UIViewControllerRepresentable {
+    package let onSelect: (FlowEntry) -> Void
 
-    func makeUIViewController(context: Context) -> UIKitBranchViewController {
+    package func makeUIViewController(context: Context) -> UIKitBranchViewController {
         UIKitBranchViewController(onSelect: onSelect)
     }
 
-    func updateUIViewController(
+    package func updateUIViewController(
         _ controller: UIKitBranchViewController,
         context: Context
     ) { }

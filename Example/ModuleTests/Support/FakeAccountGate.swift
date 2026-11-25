@@ -1,6 +1,6 @@
 //
 //  FakeAccountGate.swift
-//  WaypointExampleTests
+//  ExampleTestSupport
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
@@ -10,7 +10,6 @@ import ExampleDesignSystem
 import ExampleNavigation
 import SwiftUI
 import Waypoint
-@testable import WaypointExample
 
 // An account gate whose reader is signed in or not, as the test sets. A signed-in reader's action
 // runs at once; a guest's is held, as the app's gate does while the accounts flow is open, and
@@ -19,25 +18,25 @@ import Waypoint
 //
 // Conformances:
 // - `SheetAccountGating`, so a feature takes it in place of the app's gate.
-final class FakeAccountGate: SheetAccountGating {
-    let isSignedIn: Bool
+package final class FakeAccountGate: SheetAccountGating {
+    package let isSignedIn: Bool
     // `var` because each request adds its reason. Only `requireAccount(for:then:)` changes it.
-    private(set) var reasons: [SignInReason]
+    package private(set) var reasons: [SignInReason]
 
-    var notice: Notice? {
+    package var notice: Notice? {
         nil
     }
 
-    var authSheetOptions: SheetOptions? {
+    package var authSheetOptions: SheetOptions? {
         nil
     }
 
-    init(isSignedIn: Bool) {
+    package init(isSignedIn: Bool) {
         self.isSignedIn = isSignedIn
         reasons = []
     }
 
-    func requireAccount(
+    package func requireAccount(
         for reason: SignInReason,
         then action: @escaping () -> Void
     ) {
@@ -48,7 +47,7 @@ final class FakeAccountGate: SheetAccountGating {
         action()
     }
 
-    func requireAccount(
+    package func requireAccount(
         for reason: SignInReason,
         over presenter: StackRouter,
         then action: @escaping () -> Void,
@@ -57,15 +56,15 @@ final class FakeAccountGate: SheetAccountGating {
         requireAccount(for: reason, then: action)
     }
 
-    func isShowingAuth(over router: StackRouter) -> Bool {
+    package func isShowingAuth(over router: StackRouter) -> Bool {
         false
     }
 
-    func authFlow(over router: StackRouter) -> AnyView? {
+    package func authFlow(over router: StackRouter) -> AnyView? {
         nil
     }
 
-    func syncAuth(_ isShowing: Bool) { }
+    package func syncAuth(_ isShowing: Bool) { }
 
-    func finishAuth(over router: StackRouter) { }
+    package func finishAuth(over router: StackRouter) { }
 }

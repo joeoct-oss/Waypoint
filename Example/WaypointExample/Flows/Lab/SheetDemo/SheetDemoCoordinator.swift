@@ -26,28 +26,28 @@ import WaypointCore
 //   lets it go with the story. Its levels are drawn by `SheetDemoStack`, so it needs no screens of
 //   the protocol's.
 @Observable
-final class SheetDemoCoordinator: StackCoordinating {
+package final class SheetDemoCoordinator: StackCoordinating {
     private static let flowID = FlowID("labSheet")
     private static let firstLevel = 1
 
     private let navigation: NavigationConfiguration
     private let onClose: () -> Void
     // `var` because the size picker sets it with `setSize(_:)` before the next sheet is presented.
-    private(set) var size: SheetDemoSize
+    package private(set) var size: SheetDemoSize
     // `var` because the swipe-to-close toggle sets it with `setAllowsSwipe(_:)` before the next
     // sheet is presented.
-    private(set) var allowsSwipe: Bool
+    package private(set) var allowsSwipe: Bool
     // `var` because each present keeps its level here, keyed by the presenting router, and
     // `release(over:)` drops it once the sheet or cover has gone, so it still draws meanwhile.
     private var levels: [ObjectIdentifier: SheetDemoLevel]
 
     // The journey's name for the story's screen.
-    var rootName: String {
+    package var rootName: String {
         "Sheet story"
     }
 
     // The story router's whole tree, as the story's screen shows it.
-    var tree: String {
+    package var tree: String {
         router.debugTree()
     }
 
@@ -59,7 +59,7 @@ final class SheetDemoCoordinator: StackCoordinating {
         return .sheet(options)
     }
 
-    init(
+    package init(
         navigation: NavigationConfiguration,
         onClose: @escaping () -> Void
     ) {
@@ -70,7 +70,7 @@ final class SheetDemoCoordinator: StackCoordinating {
         levels = [:]
     }
 
-    func makeRouter() -> StackRouter {
+    package func makeRouter() -> StackRouter {
         StackRouter(
             flow: Self.flowID,
             configuration: navigation
@@ -78,7 +78,7 @@ final class SheetDemoCoordinator: StackCoordinating {
     }
 
     // Whether `presenter` presents a cover (`cover`) or a sheet now.
-    func isShowing(
+    package func isShowing(
         over presenter: StackRouter,
         cover: Bool
     ) -> Bool {
@@ -89,26 +89,26 @@ final class SheetDemoCoordinator: StackCoordinating {
     }
 
     // The level `presenter` presents, kept until its sheet or cover has gone.
-    func level(over presenter: StackRouter) -> SheetDemoLevel? {
+    package func level(over presenter: StackRouter) -> SheetDemoLevel? {
         levels[ObjectIdentifier(presenter)]
     }
 
-    func setSize(_ size: SheetDemoSize) {
+    package func setSize(_ size: SheetDemoSize) {
         self.size = size
     }
 
-    func setAllowsSwipe(_ allowsSwipe: Bool) {
+    package func setAllowsSwipe(_ allowsSwipe: Bool) {
         self.allowsSwipe = allowsSwipe
     }
 
-    func presentSheet(from level: SheetDemoLevel?) {
+    package func presentSheet(from level: SheetDemoLevel?) {
         present(
             from: level,
             style: sheetStyle
         )
     }
 
-    func presentCover(from level: SheetDemoLevel?) {
+    package func presentCover(from level: SheetDemoLevel?) {
         present(
             from: level,
             style: .fullScreenCover
@@ -116,22 +116,22 @@ final class SheetDemoCoordinator: StackCoordinating {
     }
 
     // The router that presented `level` dismisses it.
-    func dismiss(_ level: SheetDemoLevel) {
+    package func dismiss(_ level: SheetDemoLevel) {
         level.presenter.dismiss()
     }
 
     // `level`'s own router asks whoever presented it to dismiss it.
-    func dismissFlow(_ level: SheetDemoLevel) {
+    package func dismissFlow(_ level: SheetDemoLevel) {
         level.router.dismissFlow()
     }
 
     // Closes every level in one change.
-    func dismissAll() {
+    package func dismissAll() {
         router.dismissAll()
     }
 
     // Takes the system's own dismissal, a swipe down.
-    func sync(
+    package func sync(
         _ isShowing: Bool,
         over presenter: StackRouter
     ) {
@@ -143,7 +143,7 @@ final class SheetDemoCoordinator: StackCoordinating {
 
     // Drops the level over `presenter` once its sheet or cover has gone, unless `presenter` has
     // presented a new level while the old one slid away.
-    func release(over presenter: StackRouter) {
+    package func release(over presenter: StackRouter) {
         let key = ObjectIdentifier(presenter)
         guard presenter.presented !== levels[key]?.router else {
             return
@@ -151,7 +151,7 @@ final class SheetDemoCoordinator: StackCoordinating {
         levels[key] = nil
     }
 
-    func close() {
+    package func close() {
         onClose()
     }
 

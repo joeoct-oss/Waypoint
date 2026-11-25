@@ -12,8 +12,18 @@ import WaypointCore
 // the product page draws its related link as a system `NavigationLink` instead of a
 // `WaypointLink`, and whether that link pushes a route with no destination in the stack. Only UI
 // tests ask for the last two.
-struct ProductsNavigation {
-    let configuration: NavigationConfiguration
-    let usesSystemLinks: Bool
-    let linksToMissingDestination: Bool
+package struct ProductsNavigation {
+    package let configuration: NavigationConfiguration
+    package let usesSystemLinks: Bool
+    package let linksToMissingDestination: Bool
+
+    package init(
+        configuration: NavigationConfiguration,
+        usesSystemLinks: Bool,
+        linksToMissingDestination: Bool
+    ) {
+        self.configuration = configuration
+        self.usesSystemLinks = usesSystemLinks
+        self.linksToMissingDestination = linksToMissingDestination
+    }
 }

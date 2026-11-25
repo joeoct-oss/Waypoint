@@ -7,6 +7,7 @@
 //
 
 import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 import Waypoint
 
@@ -15,10 +16,16 @@ import Waypoint
 //
 // Conformances:
 // - `ViewModifier`, so `MainTabView` gives it to the stack.
-struct ProductsSheet: ViewModifier {
-    let products: ProductsCoordinator
+package struct ProductsSheet: ViewModifier {
+    package let products: ProductsCoordinator
 
-    func body(content: Content) -> some View {
+    package init(
+        products: ProductsCoordinator
+    ) {
+        self.products = products
+    }
+
+    package func body(content: Content) -> some View {
         content.sheet(
             isPresented: Binding(reading: products.isShowingSheet, writing: products.syncSheet),
             onDismiss: products.releaseSheet

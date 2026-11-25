@@ -14,14 +14,14 @@ import SwiftUI
 // navigator outlives the flow, so its late push returns `.ignored` and logs `staleNavigator`; the
 // screen shows what it returned, read from the demo coordinator so it appears as soon as it
 // arrives. The screen reports Open product.
-struct LateResultView: View {
+package struct LateResultView: View {
     private static let steps = "Reviews take a moment to load. Close the product first: the push that "
         + "follows finds no flow and does nothing."
 
-    let demos: LabDemoCoordinator
-    let onOpen: () -> Void
+    package let demos: LabDemoCoordinator
+    package let onOpen: () -> Void
 
-    var body: some View {
+    package var body: some View {
         List {
             Section {
                 LabNote(

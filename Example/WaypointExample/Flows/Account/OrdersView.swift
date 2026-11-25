@@ -13,10 +13,10 @@ import SwiftUI
 
 // Orders (MA-03): the reader's past orders, each with its number, status line and total. The screen
 // reports the order the reader picks.
-struct OrdersView: View {
-    let onSelect: (Order) -> Void
+package struct OrdersView: View {
+    package let onSelect: (Order) -> Void
 
-    var body: some View {
+    package var body: some View {
         List(Order.all) { order in
             Button {
                 onSelect(order)
@@ -32,10 +32,10 @@ struct OrdersView: View {
 }
 
 // One order in the list: "Order 1042" over its status line, its total, and a chevron.
-struct OrderRow: View {
-    let order: Order
+package struct OrderRow: View {
+    package let order: Order
 
-    var body: some View {
+    package var body: some View {
         HStack(spacing: Spacing.medium) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Order \(order.id)")
@@ -59,10 +59,10 @@ struct OrderRow: View {
 
 // One order: a Placed, Shipped, Delivered timeline, then what was in it. The bar's title already
 // names the order.
-struct OrderDetailView: View {
-    let order: Order
+package struct OrderDetailView: View {
+    package let order: Order
 
-    var body: some View {
+    package var body: some View {
         List {
             Section {
                 timeline

@@ -12,11 +12,11 @@ import SwiftUI
 
 // A row on Home for one branch: its icon in the host kind's color, its name, what hosts it, and the
 // flows it can launch.
-struct BranchRow: View {
-    let branch: Branch
-    let onSelect: () -> Void
+package struct BranchRow: View {
+    package let branch: Branch
+    package let onSelect: () -> Void
 
-    var body: some View {
+    package var body: some View {
         Button(action: onSelect) {
             content
         }

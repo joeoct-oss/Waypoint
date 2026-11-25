@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCart
+import ExampleProducts
 import ExampleStore
 import SwiftUI
 

@@ -12,19 +12,25 @@ import WaypointCore
 //
 // Conformances:
 // - `TrackableScreen`, a `Route` the journey log names by its step.
-struct CreateAccountRoute: TrackableScreen {
-    static let screenName = "Create account"
-    static let publicLogFields: Set<String> = [
+package struct CreateAccountRoute: TrackableScreen {
+    package static let screenName = "Create account"
+    package static let publicLogFields: Set<String> = [
         "step",
     ]
 
-    let step: CreateAccountStep
+    package let step: CreateAccountStep
 
-    var title: String {
+    package init(
+        step: CreateAccountStep
+    ) {
+        self.step = step
+    }
+
+    package var title: String {
         "Create account"
     }
 
-    var screenDisplayName: String? {
+    package var screenDisplayName: String? {
         step.title
     }
 }
@@ -34,16 +40,16 @@ struct CreateAccountRoute: TrackableScreen {
 //
 // Conformances:
 // - `TrackableScreen`, a `Route` the journey log names "Signed in".
-struct SignedInRoute: TrackableScreen {
-    static let screenName = "Signed in"
+package struct SignedInRoute: TrackableScreen {
+    package static let screenName = "Signed in"
 }
 
 // The terms, presented as a sheet over Choose a password by the accounts flow's router.
 //
 // Conformances:
 // - `TrackableScreen`, a `Route` the journey log names "Terms".
-struct TermsRoute: TrackableScreen {
-    static let screenName = "Terms"
+package struct TermsRoute: TrackableScreen {
+    package static let screenName = "Terms"
 }
 
 // The three pushed steps of creating an account.
@@ -51,12 +57,12 @@ struct TermsRoute: TrackableScreen {
 // Conformances:
 // - `CaseIterable`, so each step knows the one after it and the trail can name the steps before it.
 // - `Hashable` and `Codable`, so a step can sit in a `CreateAccountRoute`.
-nonisolated enum CreateAccountStep: CaseIterable, Hashable, Codable {
+package nonisolated enum CreateAccountStep: CaseIterable, Hashable, Codable {
     case details
     case password
     case checkEmail
 
-    var title: String {
+    package var title: String {
         switch self {
         case .details:
             return "Your details"
@@ -67,7 +73,7 @@ nonisolated enum CreateAccountStep: CaseIterable, Hashable, Codable {
         }
     }
 
-    var actionTitle: String {
+    package var actionTitle: String {
         switch self {
         case .details, .password:
             return "Continue"
@@ -76,7 +82,7 @@ nonisolated enum CreateAccountStep: CaseIterable, Hashable, Codable {
         }
     }
 
-    var next: CreateAccountStep? {
+    package var next: CreateAccountStep? {
         let steps = Self.allCases
         guard let index = steps.firstIndex(of: self), index + 1 < steps.count else {
             return nil
@@ -89,7 +95,7 @@ nonisolated enum CreateAccountStep: CaseIterable, Hashable, Codable {
 // password.
 //
 // The sheet's router draws one of these until the sheet has slid away.
-enum AuthSheet {
+package enum AuthSheet {
     case resetPassword
     case terms
 }
