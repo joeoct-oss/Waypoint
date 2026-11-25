@@ -19,7 +19,7 @@ import WaypointCore
 struct CartCoordinatorTests {
     private static let lampID = 1
 
-    @Test
+    @Test("A guest's checkout asks to sign in first")
     func guestCheckoutAsksToSignInFirst() {
         let store = TestStore.make()
         defer {
@@ -38,7 +38,7 @@ struct CartCoordinatorTests {
         #expect(cart.checkout == nil)
     }
 
-    @Test
+    @Test("A signed-in checkout opens the address step")
     func signedInCheckoutOpensAddressStep() {
         let store = TestStore.make()
         defer {
@@ -54,7 +54,7 @@ struct CartCoordinatorTests {
         #expect(cart.checkout?.selectedAddress == Address.samples.first)
     }
 
-    @Test
+    @Test("The checkout draft is dropped when checkout closes")
     func checkoutDraftIsDroppedWhenCheckoutCloses() {
         let store = TestStore.make()
         defer {

@@ -21,7 +21,7 @@
     @Suite("OSLog handler")
     @MainActor
     struct OSLogHandlerTests {
-        @Test
+        @Test("Log levels map one to one to OSLog types")
         func levelsMapOneToOne() {
             #expect(OSLogHandler.osLogType(for: .debug) == .debug)
             #expect(OSLogHandler.osLogType(for: .info) == .info)
@@ -30,7 +30,7 @@
             #expect(OSLogHandler.osLogType(for: .fault) == .fault)
         }
 
-        @Test
+        @Test("The default subsystem is the bundle identifier")
         func defaultSubsystemUsesTheBundleIdentifier() {
             let expected = Bundle.main.bundleIdentifier.map { $0 + ".waypoint" } ?? "waypoint"
 
@@ -39,7 +39,7 @@
             #expect(OSLogHandler(subsystem: "com.example.shop").subsystem == "com.example.shop")
         }
 
-        @Test
+        @Test("One channel is built per category")
         func oneChannelIsBuiltPerCategory() {
             let handler = OSLogHandler(subsystem: "com.example.waypoint-tests")
 
@@ -52,7 +52,7 @@
             #expect(handler.channels.builtCount == 3)
         }
 
-        @Test
+        @Test("Intervals begin and end in pairs")
         func intervalsPairUp() {
             let handler = OSLogHandler(subsystem: "com.example.waypoint-tests")
             let transaction = LogInterval(name: "transaction", category: .navigation, id: 1)
@@ -71,14 +71,14 @@
             #expect(handler.channels.runningCount == 0)
         }
 
-        @Test
+        @Test("Signpost names are fixed")
         func signpostNamesAreFixed() {
             #expect("\(OSLogChannels.signpostName("transaction"))" == "transaction")
             #expect("\(OSLogChannels.signpostName("push"))" == "push")
             #expect("\(OSLogChannels.signpostName("checkout"))" == "interval")
         }
 
-        @Test
+        @Test("The OSLog configuration keeps its settings")
         func osLogConfigurationKeepsItsSettings() {
             let logging = LogConfiguration.osLog(
                 subsystem: "com.example.shop",
@@ -93,7 +93,7 @@
             #expect(LogConfiguration.osLog().minimumLevel == .notice)
         }
 
-        @Test
+        @Test("Default logging installs the OSLog handler only when the app chose none")
         func defaultLoggingInstallsTheSharedHandlerOnlyForTheDefault() {
             let byDefault = StackRouter(configuration: .permissive)
             let recorder = RecordingLogHandler()

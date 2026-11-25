@@ -16,7 +16,7 @@ import Waypoint
 struct ResetPasswordCoordinatorTests {
     private static let email = "reader@example.com"
 
-    @Test
+    @Test("Done after sending finishes with the email and closes the flow")
     func doneAfterSendingFinishesWithTheEmail() {
         let store = TestStore.make()
         defer {
@@ -37,7 +37,7 @@ struct ResetPasswordCoordinatorTests {
         #expect(parent.presented == nil)
     }
 
-    @Test
+    @Test("Cancel ends the reset password flow cancelled")
     func cancelEndsTheFlowCancelled() {
         let store = TestStore.make()
         defer {
@@ -58,7 +58,7 @@ struct ResetPasswordCoordinatorTests {
         #expect(results.values == expected)
     }
 
-    @Test
+    @Test("A second tap keeps the same flow on screen")
     func secondTapKeepsTheFlowOnScreen() {
         let store = TestStore.make()
         defer {

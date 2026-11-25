@@ -17,7 +17,7 @@ import WaypointTestSupport
 @Suite("Fallbacks")
 @MainActor
 struct FallbackTests {
-    @Test
+    @Test("A fallback given with the call beats the router's policy")
     func perCallFallbackBeatsRouterPolicy() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -30,7 +30,7 @@ struct FallbackTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("The router's policy beats the built-in default")
     func routerPolicyBeatsBuiltInDefault() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -42,7 +42,7 @@ struct FallbackTests {
         #expect(router.pop(count: 5).failure?.issue.kind == .notEnoughRoutes)
     }
 
-    @Test
+    @Test("The built-in fallbacks only pop to root for too few routes")
     func builtInDefaultsAreConservative() {
         #expect(NavigationFallback.builtIn(for: .notEnoughRoutes) == .popToRoot)
         #expect(NavigationFallback.builtIn(for: .routeNotInPath) == NavigationFallback.none)
@@ -50,7 +50,7 @@ struct FallbackTests {
         #expect(NavigationFallback.builtIn(for: .unregisteredRoute) == NavigationFallback.none)
     }
 
-    @Test
+    @Test("A child flow inherits the fallback policy")
     func childInheritsFallbackPolicy() throws {
         let router = StackRouter(configuration: .permissive)
         router.setFallback(.popToRoot, for: .routeNotInPath)
@@ -65,7 +65,7 @@ struct FallbackTests {
         #expect(child.popTo(HomeRoute()).failure != nil)
     }
 
-    @Test
+    @Test("A fallback runs in the same transaction as its call")
     func fallbackRunsInSameTransaction() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -91,7 +91,7 @@ struct FallbackTests {
         #expect(fired.calls == 1)
     }
 
-    @Test
+    @Test("A fallback that fails rolls back and reports both issues")
     func fallbackFailureRollsBack() throws {
         let failures = Spy<NavigationFailure, Void>()
         let configuration = NavigationConfiguration(
@@ -116,7 +116,7 @@ struct FallbackTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A custom fallback that fails rolls back its own steps")
     func customFallbackFailureRollsBackItsOwnSteps() throws {
         let failures = Spy<NavigationFailure, Void>()
         let configuration = NavigationConfiguration(
@@ -141,7 +141,7 @@ struct FallbackTests {
         #expect(failures.callCount == 1)
     }
 
-    @Test
+    @Test("A fallback runs once and never chains another")
     func fallbackRunsOnceNoChain() {
         let router = StackRouter(configuration: .permissive)
         router.setFallback(.popToRoot, for: .emptyPath)
@@ -155,7 +155,7 @@ struct FallbackTests {
         #expect(outcome.failure?.fallbackIssue?.kind == .routeNotInPath)
     }
 
-    @Test
+    @Test("A custom fallback gets the issue and can navigate")
     func customFallbackGetsTheIssueAndCanNavigate() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -176,7 +176,7 @@ struct FallbackTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("The dismissAll fallback closes every presented flow")
     func dismissAllFallback() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -191,7 +191,7 @@ struct FallbackTests {
         #expect(child.presented == nil)
     }
 
-    @Test
+    @Test("resetToRoot dismisses everything and pops the root stack")
     func resetToRootDismissesEverythingAndPopsTheRoot() throws {
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, configuration: .permissive)
         let shop = tabs.router(for: .shop)
@@ -206,7 +206,7 @@ struct FallbackTests {
         #expect(shop.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A tab fallback pops the selected tab")
     func tabFallbackPopsSelectedTab() {
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, configuration: .permissive)
         tabs.router(for: .shop).push(ProductRoute(id: 1))
@@ -217,7 +217,7 @@ struct FallbackTests {
         #expect(tabs.router(for: .shop).state.path.isEmpty)
     }
 
-    @Test
+    @Test("A failed step in a transaction uses its fallback")
     func failedStepInTransactionUsesItsFallback() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -233,7 +233,7 @@ struct FallbackTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("Recovered and failed issues are both reported")
     func recoveredAndFailedIssuesAreReported() {
         let router = StackRouter(configuration: .permissive)
         let reported = Spy<NavigationIssue.Kind, Void>()
@@ -248,7 +248,7 @@ struct FallbackTests {
         #expect(reported.calls == expectedKinds)
     }
 
-    @Test
+    @Test("The strict mode seam sees every outcome")
     func strictModeSeamSeesEveryOutcome() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -268,7 +268,7 @@ struct FallbackTests {
         #expect(outcomes.calls == expected)
     }
 
-    @Test
+    @Test("Fallbacks describe themselves and compare by name")
     func fallbackDescriptionsAndEquality() {
         let first = NavigationFallback.custom("showHome") { _, _ in }
         let second = NavigationFallback.custom("showHome") { _, _ in }

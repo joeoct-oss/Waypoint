@@ -27,7 +27,7 @@ struct StackMirrorTests {
         StackMirror(router: router, holdsTransitions: true, clock: clock)
     }
 
-    @Test
+    @Test("The mirror shows the router's path from the start")
     func showsRouterPathFromTheStart() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -38,7 +38,7 @@ struct StackMirrorTests {
         #expect(mirror.shown == expected)
     }
 
-    @Test
+    @Test("A push shows at once when no transition runs")
     func pushShowsAtOnceWhenNoTransitionRuns() {
         let router = StackRouter(configuration: .permissive)
         let mirror = Self.holdingMirror(router, ManualTransitionClock())
@@ -50,7 +50,7 @@ struct StackMirrorTests {
         #expect(!mirror.isHoldingChange)
     }
 
-    @Test
+    @Test("A change during a transition is held, then the newest path is shown")
     func changeMidTransitionIsHeldThenNewestShown() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -78,7 +78,7 @@ struct StackMirrorTests {
         #expect(!mirror.isHoldingChange)
     }
 
-    @Test
+    @Test("A held change is logged once at debug")
     func heldChangeIsLoggedOnceAtDebug() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
@@ -103,7 +103,7 @@ struct StackMirrorTests {
         #expect(held.map(\.level) == [.debug])
     }
 
-    @Test
+    @Test("A change after the transition ends shows at once")
     func changeAfterTransitionEndsShowsAtOnce() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -122,7 +122,7 @@ struct StackMirrorTests {
     // On a busy device, drawing a push can block the main actor for seconds, and iOS 17 runs the
     // push only after that (planning #373). A change that lands as the drawing ends is held until
     // the push that runs from then ends.
-    @Test
+    @Test("The transition counts from when drawing ends")
     func transitionCountsFromWhenDrawingEnds() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -147,7 +147,7 @@ struct StackMirrorTests {
         #expect(!mirror.isHoldingChange)
     }
 
-    @Test
+    @Test("A replacement goes back first, then forward")
     func replacementGoesBackThenForward() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -175,7 +175,7 @@ struct StackMirrorTests {
         #expect(!mirror.isHoldingChange)
     }
 
-    @Test
+    @Test("A replacement shows in one step on later systems")
     func replacementInOneStepOnLaterSystems() {
         let router = StackRouter(configuration: .permissive)
         let mirror = StackMirror(router: router, holdsTransitions: false, clock: ManualTransitionClock())
@@ -190,7 +190,7 @@ struct StackMirrorTests {
         #expect(mirror.shown == router.state.path)
     }
 
-    @Test
+    @Test("Later systems hold no change")
     func noHoldOnLaterSystems() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -207,7 +207,7 @@ struct StackMirrorTests {
         #expect(clock.scheduledCount == 1)
     }
 
-    @Test
+    @Test("A hold that ends on the same path shows nothing new")
     func holdThatEndsOnSamePathShowsNothingNew() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -224,7 +224,7 @@ struct StackMirrorTests {
         #expect(mirror.shown == expected)
     }
 
-    @Test
+    @Test("A swipe back is reported as a user pop")
     func swipeBackReportsUserPop() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -243,7 +243,7 @@ struct StackMirrorTests {
         #expect(batches.lastCall?.map(\.origin) == [.user])
     }
 
-    @Test
+    @Test("The back menu reports one pop of several levels")
     func backMenuReportsOneMultiLevelPop() {
         let router = StackRouter(configuration: .permissive)
         router.push {
@@ -263,7 +263,7 @@ struct StackMirrorTests {
         #expect(batches.callCount == 1)
     }
 
-    @Test
+    @Test("The screen reporting the same count changes nothing")
     func sameCountFromScreenChangesNothing() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -279,7 +279,7 @@ struct StackMirrorTests {
         #expect(mirror.redrawCount == 0)
     }
 
-    @Test
+    @Test("A push that comes from the screen is refused, redrawn and reported")
     func pushFromScreenIsRefusedAndRedrawn() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -298,7 +298,7 @@ struct StackMirrorTests {
         #expect(reported.calls == [.rendererMismatch])
     }
 
-    @Test
+    @Test("A user pop during a hold keeps only what the screen shows")
     func userPopWhileHoldingKeepsOnlyWhatScreenShows() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -324,7 +324,7 @@ struct StackMirrorTests {
         #expect(mirror.shown.isEmpty)
     }
 
-    @Test
+    @Test("A user pop starts a transition")
     func userPopStartsATransition() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -341,7 +341,7 @@ struct StackMirrorTests {
         #expect(mirror.isHoldingChange)
     }
 
-    @Test(arguments: Self.bothHoldModes)
+    @Test("A double tap pushes once", arguments: Self.bothHoldModes)
     func doubleTapPushesOnce(holdsTransitions: Bool) {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -359,7 +359,7 @@ struct StackMirrorTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("The same push after the transition ends goes ahead")
     func samePushAfterTheTransitionEndsGoesAhead() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -375,7 +375,7 @@ struct StackMirrorTests {
         #expect(mirror.shown.count == 2)
     }
 
-    @Test
+    @Test("Only the newest push reports its end")
     func onlyTheNewestPushReportsItsEnd() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()
@@ -393,7 +393,7 @@ struct StackMirrorTests {
         #expect(router.push(ProductRoute(id: 1)) == .alreadyThere)
     }
 
-    @Test
+    @Test("The mirror shows a pushed child flow's screens after its marker")
     func showsAPushedChildFlowsScreensAfterItsMarker() throws {
         let router = StackRouter(configuration: .permissive)
         let mirror = StackMirror(router: router, holdsTransitions: false, clock: ManualTransitionClock())
@@ -409,7 +409,7 @@ struct StackMirrorTests {
         #expect(!mirror.isMissingDestination(marker))
     }
 
-    @Test
+    @Test("Going back inside a pushed child flow pops the child and ends it")
     func backInsideAPushedChildFlowPopsTheChild() {
         let router = StackRouter(configuration: .permissive)
         let child = MirrorFlowCoordinator()
@@ -431,7 +431,7 @@ struct StackMirrorTests {
         #expect(mirror.shown.isEmpty)
     }
 
-    @Test
+    @Test("A pushed child flow's push is guarded on the child's router")
     func aChildFlowsPushIsReportedToTheChild() {
         let router = StackRouter(configuration: .permissive)
         let clock = ManualTransitionClock()

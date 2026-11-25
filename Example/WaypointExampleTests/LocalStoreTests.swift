@@ -23,7 +23,7 @@ struct LocalStoreTests {
         return NSDictionary(dictionary: data)
     }
 
-    @Test
+    @Test("Tests never touch the app's data")
     func testsNeverTouchAppData() {
         let appData = Self.appData()
         let store = TestStore.make()
@@ -41,7 +41,7 @@ struct LocalStoreTests {
         #expect(Self.appData() == appData)
     }
 
-    @Test
+    @Test("A test store starts empty")
     func testStoreStartsEmpty() {
         let store = TestStore.make()
         defer {

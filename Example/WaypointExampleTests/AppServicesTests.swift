@@ -20,7 +20,7 @@ struct AppServicesTests {
     private static let lampID = 1
     private static let mugID = 2
 
-    @Test
+    @Test("Clearing all data resets every service")
     func clearAllDataResetsEveryService() {
         let store = TestStore.make()
         defer {
@@ -49,7 +49,7 @@ struct AppServicesTests {
         #expect(services.addresses.addresses == Address.samples)
     }
 
-    @Test
+    @Test("Screens share one app-wide store")
     func screensShareOneAppWideStore() throws {
         let store = TestStore.make()
         defer {

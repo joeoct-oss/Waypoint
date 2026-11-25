@@ -17,7 +17,7 @@ struct BackgroundNavigationTests {
     /// How many tasks navigate at once.
     private static let taskCount = 100
 
-    @Test
+    @Test("Navigation from a background task lands on screen")
     func backgroundTaskNavigationLandsOnScreen() async {
         let router = StackRouter(configuration: .permissive)
         let route = ItemRoute(id: 1)
@@ -31,7 +31,7 @@ struct BackgroundNavigationTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("Navigation from a custom actor lands on screen")
     func customActorNavigationLandsOnScreen() async {
         let router = StackRouter(configuration: .permissive)
         let route = ItemRoute(id: 1)
@@ -44,7 +44,7 @@ struct BackgroundNavigationTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("Concurrent pushes from many tasks each land once")
     func concurrentPushesFromManyTasksAllLandOnce() async {
         let router = StackRouter(configuration: .permissive)
         let routes = (0..<Self.taskCount).map { id in
@@ -59,7 +59,7 @@ struct BackgroundNavigationTests {
         #expect(outcomes.allSatisfy { $0 == .applied })
     }
 
-    @Test
+    @Test("The log handler gets a line for each route while tasks navigate")
     func logHandlerReceivesALineForEachRouteWhileTasksNavigate() async {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug)

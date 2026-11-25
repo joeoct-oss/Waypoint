@@ -16,7 +16,7 @@ import WaypointTestSupport
 @Suite("Replace presentation")
 @MainActor
 struct ReplacePresentationTests {
-    @Test
+    @Test("replacePresentation dismisses the presented flow, then presents the new one")
     func replacePresentationDismissesThenPresents() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -42,7 +42,7 @@ struct ReplacePresentationTests {
         #expect(origins == expectedOrigins)
     }
 
-    @Test
+    @Test("replacePresentation keeps the style the call asked for")
     func replacePresentationKeepsTheCallsStyle() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -53,7 +53,7 @@ struct ReplacePresentationTests {
         #expect(presentation.style == .fullScreenCover)
     }
 
-    @Test
+    @Test("replacePresentation dismisses nested children too")
     func replacePresentationDismissesNestedChildren() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -70,7 +70,7 @@ struct ReplacePresentationTests {
         #expect(product.push(HomeRoute()) == .ignored)
     }
 
-    @Test
+    @Test("A replaced presentation is logged as recovered")
     func replaceIsLoggedAsRecovered() {
         let handler = RecordingLogHandler()
         let issuesOnly: Set<LogCategory> = [.issues]
@@ -87,7 +87,7 @@ struct ReplacePresentationTests {
         #expect(handler.texts.first?.hasPrefix("alreadyPresenting flow=main") == true)
     }
 
-    @Test
+    @Test("replacePresentation works as a router policy")
     func replacePresentationWorksAsRouterPolicy() throws {
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
         tabs.setFallback(.replacePresentation, for: .alreadyPresenting)
@@ -100,7 +100,7 @@ struct ReplacePresentationTests {
         #expect(presented.rootRoute == AnyRoute(HomeRoute()))
     }
 
-    @Test
+    @Test("replacePresentation works in a transaction")
     func replacePresentationWorksInATransaction() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -117,7 +117,7 @@ struct ReplacePresentationTests {
         #expect(presented.rootRoute == AnyRoute(HomeRoute()))
     }
 
-    @Test
+    @Test("replacePresentation applies only to present")
     func replacePresentationOnlyAppliesToPresent() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -132,7 +132,7 @@ struct ReplacePresentationTests {
         #expect(router.presented === settings)
     }
 
-    @Test
+    @Test("A replaced presentation rolls back when the new present fails")
     func replacedPresentationRollsBackWhenThePresentFails() throws {
         let router = StackRouter()
         router.register(SettingsRoute.self)

@@ -21,7 +21,7 @@ struct JourneyTests {
     private typealias ItemRoute = JourneyFixtures.ItemRoute
     private typealias ProductListRoute = JourneyFixtures.ProductListRoute
 
-    @Test
+    @Test("A push visits the screen on top, with its name, source, transition and call site")
     func aPushVisitsTheScreenOnTop() throws {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
@@ -47,7 +47,7 @@ struct JourneyTests {
         #expect(visit.depth == 1)
     }
 
-    @Test
+    @Test("A stack appearing visits its first screen once")
     func aStackAppearingVisitsItsFirstScreenOnce() throws {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
@@ -64,7 +64,7 @@ struct JourneyTests {
         #expect(Self.title(of: handler.journeyTexts.first) == "SHOWN ▸ Product list")
     }
 
-    @Test
+    @Test("A push of several routes visits only the top screen")
     func aPushOfSeveralRoutesVisitsOnlyTheTop() {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
@@ -80,7 +80,7 @@ struct JourneyTests {
         #expect(router.screenVisit?.depth == 3)
     }
 
-    @Test
+    @Test("Going back visits the screen below, with the time spent on the one above")
     func goingBackVisitsTheScreenBelowWithTheTimeOnTheOneAbove() throws {
         let handler = RecordingLogHandler()
         let clock = JourneyFixtures.ManualClock()
@@ -101,7 +101,7 @@ struct JourneyTests {
         #expect(visit.callSite == nil)
     }
 
-    @Test
+    @Test("A change off screen visits nothing")
     func aChangeElsewhereVisitsNothing() {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock())
@@ -114,7 +114,7 @@ struct JourneyTests {
         #expect(tabs.screenVisit?.screen.title == "Product list")
     }
 
-    @Test
+    @Test("A tab switch visits the tab's screen and names the tab and trigger")
     func aTabSwitchWritesTheTabThenTheScreen() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock())
@@ -144,7 +144,7 @@ struct JourneyTests {
         #expect(rows.contains("trigger      banner"))
     }
 
-    @Test
+    @Test("An unnamed tab root takes the tab's name")
     func anUnnamedTabRootTakesTheTabsName() {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock())
@@ -158,7 +158,7 @@ struct JourneyTests {
         #expect(tabs.screenVisit?.journey.map(\.title) == expectedJourney)
     }
 
-    @Test
+    @Test("The source stays the same while the user drills down")
     func theSourceStaysWhileTheUserDrillsDown() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock())
@@ -174,7 +174,7 @@ struct JourneyTests {
         #expect(visit.depth == 2)
     }
 
-    @Test
+    @Test("Switching tabs on a shared stack visits the new tab's root")
     func switchingTabRootsOnASharedStackVisitsTheNewTab() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
@@ -189,7 +189,7 @@ struct JourneyTests {
         #expect(visit.journey.map(\.title) == ["Profile"])
     }
 
-    @Test
+    @Test("A sheet over shared tabs stays the same visible screen when the tab changes")
     func aSheetOverSharedTabsStaysOneScreenWhenTheTabChanges() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
@@ -202,7 +202,7 @@ struct JourneyTests {
         #expect(after == before)
     }
 
-    @Test
+    @Test("A named flow over shared tabs keeps its name and view")
     func aNamedFlowOverSharedTabsKeepsItsName() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
@@ -215,7 +215,7 @@ struct JourneyTests {
         #expect(VisibleScreen.level(of: presented).screens.first?.viewName == "SignInView")
     }
 
-    @Test
+    @Test("The tab view at a shared stack's root names no view")
     func theTabViewAtASharedStacksRootNamesNoScreen() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
@@ -228,7 +228,7 @@ struct JourneyTests {
         #expect(visible.screen.title == "Shop")
     }
 
-    @Test
+    @Test("A shared stack is named after the selected tab")
     func aSharedStackIsNamedAfterTheSelectedTab() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock(), stacks: .shared)
@@ -242,7 +242,7 @@ struct JourneyTests {
         #expect(!tabs.debugTree().contains("Stack"))
     }
 
-    @Test
+    @Test("A screen that starts a journey is the source of what it opens")
     func aScreenThatStartsAJourneyIsTheSourceOfWhatItOpens() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock())
@@ -257,7 +257,7 @@ struct JourneyTests {
         #expect(visit.source.title == "Search")
     }
 
-    @Test
+    @Test("An untracked screen is left out of the journey")
     func anUntrackedScreenIsLeftOut() throws {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
@@ -271,7 +271,7 @@ struct JourneyTests {
         #expect(visit.screen.title == "Product list")
     }
 
-    @Test
+    @Test("A presented flow logs its start and its end with how long it took")
     func aPresentedFlowStartsThenEnds() throws {
         let handler = RecordingLogHandler()
         let clock = JourneyFixtures.ManualClock()
@@ -305,7 +305,7 @@ struct JourneyTests {
         #expect(router.screenVisit?.transition == .dismiss)
     }
 
-    @Test
+    @Test("A flow the user dismisses is logged as cancelled by the user")
     func aFlowTheUserDismissesIsCancelled() {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
@@ -318,7 +318,7 @@ struct JourneyTests {
         #expect(rows.contains("by           user"))
     }
 
-    @Test
+    @Test("A flow with steps counts them")
     func aFlowWithStepsCountsThem() throws {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
@@ -335,7 +335,7 @@ struct JourneyTests {
         #expect(Self.rows(of: handler.journeyTexts.last).contains("step         2 of 3"))
     }
 
-    @Test
+    @Test("A screen shown again soon is logged as a duplicate notice")
     func aScreenViewedAgainSoonIsADuplicate() {
         let handler = RecordingLogHandler()
         let clock = JourneyFixtures.ManualClock()
@@ -355,7 +355,7 @@ struct JourneyTests {
         #expect(rows.contains("warning      shown again 180 ms after the last time"))
     }
 
-    @Test
+    @Test("Going back or waiting longer is no duplicate")
     func goingBackOrWaitingLongerIsNoDuplicate() {
         let handler = RecordingLogHandler()
         let clock = JourneyFixtures.ManualClock()
@@ -370,7 +370,7 @@ struct JourneyTests {
         #expect(!handler.texts.contains { $0.contains("shown again") })
     }
 
-    @Test
+    @Test("The duplicate window can be changed and never goes below zero")
     func theDuplicateWindowCanBeChanged() {
         let handler = RecordingLogHandler()
         let clock = JourneyFixtures.ManualClock()
@@ -387,7 +387,7 @@ struct JourneyTests {
         #expect(LogConfiguration(duplicateScreenWindow: .seconds(-1)).duplicateScreenWindow == .zero)
     }
 
-    @Test
+    @Test("The journey box logs at info and the mechanics at debug")
     func theJourneyBoxIsInfoAndMechanicsAreDebug() {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
@@ -401,7 +401,7 @@ struct JourneyTests {
         #expect(handler.journeyBoxes.count == 1)
     }
 
-    @Test
+    @Test("At info level only the journey is logged")
     func infoShowsOnlyTheJourney() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .info)
@@ -414,7 +414,7 @@ struct JourneyTests {
         #expect(handler.journeyTexts.count == 2)
     }
 
-    @Test
+    @Test("The journey box names views and coordinators and draws the app")
     func theBoxNamesViewsAndCoordinatorsAndDrawsTheApp() throws {
         let handler = RecordingLogHandler()
         let tabs = JourneyFixtures.tabs(handler, clock: JourneyFixtures.ManualClock())
@@ -455,7 +455,7 @@ struct JourneyTests {
         #expect(lines == expectedBox)
     }
 
-    @Test
+    @Test("The sample session reads as one box per change")
     func theSampleSessionReadsAsOneBoxPerChange() {
         let handler = RecordingLogHandler()
         let clock = JourneyFixtures.ManualClock()
@@ -482,7 +482,7 @@ struct JourneyTests {
         #expect(Self.rows(of: handler.journeyTexts[1]).contains("previous     Product 3 · 5.7 s there"))
     }
 
-    @Test
+    @Test("Without symbols the box is drawn in ASCII")
     func withoutSymbolsTheLinesAreASCII() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration().withSymbols(false)
@@ -498,7 +498,7 @@ struct JourneyTests {
         #expect(box.contains("`- Product 3   <- NEW"))
     }
 
-    @Test
+    @Test("Structured journey lines have keys and no box")
     func structuredJourneyLinesHaveKeys() throws {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(format: .structured)
@@ -514,7 +514,7 @@ struct JourneyTests {
         #expect(handler.journeyBoxes.isEmpty)
     }
 
-    @Test
+    @Test("View names drop modifiers, modules and generics")
     func viewNamesDropModifiersModulesAndGenerics() {
         #expect(ViewTypeName.simplified("Shop.ProductDetailView") == "ProductDetailView")
         #expect(ViewTypeName.simplified("ModifiedContent<ProductListView, _PaddingLayout>") == "ProductListView")
@@ -529,7 +529,7 @@ struct JourneyTests {
         #expect(ViewTypeName.of(JourneyFixtures.ShopCoordinator.self) == "ShopCoordinator")
     }
 
-    @Test
+    @Test("A presented flow grows a branch under its presenter")
     func aPresentedFlowGrowsABranchUnderItsPresenter() throws {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
@@ -554,7 +554,7 @@ struct JourneyTests {
         #expect(rows.contains("coordinator  CheckoutCoordinator · same coordinator (sub view)"))
     }
 
-    @Test
+    @Test("A presentation waits for its view before its box is logged")
     func aPresentationWaitsForItsViewBeforeItsBox() throws {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
@@ -579,7 +579,7 @@ struct JourneyTests {
         #expect(Self.rows(of: handler.journeyBoxes.last).contains("previous     CheckoutAddressView · 0 ms there"))
     }
 
-    @Test
+    @Test("Dismissing a flow with its own coordinator logs that coordinator ending")
     func aFlowWithItsOwnCoordinatorEndsThatCoordinator() throws {
         let handler = RecordingLogHandler()
         let router = JourneyFixtures.stack(handler, clock: JourneyFixtures.ManualClock())
@@ -596,7 +596,7 @@ struct JourneyTests {
         #expect(Self.rows(of: box).contains("ended        CheckoutCoordinator · finished after 0 ms"))
     }
 
-    @Test
+    @Test("Long messages split at line breaks into pieces under the size limit")
     func longMessagesSplitBetweenLinesUnderTheLimit() {
         let row = "│ " + String(repeating: "─", count: 40) + " │"
         let box = Array(repeating: row, count: 30).joined(separator: "\n")
@@ -611,14 +611,14 @@ struct JourneyTests {
         #expect(LogChunks.split(long, maxBytes: 10).allSatisfy { $0.utf8.count <= 10 })
     }
 
-    @Test
+    @Test("Durations read as people say them")
     func durationsReadAsPeopleSayThem() {
         #expect(JourneyLog.text(.milliseconds(180)) == "180 ms")
         #expect(JourneyLog.text(.milliseconds(5_740)) == "5.7 s")
         #expect(JourneyLog.text(.seconds(125)) == "2 min 5 s")
     }
 
-    @Test
+    @Test("Screen names come from the route type")
     func screenNamesComeFromTheRouteType() {
         let item = ScreenReference(route: AnyRoute(ItemRoute(id: 3, title: nil)), flow: FlowID("shop"))
         let list = ScreenReference(route: AnyRoute(ProductListRoute()), flow: FlowID("shop"))

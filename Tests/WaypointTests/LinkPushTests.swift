@@ -19,7 +19,7 @@ import WaypointTestSupport
 @Suite("Link push")
 @MainActor
 struct LinkPushTests {
-    @Test
+    @Test("A link push goes through the router")
     func linkPushUsesRouterOutcome() {
         let router = StackRouter(configuration: .permissive)
         let link = LinkPush(route: ProductRoute(id: 1), fallback: nil)
@@ -31,7 +31,7 @@ struct LinkPushTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("A link push is logged with its call site")
     func linkPushIsLoggedWithItsCallSite() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration.default
@@ -57,7 +57,7 @@ struct LinkPushTests {
         #expect(!pushLines.isEmpty)
     }
 
-    @Test
+    @Test("A second tap while the push animates pushes nothing")
     func secondTapWhilePushAnimatesPushesNothing() {
         let router = StackRouter(configuration: .permissive)
         let link = LinkPush(route: ProductRoute(id: 1), fallback: nil)
@@ -70,7 +70,7 @@ struct LinkPushTests {
         #expect(router.state.path.count == 1)
     }
 
-    @Test
+    @Test("A link push runs its fallback")
     func linkPushRunsItsFallback() {
         let router = StackRouter()
         router.register(HomeRoute.self)
@@ -83,7 +83,7 @@ struct LinkPushTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A link without a route is disabled and pushes nothing")
     func linkWithoutRouteIsDisabledAndPushesNothing() {
         let router = StackRouter(configuration: .permissive)
         let link = LinkPush<ProductRoute>(route: nil, fallback: nil)
@@ -95,7 +95,7 @@ struct LinkPushTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A link outside a stack is disabled")
     func linkOutsideStackIsDisabled() {
         let link = LinkPush(route: ProductRoute(id: 1), fallback: nil)
 
@@ -105,7 +105,7 @@ struct LinkPushTests {
         #expect(outcome == nil)
     }
 
-    @Test
+    @Test("A link with a route inside a stack is enabled")
     func linkWithRouteInsideStackIsEnabled() {
         let router = StackRouter(configuration: .permissive)
         let link = LinkPush(route: ProductRoute(id: 1), fallback: nil)
@@ -115,7 +115,7 @@ struct LinkPushTests {
 
     // Release builds use the default log settings (`.notice` and up), and nothing in the report
     // depends on `DEBUG`, so a system link is written to the app's log handler in release too.
-    @Test
+    @Test("A system link is reported with the default log settings")
     func systemLinkIsLoggedAtErrorWithDefaultLogSettings() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration.default.withHandler(handler)

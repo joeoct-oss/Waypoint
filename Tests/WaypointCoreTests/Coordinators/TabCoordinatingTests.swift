@@ -22,7 +22,7 @@ struct TabCoordinatingTests {
 
     // MARK: - Children and their routers
 
-    @Test
+    @Test("A tab coordinator gets a tab router and a stack coordinator a stack router")
     func routerKindFollowsProtocol() {
         let tabs = MainTabsCoordinator()
         let stack = ShopListCoordinator()
@@ -34,7 +34,7 @@ struct TabCoordinatingTests {
         #expect(stackRouter is StackRouter)
     }
 
-    @Test
+    @Test("A tab coordinator asks for its tab children only when its router is first read")
     func tabCoordinatorJoinsOnFirstRouterRead() {
         let tabs = MainTabsCoordinator()
         let askedBeforeRead = tabs.asked.calls
@@ -46,7 +46,7 @@ struct TabCoordinatingTests {
         #expect(tabs.asked.calls == MainTab.allCases)
     }
 
-    @Test
+    @Test("Each tab's child coordinator gets that tab's active stack router")
     func tabCoordinatorHandsChildrenTheirRouters() throws {
         let children = Spy<(MainTab, any StackCoordinating), Void>()
         let tabs = MainTabsCoordinator { tab, _ in
@@ -68,7 +68,7 @@ struct TabCoordinatingTests {
         #expect(router.router(for: .home).state.path.count == 1)
     }
 
-    @Test
+    @Test("The tab router and each tab's stack carry their coordinator's name and tab")
     func tabCoordinatorNamesEachTabRouter() {
         let tabs = MainTabsCoordinator()
 
@@ -81,7 +81,7 @@ struct TabCoordinatingTests {
         }
     }
 
-    @Test
+    @Test("A tab's stack takes its root name from the tab")
     func defaultRootNameComesFromTab() {
         let tabs = MainTabsCoordinator(giving: .shop) {
             NamedTabChildCoordinator()
@@ -93,7 +93,7 @@ struct TabCoordinatingTests {
         #expect(router.router(for: .shop).rootName == "Deals")
     }
 
-    @Test
+    @Test("A tab child that pushes in its init keeps that router and its screen")
     func tabChildPushInInitKeepsItsRouter() {
         let child = Spy<EarlyPushCoordinator, Void>()
         let tabs = MainTabsCoordinator { tab, _ in
@@ -114,7 +114,7 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.calls.isEmpty)
     }
 
-    @Test
+    @Test("A tab child's own router becomes the tab's stack with its routes registered")
     func tabChildOwnMakeRouterBecomesTabStack() {
         let tabs = MainTabsCoordinator(giving: .shop) {
             OwnRouterCoordinator()
@@ -128,7 +128,7 @@ struct TabCoordinatingTests {
         #expect(tabs.router.registry.isRegistered(ProductRoute.self))
     }
 
-    @Test
+    @Test("A tab navigator made before the child is adopted forwards to the tab's stack")
     func tabNavigatorBuiltBeforeChildAdoptionForwards() throws {
         let child = Spy<ParentReadingCoordinator, Void>()
         let tabs = MainTabsCoordinator { tab, parent in
@@ -149,7 +149,7 @@ struct TabCoordinatingTests {
         #expect(reader.router.state.path.count == 1)
     }
 
-    @Test
+    @Test("A push made before the tab child is adopted is kept on the tab's stack")
     func tabPushBeforeChildAdoptionIsKept() throws {
         let child = Spy<ParentReadingCoordinator, Void>()
         let tabs = MainTabsCoordinator { tab, parent in
@@ -173,7 +173,7 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.calls.isEmpty)
     }
 
-    @Test
+    @Test("A push from the child of a tab added later is kept")
     func tabPushFromChildOfAddedTabIsKept() throws {
         let child = Spy<ParentReadingCoordinator, Void>()
         let tabs = MainTabsCoordinator(tabs: MainTab.homeAndShop) { tab, parent in
@@ -196,7 +196,7 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.calls.isEmpty)
     }
 
-    @Test
+    @Test("A tab child reading the parent's router in its init doesn't join the tabs again")
     func tabChildReadingParentRouterInInitDoesNotRejoin() throws {
         let child = Spy<ParentReadingCoordinator, Void>()
         let tabs = MainTabsCoordinator { tab, parent in
@@ -213,7 +213,7 @@ struct TabCoordinatingTests {
         #expect(tabs.router === router)
     }
 
-    @Test
+    @Test("Two tab coordinators keep routers of their own")
     func innerTabCoordinatorsKeepTheirOwnRouters() {
         let first = MainTabsCoordinator()
         let second = MainTabsCoordinator()
@@ -224,7 +224,7 @@ struct TabCoordinatingTests {
 
     // MARK: - Adding and removing tabs
 
-    @Test
+    @Test("A tab added later gets its child with a working, named stack")
     func tabAddedLaterGetsItsChild() {
         let tabs = MainTabsCoordinator(tabs: MainTab.homeAndShop)
         let router = tabs.router
@@ -238,7 +238,7 @@ struct TabCoordinatingTests {
         #expect(profile.push(ProductRoute(id: 1)) == .applied)
     }
 
-    @Test
+    @Test("A kept child returned for a tab added back gets the tab's new stack")
     func keptChildReturnedForATabAddedBackGetsTheNewStack() {
         let kept = TabChildCoordinator()
         let tabs = MainTabsCoordinator(giving: .profile) {
@@ -259,7 +259,7 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.calls.isEmpty)
     }
 
-    @Test(arguments: Self.bothLayouts)
+    @Test("A kept merged child returned for a tab added back gets the tab's new stack", arguments: Self.bothLayouts)
     func keptMergedChildReturnedForATabAddedBackGetsTheNewStack(stacks: TabStacks) throws {
         let kept = Spy<ParentReadingCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: stacks) { tab, parent in
@@ -290,7 +290,7 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.calls.isEmpty)
     }
 
-    @Test(arguments: Self.bothLayouts)
+    @Test("A removed tab releases its child, and the other tabs still work", arguments: Self.bothLayouts)
     func removedTabReleasesItsChild(stacks: TabStacks) {
         let tabs = MainTabsCoordinator(stacks: stacks)
         weak let released = child(of: tabs, for: .profile)
@@ -301,7 +301,7 @@ struct TabCoordinatingTests {
         #expect(tabs.router.router(for: .home).push(ProductRoute(id: 1)) == .applied)
     }
 
-    @Test
+    @Test("Tab children are released with their tab coordinator")
     func tabChildrenReleasedWithTabs() {
         weak let released = makeAndDropTabCoordinatorChild()
 
@@ -310,7 +310,7 @@ struct TabCoordinatingTests {
         #expect(released == nil)
     }
 
-    @Test
+    @Test("A sweep keeps the tab router and every tab's stack working")
     func sweepKeepsTabRoutersLive() {
         let tabs = MainTabsCoordinator()
         let router = tabs.router
@@ -325,7 +325,7 @@ struct TabCoordinatingTests {
         }
     }
 
-    @Test
+    @Test("A child released while the tabs change gets an inert router and nothing crashes")
     func childDeinitDuringSetTabsDoesNotCrash() throws {
         let outcomes = Spy<(NavigationOutcome, StackRouter), Void>()
         let tabs = MainTabsCoordinator(giving: .profile) {
@@ -344,7 +344,7 @@ struct TabCoordinatingTests {
 
     // MARK: - Shared stack
 
-    @Test
+    @Test("A shared stack asks the selected tab for its child first")
     func sharedStackAsksSelectedTabFirst() {
         let tabs = MainTabsCoordinator(selection: .shop, stacks: .shared)
 
@@ -354,7 +354,7 @@ struct TabCoordinatingTests {
         #expect(tabs.asked.calls == expected)
     }
 
-    @Test
+    @Test("A shared stack merges each later child's router into one stack")
     func sharedStackMergesLaterChildRouter() throws {
         let children = Spy<any StackCoordinating, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { _, _ in
@@ -375,7 +375,7 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.calls.isEmpty)
     }
 
-    @Test
+    @Test("Screens pushed early by an unselected tab's child on a shared stack are dropped and reported")
     func unselectedTabChildEarlyScreensAreDropped() throws {
         let early = Spy<EarlyPushCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
@@ -398,7 +398,7 @@ struct TabCoordinatingTests {
         #expect(early.lastCall?.router === shared)
     }
 
-    @Test
+    @Test("A transaction on a merged child's router applies to the shared stack")
     func transactionOnMergedChildRouterForwards() throws {
         let early = Spy<EarlyPushCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
@@ -421,7 +421,7 @@ struct TabCoordinatingTests {
         #expect(shared.state.path.count == 2)
     }
 
-    @Test
+    @Test("A flow a merged child presented early leaves the tree and is reported")
     func mergedChildsEarlyPresentedFlowLeavesTheTree() throws {
         let early = Spy<EarlyPresentCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
@@ -444,7 +444,7 @@ struct TabCoordinatingTests {
         #expect(tabs.reportedKinds == expected)
     }
 
-    @Test
+    @Test("A merged child's old navigator forwards to the shared stack")
     func staleNavigatorOfMergedChildForwards() throws {
         let early = Spy<EarlyPushCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
@@ -465,7 +465,7 @@ struct TabCoordinatingTests {
         #expect(child.made.state.path.count == 1)
     }
 
-    @Test
+    @Test("A merged child's stored router is not adopted again")
     func mergedStoredRouterIsNotReadopted() throws {
         let stored = Spy<StoredRouterCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
@@ -491,7 +491,7 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.calls.isEmpty)
     }
 
-    @Test
+    @Test("A shared stack is named after the child of the selected tab")
     func sharedStackNamesEachTabChild() {
         let tabs = MainTabsCoordinator(stacks: .shared, giving: .shop) {
             NamedTabChildCoordinator()
@@ -506,7 +506,7 @@ struct TabCoordinatingTests {
         #expect(shared.coordinatorName == "NamedTabChildCoordinator")
     }
 
-    @Test
+    @Test("A flow presented over shared tabs is named after the tab coordinator")
     func flowPresentedOverSharedTabsIsNamedAfterTabCoordinator() throws {
         let tabs = MainTabsCoordinator(stacks: .shared)
         let router = tabs.router
@@ -517,7 +517,7 @@ struct TabCoordinatingTests {
         #expect(presented.coordinatorName == "MainTabsCoordinator")
     }
 
-    @Test
+    @Test("Removing the tab that owns a shared stack keeps the stack working")
     func removingSharedStackOwnerTabKeepsStack() {
         let tabs = MainTabsCoordinator(stacks: .shared)
         let router = tabs.router
@@ -534,7 +534,7 @@ struct TabCoordinatingTests {
 
     // MARK: - Refusals
 
-    @Test(arguments: Self.bothLayouts)
+    @Test("One coordinator given for two tabs is refused for the second and reported", arguments: Self.bothLayouts)
     func sameCoordinatorForTwoTabsIsRefused(stacks: TabStacks) throws {
         let child = TabChildCoordinator()
         let tabs = MainTabsCoordinator(stacks: stacks) { tab, _ in
@@ -557,7 +557,7 @@ struct TabCoordinatingTests {
         #expect(issue.message.contains(wording))
     }
 
-    @Test
+    @Test("Removing one of two tabs given the same coordinator keeps it alive")
     func removingOneOfTwoTabsSharingACoordinatorKeepsIt() {
         let reused = ReusedChildMaker()
         let tabs = MainTabsCoordinator { tab, _ in
@@ -573,7 +573,7 @@ struct TabCoordinatingTests {
         #expect(child?.router.isActive == true)
     }
 
-    @Test
+    @Test("A tab router stored by its coordinator is reported and still joins the tabs")
     func storedTabRouterIsReportedAndJoins() throws {
         let stored = TabRouter(tabs: MainTab.allCases, selection: .home, configuration: .permissive)
         let reported = Spy<NavigationIssue, Void>()
@@ -596,7 +596,7 @@ struct TabCoordinatingTests {
         #expect(navigator.push(ProductRoute(id: 1)) == .applied)
     }
 
-    @Test
+    @Test("A tab child's stored router is reported and still joins its tab")
     func tabChildStoredRouterIsReportedAndJoins() {
         let stored = StackRouter(configuration: .permissive)
         let issues = Spy<NavigationIssue, Void>()
@@ -616,7 +616,7 @@ struct TabCoordinatingTests {
         #expect(tabs.reported.calls.isEmpty)
     }
 
-    @Test(arguments: Self.bothLayouts)
+    @Test("A tab child that stores its own tab router is accepted without a report", arguments: Self.bothLayouts)
     func tabChildStoringItsOwnTabRouterIsAccepted(stacks: TabStacks) {
         let children = Spy<StoredRouterCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: stacks) { tab, parent in
@@ -637,7 +637,7 @@ struct TabCoordinatingTests {
         }
     }
 
-    @Test
+    @Test("A tab child holding a sibling tab's router is refused and gets its own")
     func tabChildWithSiblingTabRouterIsRefused() {
         let tabs = MainTabsCoordinator { tab, parent in
             guard tab == .shop else {
@@ -653,7 +653,7 @@ struct TabCoordinatingTests {
         #expect(tabs.reportedKinds.contains(.routerOwnedByAnotherCoordinator))
     }
 
-    @Test
+    @Test("A tab router owned by another tab coordinator is not adopted and is reported")
     func tabRouterOfAnotherTabCoordinatorIsNotAdopted() throws {
         let owner = MainTabsCoordinator()
         let taken = owner.router
@@ -672,7 +672,7 @@ struct TabCoordinatingTests {
         #expect(issue.message.contains("GivenTabsCoordinator"))
     }
 
-    @Test
+    @Test("A tab child holding a later sibling tab's router is refused and reported")
     func tabChildWithLaterSiblingTabRouterIsRefused() throws {
         let tabs = MainTabsCoordinator { tab, parent in
             guard tab == .home else {
@@ -693,7 +693,7 @@ struct TabCoordinatingTests {
         #expect(issue.message.contains("StoredRouterCoordinator"))
     }
 
-    @Test
+    @Test("A tab child holding another coordinator's router gets its own and is reported")
     func tabChildWithAnotherCoordinatorsRouterGetsItsOwn() {
         let owner = ShopListCoordinator()
         let taken = owner.router
@@ -714,7 +714,7 @@ struct TabCoordinatingTests {
         #expect(issues.calls.map(\.kind) == expected)
     }
 
-    @Test
+    @Test("A tab child holding a router of another tree gets its own and is reported")
     func tabChildWithRouterOfAnotherTreeGetsItsOwn() throws {
         let other = TabRouter(tabs: MainTab.allCases, selection: .home)
         let taken = other.router(for: .home)
@@ -735,7 +735,7 @@ struct TabCoordinatingTests {
 
     // MARK: - Reads in deinit
 
-    @Test
+    @Test("Reading the router in a tab coordinator's deinit gives it back inert")
     func readInDeinitOfATabCoordinatorWithARouterGetsItInert() throws {
         let outcomes = Spy<(NavigationOutcome, TabRouter<MainTab>), Void>()
         let router = makeAndDropDeinitReadingTabs(outcomes: outcomes, readsFirst: true)
@@ -748,7 +748,7 @@ struct TabCoordinatingTests {
         #expect(router.selection == .home)
     }
 
-    @Test
+    @Test("A first router read in a tab coordinator's deinit gives an inert router")
     func firstReadInDeinitOfATabCoordinatorGetsAnInertRouter() throws {
         let outcomes = Spy<(NavigationOutcome, TabRouter<MainTab>), Void>()
         _ = makeAndDropDeinitReadingTabs(outcomes: outcomes, readsFirst: false)

@@ -20,7 +20,7 @@
     @Suite("Stack default logging")
     @MainActor
     struct StackDefaultLoggingTests {
-        @Test
+        @Test("A stack logs to the unified log at notice when the app gave no handler")
         func stackInstallsTheUnifiedLogWhenTheAppGaveNoHandler() {
             let router = StackRouter(configuration: .permissive)
 
@@ -30,7 +30,7 @@
             #expect(router.configuration.logging.minimumLevel == .notice)
         }
 
-        @Test
+        @Test("A stack keeps the app's own log settings")
         func stackKeepsTheAppsHandler() {
             let configuration = NavigationConfiguration(logging: .disabled, registry: .permissive)
             let disabled = StackRouter(configuration: configuration)

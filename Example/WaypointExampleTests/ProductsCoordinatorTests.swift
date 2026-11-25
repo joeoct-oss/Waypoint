@@ -18,7 +18,7 @@ import WaypointCore
 struct ProductsCoordinatorTests {
     private static let lampID = 1
 
-    @Test
+    @Test("A guest saving a product is asked to sign in first")
     func guestSaveAsksToSignInFirst() throws {
         let store = TestStore.make()
         defer {
@@ -37,7 +37,7 @@ struct ProductsCoordinatorTests {
         #expect(store.wishlistProductIDs.isEmpty)
     }
 
-    @Test
+    @Test("A signed-in save adds the product to the wishlist")
     func signedInSaveAddsToWishlist() throws {
         let store = TestStore.make()
         defer {

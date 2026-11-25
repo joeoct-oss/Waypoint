@@ -19,7 +19,7 @@ import WaypointTestSupport
 @Suite("Calls made during a change")
 @MainActor
 struct QueuedCallTests {
-    @Test
+    @Test("Navigating from the failure handler is queued and runs after the change")
     func navigatingFromFailureHandlerRunsAfterTheChange() {
         let holder = RouterHolder()
         let inner = Spy<NavigationOutcome, Void>()
@@ -44,7 +44,7 @@ struct QueuedCallTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("Navigating from a transaction body is queued and runs after the change")
     func navigatingFromTransactionBodyRunsAfterTheChange() {
         let router = StackRouter(configuration: .permissive)
         let inner = Spy<NavigationOutcome, Void>()
@@ -60,7 +60,7 @@ struct QueuedCallTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("Navigating from a custom fallback is queued and runs after the change")
     func navigatingFromCustomFallbackRunsAfterTheChange() {
         let holder = RouterHolder()
         let inner = Spy<NavigationOutcome, Void>()
@@ -81,7 +81,7 @@ struct QueuedCallTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("Calls made during a change run in the order they were made")
     func callsMadeDuringAChangeRunInTheOrderMade() {
         let router = StackRouter(configuration: .permissive)
         let ids = [1, 2, 3]
@@ -96,7 +96,7 @@ struct QueuedCallTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("Queued calls keep their order across routers")
     func queuedCallsKeepOrderAcrossRouters() throws {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
@@ -123,7 +123,7 @@ struct QueuedCallTests {
         #expect(order == order.sorted())
     }
 
-    @Test
+    @Test("A queued call that fails is reported and runs its fallback")
     func queuedCallThatFailsReportsAndRunsItsFallback() {
         let holder = RouterHolder()
         let failures = Spy<NavigationIssue.Kind, Void>()
@@ -148,7 +148,7 @@ struct QueuedCallTests {
         #expect(failures.calls == kinds)
     }
 
-    @Test
+    @Test("A queued call is logged at debug with its call site")
     func queuedCallLogsReentrantChangeWithItsLine() throws {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
@@ -165,7 +165,7 @@ struct QueuedCallTests {
         #expect("\(message.file)" == #fileID)
     }
 
-    @Test
+    @Test("Queued and stale calls don't call the failure handler")
     func queuedAndStaleCallsDoNotCallTheFailureHandler() throws {
         let failures = Spy<NavigationFailure, Void>()
         let configuration = NavigationConfiguration(registry: .permissive) { failure in
@@ -189,7 +189,7 @@ struct QueuedCallTests {
         #expect(failures.calls.isEmpty)
     }
 
-    @Test
+    @Test("A transaction across two routers is seen whole")
     func twoRouterTransactionIsSeenWhole() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(CartRoute())
@@ -212,7 +212,7 @@ struct QueuedCallTests {
         #expect(child.state.path.count == 1)
     }
 
-    @Test
+    @Test("A queued call whose flow closed first is ignored")
     func queuedCallWhoseFlowClosedFirstIsIgnored() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(CartRoute())

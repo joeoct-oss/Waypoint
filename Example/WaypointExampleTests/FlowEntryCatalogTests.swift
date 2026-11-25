@@ -22,7 +22,7 @@ struct FlowEntryCatalogTests {
         .sheet,
     ]
 
-    @Test
+    @Test("Every lab entry runs a demo or opens its placeholder")
     func everyEntryRunsADemoOrOpensItsPlaceholder() {
         let entries = FlowEntry.all
 
@@ -34,7 +34,7 @@ struct FlowEntryCatalogTests {
         }
     }
 
-    @Test
+    @Test("Every placeholder names its own entry")
     func everyPlaceholderNamesItsOwnEntry() {
         let placeholders = FlowEntry.all.filter { !$0.isRunnable }
 

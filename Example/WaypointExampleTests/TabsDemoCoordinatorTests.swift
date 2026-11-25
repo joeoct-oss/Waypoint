@@ -14,7 +14,7 @@ import Waypoint
 // is read and asks for each tab's coordinator, whose router becomes the tab's stack. Tabs added
 // later get their coordinators, and removed tabs' stacks leave the tree.
 struct TabsDemoCoordinatorTests {
-    @Test
+    @Test("Each tab's stack is its coordinator's router")
     func eachTabStackIsItsCoordinatorsRouter() {
         let demo = TestLab.makeFactory().makeTabsDemo(onClose: { })
 
@@ -30,7 +30,7 @@ struct TabsDemoCoordinatorTests {
         }
     }
 
-    @Test
+    @Test("Added tabs get their coordinators and removed tabs leave")
     func addedTabsGetTheirCoordinatorsAndRemovedTabsLeave() {
         let demo = TestLab.makeFactory().makeTabsDemo(onClose: { })
         demo.toggleTabs()

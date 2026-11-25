@@ -17,7 +17,7 @@ import WaypointTestSupport
 struct StateTests {
     let filter = Presentation(style: .sheet, flow: FlowID("filter"), route: AnyRoute(SettingsRoute()))
 
-    @Test
+    @Test("Stack and tab state round-trip through Codable")
     func stateRoundTripsThroughCodable() throws {
         let path = [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 4))]
         let stack = StackState(path: path, presentation: filter)
@@ -27,7 +27,7 @@ struct StateTests {
         #expect(try roundTrip(tabs) == tabs)
     }
 
-    @Test
+    @Test("Presentation styles round-trip through Codable")
     func presentationStylesRoundTrip() throws {
         let everyDetent: [SheetDetent] = [.medium, .fraction(0.3), .height(240), .fitsContent, .custom("tall")]
         let fitted: [SheetDetent] = [.fitsContent]
@@ -44,7 +44,7 @@ struct StateTests {
         }
     }
 
-    @Test
+    @Test("Sheet options have sensible defaults")
     func sheetOptionsDefaults() {
         let options = SheetOptions.default
         let large: [SheetDetent] = [.large]
@@ -60,7 +60,7 @@ struct StateTests {
         #expect(PresentationStyle.fullScreenCover.isFullScreenCover)
     }
 
-    @Test
+    @Test("Stack state describes its path and presentation")
     func stackStateDescription() {
         let path = [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 4))]
         let state = StackState(path: path)
@@ -70,14 +70,14 @@ struct StateTests {
         #expect(StackState(presentation: filter).description == "[] + sheet SettingsRoute flow=filter")
     }
 
-    @Test
+    @Test("Tab state's description marks the selection")
     func tabStateDescriptionMarksSelection() {
         let state = TabState(tabs: MainTab.allCases, selection: .shop)
 
         #expect(state.description == "[home, *shop, profile]")
     }
 
-    @Test
+    @Test("Presentations describe their style and flow")
     func presentationDescriptions() {
         let cover = Presentation(style: .fullScreenCover, flow: FlowID("login"))
         let mediumAndLarge: [SheetDetent] = [.medium, .large]
@@ -92,7 +92,7 @@ struct StateTests {
         #expect(FlowID("shop").description == "shop")
     }
 
-    @Test
+    @Test("Changes describe themselves with private values hidden")
     func changeDescriptions() {
         let products = [AnyRoute(ProductRoute(id: 4))]
         let homes = [AnyRoute(HomeRoute())]
@@ -109,7 +109,7 @@ struct StateTests {
         #expect(pushed.debugDescription(revealingPrivateValues: true) == "pushed [ProductRoute(id: 4)]")
     }
 
-    @Test
+    @Test("The tree describes every flow")
     func treeDescription() {
         let shopPath = [AnyRoute(ProductRoute(id: 1))]
         let shopState = StackState(path: shopPath, presentation: filter)

@@ -15,7 +15,7 @@ import WaypointTestSupport
 @Suite("Presentation in routers")
 @MainActor
 struct PresentationRouterTests {
-    @Test
+    @Test("present sets the presentation and creates a child router")
     func presentSetsPresentationAndCreatesChildRouter() throws {
         let router = StackRouter(configuration: .permissive)
 
@@ -31,7 +31,7 @@ struct PresentationRouterTests {
         #expect(router.state.presentation == expected)
     }
 
-    @Test
+    @Test("Presented flows are named after their route")
     func presentedFlowsAreNamedAfterTheirRoute() throws {
         let router = StackRouter(configuration: .permissive)
 
@@ -43,7 +43,7 @@ struct PresentationRouterTests {
         #expect(child.presented?.flowID == FlowID("settings-2"))
     }
 
-    @Test
+    @Test("present while presenting is refused")
     func presentWhilePresentingIsRejected() {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -55,7 +55,7 @@ struct PresentationRouterTests {
         #expect(router.presented === first)
     }
 
-    @Test
+    @Test("A presented flow navigates on its own stack")
     func presentedFlowNavigatesOnItsOwn() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -68,12 +68,12 @@ struct PresentationRouterTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("dismiss with nothing presented is already there")
     func dismissWithNothingPresentedIsAlreadyThere() {
         #expect(StackRouter(configuration: .permissive).dismiss() == .alreadyThere)
     }
 
-    @Test
+    @Test("dismiss removes the whole presented subtree")
     func dismissRemovesWholeSubtree() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -91,7 +91,7 @@ struct PresentationRouterTests {
         #expect(router.isActive)
     }
 
-    @Test
+    @Test("dismissFlow asks the presenter to dismiss")
     func dismissFlowAsksThePresenter() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -102,14 +102,14 @@ struct PresentationRouterTests {
         #expect(router.presented == nil)
     }
 
-    @Test
+    @Test("dismissFlow on the root fails as not presented")
     func dismissFlowOnRootFails() {
         let outcome = StackRouter(configuration: .permissive).dismissFlow()
 
         #expect(outcome.failure?.issue.kind == .notPresented)
     }
 
-    @Test
+    @Test("dismissAll dismisses everything above")
     func dismissAllDismissesEverythingAbove() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -120,7 +120,7 @@ struct PresentationRouterTests {
         #expect(router.dismissAll() == .alreadyThere)
     }
 
-    @Test
+    @Test("Presentation defaults are inherited by children")
     func presentationDefaultsAreInherited() throws {
         let router = StackRouter(configuration: .permissive)
         let detents: [SheetDetent] = [.medium, .large]
@@ -133,7 +133,7 @@ struct PresentationRouterTests {
         #expect(StackRouter(configuration: .permissive).presentationDefaults.sheet == .default)
     }
 
-    @Test
+    @Test("A presentation's own sheet options win over the defaults")
     func sheetOptionsFollowLookupOrder() throws {
         let router = StackRouter(configuration: .permissive)
         let defaultDetents: [SheetDetent] = [.medium]

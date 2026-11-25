@@ -16,7 +16,7 @@ import WaypointTestSupport
 @Suite("Path helpers")
 @MainActor
 struct PathHelperTests {
-    @Test
+    @Test("The path builder supports if and for-in")
     func pathBuilderSupportsIfAndForIn() {
         let router = StackRouter(configuration: .permissive)
         let showSettings = true
@@ -50,7 +50,7 @@ struct PathHelperTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("A push of many routes is one change")
     func pushManyIsOneChange() {
         let router = StackRouter(configuration: .permissive)
         let changes = Spy<[AppliedChange], Void>()
@@ -68,7 +68,7 @@ struct PathHelperTests {
         #expect(changes.calls.joined().map(\.change) == expectedChanges)
     }
 
-    @Test
+    @Test("setPath replaces the path, and the same path again is already there")
     func setPathReplacesAndReportsReplaced() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -79,7 +79,7 @@ struct PathHelperTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("popTo a type finds the last route of that type")
     func typedPopToFindsLastOfType() {
         let router = StackRouter(configuration: .permissive)
         router.setPath {
@@ -94,7 +94,7 @@ struct PathHelperTests {
         #expect(router.state.path.count == 2)
     }
 
-    @Test
+    @Test("popTo a type can match a predicate")
     func typedPopToUsesPredicate() {
         let router = StackRouter(configuration: .permissive)
         router.setPath {
@@ -111,7 +111,7 @@ struct PathHelperTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("popTo a type not in the path fails")
     func typedPopToMissingTypeFails() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -122,7 +122,7 @@ struct PathHelperTests {
         #expect(outcome.failure?.issue.message.hasPrefix("No SettingsRoute in the path") == true)
     }
 
-    @Test
+    @Test("popTo the root screen's type pops to the root")
     func typedPopToRootScreenPopsToRoot() {
         let router = StackRouter(root: HomeRoute(), configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -131,7 +131,7 @@ struct PathHelperTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("contains and last find routes in the path")
     func containsAndLast() {
         let router = StackRouter(configuration: .permissive)
         router.setPath {
