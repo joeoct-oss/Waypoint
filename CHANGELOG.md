@@ -4,6 +4,10 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ## Unreleased
 
+### Added
+
+- Dependabot opens one grouped pull request a month for the GitHub Actions in the workflows and one for the packages in `Package.swift` (`.github/dependabot.yml`, planning #511).
+
 ### Changed
 
 - `tapWhenReady()`, `reveal(_:)` and `goBack()` in the example app's UI tests close iOS's offer to save a password when it comes late, before they act (planning #479). On a Mac under memory load the offer once came more than 10 s after a sign in, when `closeSavePasswordOffer()` had stopped waiting, and covered the app, so `NestedSheetTests.testDoneClosesAllSheets` failed. It looks for the offer only after a sign in whose offer didn't show within 10 s, so other steps are no slower.
