@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -59,9 +60,9 @@ struct StackCoordinatingTests {
     @Test
     func storedRouterIsReportedAndAdopted() throws {
         let stored = StackRouter(flow: FlowID("stored"))
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         stored.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         let coordinator = StoredRouterCoordinator(router: stored)
         let pushBeforeTouch = coordinator.router.push(ProductRoute(id: 1))
@@ -70,15 +71,15 @@ struct StackCoordinatingTests {
         _ = coordinator.navigator
 
         #expect(pushBeforeTouch.failure?.issue.kind == .unregisteredRoute)
-        let kinds = reported.values.map(\.kind)
+        let kinds = reported.calls.map(\.kind)
         let expectedKinds: [NavigationIssue.Kind] = [.unregisteredRoute, .routerNotFromWaypoint]
         #expect(kinds == expectedKinds)
-        let issue = try #require(reported.last)
+        let issue = try #require(reported.lastCall)
         #expect(issue.message.contains("StoredRouterCoordinator"))
         #expect(issue.message.contains("makeRouter()"))
         #expect(issue.message.contains("rootName"))
         #expect(stored.coordinatorName == "StoredRouterCoordinator")
-        #expect(coordinator.registrations.count == 1)
+        #expect(coordinator.registrations.callCount == 1)
         #expect(coordinator.router.push(ProductRoute(id: 1)) == .applied)
     }
 
@@ -86,24 +87,24 @@ struct StackCoordinatingTests {
     func storedRouterOfAnotherCoordinatorIsNotAdopted() throws {
         let owner = ShopListCoordinator()
         let shared = owner.router
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         shared.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         let borrower = StoredRouterCoordinator(router: shared)
 
         _ = borrower.navigator
         _ = borrower.navigator
 
-        let kinds = reported.values.map(\.kind)
+        let kinds = reported.calls.map(\.kind)
         let expectedKinds: [NavigationIssue.Kind] = [.routerOwnedByAnotherCoordinator]
         #expect(kinds == expectedKinds)
-        let issue = try #require(reported.last)
+        let issue = try #require(reported.lastCall)
         #expect(issue.message.contains("StoredRouterCoordinator"))
         #expect(issue.message.contains("ShopListCoordinator"))
         #expect(shared.coordinatorName == "ShopListCoordinator")
         #expect(shared.rootName == "ShopList")
-        #expect(borrower.registrations.count == 0)
+        #expect(borrower.registrations.callCount == 0)
         #expect(owner.router === shared)
     }
 
@@ -111,19 +112,19 @@ struct StackCoordinatingTests {
     func madeRouterOfAnotherCoordinatorIsNotAdopted() throws {
         let owner = ShopListCoordinator()
         let shared = owner.router
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         shared.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         let borrower = GivenRouterCoordinator(given: shared)
 
         let router = borrower.router
         _ = borrower.router
 
-        let kinds = reported.values.map(\.kind)
+        let kinds = reported.calls.map(\.kind)
         let expectedKinds: [NavigationIssue.Kind] = [.routerOwnedByAnotherCoordinator]
         #expect(kinds == expectedKinds)
-        let issue = try #require(reported.last)
+        let issue = try #require(reported.lastCall)
         #expect(issue.message.contains("GivenRouterCoordinator makeRouter() returns"))
         #expect(!issue.message.contains("stored"))
         #expect(router === shared)
@@ -159,15 +160,15 @@ struct StackCoordinatingTests {
     @Test
     func defaultRootNameReplacesTheNameMakeRouterSet() throws {
         let coordinator = NamedRouterCoordinator()
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         coordinator.made.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
 
         let router = coordinator.router
 
         #expect(router.rootName == "NamedRouter")
-        let issue = try #require(reported.last)
+        let issue = try #require(reported.lastCall)
         #expect(issue.kind == .rootNameReplaced)
         #expect(issue.message.contains("\"Made list\""))
         #expect(issue.message.contains("rootName"))
@@ -176,16 +177,16 @@ struct StackCoordinatingTests {
     @Test
     func routerFromMakeRouterEndsWithItsCoordinator() throws {
         let router = makeAndDropCoordinatorRouter()
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         let next = GivenRouterCoordinator(given: router)
 
         let outcome = next.router.push(ProductRoute(id: 1))
 
         #expect(outcome == .ignored)
-        let issue = try #require(reported.values.first { $0.kind == .releasedRouterReturned })
+        let issue = try #require(reported.calls.first { $0.kind == .releasedRouterReturned })
         #expect(issue.message.contains("GivenRouterCoordinator"))
     }
 
@@ -245,9 +246,9 @@ struct StackCoordinatingTests {
     @Test
     func storedRouterReusedAfterItsCoordinatorIsGoneIsReported() throws {
         let stored = StackRouter(configuration: .permissive)
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         stored.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         adoptAndDrop(stored)
         let next = StoredRouterCoordinator(router: stored)
@@ -256,7 +257,7 @@ struct StackCoordinatingTests {
 
         #expect(outcome == .ignored)
         #expect(!stored.isActive)
-        let issue = try #require(reported.values.first { $0.kind == .releasedRouterReturned })
+        let issue = try #require(reported.calls.first { $0.kind == .releasedRouterReturned })
         #expect(issue.message.contains("StoredRouterCoordinator stores"))
     }
 
@@ -279,19 +280,19 @@ struct StackCoordinatingTests {
         let router = try #require(holder.coordinator).router
         let navigation = router.navigator
         let once = Once()
-        let queued = Recorder<NavigationOutcome>()
+        let queued = Spy<NavigationOutcome, Void>()
         router.tree.onApplied { _ in
             guard once.claim() else {
                 return
             }
-            queued.record(navigation.push(ProductRoute(id: 2)))
+            queued(navigation.push(ProductRoute(id: 2)))
             holder.release()
         }
 
         router.push(ProductRoute(id: 1))
 
         let expectedPath = [AnyRoute(ProductRoute(id: 1))]
-        #expect(queued.last == .queued)
+        #expect(queued.lastCall == .queued)
         #expect(router.state.path == expectedPath)
         #expect(!router.isActive)
     }
@@ -313,10 +314,10 @@ struct StackCoordinatingTests {
 
     @Test
     func readInDeinitOfACoordinatorWithARouterGetsItInert() throws {
-        let outcomes = Recorder<(NavigationOutcome, StackRouter)>()
+        let outcomes = Spy<(NavigationOutcome, StackRouter), Void>()
         let router = makeAndDropDeinitReader(outcomes: outcomes, readsFirst: true)
 
-        let (outcome, read) = try #require(outcomes.last)
+        let (outcome, read) = try #require(outcomes.lastCall)
         #expect(outcome == .ignored)
         #expect(read === router)
         #expect(!router.isActive)
@@ -325,10 +326,10 @@ struct StackCoordinatingTests {
 
     @Test
     func firstReadInDeinitGetsAnInertRouter() throws {
-        let outcomes = Recorder<(NavigationOutcome, StackRouter)>()
+        let outcomes = Spy<(NavigationOutcome, StackRouter), Void>()
         _ = makeAndDropDeinitReader(outcomes: outcomes, readsFirst: false)
 
-        let (outcome, read) = try #require(outcomes.last)
+        let (outcome, read) = try #require(outcomes.lastCall)
         #expect(outcome == .ignored)
         #expect(!read.isActive)
     }
@@ -337,10 +338,10 @@ struct StackCoordinatingTests {
     func firstReadInDeinitKeepsARouterStillInUseLive() throws {
         let owner = ShopListCoordinator()
         let live = owner.router
-        let outcomes = Recorder<(NavigationOutcome, StackRouter)>()
+        let outcomes = Spy<(NavigationOutcome, StackRouter), Void>()
         _ = makeAndDropDeinitReader(outcomes: outcomes, readsFirst: false, madeRouter: live)
 
-        let (outcome, read) = try #require(outcomes.last)
+        let (outcome, read) = try #require(outcomes.lastCall)
         #expect(outcome == .ignored)
         #expect(read !== live)
         #expect(live.isActive)
@@ -349,12 +350,12 @@ struct StackCoordinatingTests {
 
     @Test
     func coordinatorDeinitDuringSweepDoesNotCrash() throws {
-        let outcomes = Recorder<(NavigationOutcome, StackRouter)>()
+        let outcomes = Spy<(NavigationOutcome, StackRouter), Void>()
         keepDeinitReaderInFreedCoordinatorsTree(outcomes: outcomes)
 
         _ = ShopListCoordinator().router
 
-        let (outcome, read) = try #require(outcomes.last)
+        let (outcome, read) = try #require(outcomes.lastCall)
         #expect(outcome == .ignored)
         #expect(!read.isActive)
     }
@@ -363,7 +364,7 @@ struct StackCoordinatingTests {
     /// its router in `deinit`, then drops the first one. The sweep that lets that router go
     /// frees the second coordinator, whose `deinit` reads the table.
     private func keepDeinitReaderInFreedCoordinatorsTree(
-        outcomes: Recorder<(NavigationOutcome, StackRouter)>
+        outcomes: Spy<(NavigationOutcome, StackRouter), Void>
     ) {
         let owner = ShopListCoordinator()
         let reader = DeinitReadingCoordinator(outcomes: outcomes)
@@ -398,7 +399,7 @@ struct StackCoordinatingTests {
     /// Makes a coordinator that pushes in `deinit`, reading its router first when `readsFirst`,
     /// and drops it. Returns the router it read first, or a new one.
     private func makeAndDropDeinitReader(
-        outcomes: Recorder<(NavigationOutcome, StackRouter)>,
+        outcomes: Spy<(NavigationOutcome, StackRouter), Void>,
         readsFirst: Bool,
         madeRouter: StackRouter? = nil
     ) -> StackRouter {
@@ -410,22 +411,22 @@ struct StackCoordinatingTests {
     func coordinatorDrawnTwiceIsReported() throws {
         let coordinator = ShopListCoordinator()
         let router = coordinator.router
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
 
         router.rendererDidStartDrawing(coordinator)
         router.rendererCheckDrawing(coordinator)
-        let drawnOnce = reported.values.isEmpty
+        let drawnOnce = reported.calls.isEmpty
         router.rendererDidStartDrawing(coordinator)
         router.rendererCheckDrawing(coordinator)
 
         #expect(drawnOnce)
-        let kinds = reported.values.map(\.kind)
+        let kinds = reported.calls.map(\.kind)
         let expectedKinds: [NavigationIssue.Kind] = [.coordinatorDrawnTwice]
         #expect(kinds == expectedKinds)
-        let issue = try #require(reported.last)
+        let issue = try #require(reported.lastCall)
         #expect(issue.message.contains("ShopListCoordinator.view"))
     }
 
@@ -433,9 +434,9 @@ struct StackCoordinatingTests {
     func viewReplacedInOneUpdateIsNotReported() {
         let coordinator = ShopListCoordinator()
         let router = coordinator.router
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
 
         router.rendererDidStartDrawing(coordinator)
@@ -443,7 +444,7 @@ struct StackCoordinatingTests {
         router.rendererDidStopDrawing(coordinator)
         router.rendererCheckDrawing(coordinator)
 
-        #expect(reported.values.isEmpty)
+        #expect(reported.calls.isEmpty)
     }
 
     @Test
@@ -451,9 +452,9 @@ struct StackCoordinatingTests {
         let first = ShopListCoordinator()
         let second = ShopListCoordinator()
         let router = first.router
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         router.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
 
         router.rendererDidStartDrawing(first)
@@ -461,6 +462,6 @@ struct StackCoordinatingTests {
         router.rendererCheckDrawing(first)
         router.rendererCheckDrawing(second)
 
-        #expect(reported.values.isEmpty)
+        #expect(reported.calls.isEmpty)
     }
 }

@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -32,15 +33,15 @@ struct LoggingTests {
         let handler = RecordingLogHandler(accepts: false)
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
         let router = StackRouter(configuration: NavigationConfiguration(logging: logging, registry: .permissive))
-        let built = Recorder<String>()
+        let built = Spy<String, Void>()
 
         router.tree.log(.fault, .issues, file: #fileID, line: #line) { _ in
-            built.record("built")
+            built("built")
             return "never"
         }
         router.push(HomeRoute())
 
-        #expect(built.count == 0)
+        #expect(built.callCount == 0)
         #expect(handler.checks > 0)
         #expect(handler.routerMessages.isEmpty)
         #expect(handler.intervals.isEmpty)

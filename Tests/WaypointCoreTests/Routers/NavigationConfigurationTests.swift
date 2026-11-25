@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -19,13 +20,13 @@ struct NavigationConfigurationTests {
     @Test
     func rootConfigurationReachesEveryRouter() throws {
         let handler = RecordingLogHandler()
-        let failures = Recorder<NavigationFailure>()
+        let failures = Spy<NavigationFailure, Void>()
         let configuration = NavigationConfiguration(
             logging: LogConfiguration(handler: handler, minimumLevel: .debug),
             maxQueuedChanges: 8,
             registry: .permissive,
             onNavigationFailure: { failure in
-                failures.record(failure)
+                failures(failure)
             }
         )
         let tabs = TabRouter(selection: MainTab.home, configuration: configuration)
@@ -41,8 +42,8 @@ struct NavigationConfigurationTests {
         #expect(limits == expectedLimits)
         #expect(settings.configuration.logging.handler is RecordingLogHandler)
         #expect(handler.routerTexts.contains { $0.contains("sheet settings") })
-        #expect(failures.count == 1)
-        #expect(failures.last?.issue.flow == settings.flowID)
+        #expect(failures.callCount == 1)
+        #expect(failures.lastCall?.issue.flow == settings.flowID)
     }
 
     @Test

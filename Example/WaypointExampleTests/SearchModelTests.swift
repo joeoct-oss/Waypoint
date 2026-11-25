@@ -8,6 +8,7 @@
 
 import Foundation
 import Testing
+import Understudy
 import WaypointCore
 @testable import WaypointExample
 
@@ -73,7 +74,7 @@ struct SearchModelTests {
 
         _ = router.navigator.scoped(to: OtherFlow.self)
 
-        #expect(handler.messages.contains { $0.contains(OtherFlow.mismatch) })
+        #expect(handler.logged.calls.contains { $0.contains(OtherFlow.mismatch) })
     }
 
     private func catalogIDs() -> [Int] {
@@ -122,22 +123,17 @@ private enum OtherFlow: NavigationFlow {
 //
 // Conformances:
 // - `LogHandler`, so a router logs to it.
-// - `@unchecked Sendable`, because a handler can be called from any thread; `stored` is read and
-//   written only under `lock`.
-private final class IssueRecorder: LogHandler, @unchecked Sendable {
-    private let lock = NSLock()
-    // `var` because each issue logged adds its text. Only `log(_:)` changes it, under `lock`.
-    private var stored: [String] = []
-
-    var messages: [String] {
-        lock.withLock { stored }
-    }
+// - `Sendable`, because a handler can be called from any thread; its one stored value is a spy of
+//   strings, which is `Sendable`.
+private final class IssueRecorder: LogHandler, Sendable {
+    let logged = Spy<String, Void>()
 
     func isEnabled(level: LogLevel, category: LogCategory) -> Bool {
         category == .issues
     }
 
     func log(_ message: LogMessage) {
-        lock.withLock { stored.append(message.text) }
+        logged(message.text)
     }
 }
+

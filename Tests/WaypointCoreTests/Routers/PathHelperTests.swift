@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -52,9 +53,9 @@ struct PathHelperTests {
     @Test
     func pushManyIsOneChange() {
         let router = StackRouter(configuration: .permissive)
-        let changes = Recorder<AppliedChange>()
+        let changes = Spy<[AppliedChange], Void>()
         router.tree.onApplied { applied in
-            changes.record(contentsOf: applied)
+            changes(applied)
         }
 
         router.push {
@@ -64,7 +65,7 @@ struct PathHelperTests {
 
         let pushed = [AnyRoute(HomeRoute()), AnyRoute(ProductRoute(id: 1))]
         let expectedChanges: [NavigationChange] = [.pushed(pushed)]
-        #expect(changes.values.map(\.change) == expectedChanges)
+        #expect(changes.calls.joined().map(\.change) == expectedChanges)
     }
 
     @Test

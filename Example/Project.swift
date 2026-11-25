@@ -83,8 +83,11 @@ let unitTestSources: SourceFilesList = [
     "WaypointExampleTests/**",
 ]
 
+// Understudy gives the unit tests their spies. Only the test target takes it, so the app never
+// links it.
 let unitTestDependencies: [TargetDependency] = [
     .target(name: "WaypointExample"),
+    .external(name: "Understudy"),
 ]
 
 let app = Target.target(

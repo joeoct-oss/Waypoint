@@ -4,6 +4,10 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ## Unreleased
 
+### Changed
+
+- The test targets use Understudy 0.1.x (test targets only, so apps never fetch it): `Spy` replaces `WaypointTestSupport`'s `Recorder`, which is gone. `scripts/test-mac.sh` now fails a run on any warning in Waypoint's own `Sources/` and `Tests/`, found in the xcodebuild log, instead of passing `SWIFT_TREAT_WARNINGS_AS_ERRORS`, which also failed on warnings in packages Waypoint depends on.
+
 ### Added
 
 - Orbit Shop's coordinators take at most three arguments (planning #462, step 2): their factory, what starts them, and what they report. Each feature factory exposes its `dependencies`, which its coordinator reads. `ProductsCoordinator` takes its factory, a `ProductsStart` whose `browse` case carries Shop's launch steps, and a `ProductsCart` that now reports Add to cart too. `AuthCoordinator` takes its factory and a new `AuthRequest` (why the flow opened, and the signed-in step), and gets its Create account builder from the factory. `AccountCoordinator` takes its factory, the launch and Clear all data.

@@ -8,6 +8,7 @@
 
 import Observation
 import Testing
+import Understudy
 import WaypointCore
 import WaypointTestSupport
 
@@ -21,14 +22,14 @@ struct QueuedCallTests {
     @Test
     func navigatingFromFailureHandlerRunsAfterTheChange() {
         let holder = RouterHolder()
-        let inner = Recorder<NavigationOutcome>()
-        let pathsSeen = Recorder<[AnyRoute]>()
+        let inner = Spy<NavigationOutcome, Void>()
+        let pathsSeen = Spy<[AnyRoute], Void>()
         let configuration = NavigationConfiguration(registry: .permissive) { _ in
-            guard let router = holder.router, inner.values.isEmpty else {
+            guard let router = holder.router, inner.calls.isEmpty else {
                 return
             }
-            inner.record(router.push(ItemRoute(id: 1)))
-            pathsSeen.record(router.state.path)
+            inner(router.push(ItemRoute(id: 1)))
+            pathsSeen(router.state.path)
         }
         let router = StackRouter(configuration: configuration)
         holder.router = router
@@ -38,36 +39,36 @@ struct QueuedCallTests {
         let expected = [AnyRoute(ItemRoute(id: 1))]
         let queued: [NavigationOutcome] = [.queued]
         let empty: [[AnyRoute]] = [[]]
-        #expect(inner.values == queued)
-        #expect(pathsSeen.values == empty)
+        #expect(inner.calls == queued)
+        #expect(pathsSeen.calls == empty)
         #expect(router.state.path == expected)
     }
 
     @Test
     func navigatingFromTransactionBodyRunsAfterTheChange() {
         let router = StackRouter(configuration: .permissive)
-        let inner = Recorder<NavigationOutcome>()
+        let inner = Spy<NavigationOutcome, Void>()
 
         router.transaction { transaction in
             transaction.push(ItemRoute(id: 1))
-            inner.record(router.push(ItemRoute(id: 2)))
+            inner(router.push(ItemRoute(id: 2)))
         }
 
         let expected = [AnyRoute(ItemRoute(id: 1)), AnyRoute(ItemRoute(id: 2))]
         let queued: [NavigationOutcome] = [.queued]
-        #expect(inner.values == queued)
+        #expect(inner.calls == queued)
         #expect(router.state.path == expected)
     }
 
     @Test
     func navigatingFromCustomFallbackRunsAfterTheChange() {
         let holder = RouterHolder()
-        let inner = Recorder<NavigationOutcome>()
+        let inner = Spy<NavigationOutcome, Void>()
         let fallback = NavigationFallback.custom("showHome") { _, _ in
             guard let router = holder.router else {
                 return
             }
-            inner.record(router.push(ItemRoute(id: 1)))
+            inner(router.push(ItemRoute(id: 1)))
         }
         let router = StackRouter(configuration: .permissive)
         holder.router = router
@@ -76,7 +77,7 @@ struct QueuedCallTests {
 
         let expected = [AnyRoute(ItemRoute(id: 1))]
         let queued: [NavigationOutcome] = [.queued]
-        #expect(inner.values == queued)
+        #expect(inner.calls == queued)
         #expect(router.state.path == expected)
     }
 
@@ -125,9 +126,9 @@ struct QueuedCallTests {
     @Test
     func queuedCallThatFailsReportsAndRunsItsFallback() {
         let holder = RouterHolder()
-        let failures = Recorder<NavigationIssue.Kind>()
+        let failures = Spy<NavigationIssue.Kind, Void>()
         let configuration = NavigationConfiguration(registry: .permissive) { failure in
-            failures.record(failure.issue.kind)
+            failures(failure.issue.kind)
         }
         let router = StackRouter(configuration: configuration)
         holder.router = router
@@ -144,7 +145,7 @@ struct QueuedCallTests {
         let expected = [AnyRoute(ItemRoute(id: 1)), AnyRoute(ItemRoute(id: 9))]
         let kinds: [NavigationIssue.Kind] = [.routeNotInPath]
         #expect(router.state.path == expected)
-        #expect(failures.values == kinds)
+        #expect(failures.calls == kinds)
     }
 
     @Test
@@ -166,26 +167,26 @@ struct QueuedCallTests {
 
     @Test
     func queuedAndStaleCallsDoNotCallTheFailureHandler() throws {
-        let failures = Recorder<NavigationFailure>()
+        let failures = Spy<NavigationFailure, Void>()
         let configuration = NavigationConfiguration(registry: .permissive) { failure in
-            failures.record(failure)
+            failures(failure)
         }
         let router = StackRouter(configuration: configuration)
         router.present(CartRoute())
         let child = try #require(router.presented)
         let navigation = child.navigator
 
-        let queued = Recorder<NavigationOutcome>()
+        let queued = Spy<NavigationOutcome, Void>()
         router.transaction { _ in
-            queued.record(router.push(ItemRoute(id: 1)))
+            queued(router.push(ItemRoute(id: 1)))
         }
         router.dismiss()
         let stale = navigation.push(ItemRoute(id: 2))
 
         let expectedQueued: [NavigationOutcome] = [.queued]
-        #expect(queued.values == expectedQueued)
+        #expect(queued.calls == expectedQueued)
         #expect(stale == .ignored)
-        #expect(failures.values.isEmpty)
+        #expect(failures.calls.isEmpty)
     }
 
     @Test
@@ -193,9 +194,9 @@ struct QueuedCallTests {
         let router = StackRouter(configuration: .permissive)
         router.present(CartRoute())
         let child = try #require(router.presented)
-        let seen = Recorder<Bool>()
+        let seen = Spy<Bool, Void>()
         let routerSees: @MainActor @Sendable () -> Void = {
-            seen.record(router.state.path.isEmpty == child.state.path.isEmpty)
+            seen(router.state.path.isEmpty == child.state.path.isEmpty)
         }
         observeOnce(router, then: routerSees)
         observeOnce(child, then: routerSees)
@@ -206,7 +207,7 @@ struct QueuedCallTests {
         }
 
         let whole = [true, true]
-        #expect(seen.values == whole)
+        #expect(seen.calls == whole)
         #expect(router.state.path.count == 1)
         #expect(child.state.path.count == 1)
     }
@@ -216,15 +217,15 @@ struct QueuedCallTests {
         let router = StackRouter(configuration: .permissive)
         router.present(CartRoute())
         let child = try #require(router.presented)
-        let late = Recorder<NavigationOutcome>()
+        let late = Spy<NavigationOutcome, Void>()
 
         router.transaction { _ in
             router.dismiss()
-            late.record(child.push(ItemRoute(id: 1)))
+            late(child.push(ItemRoute(id: 1)))
         }
 
         let queued: [NavigationOutcome] = [.queued]
-        #expect(late.values == queued)
+        #expect(late.calls == queued)
         #expect(router.presented == nil)
         #expect(child.state.path.isEmpty)
         #expect(!child.isActive)

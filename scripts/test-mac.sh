@@ -574,6 +574,27 @@ tuist_cmd() {
     fi
 }
 
+# Runs an xcodebuild command and fails it on any warning in the package's own `Sources/` or `Tests/`.
+# `SWIFT_TREAT_WARNINGS_AS_ERRORS=YES` on the command line can't do this: it reaches every target,
+# and Xcode builds a remote package such as Understudy with `-suppress-warnings`, which the compiler
+# refuses alongside `-warnings-as-errors`. The command's own status wins when it fails.
+own_warnings_as_errors() {
+    local log status=0
+    log=$(mktemp "${TMPDIR:-/tmp}/waypoint-xcodebuild.XXXXXX")
+    "$@" 2>&1 | tee "$log" || status=$?
+    if [[ "$status" == 0 ]]; then
+        local warnings
+        warnings=$(grep -E "^$PWD/(Sources|Tests)/[^:]+:[0-9]+:[0-9]+: warning:" "$log" | sort -u || true)
+        if [[ -n "$warnings" ]]; then
+            echo "error: warnings in Waypoint's own code, which count as errors:" >&2
+            echo "$warnings" >&2
+            status=1
+        fi
+    fi
+    rm -f "$log"
+    return "$status"
+}
+
 # The package's unit tests on the simulator `udid`, built with warnings as errors: the one
 # simulator build checks the warnings and runs the tests. The result bundle `bundle_name` in
 # `.build/results` puts the step's test count and slowest tests in the report, as the example app's
@@ -583,11 +604,10 @@ package_tests_on() {
     local udid="$1" bundle_name="$2"
     local bundle="$RESULTS_DIR/$bundle_name.xcresult" status=0
     mkdir -p "$RESULTS_DIR"
-    scripts/package-xcodebuild.sh test "${XCODE_TEST_FLAGS[@]}" \
+    own_warnings_as_errors scripts/package-xcodebuild.sh test "${XCODE_TEST_FLAGS[@]}" \
         -scheme Waypoint-Package \
         -destination "platform=iOS Simulator,id=$udid" \
-        -resultBundlePath "$bundle" \
-        SWIFT_TREAT_WARNINGS_AS_ERRORS=YES || status=$?
+        -resultBundlePath "$bundle" || status=$?
     send_package_test_results "$bundle" || true
     return "$status"
 }
@@ -819,8 +839,8 @@ fi
 
 if $RUN_DEVICE_BUILD; then
     step "xcodebuild build Waypoint-Package for an iOS device with warnings as errors" \
-        scripts/package-xcodebuild.sh build -quiet -jobs "$JOBS" -scheme Waypoint-Package -destination generic/platform=iOS \
-        SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+        own_warnings_as_errors scripts/package-xcodebuild.sh build -quiet -jobs "$JOBS" \
+        -scheme Waypoint-Package -destination generic/platform=iOS
 fi
 
 if $RUN_SIMULATOR || $RUN_UI; then
