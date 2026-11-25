@@ -125,10 +125,16 @@ def test_cases(nodes, bundle=None, suite=None):
         elif kind == "Test Case":
             bundle_name = (bundle or {}).get("name", "")
             is_ui = (bundle or {}).get("nodeType") == "UI test bundle" or bundle_name.endswith("UITests")
-            test = node.get("name", "?")
-            if test.endswith("()"):
-                test = test[:-2]
-            name = "/".join(part for part in (bundle_name, suite, test) if part)
+            # A Swift Testing test with a display name shows that name in `name`, so the test's
+            # identifier (`<Suite>/<function>()`) names it when the bundle has one.
+            identifier = node.get("nodeIdentifier") or ""
+            if identifier.count("/") == 1:
+                name = f"{bundle_name}/{identifier}" if bundle_name else identifier
+            else:
+                test = node.get("name", "?")
+                name = "/".join(part for part in (bundle_name, suite, test) if part)
+            if name.endswith("()"):
+                name = name[:-2]
             tries = [child.get("result") for child in descendants(node)
                      if child.get("nodeType") == "Repetition"]
             if not tries:

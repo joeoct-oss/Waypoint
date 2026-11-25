@@ -140,6 +140,22 @@ else
     fail "a unit test that failed blocks"
 fi
 
+# A Swift Testing test with a display name is still named by its identifier.
+VERDICT=0
+bundle Passed Failed | python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+case = data["testNodes"][0]["children"][1]["children"][0]["children"][0]
+case["name"] = "The total adds every line"
+case["nodeIdentifier"] = "CartTests/testTotal()"
+print(json.dumps(data))' |
+    scripts/flaky-tests.py --step-status 65 --today "$TODAY" >"$WORK/verdict.log" 2>&1 || VERDICT=$?
+if [[ $VERDICT -eq 1 ]] && grep -q "error: WaypointExampleTests/CartTests/testTotal failed" "$WORK/verdict.log"; then
+    pass "a test with a display name is named by its identifier"
+else
+    fail "a test with a display name is named by its identifier ($(cat "$WORK/verdict.log"))"
+fi
+
 judge Passed Passed 65
 if [[ $VERDICT -eq 1 ]] && grep -q "no test failed" "$WORK/verdict.log"; then
     pass "a step that failed with no failed test, such as a build error, blocks"
