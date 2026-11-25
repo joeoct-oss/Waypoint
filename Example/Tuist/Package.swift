@@ -49,6 +49,6 @@ let package = Package(
     dependencies: [
         .package(path: "../.."),
         // The unit tests' spies. Waypoint's own test targets take it too, at the same version.
-        .package(url: "https://github.com/joeoct-oss/Understudy", .upToNextMinor(from: "0.1.0")),
+        .package(url: "https://github.com/joeoct-oss/Understudy", .upToNextMinor(from: "0.5.0")),
     ]
 )
