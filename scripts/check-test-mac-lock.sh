@@ -73,6 +73,15 @@ fi
 if [[ "$1 $2" == "simctl shutdown" && -L "$WAYPOINT_RUN_LOCK" ]]; then
     echo "shutdown while the run lock was held" >>"$STUB_CALLS"
 fi
+# The result bundle's tests, when the case gives some (STUB_BUNDLE_JSON).
+if [[ "$*" == "xcresulttool get test-results tests"* ]]; then
+    [[ -n "${STUB_BUNDLE_JSON:-}" ]] && cat "$STUB_BUNDLE_JSON"
+    exit 0
+fi
+if [[ "$*" == "xcresulttool get build-results"* ]]; then
+    echo "{\"errorCount\": ${STUB_BUILD_ERRORS:-0}}"
+    exit 0
+fi
 if [[ "$*" == *"list devices"* ]]; then
     echo '{"devices":{"com.apple.CoreSimulator.SimRuntime.iOS-27-2":[{"name":"waypoint-01","udid":"STUB-UDID","state":"Shutdown"}]}}'
 fi
@@ -97,6 +106,14 @@ if [[ "$1" == test ]]; then
     echo "GITHUB_REF seen by tuist test: ${GITHUB_REF:-}" >>"$STUB_CALLS"
     echo "TUIST_WAYPOINT_BINARY_CACHE seen by tuist test: ${TUIST_WAYPOINT_BINARY_CACHE:-}" >>"$STUB_CALLS"
     echo "WAYPOINT_TUIST_TEST_RUN seen by tuist test: ${WAYPOINT_TUIST_TEST_RUN:-}" >>"$STUB_CALLS"
+    # A case with test results leaves a result bundle where `-T` says, as `tuist test` does.
+    if [[ -n "${STUB_BUNDLE_JSON:-}" ]]; then
+        previous=""
+        for argument in "$@"; do
+            [[ "$previous" == -T ]] && mkdir -p "$argument"
+            previous="$argument"
+        done
+    fi
     # The tests boot simulator copies: STUB_CLONES_DURING replaces what Xcode's device set lists.
     [[ -z "${STUB_CLONES_DURING:-}" ]] || cp "$STUB_CLONES_DURING" "$STUB_CLONES"
     "$(dirname "$0")/stub-grandchild" "${STUB_SECONDS:-0}"
@@ -225,6 +242,12 @@ if [[ -n "$INSTALL_LINE" && -n "$TEST_LINE" && "$INSTALL_LINE" -lt "$TEST_LINE" 
 else
     fail "tuist install runs before tuist test ($(grep '^tuist' "$CALLS" | tr '\n' ';'))"
 fi
+# `--only` is how a person tells a flaky test from a broken one, so it runs the test exactly once.
+if [[ "$TUIST_CALL" != *"-retry-tests-on-failure"* ]]; then
+    pass "a test asked for with --only is never retried"
+else
+    fail "a test asked for with --only is never retried (call: $TUIST_CALL)"
+fi
 if [[ "$TUIST_CALL" == *"--no-selective-testing"* ]]; then
     pass "a test asked for with --only always runs: selective testing is off"
 else
@@ -311,6 +334,24 @@ if [[ "$got" == *"selective testing on, release reports selective testing off"* 
 else
     fail "a full run's release reports step never skips its tests (plan: ${got:-none})"
 fi
+
+# 1c1. A failed example test runs once more in every tier, except `--only`.
+expect_retry() {
+    local name="$1" want="$2"
+    shift 2
+    local got
+    got=$(plan_of "$@" || true)
+    if [[ "$got" == *", retry $want,"* ]]; then
+        pass "$name"
+    else
+        fail "$name (plan: ${got:-none})"
+    fi
+}
+expect_retry "a full run retries a failed example test once" on full
+expect_retry "a quick run with --ui retries a failed example test once" on quick --ui
+expect_retry "a release run retries a failed example test once" on release
+expect_retry "a quick run of one test with --only never retries" off quick \
+    --only WaypointExampleUITests/StackTests/testPushAndBack
 
 # 1c2. Tuist's binary cache (planning #441): quick and full runs may use it; release, coverage,
 # offline runs and runs for a pull request build from source; green full and coverage runs warm it; the release reports step
@@ -657,7 +698,7 @@ fi
 
 # 1g. The release reports step collects no coverage (planning #431): the Debug step measured its tests.
 if sed -n '/^release_reports_on() {/,/^}/p' scripts/test-mac.sh |
-    grep -q 'TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 example_tests_on'; then
+    grep -q 'TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 judged_example_tests_on'; then
     pass "the release reports step runs with coverage off"
 else
     fail "the release reports step runs with coverage off"
@@ -702,6 +743,58 @@ if grep -q '^let testOptions = TestActionOptions.options(preferredScreenCaptureF
 else
     fail "a failed UI test keeps screenshots, not a screen recording"
 fi
+
+# 1j. The example step's verdict comes from its result bundle (scripts/flaky-tests.py), not from
+# `tuist test`'s status alone: a UI test that passed on its retry leaves the run green and is
+# listed at the end; a UI test that failed both tries fails the run even when `tuist test` passed.
+ui_tries_bundle() {
+    cat >"$WORK/bundle.json" <<JSON
+{"testNodes": [{"nodeType": "UI test bundle", "name": "WaypointExampleUITests", "children": [
+  {"nodeType": "Test Suite", "name": "StackTests", "children": [
+    {"nodeType": "Test Case", "name": "testPushAndBack()", "result": "$2", "children": [
+      {"nodeType": "Repetition", "name": "Repetition 1", "result": "$1", "children": [
+        {"nodeType": "Failure Message", "name": "StackTests.swift:20: the detail never showed"}]},
+      {"nodeType": "Repetition", "name": "Repetition 2", "result": "$2"}]}]}]}]}
+JSON
+}
+ui_tries_bundle Failed Passed
+: >"$CALLS"
+if run_script STUB_BUNDLE_JSON="$WORK/bundle.json" STUB_STATUS=65 >"$WORK/1j.log" 2>&1 &&
+    grep -q "^Flaky: WaypointExampleUITests/StackTests/testPushAndBack failed 1 of 2 tries" \
+        "$WORK/1j.log" &&
+    grep -q "^  Flaky: WaypointExampleUITests/StackTests/testPushAndBack (example-only)" "$WORK/1j.log" &&
+    grep -q "^All Mac tests passed (quick).$" "$WORK/1j.log"; then
+    pass "a UI test that passed on its retry leaves the run green and is listed at the end"
+else
+    fail "a UI test that passed on its retry leaves the run green (log: $(tail -8 "$WORK/1j.log"))"
+fi
+ui_tries_bundle Failed Failed
+if ! run_script STUB_BUNDLE_JSON="$WORK/bundle.json" STUB_STATUS=0 >"$WORK/1j2.log" 2>&1 &&
+    grep -q "error: WaypointExampleUITests/StackTests/testPushAndBack failed every try" "$WORK/1j2.log" &&
+    grep -q "^Mac tests failed (quick).$" "$WORK/1j2.log"; then
+    pass "a UI test that failed both tries fails the run, whatever tuist test said"
+else
+    fail "a UI test that failed both tries fails the run (log: $(tail -8 "$WORK/1j2.log"))"
+fi
+ui_tries_bundle Failed Passed
+if ! run_script STUB_BUNDLE_JSON="$WORK/bundle.json" STUB_BUILD_ERRORS=1 STUB_STATUS=65 \
+    >"$WORK/1j3.log" 2>&1 && grep -q "1 error(s) outside its tests" "$WORK/1j3.log"; then
+    pass "a build error in the bundle fails the run, even when its only failed test was flaky"
+else
+    fail "a build error in the bundle fails the run (log: $(tail -8 "$WORK/1j3.log"))"
+fi
+# `--only` is how a person looks at one test, so the quarantine never excuses it there.
+cat >"$WORK/quarantine.json" <<JSON
+{ "tests": [ { "test": "WaypointExampleUITests/StackTests/testPushAndBack", "issue": 1, "since": "$(date +%F)" } ] }
+JSON
+ui_tries_bundle Failed Failed
+if ! run_script STUB_BUNDLE_JSON="$WORK/bundle.json" WAYPOINT_QUARANTINE_FILE="$WORK/quarantine.json" \
+    STUB_STATUS=65 >"$WORK/1j4.log" 2>&1 && grep -q "failed every try" "$WORK/1j4.log"; then
+    pass "a quarantined test that fails under --only fails the run"
+else
+    fail "a quarantined test that fails under --only fails the run (log: $(tail -8 "$WORK/1j4.log"))"
+fi
+: >"$CALLS"
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
 : >"$CALLS"
