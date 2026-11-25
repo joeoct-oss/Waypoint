@@ -3,6 +3,8 @@
 # Issues live in the planning repo, whose own copy of this workflow moves an
 # assigned issue to "Tests first".
 # Switched off unless the repository variable BOARD_AUTOMATION is "true".
+# Skips pull requests Dependabot opened: its runs get no repository secrets, and its
+# updates need no card.
 # Needs the WAYPOINT_PROJECT_TOKEN secret: a classic token with the
 # project and repo scopes, because GITHUB_TOKEN cannot write to a
 # project owned by a personal account.
@@ -23,7 +25,7 @@ env:
 jobs:
   move-item:
     name: Move the pull request to its column
-    if: vars.BOARD_AUTOMATION == 'true'
+    if: vars.BOARD_AUTOMATION == 'true' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       # GraphQL directly: actions/add-to-project makes a draft card instead when the PR's owner
