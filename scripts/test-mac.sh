@@ -88,6 +88,8 @@
 #                             Tuist's run report; unset for a merge batch of several branches.
 #   WAYPOINT_BASE             what the branch is compared with (default origin/main), for what
 #                             quick runs and whether selective testing is on.
+#   WAYPOINT_TEST_DEVICES     Xcode's own device set, where it makes the simulator copies parallel
+#                             tests run on (default ~/Library/Developer/XCTestDevices).
 #   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
 #                             script's own checks set it, and WAYPOINT_RUN_LOCK_TEST_PAUSE.
 #   WAYPOINT_QUARANTINE_FILE  the quarantine list (default Example/quarantine.json); only the
@@ -299,8 +301,10 @@ QUARANTINE_FILE="${WAYPOINT_QUARANTINE_FILE:-Example/quarantine.json}"
 # How many times in a row a stress run runs each quarantined test, after the full run's one try.
 STRESS_REPEATS=5
 
-# The steps run so far, with the seconds each took, printed when the script ends.
+# The steps run so far, with the clock time each started and the seconds it took, printed when the
+# script ends as the run's phase timeline (planning #489).
 STEP_NAMES=()
+STEP_STARTS=()
 STEP_SECONDS=()
 # The simulators this run booted or locked, released when the script ends.
 BOOTED_UDIDS=()
@@ -367,6 +371,78 @@ report_slowest_tests() {
     done
 }
 
+# Prints free memory and swap, so a report shows how loaded the Mac was (planning #489). Only a
+# report: it never fails the run, and prints nothing where the tools don't exist.
+report_memory() {
+    local label="$1" swap free_mb
+    swap=$(sysctl -n vm.swapusage 2>/dev/null || true)
+    # vm_stat counts pages and names the page size in its first line.
+    free_mb=$(vm_stat 2>/dev/null | awk '
+        NR == 1 { for (i = 1; i <= NF; i++) if ($i == "of") size = $(i + 1) }
+        /Pages free/ { gsub(/\./, "", $3); if (size) print int($3 * size / 1048576) }' || true)
+    echo "Memory $label: ${free_mb:+$free_mb MB free, }swap ${swap:-unknown}"
+}
+
+# Xcode makes the simulator copies parallel tests run on ("Clone N of <simulator>") in a device set of
+# its own, new for every run, and leaves one of them behind each time, shut down, as big as the
+# simulator it copies (measured 2026-11-25: 43 copies of about 20 GB each, none reused). A run
+# remembers which copies were there when it started, and at the end shuts down and deletes, by UDID,
+# only the copies made since that are shut down. A copy that was there before, and a copy still
+# booted at the end, which only someone else's test run, such as Yousef's own in Xcode, can be
+# using, are never touched; Xcode shuts its copies down when a step ends. The pool simulators
+# are never touched, and nothing runs `shutdown all` (planning #489). Without a good listing at the
+# start, nothing is removed.
+TEST_DEVICES="${WAYPOINT_TEST_DEVICES:-$HOME/Library/Developer/XCTestDevices}"
+CLONES_AT_START=""
+CLONES_RECORDED=false
+# Prints "<udid> <state>" for each copy in the set, or fails when the set can't be listed.
+clones() {
+    [[ -d "$TEST_DEVICES" ]] || return 0
+    local listing
+    listing=$(xcrun simctl --set "$TEST_DEVICES" list devices -j 2>/dev/null) || return 1
+    /usr/bin/python3 -c 'import json,sys
+for r in json.load(sys.stdin)["devices"].values():
+    for x in r:
+        if x["name"].startswith("Clone "): print(x["udid"], x["state"])' <<<"$listing" 2>/dev/null
+}
+record_clones() {
+    local listing
+    if listing=$(clones); then
+        CLONES_AT_START=$(cut -d' ' -f1 <<<"$listing")
+        CLONES_RECORDED=true
+    else
+        echo "warning: couldn't list Xcode's simulator copies; this run removes none" >&2
+    fi
+}
+remove_own_clones() {
+    $CLONES_RECORDED || return 0
+    local listing udid state
+    listing=$(clones) || return 0
+    while read -r udid state; do
+        [[ -n "$udid" ]] || continue
+        grep -qx "$udid" <<<"$CLONES_AT_START" && continue
+        if [[ "$state" != Shutdown ]]; then
+            echo "Leaving simulator copy $udid alone: it is $state, so another test run may be using it"
+            continue
+        fi
+        echo "Removing simulator copy $udid, made by this run"
+        xcrun simctl --set "$TEST_DEVICES" delete "$udid" >/dev/null 2>&1 || true
+    done <<<"$listing"
+}
+
+# Xcode copies the project simulator for every worker, so the larger its data, the longer each copy
+# takes: on 2026-11-25 waypoint-01 held 21 GB, 16 GB of it the wallpaper store, and each copy took
+# 33 to 72 s, one after another. Only a report: it never fails the run or changes the simulator.
+SIMULATOR_DATA_WARN_GB=5
+report_simulator_size() {
+    local udid="$1" name="$2" kb
+    kb=$(du -sk "$HOME/Library/Developer/CoreSimulator/Devices/$udid/data" 2>/dev/null | cut -f1 || true)
+    [[ -n "$kb" ]] || return 0
+    if [[ $((kb / 1048576)) -ge $SIMULATOR_DATA_WARN_GB ]]; then
+        echo "warning: $name holds $((kb / 1048576)) GB of data, so each simulator copy is slow to make; erase it with \`xcrun simctl erase $name\` when no run uses it" >&2
+    fi
+}
+
 finish() {
     local status=$?
     local udid lock index
@@ -379,22 +455,26 @@ finish() {
     for udid in ${BOOTED_UDIDS[@]+"${BOOTED_UDIDS[@]}"}; do
         xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true
     done
+    if $OWNS_RUN_LOCK; then
+        remove_own_clones
+    fi
     for lock in ${LOCK_DIRS[@]+"${LOCK_DIRS[@]}"}; do
         rm -rf "$lock"
     done
     if [[ ${#STEP_NAMES[@]} -gt 0 ]]; then
         echo
-        echo "Step times ($TIER, $JOBS jobs):"
+        echo "Step times ($TIER, $JOBS jobs), with the clock time each started:"
         for index in "${!STEP_NAMES[@]}"; do
-            printf '  %5ss  %s\n' "${STEP_SECONDS[$index]}" "${STEP_NAMES[$index]}"
+            printf '  %s  %5ss  %s\n' "${STEP_STARTS[$index]}" "${STEP_SECONDS[$index]}" "${STEP_NAMES[$index]}"
         done
-        printf '  %5ss  total\n' "$SECONDS"
+        printf '  %s  %5ss  total\n' "$(date +%H:%M:%S)" "$SECONDS"
     fi
     # A run turned away at the run lock reports nothing of the run that holds it.
     if $OWNS_RUN_LOCK; then
         report_slowest_tests
         echo
         scripts/flaky-tests.py --summary "$RESULTS_DIR" || true
+        report_memory "at the end"
     fi
     if [[ -n "$STOPPED_BY" ]]; then
         echo "Mac tests stopped by $STOPPED_BY before they finished ($TIER)." >&2
@@ -480,6 +560,8 @@ take_run_lock() {
 }
 if ! $PLAN_ONLY; then
     take_run_lock
+    report_memory "at the start"
+    record_clones
 fi
 # The result bundles of an earlier run would show in this run's report.
 rm -rf "$RESULTS_DIR"
@@ -488,8 +570,9 @@ rm -rf "$RESULTS_DIR"
 step() {
     local name="$1"
     shift
-    echo "==> $name"
-    local start=$SECONDS status=0
+    local start=$SECONDS status=0 clock
+    clock=$(date +%H:%M:%S)
+    echo "==> $clock $name"
     # Each step runs in a process group of its own, so stopping the run stops everything the
     # step started, a script's own tools included (`stop_step_tools`).
     set -m
@@ -502,6 +585,7 @@ step() {
     fi
     STEP_PID=""
     STEP_NAMES+=("$name")
+    STEP_STARTS+=("$clock")
     STEP_SECONDS+=($((SECONDS - start)))
 }
 
@@ -962,6 +1046,9 @@ fi
 if $RUN_SIMULATOR || $RUN_UI; then
     UDID=$(project_simulator_udid)
     claim_simulator "$SIMULATOR_NAME" "$UDID"
+    if $RUN_UI && [[ "$UI_WORKERS" -gt 1 ]]; then
+        report_simulator_size "$UDID" "$SIMULATOR_NAME"
+    fi
 fi
 
 if $RUN_SIMULATOR; then
@@ -1027,6 +1114,9 @@ release_reports_on() {
     local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
     local EXAMPLE_DERIVED_DATA="$RELEASE_REPORTS_DERIVED_DATA"
     local BINARY_CACHE=off
+    # Two test classes gain nothing from parallel workers, and each worker costs a simulator copy
+    # (planning #489), so they run on the project simulator itself.
+    local EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled NO)
     TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 judged_example_tests_on "$@"
 }
 if $RUN_RELEASE_REPORTS; then
