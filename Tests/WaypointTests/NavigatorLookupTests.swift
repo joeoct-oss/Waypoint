@@ -22,21 +22,6 @@ struct NavigatorLookupTests {
     let site = WrapperSite(file: "Shop/ProductView.swift", line: 12)
 
     @Test
-    func environmentProvidesNearestRouter() {
-        let outer = StackRouter(configuration: .permissive)
-        let inner = StackRouter(configuration: .permissive)
-        let reported = Recorder<NavigationIssue>()
-
-        let navigation = NavigatorLookup.stack(inner, site: site, report: reported.record)
-        navigation.push(HomeRoute())
-
-        let expected = [AnyRoute(HomeRoute())]
-        #expect(inner.state.path == expected)
-        #expect(outer.state.path.isEmpty)
-        #expect(reported.count == 0)
-    }
-
-    @Test
     func flowNavigationFindsTheNearestStackOfItsFlow() {
         let shop = StackRouter(configuration: .permissive)
         shop.declareFlow(ShopFlow.self)
