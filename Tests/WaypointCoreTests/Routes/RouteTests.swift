@@ -18,7 +18,7 @@ struct RouteTests {
 
     typealias OrderRoute = RouteFixtures.OrderRoute
 
-    @Test
+    @Test("Routes with the same values are equal")
     func routesWithSameValuesAreEqual() {
         #expect(PaymentRoute.card(id: 1, nickname: "Work") == .card(id: 1, nickname: "Work"))
         #expect(PaymentRoute.card(id: 1, nickname: "Work") != .card(id: 2, nickname: "Work"))
@@ -26,7 +26,7 @@ struct RouteTests {
         #expect(payments.count == 2)
     }
 
-    @Test
+    @Test("A route round-trips through JSON")
     func routeRoundTripsThroughJSON() throws {
         let route = PaymentRoute.card(id: 7, nickname: "Home")
 
@@ -35,7 +35,7 @@ struct RouteTests {
         #expect(decoded == route)
     }
 
-    @Test
+    @Test("A route key is the module and type name")
     func routeKeyIsModuleAndTypeName() {
         #expect(ProductRoute.routeKey.rawValue == "WaypointTestSupport.ProductRoute")
         #expect(OrderRoute.routeKey.rawValue == "WaypointCoreTests.RouteFixtures.OrderRoute")
@@ -43,12 +43,12 @@ struct RouteTests {
         #expect(RouteKey(ProductRoute.self) == ProductRoute.routeKey)
     }
 
-    @Test
+    @Test("The same type name in two modules gives two keys")
     func sameTypeNameInTwoModulesGivesTwoKeys() {
         #expect(ProductRoute.routeKey != RouteFixtures.ProductRoute.routeKey)
     }
 
-    @Test
+    @Test("A route key's type name drops the module")
     func routeKeyTypeNameDropsModule() {
         #expect(ProductRoute.routeKey.typeName == "ProductRoute")
         #expect(OrderRoute.routeKey.typeName == "RouteFixtures.OrderRoute")
@@ -56,7 +56,7 @@ struct RouteTests {
         #expect(hiddenRouteKey.typeName == "HiddenRoute")
     }
 
-    @Test
+    @Test("A route key encodes as a plain string")
     func routeKeyEncodesAsPlainString() throws {
         let data = try JSONEncoder().encode(ProductRoute.routeKey)
 
@@ -64,7 +64,7 @@ struct RouteTests {
         #expect(try JSONDecoder().decode(RouteKey.self, from: data) == ProductRoute.routeKey)
     }
 
-    @Test
+    @Test("A route saved under a former key still decodes")
     func formerRouteKeyDecodes() throws {
         let saved = Data(#"{"route":"WaypointCoreTests.OldOrderRoute","value":{"id":5}}"#.utf8)
 
@@ -73,7 +73,7 @@ struct RouteTests {
         #expect(route == AnyRoute(OrderRoute(id: 5)))
     }
 
-    @Test
+    @Test("Encoding uses the current key, not a former one")
     func encodingUsesCurrentKey() throws {
         let data = try JSONEncoder().encode(AnyRoute(OrderRoute(id: 5)))
         let json = String(decoding: data, as: UTF8.self)
@@ -82,7 +82,7 @@ struct RouteTests {
         #expect(!json.contains("OldOrderRoute"))
     }
 
-    @Test
+    @Test("A former key that is another route's key is reported as a duplicate")
     func formerKeyOfAnotherRouteReportsDuplicate() throws {
         let registry = RouteRegistry()
             .registering(OrderRoute.self)
@@ -96,7 +96,7 @@ struct RouteTests {
         #expect(registry.type(for: key) == OrderRoute.self)
     }
 
-    @Test
+    @Test("A private route is reported as having an unstable key")
     func privateRouteReportsUnstableKey() {
         let registry = registeringHiddenRoute(in: RouteRegistry())
 
@@ -107,7 +107,7 @@ struct RouteTests {
         }
     }
 
-    @Test
+    @Test("An empty former key is reported as invalid")
     func emptyFormerKeyReportsInvalid() {
         let registry = RouteRegistry()
             .registering(RouteFixtures.EmptyFormerKeyRoute.self)
@@ -117,7 +117,7 @@ struct RouteTests {
         #expect(registry.isRegistered(RouteFixtures.EmptyFormerKeyRoute.self))
     }
 
-    @Test
+    @Test("Registering a route twice does nothing more")
     func registeringTwiceDoesNothing() {
         let registry = RouteRegistry()
             .registering(OrderRoute.self)
@@ -127,7 +127,7 @@ struct RouteTests {
         #expect(registry.registeredTypes.count == 1)
     }
 
-    @Test
+    @Test("The unknown key message suggests adding a former key")
     func unknownKeyMessageSuggestsFormerKey() {
         let error = RouteDecodingError.unknownRouteKey(RouteKey("Shop.OldProductRoute"))
 
@@ -136,7 +136,7 @@ struct RouteTests {
         #expect(error.debugDescription.contains(hint))
     }
 
-    @Test
+    @Test("AnyRoute equality respects the route's type")
     func anyRouteEqualityRespectsType() {
         #expect(AnyRoute(OrderRoute(id: 1)) != AnyRoute(RouteFixtures.InvoiceRoute(id: 1)))
         #expect(AnyRoute(OrderRoute(id: 1)) == AnyRoute(OrderRoute(id: 1)))
@@ -144,7 +144,7 @@ struct RouteTests {
         #expect(routes.count == 1)
     }
 
-    @Test
+    @Test("AnyRoute unwraps to its original type")
     func anyRouteUnwrapsToOriginalType() {
         let route = AnyRoute(ProductRoute(id: 42))
 
@@ -155,7 +155,7 @@ struct RouteTests {
         #expect(route.routeKey == ProductRoute.routeKey)
     }
 
-    @Test
+    @Test("The registry decodes a registered type")
     func registryDecodesRegisteredType() throws {
         let original = [AnyRoute(PaymentRoute.card(id: 3, nickname: "Travel"))]
         let data = try JSONEncoder().encode(original)
@@ -165,7 +165,7 @@ struct RouteTests {
         #expect(decoded == original)
     }
 
-    @Test
+    @Test("The registry reports an unknown key")
     func registryReportsUnknownKey() throws {
         let data = try JSONEncoder().encode(AnyRoute(ProductRoute(id: 1)))
 
@@ -174,7 +174,7 @@ struct RouteTests {
         }
     }
 
-    @Test
+    @Test("The registry reports a removed enum case as an invalid payload")
     func registryReportsRemovedCase() {
         let saved = Data(#"{"route":"WaypointCoreTests.RouteFixtures.PaymentRoute","value":{"giftCard":{}}}"#.utf8)
 
@@ -183,7 +183,7 @@ struct RouteTests {
         }
     }
 
-    @Test
+    @Test("Decoding without a registry fails without crashing")
     func decodingWithoutRegistryFailsWithoutCrashing() throws {
         let data = try JSONEncoder().encode(AnyRoute(ProductRoute(id: 1)))
 
@@ -192,7 +192,7 @@ struct RouteTests {
         }
     }
 
-    @Test
+    @Test("AnyRoute can be sent across actors")
     func anyRouteIsSendableAcrossActors() async {
         let route = AnyRoute(ProductRoute(id: 9))
 

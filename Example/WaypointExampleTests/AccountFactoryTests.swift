@@ -20,7 +20,7 @@ struct AccountFactoryTests {
     private static let mugID = 2
     private static let missingID = 999
 
-    @Test
+    @Test("The wishlist lists the saved products from the catalog")
     func wishlistListsSavedProductsFromTheCatalog() {
         let store = TestStore.make()
         defer {

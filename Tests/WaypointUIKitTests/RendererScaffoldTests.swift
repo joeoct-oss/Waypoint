@@ -12,7 +12,7 @@
 
     @testable import WaypointUIKit
 
-    @Test
+    @Test("The UIKit renderer module links")
     func uiKitRendererModuleLinks() {
         #expect(WaypointUIKitRendererInfo.name == "UIKit")
     }

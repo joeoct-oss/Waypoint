@@ -23,7 +23,7 @@
     @Suite("Coordinator screens")
     @MainActor
     struct CoordinatorScreensTests {
-        @Test
+        @Test("Destinations register each route with its screen's name")
         func destinationsRegisterEachRouteWithItsScreenName() {
             let coordinator = ScreensShopCoordinator()
 
@@ -35,7 +35,7 @@
             #expect(router.tree.viewNames[CartRoute.routeKey] == "ScreensCartView")
         }
 
-        @Test
+        @Test("A push from the coordinator needs no register call")
         func pushFromTheCoordinatorNeedsNoRegisterCall() {
             let coordinator = ScreensShopCoordinator()
 
@@ -45,7 +45,7 @@
             #expect(coordinator.router.state.path == [AnyRoute(ProductRoute(id: 1))])
         }
 
-        @Test
+        @Test("A coordinator with only a root has no destinations")
         func coordinatorWithOnlyARootHasNoDestinations() {
             let coordinator = ScreensRootOnlyCoordinator()
 
@@ -56,7 +56,7 @@
             #expect(router.push(ProductRoute(id: 1)).failure?.issue.kind == .unregisteredRoute)
         }
 
-        @Test
+        @Test("Either branch of a root is named by its first screen")
         func eitherBranchOfARootIsNamedByItsFirstScreen() {
             let signedIn = ScreensBranchCoordinator(signedIn: true)
             let signedOut = ScreensBranchCoordinator(signedIn: false)
@@ -71,7 +71,7 @@
             #expect((signedIn.root as? Branches)?.isSecond == false)
         }
 
-        @Test
+        @Test("An optional root is named by its screen")
         func optionalRootIsNamedByItsScreen() {
             let coordinator = ScreensOptionalCoordinator()
 
@@ -79,7 +79,7 @@
         }
 
         #if canImport(UIKit)
-            @Test
+            @Test("A view controller screen is named by its controller")
             func viewControllerScreenIsNamedByItsController() {
                 let coordinator = ScreensControllerCoordinator()
 

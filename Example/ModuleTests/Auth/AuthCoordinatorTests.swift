@@ -21,7 +21,7 @@ struct AuthCoordinatorTests {
     private static let email = "ada@example.com"
     private static let password = "orbit-2026"
 
-    @Test
+    @Test("Creating an account keeps the typed values when going back")
     func createAccountKeepsValuesGoingBack() {
         let store = TestStore.make()
         defer {
@@ -52,7 +52,7 @@ struct AuthCoordinatorTests {
         #expect(details.draft.email == Self.email)
     }
 
-    @Test
+    @Test("Creating an account signs in and closes the flow")
     func createAccountSignsInOnFinish() async throws {
         let store = TestStore.make()
         defer {

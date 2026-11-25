@@ -1,0 +1,20 @@
+# Keeps the actions in the workflows and the packages in Package.swift current. Each ecosystem gets
+# one grouped pull request a month. The example app's Tuist packages and the tools in .mise.toml
+# are bumped by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: swift
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      swift-packages:
+        patterns: ["*"]

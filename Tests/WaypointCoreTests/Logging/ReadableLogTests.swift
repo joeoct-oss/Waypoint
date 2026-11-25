@@ -26,7 +26,7 @@ struct ReadableLogTests {
         return router
     }
 
-    @Test
+    @Test("Readable logs with symbols are the default")
     func readableIsTheDefaultWithSymbols() {
         let configuration = LogConfiguration.default
 
@@ -35,7 +35,7 @@ struct ReadableLogTests {
         #expect(configuration.treeLogging == .off)
     }
 
-    @Test
+    @Test("Type names read as words")
     func typeNamesReadAsWords() {
         #expect(RouteDescriber.readableTypeName("ProductListRoute") == "Product list")
         #expect(RouteDescriber.readableTypeName("Shop.FAQRoute") == "FAQ")
@@ -44,7 +44,7 @@ struct ReadableLogTests {
         #expect(RouteDescriber.readableTypeName("Checkout2Step") == "Checkout2 step")
     }
 
-    @Test
+    @Test("Routes show public fields and fold private ones")
     func routesShowPublicFieldsAndFoldPrivateOnes() {
         let search = AnyRoute(RouteFixtures.SearchRoute(id: 3, query: "shoes"))
 
@@ -55,7 +55,7 @@ struct ReadableLogTests {
         #expect(AnyRoute(WizardStep.review).readableDescription(revealingPrivateValues: false) == "Wizard step: review")
     }
 
-    @Test
+    @Test("Each change is one line with the stack after it")
     func eachChangeIsOneLineWithTheStackAfterIt() {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler)
@@ -80,7 +80,7 @@ struct ReadableLogTests {
         #expect(handler.routerTexts == expectedTexts)
     }
 
-    @Test
+    @Test("A deep stack is shortened to its ends in the log")
     func aDeepStackIsShortenedToItsEnds() {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler, LogConfiguration(revealsPrivateValues: true))
@@ -102,7 +102,7 @@ struct ReadableLogTests {
         #expect(!router.debugTree(revealingPrivateValues: true).contains("…"))
     }
 
-    @Test
+    @Test("A stack with a root route names it")
     func aStackWithARootRouteNamesIt() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug)
@@ -114,7 +114,7 @@ struct ReadableLogTests {
         #expect(handler.routerTexts == ["Waypoint  main       push     Settings                 │ Home › Settings"])
     }
 
-    @Test
+    @Test("A change the user made says by user")
     func aUserChangeSaysByUser() {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler)
@@ -125,7 +125,7 @@ struct ReadableLogTests {
         #expect(handler.routerTexts.last == "Waypoint  main       back     Home, by user            │ Main")
     }
 
-    @Test
+    @Test("Without symbols the separators are ASCII")
     func withoutSymbolsSeparatorsAreASCII() {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler, LogConfiguration(usesSymbols: false))
@@ -143,7 +143,7 @@ struct ReadableLogTests {
         #expect(handler.routerTexts == expectedTexts)
     }
 
-    @Test
+    @Test("Tab changes name both tabs")
     func tabChangesNameBothTabs() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug)
@@ -156,7 +156,7 @@ struct ReadableLogTests {
         #expect(handler.routerTexts == expectedTexts)
     }
 
-    @Test
+    @Test("A recovered issue is logged before its fallback")
     func recoveredIssueReadsBeforeItsFallback() {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler)
@@ -175,7 +175,7 @@ struct ReadableLogTests {
         #expect(handler.routerTexts.suffix(2) == expectedLastTexts)
     }
 
-    @Test
+    @Test("A failed issue is logged as a fault marked fail")
     func failedIssueIsMarkedAsFailed() throws {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler, LogConfiguration(usesSymbols: false))
@@ -187,7 +187,7 @@ struct ReadableLogTests {
         #expect(handler.routerMessages.first?.level == .fault)
     }
 
-    @Test
+    @Test("Revealing private values shows them in the log but not in the issue")
     func revealingShowsValuesInIssueMessages() {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler, LogConfiguration(revealsPrivateValues: true))
@@ -199,7 +199,7 @@ struct ReadableLogTests {
         #expect(router.popTo(HomeRoute()).failure?.issue.message.contains("ProductRoute(id: <private>)") == true)
     }
 
-    @Test
+    @Test("An issue's debug description reveals private values only when asked")
     func structuredIssueRevealsWhenAsked() throws {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 7))
@@ -210,7 +210,7 @@ struct ReadableLogTests {
         #expect(issue.debugDescription(revealingPrivateValues: false).contains("[ProductRoute(id: <private>)]"))
     }
 
-    @Test
+    @Test("Unchanged, queued and ignored calls say why")
     func unchangedQueuedAndIgnoredCallsSayWhy() throws {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler)
@@ -240,7 +240,7 @@ struct ReadableLogTests {
         #expect(texts == expectedTexts)
     }
 
-    @Test
+    @Test("Every stack a change touched is logged after it")
     func changedStacksFollowEachChange() throws {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, treeLogging: .changedStacks)
@@ -260,7 +260,7 @@ struct ReadableLogTests {
         #expect(stackLines == expectedStackLines)
     }
 
-    @Test
+    @Test("The whole tree is logged after each change when asked")
     func wholeTreeIsLoggedAfterEachChange() {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler, LogConfiguration(treeLogging: .wholeTree))
@@ -274,7 +274,7 @@ struct ReadableLogTests {
         #expect(handler.routerTexts == expectedTexts)
     }
 
-    @Test
+    @Test("debugTree draws every flow from any router in the tree")
     func debugTreeDrawsEveryFlow() throws {
         let tabs = TabRouter(selection: MainTab.shop, configuration: .permissive)
         tabs.router(for: .shop).push(ProductRoute(id: 7))
@@ -292,7 +292,7 @@ struct ReadableLogTests {
         #expect(tabs.router(for: .home).debugTree() == tabs.debugTree())
     }
 
-    @Test
+    @Test("debugTree reveals private values only when asked")
     func debugTreeRevealsWhenAsked() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 7))
@@ -301,7 +301,7 @@ struct ReadableLogTests {
         #expect(router.debugTree(revealingPrivateValues: true) == "main       Main › Product (id: 7)")
     }
 
-    @Test
+    @Test("A structured presentation line names the presenter")
     func structuredPresentationNamesThePresenter() {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler, LogConfiguration(format: .structured))
@@ -316,7 +316,7 @@ struct ReadableLogTests {
         #expect(handler.routerTexts == expectedTexts)
     }
 
-    @Test
+    @Test("A structured stack line lists the flow and path")
     func structuredStackLine() {
         let handler = RecordingLogHandler()
         let router = Self.loggedStack(handler, LogConfiguration(format: .structured, treeLogging: .changedStacks))

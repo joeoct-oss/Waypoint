@@ -17,7 +17,7 @@ import WaypointTestSupport
 @Suite("Guarded changes")
 @MainActor
 struct GuardedChangeTests {
-    @Test
+    @Test("Sheet options are always valid")
     func sheetOptionsAreAlwaysValid() {
         let noDetents: [SheetDetent] = []
         let large: [SheetDetent] = [.large]
@@ -29,7 +29,7 @@ struct GuardedChangeTests {
         #expect(options.fitsContentLimit == .large)
     }
 
-    @Test
+    @Test("Sheet options change through with functions")
     func sheetOptionsChangeThroughWithFunctions() {
         let base = SheetOptions.default
         let mediumAndLarge: [SheetDetent] = [.medium, .large]
@@ -49,7 +49,7 @@ struct GuardedChangeTests {
         #expect(changed.withDetents(large).selectedDetent == nil)
     }
 
-    @Test
+    @Test("Decoded sheet options are checked")
     func decodedSheetOptionsAreChecked() throws {
         let json = Data(#"{"detents":[],"fitsContentLimit":{"fitsContent":{}},"allowsInteractiveDismiss":true}"#.utf8)
 
@@ -58,7 +58,7 @@ struct GuardedChangeTests {
         #expect(options == SheetOptions())
     }
 
-    @Test
+    @Test("Tab state always keeps its selection among its tabs")
     func tabStateKeepsSelectionInTabs() throws {
         let missing = TabState(tabs: MainTab.homeAndShop, selection: .profile)
         let noTabs: [MainTab] = []
@@ -71,7 +71,7 @@ struct GuardedChangeTests {
         #expect(try JSONDecoder().decode(TabState<MainTab>.self, from: json).selection == .home)
     }
 
-    @Test
+    @Test("The log configuration changes through with functions")
     func logConfigurationChangesThroughWithFunctions() {
         let base = LogConfiguration.default
         let issuesOnly: Set<LogCategory> = [.issues]
@@ -86,7 +86,7 @@ struct GuardedChangeTests {
         #expect(changed.revealsPrivateValues)
     }
 
-    @Test
+    @Test("A fallback policy sets and clears a fallback")
     func fallbackPolicySetsAndClears() {
         let policy = FallbackPolicy().withFallback(.popToRoot, for: .emptyPath)
 
@@ -95,7 +95,7 @@ struct GuardedChangeTests {
         #expect(FallbackPolicy()[.emptyPath] == nil)
     }
 
-    @Test
+    @Test("Registering leaves the original registry unchanged")
     func registeringLeavesTheOriginalRegistryUnchanged() {
         let empty = RouteRegistry()
         let registry = empty.registering(HomeRoute.self)
@@ -104,7 +104,7 @@ struct GuardedChangeTests {
         #expect(registry.isRegistered(HomeRoute.self))
     }
 
-    @Test
+    @Test("A queue limit below one is refused and logged as a fault")
     func queueLimitBelowOneIsRefused() throws {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, format: .structured)
@@ -121,7 +121,7 @@ struct GuardedChangeTests {
         #expect(message.line == line)
     }
 
-    @Test
+    @Test("A push fallback applies only to a route not in the path")
     func pushFallbackOnlySetsForRouteNotInPath() {
         let router = StackRouter(configuration: .permissive)
         let reported = Spy<NavigationIssue.Kind, Void>()

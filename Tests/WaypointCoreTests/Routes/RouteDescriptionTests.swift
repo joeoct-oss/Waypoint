@@ -17,24 +17,24 @@ struct RouteDescriptionTests {
 
     typealias PaymentRoute = RouteFixtures.PaymentRoute
 
-    @Test
+    @Test("Struct fields are private by default")
     func structFieldsArePrivateByDefault() {
         #expect(AnyRoute(ProductRoute(id: 42)).description == "ProductRoute(id: <private>)")
     }
 
-    @Test
+    @Test("A route without fields prints its type name")
     func routeWithoutFieldsPrintsTypeName() {
         #expect(AnyRoute(HomeRoute()).description == "HomeRoute")
     }
 
-    @Test
+    @Test("Public log fields are shown")
     func publicLogFieldsAreShown() {
         let route = AnyRoute(SearchRoute(id: 42, query: "shoes"))
 
         #expect(route.description == "RouteFixtures.SearchRoute(id: 42, query: <private>)")
     }
 
-    @Test
+    @Test("Revealing shows every field")
     func revealingShowsEveryField() {
         let route = AnyRoute(SearchRoute(id: 42, query: "shoes"))
         let empty = AnyRoute(SearchRoute(id: 1, query: nil))
@@ -45,13 +45,13 @@ struct RouteDescriptionTests {
         #expect(route.debugDescription == route.description)
     }
 
-    @Test
+    @Test("Enum cases print their case name")
     func enumCasesPrintCaseName() {
         #expect(AnyRoute(WizardStep.payment).description == "WizardStep.payment")
         #expect(AnyRoute(PaymentRoute.cash).description == "RouteFixtures.PaymentRoute.cash")
     }
 
-    @Test
+    @Test("Enum payloads are private unless revealed")
     func enumPayloadsArePrivate() {
         let card = AnyRoute(PaymentRoute.card(id: 3, nickname: "Work"))
         let voucher = AnyRoute(PaymentRoute.voucher("SAVE10"))
@@ -62,19 +62,19 @@ struct RouteDescriptionTests {
         #expect(revealed == #"RouteFixtures.PaymentRoute.voucher("SAVE10")"#)
     }
 
-    @Test
+    @Test("A route's own description is ignored")
     func routesOwnDescriptionIsIgnored() {
         let route = AnyRoute(RouteFixtures.LeakyRoute(email: "a@b.c"))
 
         #expect(route.description == "RouteFixtures.LeakyRoute(email: <private>)")
     }
 
-    @Test
+    @Test("A route key prints the full key")
     func routeKeyPrintsFullKey() {
         #expect(ProductRoute.routeKey.description == "WaypointTestSupport.ProductRoute")
     }
 
-    @Test
+    @Test("Decoding errors print one line")
     func decodingErrorsPrintOneLine() {
         let key = RouteKey("Shop.ProductRoute")
 

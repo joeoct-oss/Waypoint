@@ -18,7 +18,7 @@ struct ProductsFactoryTests {
     private static let mugID = 2
     private static let missingID = 999
 
-    @Test
+    @Test("Product detail shows the routed product")
     func productDetailShowsRoutedProduct() {
         let store = TestStore.make()
         defer {
@@ -31,7 +31,7 @@ struct ProductsFactoryTests {
         #expect(detail?.product.id == Self.mugID)
     }
 
-    @Test
+    @Test("An unknown product draws nothing")
     func unknownProductDrawsNothing() {
         let store = TestStore.make()
         defer {
