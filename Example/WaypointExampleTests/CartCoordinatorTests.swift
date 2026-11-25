@@ -86,9 +86,6 @@ struct CartCoordinatorTests {
             addresses: AddressBook(store: store),
             gate: gate
         )
-        return CartFactory(dependencies: dependencies).makeCoordinator(
-            router: StackRouter(),
-            onShopMore: { }
-        )
+        return CartFactory(dependencies: dependencies).makeCoordinator(onShopMore: { })
     }
 }

@@ -23,15 +23,13 @@ struct AccountFactory {
         self.dependencies = dependencies
     }
 
-    // The Account tab on `router`, the stack the main tabs give it, opened as `launch` asks. Clear
-    // all data runs `onClearAllData`.
+    // The Account tab, opened as `launch` asks. Waypoint makes its router, which the main tabs make
+    // the stack every tab shares. Clear all data runs `onClearAllData`.
     func makeCoordinator(
-        router: StackRouter,
         launch: LaunchOptions,
         onClearAllData: @escaping () -> Void
     ) -> AccountCoordinator {
         AccountCoordinator(
-            router: router,
             launch: launch,
             dependencies: dependencies,
             factory: self,

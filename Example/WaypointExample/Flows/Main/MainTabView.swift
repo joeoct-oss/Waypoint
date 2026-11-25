@@ -21,8 +21,8 @@ struct MainTabView: View {
     let main: MainCoordinator
 
     var body: some View {
-        WaypointStack(main.tabs.router(for: .shop)) {
-            TabView(selection: Binding(reading: main.tabs.selection, writing: main.selectTab)) {
+        WaypointStack(main.sharedStack) {
+            TabView(selection: Binding(reading: main.router.selection, writing: main.selectTab)) {
                 ForEach(MainTab.allCases, id: \.self) { tab in
                     tabContent(for: tab)
                 }
@@ -80,7 +80,7 @@ private struct MainTabChrome: ViewModifier {
     let main: MainCoordinator
 
     private var selected: MainTab {
-        main.tabs.selection
+        main.router.selection
     }
 
     func body(content: Content) -> some View {

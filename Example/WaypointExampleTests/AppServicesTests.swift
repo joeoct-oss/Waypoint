@@ -66,7 +66,7 @@ struct AppServicesTests {
             dependencies: services.productsDependencies(gate: gate, launch: TestStore.launchOptions())
         )
         let cartFactory = CartFactory(dependencies: services.cartDependencies(gate: gate))
-        let cart = cartFactory.makeCoordinator(router: StackRouter(), onShopMore: { })
+        let cart = cartFactory.makeCoordinator(onShopMore: { })
         let productsCart = ProductsCart(
             products: { cart.products },
             onGoToCart: { },
@@ -74,7 +74,6 @@ struct AppServicesTests {
         )
         let shop = productsFactory.makeCoordinator(
             start: .browse,
-            router: StackRouter(),
             launchSteps: .none,
             onAddToCart: { cart.add($0) },
             cart: productsCart

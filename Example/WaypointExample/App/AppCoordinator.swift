@@ -63,9 +63,7 @@ final class AppCoordinator {
     }
 
     func showMainFlow() {
-        let main = MainCoordinator(
-            services: services,
-            launch: launch,
+        let main = MainFactory(services: services, launch: launch).makeCoordinator(
             onClearAllData: { [weak self] in self?.startOver() }
         )
         root = .main(main)

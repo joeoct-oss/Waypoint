@@ -21,19 +21,21 @@ import Waypoint
 // fallback covers, closing the tab's stack, which `onNavigationFailure` counts. Clear all data
 // reports to the app coordinator, which clears the store and starts the window over.
 //
-// The stack runs on Waypoint: `router` is the one stack every main tab shares, which `MainTabView`
-// draws with `WaypointStack` around the tabs. `AccountFlowView` draws the tab's root, and each
-// screen above it is an `AccountRoute`, so the journey lines follow the reader through Account too.
+// The stack runs on Waypoint: `router`, which Waypoint makes and the main tabs make the one stack
+// every tab shares, is drawn by `MainTabView` with `WaypointStack` around the tabs. `root` draws
+// the tab's root, and each screen above it is an `AccountRoute`, so the journey lines follow the
+// reader through Account too.
 //
 // Conformances:
-// - `Observable` (from `@Observable`), so `AccountFlowView` redraws when the account changes.
+// - `StackCoordinator`, so Waypoint makes its router and the main tabs make it the shared stack.
+// - `Observable` (from `@Observable`), so the account's root redraws when the account changes.
 @Observable
-final class AccountCoordinator {
+final class AccountCoordinator: StackCoordinator {
     // How long Open Orders twice waits before its second push: long enough for the stack to start
     // the first push, well inside its animation.
     private static let secondPushDelay = Duration.milliseconds(150)
 
-    let router: StackRouter
+    private let launch: LaunchOptions
     private let addressBook: AddressBook
     private let gate: AccountGate
     private let factory: AccountFactory
@@ -43,8 +45,12 @@ final class AccountCoordinator {
     // Runs the Lab's view and view-model demos, each full screen on a Waypoint stack of its own.
     let labDemos: LabDemoCoordinator
 
+    // The tab's root: the profile, or Sign in for a guest.
+    var root: some View {
+        makeAccountFlow()
+    }
+
     init(
-        router: StackRouter,
         launch: LaunchOptions,
         dependencies: AccountDependencies,
         factory: AccountFactory,
@@ -56,21 +62,23 @@ final class AccountCoordinator {
         self.onClearAllData = onClearAllData
         rules = dependencies.rules
         issues = dependencies.issues
-        self.router = router
+        self.launch = launch
         labDemos = factory.makeLabDemos(reviewsDelay: launch.labReviewsDelay)
-        router.setRootName(MainTab.account.title)
-        router.setCoordinator(self)
-        openLaunchPath(launch)
     }
 
-    // A launch that opens the Lab starts on it, or on one of its branches or entries. The route is
-    // registered first, because the stack isn't drawn yet and the registry is strict.
-    private func openLaunchPath(_ launch: LaunchOptions) {
+    // Registers the account's screens before the stack is drawn, since the registry is strict and
+    // a launch into the Lab pushes them first.
+    func registerDestinations(on router: StackRouter) {
+        router.register(AccountRoute.self)
+    }
+
+    // A launch that opens the Lab starts on it, or on one of its branches or entries. The main tabs
+    // call it once their shared stack is made, so the path lands on that stack.
+    func openLaunchPath() {
         let path = Self.makePath(for: launch)
         guard !path.isEmpty else {
             return
         }
-        router.register(AccountRoute.self)
         router.setPath {
             for route in path {
                 route
