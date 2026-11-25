@@ -9,9 +9,9 @@
 import SwiftUI
 
 // Builds the accounts flow and its screens from `AuthDependencies`: the flow's coordinator, its
-// Create account builder, Sign in, Signed in, the terms, Reset password's coordinator and screen,
-// and the view that draws the flow in its sheet. The coordinator passes in what each screen
-// reports, so navigation stays in the coordinator.
+// Create account builder, Sign in, Signed in, the terms, and Reset password's coordinator and
+// screen. The coordinator passes in what each screen reports, so navigation stays in the
+// coordinator.
 struct AuthFactory {
     // What the feature uses, which its coordinator reads too.
     let dependencies: AuthDependencies
@@ -91,11 +91,6 @@ struct AuthFactory {
             onDone: onDone,
             onCancel: onCancel
         )
-    }
-
-    // Draws the accounts flow `auth`, in the sheet its gate presents.
-    func makeAuthFlow(_ auth: AuthCoordinator) -> AuthFlowView {
-        AuthFlowView(auth: auth)
     }
 }
 
