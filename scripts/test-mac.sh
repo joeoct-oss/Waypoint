@@ -919,7 +919,7 @@ fi
 # green: the cache only saves time.
 warm_binary_cache() {
     if ! tuist_cmd cache --path Example --destination simulator; then
-        echo "warning: warming Tuist's binary cache failed; the next run builds the package from source" >&2
+        echo "warning: warming Tuist's binary cache failed; the next run builds the modules from source" >&2
     fi
 }
 if $WARM_BINARY_CACHE; then
