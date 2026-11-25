@@ -329,7 +329,7 @@ expect_package_insights "a release run sends the package's test results to Tuist
 expect_package_insights "an offline run sends the package's results nowhere" off full WAYPOINT_TUIST_OFFLINE=1
 if grep -A16 "^package_tests_on()" scripts/test-mac.sh | grep -q 'send_package_test_results "$bundle" || true' &&
     grep -A8 "^send_package_test_results()" scripts/test-mac.sh |
-    grep -q 'tuist_cmd inspect test --path Example --result-bundle-path "$1"'; then
+    grep -q 'tuist_cmd inspect test --path Example "$1"; then'; then
     pass "each package test step sends its result bundle, and a failed send doesn't fail it"
 else
     fail "each package test step sends its result bundle, and a failed send doesn't fail it"

@@ -596,7 +596,8 @@ package_tests_on() {
 # tests left no bundle. Sending only adds to the dashboard, so a failure warns and never fails a step.
 send_package_test_results() {
     [[ "$PACKAGE_TEST_INSIGHTS" == on && -d "$1" ]] || return 0
-    if ! tuist_cmd inspect test --path Example --result-bundle-path "$1"; then
+    # Tuist 4.218.5 takes the bundle as its last argument; `--result-bundle-path` is unknown to it.
+    if ! tuist_cmd inspect test --path Example "$1"; then
         echo "warning: sending the package's test results to Tuist failed; the run goes on" >&2
     fi
 }
