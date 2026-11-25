@@ -56,6 +56,6 @@ UI tests start where they need to: `-clearData YES` starts from a fresh install 
 - Screens report through callbacks; factories build them, and only coordinators navigate, with `make…Flow()` to build and `show…()` to navigate.
 - A factory builds every screen, view model and child coordinator; a coordinator calls `factory.make…` and never names a view's, a view model's or another coordinator's initializer (planning #462).
 - A coordinator takes at most three arguments: its factory, what starts it, and what it reports. The factory hands it the feature's `dependencies`.
-- A coordinator file stays under 300 lines: a flow of its own becomes a child flow, and code moves only to where it belongs, never into an extension file to pass the count. `ProductsCoordinator` is the one exception until Shop and Search are split (planning #477).
+- A coordinator file stays under 500 lines (see [`CODE_STYLE.md`](../CODE_STYLE.md)).
 - Accessibility identifiers follow one pattern: `<flow>.<screen>` for journeys, and `root.<branch>`, `<branch>.<flow>.<kind>`, `placeholder.<flow>.<kind>`, `lab.story.<story>` and `lab.detail.<screen>` in the Lab.
 - The code follows the package's code style in [`CODE_STYLE.md`](../CODE_STYLE.md).

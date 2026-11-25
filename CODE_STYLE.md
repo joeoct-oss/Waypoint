@@ -208,6 +208,10 @@ Split the work into small functions, so each `case` body is a single line that c
 
 In coordinators, a function that builds a flow is named `make…Flow()` (`makeLoginFlow()`, `makeShopFlow()`, `makeTabFlow(for:)`), and a function that navigates is named `show…()` (`showMainFlow()`, `showProduct(id:)`). Use the same names in SwiftUI and UIKit, so a flow reads the same in both renderers. The renderer protocols follow it too: root coordinators implement `makeFlow(for:)`. A linter can't judge a name, so review checks this rule.
 
+## An example app coordinator file stays under 500 lines
+
+A coordinator in the example app decides navigation; it doesn't build screens or carry services. When its file grows past 500 lines, a flow of its own becomes a child flow, and code moves only to where it belongs, such as a factory or a type of its own, never into an extension file to pass the count. The limit fits an example app, where a feature's coordinator shows its whole navigation in one place. `wc -l` on the coordinator files checks it until planning #324's lint rules land.
+
 ## Every protocol conformance says why
 
 Whenever a type conforms to a protocol or a generic parameter is constrained (`AppRoot: NavigationRoot`, `Tab: NavigationTab`), the comment above the type lists each conformance with its reason. Public API uses its doc comment, and examples use a plain comment:
