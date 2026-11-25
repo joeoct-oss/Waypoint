@@ -12,38 +12,55 @@
 # again under the thread sanitizer (planning #278).
 # The renderer targets compile empty on Linux, so this covers the core only.
 #
-# Usage: scripts/test-linux.sh [extra swift test arguments]
+# The script checks need no Swift, only bash, git, perl, python3 and procps, so CI runs them on
+# the runner host with --checks-only and the Swift part in the Swift container with --swift-only.
+# With neither flag, both run, as a local run needs.
+#
+# Usage: scripts/test-linux.sh [--checks-only | --swift-only] [extra swift test arguments]
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-echo "==> Checking WaypointCore imports"
-scripts/check-core-imports.sh
+part=all
+case "${1:-}" in
+    --checks-only) part=checks; shift ;;
+    --swift-only) part=swift; shift ;;
+esac
 
-echo "==> Checking comment line width"
-scripts/check-comment-width.sh
+if [ "$part" != swift ]; then
+    echo "==> Checking WaypointCore imports"
+    scripts/check-core-imports.sh
 
-echo "==> Checking the concurrency guard rail"
-scripts/check-concurrency.sh
+    echo "==> Checking comment line width"
+    scripts/check-comment-width.sh
 
-echo "==> Checking the example app's isolation"
-scripts/check-example-isolation.sh
+    echo "==> Checking the concurrency guard rail"
+    scripts/check-concurrency.sh
 
-echo "==> Checking that app code imports Waypoint once"
-scripts/check-single-import.sh
+    echo "==> Checking the example app's isolation"
+    scripts/check-example-isolation.sh
 
-echo "==> Checking the example app's folder order"
-scripts/check-example-module-edges.sh
+    echo "==> Checking that app code imports Waypoint once"
+    scripts/check-single-import.sh
 
-echo "==> Checking the Mac test script's run lock"
-scripts/check-test-mac-lock.sh
+    echo "==> Checking the example app's folder order"
+    scripts/check-example-module-edges.sh
 
-echo "==> Checking the package's xcodebuild wrapper"
-scripts/check-package-xcodebuild.sh
+    echo "==> Checking the Mac test script's run lock"
+    scripts/check-test-mac-lock.sh
 
-echo "==> Checking merge batches"
-scripts/check-merge-batch.sh
+    echo "==> Checking the package's xcodebuild wrapper"
+    scripts/check-package-xcodebuild.sh
+
+    echo "==> Checking merge batches"
+    scripts/check-merge-batch.sh
+
+    if [ "$part" = checks ]; then
+        echo "==> Linux script checks passed"
+        exit 0
+    fi
+fi
 
 # One build with warnings as errors serves the build check, the fixture check and the tests, as in
 # scripts/test-mac.sh: a plain `swift build` first would only build the same code a second time.
