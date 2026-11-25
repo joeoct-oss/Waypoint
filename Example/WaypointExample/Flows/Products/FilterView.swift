@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
 import SwiftUI
 
 // The filter sheet: a price range and a sort order, applied with one button. Its sizes come from

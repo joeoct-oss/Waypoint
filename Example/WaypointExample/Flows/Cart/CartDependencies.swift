@@ -6,6 +6,10 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
+import ExampleServices
+import ExampleStore
+
 // What the Cart tab and checkout use, from `AppServices.cartDependencies(gate:)`: the catalog the
 // cart's products come from, the store that keeps the cart and the orders, the saved addresses, and
 // the window's account gate for Check out.

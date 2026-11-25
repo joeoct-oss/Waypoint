@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleDesignSystem
+import ExampleNavigation
 import SwiftUI
 
 // Holds one window's app coordinator, made once, and draws its current root. Apps never write this
@@ -22,5 +24,6 @@ struct AppWindow: View {
     var body: some View {
         app.makeFlow(for: app.root)
             .tint(Palette.brand.color)
+            .trailStepTypes(TrailSteps.all)
     }
 }

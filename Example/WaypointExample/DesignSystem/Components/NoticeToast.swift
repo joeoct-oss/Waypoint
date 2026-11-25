@@ -6,15 +6,16 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
 import SwiftUI
 
 // A short notice over the tabs, such as "Signed in as Nova" with the action that carries on, or
 // "Signed out". It sits on the system material and goes by itself. `noticeOverlay(_:)` shows it at
 // the top of a screen: the tabs, and checkout, whose full-screen cover would hide the tabs' one.
-struct NoticeToast: View {
-    let notice: Notice
+package struct NoticeToast: View {
+    package let notice: Notice
 
-    var body: some View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(notice.title)
                 .font(Typography.callout.weight(.semibold))
@@ -35,7 +36,7 @@ struct NoticeToast: View {
 }
 
 extension View {
-    func noticeOverlay(_ notice: Notice?) -> some View {
+    package func noticeOverlay(_ notice: Notice?) -> some View {
         overlay(alignment: .top) {
             if let notice {
                 // Taps pass through, so the toast never blocks Back or the bar's buttons under it.
@@ -52,7 +53,15 @@ extension View {
 //
 // Conformances:
 // - `Equatable`, so the toast animates in and out when its notice changes.
-struct Notice: Equatable {
-    let title: String
-    let detail: String?
+package struct Notice: Equatable {
+    package let title: String
+    package let detail: String?
+
+    package init(
+        title: String,
+        detail: String?
+    ) {
+        self.title = title
+        self.detail = detail
+    }
 }

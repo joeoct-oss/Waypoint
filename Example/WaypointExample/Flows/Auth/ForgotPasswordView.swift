@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
 import SwiftUI
 
 // Reset password, as a sheet over Sign in: an email field and Send link. Send link reports the

@@ -6,14 +6,21 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
 import SwiftUI
 
 // Names a flow's kind in its color in the navigation bar. From iOS 26 the bar draws the item in
 // glass, so the chip adds no shape of its own; earlier systems get a tinted capsule.
-struct KindChip: View {
-    let kind: FlowKind
+package struct KindChip: View {
+    package let kind: FlowKind
 
-    var body: some View {
+    package init(
+        kind: FlowKind
+    ) {
+        self.kind = kind
+    }
+
+    package var body: some View {
         if #available(iOS 26.0, *) {
             label
         } else {

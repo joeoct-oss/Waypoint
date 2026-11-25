@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
 import SwiftUI
 
 // Builds a window's root from the app's services: the splash, the main tabs' coordinator through

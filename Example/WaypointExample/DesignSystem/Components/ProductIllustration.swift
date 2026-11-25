@@ -6,17 +6,26 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleStore
 import SwiftUI
 
 // A product's illustration, drawn from the design canvas's artwork on a 100 by 100 grid and scaled
 // to fit a square. It draws its own gradient backdrop unless the screen draws one around it, as the
 // product page does. The illustrations are decoration: the product's name is always next to them,
 // so VoiceOver skips them.
-struct ProductIllustration: View {
-    let artwork: ProductArtwork
-    let drawsBackdrop: Bool
+package struct ProductIllustration: View {
+    package let artwork: ProductArtwork
+    package let drawsBackdrop: Bool
 
-    var body: some View {
+    package init(
+        artwork: ProductArtwork,
+        drawsBackdrop: Bool
+    ) {
+        self.artwork = artwork
+        self.drawsBackdrop = drawsBackdrop
+    }
+
+    package var body: some View {
         Canvas { context, size in
             let painter = ArtPainter(context: context, size: size)
             if drawsBackdrop {
@@ -31,10 +40,16 @@ struct ProductIllustration: View {
 
 // The gradient behind a product's illustration, for screens that draw a larger backdrop than the
 // illustration's own square.
-struct ProductBackdrop: View {
-    let artwork: ProductArtwork
+package struct ProductBackdrop: View {
+    package let artwork: ProductArtwork
 
-    var body: some View {
+    package init(
+        artwork: ProductArtwork
+    ) {
+        self.artwork = artwork
+    }
+
+    package var body: some View {
         let colors = [
             Color(artHex: artwork.backdrop.start),
             Color(artHex: artwork.backdrop.end),
@@ -341,7 +356,7 @@ private enum ArtColor {
 
 extension Color {
     // A fixed color from a hex value, for artwork that looks the same in light and dark mode.
-    init(artHex hex: UInt32) {
+    package init(artHex hex: UInt32) {
         self.init(uiColor: UIColor(hex: hex))
     }
 }

@@ -6,6 +6,10 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAddresses
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 
 // Checkout's first step: the saved addresses as a choice, one of them chosen, and Add a new address

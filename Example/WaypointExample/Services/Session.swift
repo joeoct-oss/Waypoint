@@ -7,6 +7,7 @@
 //
 
 
+import ExampleStore
 import Observation
 
 // Who is signed in, shared by every window. It saves the account to the local store, so the
@@ -15,26 +16,26 @@ import Observation
 // Conformances:
 // - `Observable` (from `@Observable`), so Account redraws when the reader signs in or out.
 @Observable
-final class Session {
+package final class Session {
     private let store: LocalStore
     // `var` because `signIn(_:)` and `signOut()` change it.
-    private(set) var account: Account?
+    package private(set) var account: Account?
 
-    var isSignedIn: Bool {
+    package var isSignedIn: Bool {
         account != nil
     }
 
-    init(store: LocalStore) {
+    package init(store: LocalStore) {
         self.store = store
         account = store.account
     }
 
-    func signIn(_ account: Account) {
+    package func signIn(_ account: Account) {
         self.account = account
         store.account = account
     }
 
-    func signOut() {
+    package func signOut() {
         account = nil
         store.account = nil
     }

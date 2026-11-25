@@ -174,16 +174,18 @@ final class LabTests: XCTestCase {
         XCTAssertTrue(app.reveal(backToCart))
         backToCart.tap()
 
-        let product = app.descendants(matching: .any)[Identifiers.detailProduct]
-        XCTAssertTrue(product.waitForNonExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(app.buttons[Identifiers.product(id: 1)].exists, "should land on the shop list")
-
+        // The toast first: it shows for 4 s from the call, and on a loaded Mac the pop below can
+        // take longer than that, so it would be gone by the time the test looked for it.
         let toast = app.descendants(matching: .any)[Identifiers.recoveredToast]
         XCTAssertTrue(toast.waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(
             toast.label.contains("recovered routeNotInPath by=popToRoot"),
             "toast says \(toast.label)"
         )
+
+        let product = app.descendants(matching: .any)[Identifiers.detailProduct]
+        XCTAssertTrue(product.waitForNonExistence(timeout: UITestSteps.timeout))
+        XCTAssertTrue(app.buttons[Identifiers.product(id: 1)].exists, "should land on the shop list")
     }
 
     // Opens the lamp from the Detail push list.

@@ -6,6 +6,11 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleNavigation
+import ExampleServices
+import ExampleStore
 import SwiftUI
 import Waypoint
 
@@ -406,8 +411,8 @@ final class ProductsCoordinator: StackCoordinator {
 
     @ViewBuilder
     private func makeAuthFlow(over sheetRouter: StackRouter) -> some View {
-        if let auth = gate.auth(over: sheetRouter) {
-            factory.makeAuthFlow(auth)
+        if let authFlow = gate.authFlow(over: sheetRouter) {
+            authFlow
                 .sheetOptions(gate.authSheetOptions)
         }
     }

@@ -7,6 +7,7 @@
 //
 
 
+import ExampleStore
 import Foundation
 
 // A stand-in for an auth server, so every journey runs without a network. Each call waits a
@@ -16,8 +17,8 @@ import Foundation
 //
 // Conformances:
 // - `AuthService`, so the accounts flow can use it in place of a real server.
-final class MockAuthService: AuthService {
-    static let wrongPassword = "wrong"
+package final class MockAuthService: AuthService {
+    package static let wrongPassword = "wrong"
 
     private static let delay = Duration.milliseconds(400)
 
@@ -28,11 +29,11 @@ final class MockAuthService: AuthService {
 
     private let store: LocalStore
 
-    init(store: LocalStore) {
+    package init(store: LocalStore) {
         self.store = store
     }
 
-    func signIn(
+    package func signIn(
         email: String,
         password: String
     ) async throws(AuthError) -> Account {
@@ -46,7 +47,7 @@ final class MockAuthService: AuthService {
         )
     }
 
-    func register(
+    package func register(
         name: String,
         email: String,
         password: String
@@ -62,7 +63,7 @@ final class MockAuthService: AuthService {
         )
     }
 
-    func sendResetLink(to email: String) async {
+    package func sendResetLink(to email: String) async {
         try? await Task.sleep(for: Self.delay)
     }
 }

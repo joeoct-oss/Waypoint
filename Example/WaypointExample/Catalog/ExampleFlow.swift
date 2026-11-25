@@ -13,14 +13,14 @@
 //   identifiers use the same word.
 // - `Codable` (from the raw values), so a Lab entry can sit in an account route.
 // - `CaseIterable`, so both branches list every flow from this one declaration.
-nonisolated enum ExampleFlow: String, CaseIterable, Codable {
+package nonisolated enum ExampleFlow: String, CaseIterable, Codable {
     case login
     case tabs
     case detailPush
     case sheet
     case deepLink
 
-    var title: String {
+    package var title: String {
         switch self {
         case .login:
             return "Login"
@@ -35,7 +35,7 @@ nonisolated enum ExampleFlow: String, CaseIterable, Codable {
         }
     }
 
-    var summary: String {
+    package var summary: String {
         switch self {
         case .login:
             return "Sign in, then switch the root to the main tabs"
@@ -50,7 +50,7 @@ nonisolated enum ExampleFlow: String, CaseIterable, Codable {
         }
     }
 
-    var symbolName: String {
+    package var symbolName: String {
         switch self {
         case .login:
             return "lock"

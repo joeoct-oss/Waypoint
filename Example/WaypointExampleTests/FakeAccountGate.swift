@@ -6,7 +6,10 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-import WaypointCore
+import ExampleDesignSystem
+import ExampleNavigation
+import SwiftUI
+import Waypoint
 @testable import WaypointExample
 
 // An account gate whose reader is signed in or not, as the test sets. A signed-in reader's action
@@ -58,7 +61,7 @@ final class FakeAccountGate: SheetAccountGating {
         false
     }
 
-    func auth(over router: StackRouter) -> AuthCoordinator? {
+    func authFlow(over router: StackRouter) -> AnyView? {
         nil
     }
 

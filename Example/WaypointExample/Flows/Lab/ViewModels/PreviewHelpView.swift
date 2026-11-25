@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
 import SwiftUI
 
 // VM-04: how a screen that navigates draws in an Xcode preview. `.waypointPreview(flow:)` puts the

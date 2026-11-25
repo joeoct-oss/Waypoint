@@ -21,7 +21,7 @@
 //
 // Conformances:
 // - `String` raw values, so each argument's name is its `UserDefaults` key.
-nonisolated enum LaunchArgument: String {
+package nonisolated enum LaunchArgument: String {
     case clearData
     case signedIn
     case lab
@@ -35,7 +35,7 @@ nonisolated enum LaunchArgument: String {
     case missingDestination
     case labReviewsSeconds
 
-    var flag: String {
+    package var flag: String {
         "-\(rawValue)"
     }
 }

@@ -10,10 +10,16 @@ import SwiftUI
 
 // The thin strip under the navigation bar that shows the current path: a dot for each screen below,
 // and the Nova arrow for the screen you are on.
-struct RouteTrail: View {
-    let steps: [String]
+package struct RouteTrail: View {
+    package let steps: [String]
 
-    var body: some View {
+    package init(
+        steps: [String]
+    ) {
+        self.steps = steps
+    }
+
+    package var body: some View {
         HStack(spacing: Spacing.small) {
             ForEach(steps.indices, id: \.self) { index in
                 step(at: index)

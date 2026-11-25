@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
 import SwiftUI
 
 // Hosts the UIKit branch's view controller in the app's SwiftUI stack.

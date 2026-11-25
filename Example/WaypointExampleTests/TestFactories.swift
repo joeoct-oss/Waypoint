@@ -6,7 +6,11 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-import WaypointCore
+import ExampleNavigation
+import ExampleServices
+import ExampleStore
+import SwiftUI
+import Waypoint
 @testable import WaypointExample
 
 // A catalog of the products a test picks, so it knows exactly what the screens can list.
@@ -37,7 +41,8 @@ enum TestProducts {
             catalog: catalog,
             store: store,
             gate: gate,
-            navigation: navigation
+            navigation: navigation,
+            cartScreen: { _ in AnyView(EmptyView()) }
         )
         return ProductsFactory(dependencies: dependencies)
     }

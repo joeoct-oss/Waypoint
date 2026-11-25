@@ -6,7 +6,7 @@
 # Needs the WAYPOINT_PROJECT_TOKEN secret: a classic token with the
 # project and repo scopes, because GITHUB_TOKEN cannot write to a
 # project owned by a personal account.
-name: Board automation
+name: Move pull requests on the project board
 
 on:
   pull_request:
@@ -22,6 +22,7 @@ env:
 
 jobs:
   move-item:
+    name: Move the pull request to its column
     if: vars.BOARD_AUTOMATION == 'true'
     runs-on: ubuntu-latest
     steps:

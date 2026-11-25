@@ -6,6 +6,10 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleNavigation
+import ExampleServices
+import ExampleStore
 import SwiftUI
 import Waypoint
 
@@ -37,7 +41,7 @@ final class AccountCoordinator: StackCoordinator {
 
     private let launch: LaunchOptions
     private let addressBook: AddressBook
-    private let gate: AccountGate
+    private let gate: any SessionAccountGating
     private let factory: AccountFactory
     private let onClearAllData: () -> Void
     // Runs the Lab's view and view-model demos, each full screen on a Waypoint stack of its own.
@@ -113,7 +117,7 @@ final class AccountCoordinator: StackCoordinator {
     }
 
     func showSignIn() {
-        gate.showSignIn()
+        gate.showSignIn(for: .account, then: nil)
     }
 
     func openOrders() {
@@ -220,8 +224,8 @@ final class AccountCoordinator: StackCoordinator {
     // Settings' "Open sign in twice": the second present fails because sign in is already up, and
     // the app's fallback replaces the first sheet with the second in one change.
     func showPresentTwice() {
-        gate.showSignIn()
-        gate.showSignIn()
+        gate.showSignIn(for: .account, then: nil)
+        gate.showSignIn(for: .account, then: nil)
     }
 
     // Settings' "Close the Account tab": the tab's stack wasn't presented, so `dismissFlow` has

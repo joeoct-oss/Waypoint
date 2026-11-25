@@ -6,15 +6,26 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
+import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 
 // Account, Addresses: the reader's saved addresses, with Add a new address below them. The screen
 // reports Add a new address.
-struct AddressesView: View {
-    let addresses: [Address]
-    let onAddAddress: () -> Void
+package struct AddressesView: View {
+    package let addresses: [Address]
+    package let onAddAddress: () -> Void
 
-    var body: some View {
+    package init(
+        addresses: [Address],
+        onAddAddress: @escaping () -> Void
+    ) {
+        self.addresses = addresses
+        self.onAddAddress = onAddAddress
+    }
+
+    package var body: some View {
         ScrollView {
             VStack(spacing: 0) {
                 ForEach(addresses) { address in

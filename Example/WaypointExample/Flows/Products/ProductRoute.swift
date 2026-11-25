@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
+import ExampleStore
 import WaypointCore
 
 // The shop: the products stacks of Shop and Search, which each declare it, so a view model's

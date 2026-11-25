@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
 import SwiftUI
 
 // The example app. It holds only what every window shares (the launch options and the services:

@@ -6,15 +6,24 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCatalog
 import SwiftUI
 
 // The button that launches a flow of one kind: a system bordered button in the kind's color, so it
 // keeps the platform's shape, press feedback and accessibility on every iOS version.
-struct KindButton: View {
-    let kind: FlowKind
-    let onSelect: () -> Void
+package struct KindButton: View {
+    package let kind: FlowKind
+    package let onSelect: () -> Void
 
-    var body: some View {
+    package init(
+        kind: FlowKind,
+        onSelect: @escaping () -> Void
+    ) {
+        self.kind = kind
+        self.onSelect = onSelect
+    }
+
+    package var body: some View {
         Button(action: onSelect) {
             Text(kind.buttonTitle)
                 .font(Typography.callout.weight(.semibold))

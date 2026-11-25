@@ -15,8 +15,8 @@ import Foundation
 // - `Codable`, so the local store can save the reader's addresses.
 // - `Hashable`, so an address can sit in a navigation path and lists can tell addresses apart.
 // - `Identifiable`, so lists can show addresses without naming an id key path.
-nonisolated struct Address: Codable, Hashable, Identifiable {
-    static let samples = [
+package nonisolated struct Address: Codable, Hashable, Identifiable {
+    package static let samples = [
         Address(
             id: "home",
             label: "Home",
@@ -33,19 +33,19 @@ nonisolated struct Address: Codable, Hashable, Identifiable {
         ),
     ]
 
-    let id: String
-    let label: String
-    let street: String
-    let city: String
-    let postcode: String
+    package let id: String
+    package let label: String
+    package let street: String
+    package let city: String
+    package let postcode: String
 
     // The second line under the street, as the canvas writes it: the city, then the postcode.
-    var cityLine: String {
+    package var cityLine: String {
         "\(city) \(postcode)"
     }
 
     // Makes a new address with an id of its own, from what the reader typed in the form.
-    static func new(
+    package static func new(
         label: String,
         street: String,
         city: String,

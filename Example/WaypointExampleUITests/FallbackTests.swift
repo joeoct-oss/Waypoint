@@ -37,7 +37,12 @@ final class FallbackTests: XCTestCase {
         let count = app.descendants(matching: .any)[Identifiers.failureCount]
         XCTAssertTrue(app.reveal(count))
         XCTAssertFalse(count.label.contains(Self.oneFailure), count.label)
-        app.buttons[Identifiers.tryUnrecovered].tapWhenReady()
+        // Revealed before the tap like every other row here: on a loaded Mac the row once sat with
+        // only its top 2 pt above the window's bottom edge, XCTest counted it as tappable, and the
+        // tap landed on the edge instead of the button (planning #479).
+        let unrecovered = app.buttons[Identifiers.tryUnrecovered]
+        XCTAssertTrue(app.reveal(unrecovered))
+        unrecovered.tap()
         let banner = app.descendants(matching: .any)[Identifiers.navigationIssue]
         XCTAssertTrue(banner.waitForExistence(timeout: UITestSteps.timeout), "the banner didn't show the failure")
         XCTAssertTrue(app.navigationBars[Self.settingsTitle].exists, "a failed call moved the screen")

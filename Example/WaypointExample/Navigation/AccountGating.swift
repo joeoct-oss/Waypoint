@@ -6,7 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-import WaypointCore
+import ExampleDesignSystem
+import SwiftUI
+import Waypoint
 
 // What a feature asks of the account gate: run an action once the reader has an account, and the
 // notice the gate shows after signing in or out. `AccountGate` is the app's; a test hands a
@@ -15,7 +17,7 @@ import WaypointCore
 //
 // Conformances:
 // - `AnyObject`, so a feature shares the window's one gate, and reading `notice` follows it.
-protocol AccountGating: AnyObject {
+package protocol AccountGating: AnyObject {
     var notice: Notice? { get }
 
     func requireAccount(
@@ -30,7 +32,7 @@ protocol AccountGating: AnyObject {
 //
 // Conformances:
 // - `AccountGating`, so the feature asks for an account the same way over the stack.
-protocol SheetAccountGating: AccountGating {
+package protocol SheetAccountGating: AccountGating {
     var authSheetOptions: SheetOptions? { get }
 
     // Like `requireAccount(for:then:)`, but over `presenter`, the router of the sheet the action is
@@ -44,9 +46,26 @@ protocol SheetAccountGating: AccountGating {
 
     func isShowingAuth(over router: StackRouter) -> Bool
 
-    func auth(over router: StackRouter) -> AuthCoordinator?
+    // The accounts flow over the sheet `router` draws, ready for that sheet to show, or `nil` when
+    // it isn't presented there. A view rather than the flow's coordinator, so a feature never names
+    // the Auth feature's types.
+    func authFlow(over router: StackRouter) -> AnyView?
 
     func syncAuth(_ isShowing: Bool)
 
     func finishAuth(over router: StackRouter)
+}
+
+// An account gate the Account tab drives itself: it opens sign in from the tab's own button and
+// signs the reader out. `AccountGate` is the app's.
+//
+// Conformances:
+// - `AccountGating`, so Account asks for an account the same way the other tabs do.
+package protocol SessionAccountGating: AccountGating {
+    func showSignIn(
+        for reason: SignInReason,
+        then action: (() -> Void)?
+    )
+
+    func signOut()
 }

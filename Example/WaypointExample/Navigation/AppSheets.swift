@@ -16,7 +16,7 @@ import WaypointCore
 // - Sign in and the wish list are large.
 // - The saved sheet is just tall enough for its message and button.
 // - The terms hide the drag indicator and can't be swiped away, so only Done closes them.
-enum AppSheets {
+package enum AppSheets {
     private static let mediumAndLarge: [SheetDetent] = [
         .medium,
         .large,
@@ -25,18 +25,18 @@ enum AppSheets {
         .height(240),
     ]
 
-    static let defaults = PresentationDefaults(sheet: SheetOptions(
+    package static let defaults = PresentationDefaults(sheet: SheetOptions(
         detents: mediumAndLarge,
         selectedDetent: .medium,
         showsDragIndicator: true
     ))
-    static let filters = PresentationStyle.sheet(
+    package static let filters = PresentationStyle.sheet(
         detents: mediumAndLarge,
         selected: .medium
     )
-    static let large = PresentationStyle.sheet(SheetOptions())
-    static let saved = PresentationStyle.sheet(detents: savedHeight)
-    static let terms = PresentationStyle.sheet(SheetOptions(
+    package static let large = PresentationStyle.sheet(SheetOptions())
+    package static let saved = PresentationStyle.sheet(detents: savedHeight)
+    package static let terms = PresentationStyle.sheet(SheetOptions(
         showsDragIndicator: false,
         allowsInteractiveDismiss: false
     ))

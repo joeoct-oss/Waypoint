@@ -6,12 +6,13 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleNavigation
 import Testing
 import WaypointCore
 @testable import WaypointExample
 
 // The Account tab, built by `AccountFactory` (planning #424): the pushed wish list lists the
-// products the store keeps, from the catalog the factory was given, and suggests nothing.
+// products the store keeps, from the catalog the factory was given.
 struct AccountFactoryTests {
     private static let mugID = 2
     private static let missingID = 999
@@ -38,12 +39,11 @@ struct AccountFactoryTests {
         )
         store.wishlistProductIDs = [Self.mugID, Self.missingID]
 
-        let wishlist = AccountFactory(dependencies: dependencies).makeWishlist()
+        let products = AccountFactory(dependencies: dependencies).wishlistProducts()
 
         let expected = [
             Self.mugID,
         ]
-        #expect(wishlist.products.map(\.id) == expected)
-        #expect(wishlist.suggestions.isEmpty)
+        #expect(products.map(\.id) == expected)
     }
 }

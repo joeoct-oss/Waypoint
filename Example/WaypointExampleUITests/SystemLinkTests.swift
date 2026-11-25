@@ -19,9 +19,6 @@ final class SystemLinkTests: XCTestCase {
     private static let mugTitle = "Comet Mug"
     private static let lampID = 1
 
-    // How long the screen gets to settle after the stack draws the router's path again.
-    private static let settleTimeout: TimeInterval = 3
-
     func testSystemLinkIsReportedAndRouterPathKept() {
         let app = ExampleApp.launch(
             signedIn: true,
@@ -47,6 +44,6 @@ final class SystemLinkTests: XCTestCase {
     private func waitUntilGone(_ element: XCUIElement) -> Bool {
         let gone = NSPredicate(format: "exists == false")
         let expectation = XCTNSPredicateExpectation(predicate: gone, object: element)
-        return XCTWaiter().wait(for: [expectation], timeout: Self.settleTimeout) == .completed
+        return XCTWaiter().wait(for: [expectation], timeout: UITestSteps.timeout) == .completed
     }
 }

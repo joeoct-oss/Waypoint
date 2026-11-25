@@ -6,6 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleStore
 import Observation
 
 // The reader's saved delivery addresses, shared by checkout and Account, Addresses. The local store
@@ -14,22 +15,22 @@ import Observation
 // Conformances:
 // - `Observable` (from `@Observable`), so checkout and Account redraw when an address is added.
 @Observable
-final class AddressBook {
+package final class AddressBook {
     private let store: LocalStore
     // `var` because `add(_:)` adds to it and `reload()` reads it again after Clear all data.
-    private(set) var addresses: [Address]
+    package private(set) var addresses: [Address]
 
-    init(store: LocalStore) {
+    package init(store: LocalStore) {
         self.store = store
         addresses = store.addresses ?? Address.samples
     }
 
-    func add(_ address: Address) {
+    package func add(_ address: Address) {
         addresses.append(address)
         store.addresses = addresses
     }
 
-    func reload() {
+    package func reload() {
         addresses = store.addresses ?? Address.samples
     }
 }

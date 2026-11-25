@@ -16,13 +16,13 @@ import WaypointCore
 // - `String` raw value: gives each tab its name in logs and the journey, such as `shop`.
 // - `NavigationTab`, so the main tab router selects it, and `TabView` can tag each tab with it.
 // - `CaseIterable`, so the tab bar and the tab router list every tab from this one declaration.
-enum MainTab: String, NavigationTab, CaseIterable {
+package enum MainTab: String, NavigationTab, CaseIterable {
     case shop
     case search
     case cart
     case account
 
-    var title: String {
+    package var title: String {
         switch self {
         case .shop:
             return "Shop"
@@ -35,7 +35,7 @@ enum MainTab: String, NavigationTab, CaseIterable {
         }
     }
 
-    var symbolName: String {
+    package var symbolName: String {
         switch self {
         case .shop:
             return "bag"

@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleDesignSystem
+import ExampleStore
 import SwiftUI
 
 // A product the reader might also like, under a product's description: its illustration, name and

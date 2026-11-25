@@ -6,6 +6,10 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAddresses
+import ExampleCatalog
+import ExampleNavigation
+import ExampleStore
 import SwiftUI
 import Waypoint
 
@@ -14,9 +18,6 @@ import Waypoint
 // and the Lab's screens and demos through `LabFactory`. The coordinator passes in what each screen
 // reports, so navigation stays in the coordinator.
 struct AccountFactory {
-    // The pushed wish list suggests nothing; only the wish list sheet on Shop does.
-    private static let noSuggestions: [Product] = []
-
     // What the feature uses, which its coordinator reads too.
     let dependencies: AccountDependencies
 
@@ -74,14 +75,14 @@ struct AccountFactory {
         OrderDetailView(order: order)
     }
 
-    // The products the store keeps on the wish list, from the catalog, with no suggestions.
-    func makeWishlist() -> WishlistView {
-        WishlistView(
-            products: dependencies.catalog.products(withIDs: dependencies.store.wishlistProductIDs),
-            suggestions: Self.noSuggestions,
-            onSave: nil,
-            onDone: nil
-        )
+    // The products the store keeps on the wish list, from the catalog.
+    func wishlistProducts() -> [Product] {
+        dependencies.catalog.products(withIDs: dependencies.store.wishlistProductIDs)
+    }
+
+    // The Products feature's wish list screen, listing `wishlistProducts()`.
+    func makeWishlist() -> AnyView {
+        dependencies.wishlistScreen(wishlistProducts())
     }
 
     func makeAddresses(onAddAddress: @escaping () -> Void) -> AddressesView {

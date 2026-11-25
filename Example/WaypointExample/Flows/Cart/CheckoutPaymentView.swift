@@ -6,6 +6,9 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAddresses
+import ExampleCatalog
+import ExampleDesignSystem
 import SwiftUI
 
 // Checkout's second step: the saved card, chosen, with Continue to review at the bottom. The
