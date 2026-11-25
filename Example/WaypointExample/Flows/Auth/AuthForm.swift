@@ -6,6 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import Observation
+
 // What Sign in and Create account's steps show of the call to the auth service: whether a call is
 // running, and the message of the last one that failed. The accounts flow runs each call through
 // it and clears the message when the reader moves on.
