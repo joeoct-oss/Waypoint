@@ -15,7 +15,8 @@ import Waypoint
 struct ProductsFactory {
     private static let suggestionCount = 3
 
-    private let dependencies: ProductsDependencies
+    // What the feature uses, which its coordinator reads too.
+    let dependencies: ProductsDependencies
 
     init(dependencies: ProductsDependencies) {
         self.dependencies = dependencies
@@ -25,16 +26,11 @@ struct ProductsFactory {
     // make the stack every tab shares.
     func makeCoordinator(
         start: ProductsStart,
-        launchSteps: ShopLaunchSteps,
-        onAddToCart: @escaping (Product) -> Void,
         cart: ProductsCart
     ) -> ProductsCoordinator {
         ProductsCoordinator(
-            start: start,
-            dependencies: dependencies,
             factory: self,
-            launchSteps: launchSteps,
-            onAddToCart: onAddToCart,
+            start: start,
             cart: cart
         )
     }

@@ -57,13 +57,12 @@ struct ProductsCoordinatorTests {
     ) -> ProductsCoordinator {
         let cart = ProductsCart(
             products: { [] },
+            onAddToCart: { _ in },
             onGoToCart: { },
             onCheckout: { }
         )
         return TestProducts.makeFactory(store: store, gate: gate).makeCoordinator(
-            start: .browse,
-            launchSteps: .none,
-            onAddToCart: { _ in },
+            start: .browse(.none),
             cart: cart
         )
     }
