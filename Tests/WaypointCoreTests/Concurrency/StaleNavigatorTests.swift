@@ -44,7 +44,7 @@ struct StaleNavigatorTests {
         let remaining: StackRouter?
     }
 
-    @Test(arguments: FlowClose.allCases)
+    @Test("A late reply after its flow closed changes nothing", arguments: FlowClose.allCases)
     func lateReplyAfterFlowClosedChangesNothing(_ way: FlowClose) async {
         let flow = makeClosingFlow(way)
         let gate = Gate()
@@ -60,7 +60,7 @@ struct StaleNavigatorTests {
         #expect(flow.remaining?.state == afterClose)
     }
 
-    @Test
+    @Test("A late reply doesn't move the screen now in its place")
     func lateReplyDoesNotMoveTheScreenNowInItsPlace() async throws {
         let router = StackRouter(configuration: .permissive)
         router.present(CartRoute())
@@ -78,7 +78,7 @@ struct StaleNavigatorTests {
         #expect(replacement.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A late reply after its screen was popped changes nothing")
     func lateReplyAfterScreenPoppedChangesNothing() async {
         let router = StackRouter(configuration: .permissive)
         let product = ItemRoute(id: 1)
@@ -97,7 +97,7 @@ struct StaleNavigatorTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("The navigator of a popped screen reports inactive")
     func navigatorOfPoppedScreenReportsInactive() {
         let router = StackRouter(configuration: .permissive)
         router.push(ItemRoute(id: 1))
@@ -110,7 +110,7 @@ struct StaleNavigatorTests {
         #expect(router.isActive)
     }
 
-    @Test
+    @Test("The navigator of a screen still on the stack stays active")
     func navigatorOfScreenStillOnStackStaysActive() {
         let router = StackRouter(configuration: .permissive)
         router.push(ItemRoute(id: 1))
@@ -127,7 +127,7 @@ struct StaleNavigatorTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("The navigator of a popped screen can't pop the screen below")
     func navigatorOfPoppedScreenCannotPopTheScreenBelow() {
         let router = StackRouter(configuration: .permissive)
         router.push(ItemRoute(id: 1))
@@ -142,7 +142,7 @@ struct StaleNavigatorTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("A scoped navigator stays tied to its screen")
     func scopedNavigatorKeepsItsScreen() {
         let router = StackRouter(configuration: .permissive)
         router.push(ItemRoute(id: 1))
@@ -157,7 +157,7 @@ struct StaleNavigatorTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A queued call of a screen popped first is ignored")
     func queuedCallOfAScreenPoppedFirstIsIgnored() {
         let router = StackRouter(configuration: .permissive)
         router.push(ItemRoute(id: 1))
@@ -174,7 +174,7 @@ struct StaleNavigatorTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A navigator reports inactive after its flow closes")
     func navigatorReportsInactiveAfterItsFlowCloses() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(CartRoute())
@@ -186,7 +186,7 @@ struct StaleNavigatorTests {
         #expect(!navigation.isActive)
     }
 
-    @Test
+    @Test("A router reports inactive after leaving the tree and ignores calls")
     func routerReportsInactiveAfterLeavingTheTree() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(CartRoute())
@@ -200,7 +200,7 @@ struct StaleNavigatorTests {
         #expect(outcome == .ignored)
     }
 
-    @Test
+    @Test("A view model keeping a navigator doesn't keep a closed flow alive")
     func viewModelKeepingNavigatorDoesNotKeepClosedFlowAlive() {
         let router = StackRouter(configuration: .permissive)
         let model = presentAndKeepNavigator(on: router)
@@ -212,7 +212,7 @@ struct StaleNavigatorTests {
         #expect(!model.navigation.isActive)
     }
 
-    @Test
+    @Test("A stale call is logged at debug with its call site")
     func staleCallLogsStaleNavigatorWithItsLine() throws {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
@@ -230,7 +230,7 @@ struct StaleNavigatorTests {
         #expect("\(message.file)" == #fileID)
     }
 
-    @Test
+    @Test("A transaction kept past its call changes nothing")
     func transactionKeptPastItsCallChangesNothing() {
         let router = StackRouter(configuration: .permissive)
         let kept = Spy<NavigationTransaction, Void>()

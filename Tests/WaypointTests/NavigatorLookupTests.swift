@@ -22,7 +22,7 @@ struct NavigatorLookupTests {
     /// Where the wrappers in these tests are declared.
     let site = WrapperSite(file: "Shop/ProductView.swift", line: 12)
 
-    @Test
+    @Test("A flow navigator finds the nearest stack of its flow")
     func flowNavigationFindsTheNearestStackOfItsFlow() {
         let shop = StackRouter(configuration: .permissive)
         shop.declareFlow(ShopFlow.self)
@@ -43,7 +43,7 @@ struct NavigatorLookupTests {
         #expect(reported.callCount == 0)
     }
 
-    @Test
+    @Test("The inner stack of the same flow wins")
     func innerStackOfTheSameFlowWins() {
         let outer = StackRouter(configuration: .permissive)
         outer.declareFlow(ShopFlow.self)
@@ -56,7 +56,7 @@ struct NavigatorLookupTests {
         #expect(routers.router(for: SettingsFlow.self) == nil)
     }
 
-    @Test
+    @Test("A navigator with no router in scope reports an issue")
     func missingRouterReportsIssue() throws {
         let reported = Spy<NavigationIssue, Void>()
         let navigation = NavigatorLookup.stack(nil, site: site, report: { reported($0) })
@@ -72,7 +72,7 @@ struct NavigatorLookupTests {
         #expect(!navigation.isActive)
     }
 
-    @Test
+    @Test("A navigator whose flow has no stack reports an issue naming the flow")
     func missingFlowReportsIssueNamingTheFlow() throws {
         let shop = StackRouter(configuration: .permissive)
         shop.declareFlow(ShopFlow.self)
@@ -92,7 +92,7 @@ struct NavigatorLookupTests {
         #expect(shop.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A destination gets its stack's navigator")
     func destinationGetsItsStacksNavigator() {
         let router = StackRouter(configuration: .permissive)
         let reported = Spy<NavigationIssue, Void>()
@@ -107,7 +107,7 @@ struct NavigatorLookupTests {
         #expect(reported.callCount == 0)
     }
 
-    @Test
+    @Test("A destination's navigator goes inactive when its screen is popped")
     func destinationNavigatorGoesInactiveWhenItsScreenIsPopped() {
         let router = StackRouter(configuration: .permissive)
         let product = ProductRoute(id: 1)
@@ -124,7 +124,7 @@ struct NavigatorLookupTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("Wrapper navigators keep working as long as the flow")
     func wrapperNavigatorsLiveAsLongAsTheFlow() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -137,7 +137,7 @@ struct NavigatorLookupTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("A destination outside a stack reports an issue")
     func destinationOutsideAStackReportsIssue() throws {
         let reported = Spy<NavigationIssue, Void>()
         let navigation = NavigatorLookup.destination(nil, route: ProductRoute(id: 1), report: { reported($0) })
@@ -150,7 +150,7 @@ struct NavigatorLookupTests {
         #expect(reported.callCount == 1)
     }
 
-    @Test
+    @Test("DismissFlow dismisses the presented flow")
     func dismissFlowDismissesThePresentedFlow() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -166,7 +166,7 @@ struct NavigatorLookupTests {
         #expect(reported.callCount == 0)
     }
 
-    @Test
+    @Test("DismissFlow on the first stack fails as not presented")
     func dismissFlowOnTheFirstStackFails() throws {
         let router = StackRouter(configuration: .permissive)
         let dismissFlow = NavigatorLookup.dismissFlow(router, site: site) { _ in
@@ -179,7 +179,7 @@ struct NavigatorLookupTests {
         #expect(failure.issue.kind == .notPresented)
     }
 
-    @Test
+    @Test("DismissFlow with no stack reports an issue naming its call site")
     func dismissFlowWithNoStackReportsIssue() throws {
         let reported = Spy<NavigationIssue, Void>()
         let dismissFlow = NavigatorLookup.dismissFlow(nil, site: site, report: { reported($0) })

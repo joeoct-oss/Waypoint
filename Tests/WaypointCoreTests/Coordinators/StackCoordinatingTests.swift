@@ -17,7 +17,7 @@ import WaypointTestSupport
 @Suite("Stack coordinators and the router table")
 @MainActor
 struct StackCoordinatingTests {
-    @Test
+    @Test("A stack coordinator's router is made, active and empty, on first read")
     func routerMadeOnFirstRead() {
         let coordinator = ShopListCoordinator()
 
@@ -27,7 +27,7 @@ struct StackCoordinatingTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("The same coordinator always gets the same router, and another gets its own")
     func sameCoordinatorGetsSameRouter() {
         let coordinator = ShopListCoordinator()
         let other = ShopListCoordinator()
@@ -38,7 +38,7 @@ struct StackCoordinatingTests {
         #expect(other.router !== first)
     }
 
-    @Test
+    @Test("A router the coordinator makes wins over the default")
     func declaredRouterWinsOverDefault() {
         let coordinator = OwnRouterCoordinator()
 
@@ -48,7 +48,7 @@ struct StackCoordinatingTests {
         #expect(coordinator.router === router)
     }
 
-    @Test
+    @Test("A router from makeRouter gets the coordinator's routes registered")
     func ownRouterFromMakeRouterIsRegistered() {
         let coordinator = OwnRouterCoordinator()
 
@@ -57,7 +57,7 @@ struct StackCoordinatingTests {
         #expect(outcome == .applied)
     }
 
-    @Test
+    @Test("A stored router is reported, then adopted with the coordinator's routes")
     func storedRouterIsReportedAndAdopted() throws {
         let stored = StackRouter(flow: FlowID("stored"))
         let reported = Spy<NavigationIssue, Void>()
@@ -83,7 +83,7 @@ struct StackCoordinatingTests {
         #expect(coordinator.router.push(ProductRoute(id: 1)) == .applied)
     }
 
-    @Test
+    @Test("A stored router of another coordinator is reported and not adopted")
     func storedRouterOfAnotherCoordinatorIsNotAdopted() throws {
         let owner = ShopListCoordinator()
         let shared = owner.router
@@ -108,7 +108,7 @@ struct StackCoordinatingTests {
         #expect(owner.router === shared)
     }
 
-    @Test
+    @Test("A router from makeRouter that another coordinator owns is reported and not adopted")
     func madeRouterOfAnotherCoordinatorIsNotAdopted() throws {
         let owner = ShopListCoordinator()
         let shared = owner.router
@@ -131,7 +131,7 @@ struct StackCoordinatingTests {
         #expect(shared.coordinatorName == "ShopListCoordinator")
     }
 
-    @Test
+    @Test("A freed coordinator leaves no router behind")
     func freedCoordinatorLeavesNoRouter() {
         weak let released = makeAndDropCoordinatorRouter()
 
@@ -140,14 +140,14 @@ struct StackCoordinatingTests {
         #expect(released == nil)
     }
 
-    @Test
+    @Test("A coordinator names its router after its type")
     func conformingCoordinatorNamesItsRouter() {
         let coordinator = ShopListCoordinator()
 
         #expect(coordinator.router.coordinatorName == "ShopListCoordinator")
     }
 
-    @Test
+    @Test("The default root name comes from the coordinator's type")
     func defaultRootNameComesFromType() {
         let plain = ShopListCoordinator()
         let declared = OwnRouterCoordinator()
@@ -157,7 +157,7 @@ struct StackCoordinatingTests {
         #expect(declared.router.rootName == "Own list")
     }
 
-    @Test
+    @Test("The default root name replaces a name makeRouter set, and that is reported")
     func defaultRootNameReplacesTheNameMakeRouterSet() throws {
         let coordinator = NamedRouterCoordinator()
         let reported = Spy<NavigationIssue, Void>()
@@ -174,7 +174,7 @@ struct StackCoordinatingTests {
         #expect(issue.message.contains("rootName"))
     }
 
-    @Test
+    @Test("A router from makeRouter ends with its coordinator and its reuse is reported")
     func routerFromMakeRouterEndsWithItsCoordinator() throws {
         let router = makeAndDropCoordinatorRouter()
         let reported = Spy<NavigationIssue, Void>()
@@ -190,14 +190,14 @@ struct StackCoordinatingTests {
         #expect(issue.message.contains("GivenRouterCoordinator"))
     }
 
-    @Test
+    @Test("A declared root name wins over the one makeRouter set")
     func declaredRootNameWinsOverMakeRouters() {
         let coordinator = OwnRouterCoordinator()
 
         #expect(coordinator.router.rootName == "Own list")
     }
 
-    @Test
+    @Test("The default navigator pushes on the coordinator's router")
     func defaultNavigatorUsesRouter() {
         let coordinator = OwnRouterCoordinator()
 
@@ -210,7 +210,7 @@ struct StackCoordinatingTests {
         #expect(scoped.isActive)
     }
 
-    @Test
+    @Test("An inner coordinator keeps its own named router")
     func innerCoordinatorKeepsItsOwnRouter() {
         let outer = OuterCoordinator()
 
@@ -220,7 +220,7 @@ struct StackCoordinatingTests {
         #expect(outer.router.coordinatorName == "OuterCoordinator")
     }
 
-    @Test
+    @Test("Calls on a swept router are ignored")
     func sweptRouterCallsAreIgnored() {
         let router = makeAndDropCoordinatorRouter()
         let other = StackRouter(configuration: .permissive)
@@ -232,7 +232,7 @@ struct StackCoordinatingTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A kept navigator's first call after its coordinator is gone is ignored")
     func keptNavigatorsFirstCallAfterCoordinatorIsGoneIsIgnored() {
         let router = makeAndDropCoordinatorRouter()
         let navigation = router.navigator
@@ -243,7 +243,7 @@ struct StackCoordinatingTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A stored router reused after its coordinator is gone is ignored and reported")
     func storedRouterReusedAfterItsCoordinatorIsGoneIsReported() throws {
         let stored = StackRouter(configuration: .permissive)
         let reported = Spy<NavigationIssue, Void>()
@@ -261,7 +261,7 @@ struct StackCoordinatingTests {
         #expect(issue.message.contains("StoredRouterCoordinator stores"))
     }
 
-    @Test
+    @Test("A swept router takes its presented flow with it")
     func sweptRouterTakesItsPresentedFlowWithIt() throws {
         let router = makeAndDropCoordinatorRouter(presenting: true)
         let presented = try #require(router.presented)
@@ -274,7 +274,7 @@ struct StackCoordinatingTests {
         #expect(!presented.isActive)
     }
 
-    @Test
+    @Test("A queued call replayed after its coordinator is gone changes nothing more")
     func queuedCallReplayedAfterCoordinatorIsGoneIsIgnored() throws {
         let holder = CoordinatorHolder()
         let router = try #require(holder.coordinator).router
@@ -297,7 +297,7 @@ struct StackCoordinatingTests {
         #expect(!router.isActive)
     }
 
-    @Test
+    @Test("A coordinator with a reused identity gets a fresh router")
     func reusedIdentifierGetsAFreshEntry() throws {
         let table = RouterTable()
         let freedID = try #require(makeAndDropEntry(in: table))
@@ -312,7 +312,7 @@ struct StackCoordinatingTests {
         #expect(table.router(of: newcomer, identifiedAs: freedID) === router)
     }
 
-    @Test
+    @Test("Reading the router in a coordinator's deinit gives it back inert")
     func readInDeinitOfACoordinatorWithARouterGetsItInert() throws {
         let outcomes = Spy<(NavigationOutcome, StackRouter), Void>()
         let router = makeAndDropDeinitReader(outcomes: outcomes, readsFirst: true)
@@ -324,7 +324,7 @@ struct StackCoordinatingTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A first router read in a coordinator's deinit gives an inert router")
     func firstReadInDeinitGetsAnInertRouter() throws {
         let outcomes = Spy<(NavigationOutcome, StackRouter), Void>()
         _ = makeAndDropDeinitReader(outcomes: outcomes, readsFirst: false)
@@ -334,7 +334,7 @@ struct StackCoordinatingTests {
         #expect(!read.isActive)
     }
 
-    @Test
+    @Test("A first read in deinit leaves a router still in use working")
     func firstReadInDeinitKeepsARouterStillInUseLive() throws {
         let owner = ShopListCoordinator()
         let live = owner.router
@@ -348,7 +348,7 @@ struct StackCoordinatingTests {
         #expect(live.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A coordinator released during a sweep gets an inert router and nothing crashes")
     func coordinatorDeinitDuringSweepDoesNotCrash() throws {
         let outcomes = Spy<(NavigationOutcome, StackRouter), Void>()
         keepDeinitReaderInFreedCoordinatorsTree(outcomes: outcomes)
@@ -407,7 +407,7 @@ struct StackCoordinatingTests {
         return readsFirst ? coordinator.router : StackRouter()
     }
 
-    @Test
+    @Test("A coordinator drawn twice at once is reported")
     func coordinatorDrawnTwiceIsReported() throws {
         let coordinator = ShopListCoordinator()
         let router = coordinator.router
@@ -430,7 +430,7 @@ struct StackCoordinatingTests {
         #expect(issue.message.contains("ShopListCoordinator.view"))
     }
 
-    @Test
+    @Test("A view replaced in one update is not reported")
     func viewReplacedInOneUpdateIsNotReported() {
         let coordinator = ShopListCoordinator()
         let router = coordinator.router
@@ -447,7 +447,7 @@ struct StackCoordinatingTests {
         #expect(reported.calls.isEmpty)
     }
 
-    @Test
+    @Test("Coordinators sharing one stack are not reported")
     func coordinatorsSharingOneStackAreNotReported() {
         let first = ShopListCoordinator()
         let second = ShopListCoordinator()

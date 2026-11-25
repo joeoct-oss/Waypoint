@@ -14,7 +14,7 @@ import Testing
 // call shows its message and the form isn't busy once the call ends, and the reader moving on
 // clears the message.
 struct AuthFormTests {
-    @Test
+    @Test("A failed call shows its message until it is cleared")
     func failedCallShowsItsMessageUntilCleared() async {
         let form = AuthForm()
 

@@ -47,7 +47,7 @@ import Understudy
             }
         }
 
-        @Test
+        @Test("StackNavigation navigates the nearest router")
         func environmentProvidesNearestRouter() throws {
             let router = StackRouter(configuration: .permissive)
             let seen = Spy<StackNavigator, Void>()
@@ -66,7 +66,7 @@ import Understudy
             withExtendedLifetime(window) { }
         }
 
-        @Test
+        @Test("The environment still offers the router")
         func environmentStillOffersTheRouter() throws {
             let router = StackRouter(configuration: .permissive)
             let seen = Spy<StackRouter, Void>()
@@ -80,7 +80,7 @@ import Understudy
             withExtendedLifetime(window) { }
         }
 
-        @Test
+        @Test("A flow stack declares its flow for FlowNavigation")
         func flowStackDeclaresItsFlowForFlowNavigation() throws {
             let router = StackRouter(configuration: .permissive)
             let seen = Spy<FlowNavigator<ShopFlow>, Void>()
@@ -100,7 +100,7 @@ import Understudy
             withExtendedLifetime(window) { }
         }
 
-        @Test
+        @Test("FlowNavigation ignores a stack of another flow and reports it")
         func flowNavigationIgnoresAStackOfAnotherFlow() throws {
             let router = StackRouter(configuration: .permissive)
             let seen = Spy<FlowNavigator<ShopFlow>, Void>()
@@ -120,7 +120,7 @@ import Understudy
             withExtendedLifetime(window) { }
         }
 
-        @Test
+        @Test("StackNavigation with no router reports an issue")
         func missingRouterReportsIssue() throws {
             let seen = Spy<StackNavigator, Void>()
             let window = Self.host(StackProbe(seen: seen))
@@ -135,7 +135,7 @@ import Understudy
             withExtendedLifetime(window) { }
         }
 
-        @Test
+        @Test("DismissFlow dismisses the stack's flow")
         func dismissFlowDismissesTheStacksFlow() throws {
             let root = StackRouter(configuration: .permissive)
             root.present(SettingsRoute())
@@ -155,7 +155,7 @@ import Understudy
             withExtendedLifetime(window) { }
         }
 
-        @Test
+        @Test("The preview helper provides working routers")
         func previewHelperProvidesRouters() throws {
             let stackSeen = Spy<StackNavigator, Void>()
             let shopSeen = Spy<FlowNavigator<ShopFlow>, Void>()
@@ -171,7 +171,7 @@ import Understudy
             withExtendedLifetime(shopWindow) { }
         }
 
-        @Test
+        @Test("A destination hands the screen its navigator")
         func destinationHandsTheScreenItsNavigator() async throws {
             let router = StackRouter(configuration: .permissive)
             let seen = Spy<StackNavigator, Void>()

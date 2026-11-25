@@ -22,7 +22,7 @@ struct OutcomeDescriptionTests {
         line: 42
     )
 
-    @Test
+    @Test("Outcomes describe themselves by name")
     func outcomeDescriptions() {
         #expect(NavigationOutcome.applied.description == "applied")
         #expect(NavigationOutcome.alreadyThere.description == "alreadyThere")
@@ -31,21 +31,21 @@ struct OutcomeDescriptionTests {
         #expect(NavigationOutcome.failed(NavigationFailure(issue: issue)).description == "failed routeNotInPath")
     }
 
-    @Test
+    @Test("An issue's description names its flow and call site")
     func issueDescriptionNamesFlowAndCallSite() {
         #expect(issue.description == "routeNotInPath flow=shop at=ShopCoordinator.swift:42")
         let expected = "routeNotInPath flow=shop at=ShopCoordinator.swift:42\n  HomeRoute is not in the path []."
         #expect(issue.debugDescription == expected)
     }
 
-    @Test
+    @Test("A failure's description names its issue, flow and call site")
     func failureDescription() {
         let failure = NavigationFailure(issue: issue)
 
         #expect(failure.description == "failed routeNotInPath flow=shop at=ShopCoordinator.swift:42")
     }
 
-    @Test
+    @Test("Issues compare by call site")
     func issuesCompareByCallSite() {
         let same = NavigationIssue(
             kind: .routeNotInPath,
@@ -66,7 +66,7 @@ struct OutcomeDescriptionTests {
         #expect(issue == same)
     }
 
-    @Test
+    @Test("Issue messages keep route fields private")
     @MainActor
     func issueMessagesKeepRouteFieldsPrivate() {
         let router = StackRouter(configuration: .permissive)
@@ -78,7 +78,7 @@ struct OutcomeDescriptionTests {
         #expect(!message.contains("7"))
     }
 
-    @Test
+    @Test("didChange is true only for applied and recovered outcomes")
     func didChangeMatchesEveryOutcome() {
         let failure = NavigationFailure(issue: issue)
 
@@ -90,7 +90,7 @@ struct OutcomeDescriptionTests {
         #expect(!NavigationOutcome.failed(failure).didChange)
     }
 
-    @Test
+    @Test("failure is set only for a failed outcome")
     func failureMatchesEveryOutcome() {
         let failure = NavigationFailure(issue: issue)
 
@@ -102,7 +102,7 @@ struct OutcomeDescriptionTests {
         #expect(NavigationOutcome.ignored.failure == nil)
     }
 
-    @Test
+    @Test("A failure's debug description adds each issue's message")
     func failureDebugDescriptionAddsEachIssuesMessage() {
         let fallbackIssue = NavigationIssue(
             kind: .fallbackFailed,
@@ -123,7 +123,7 @@ struct OutcomeDescriptionTests {
         #expect(lines == expected)
     }
 
-    @Test
+    @Test("Log levels and categories read as their names")
     func levelsAndCategoriesReadAsTheirNames() {
         let levels: [LogLevel] = [.debug, .info, .notice, .error, .fault]
         let names = ["debug", "info", "notice", "error", "fault"]

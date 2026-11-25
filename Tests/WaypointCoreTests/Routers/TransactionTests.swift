@@ -17,7 +17,7 @@ import WaypointTestSupport
 @Suite("Transactions")
 @MainActor
 struct TransactionTests {
-    @Test
+    @Test("A transaction applies all its changes at once")
     func transactionAppliesOnceWithAllChanges() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -47,7 +47,7 @@ struct TransactionTests {
         #expect(applied.calls == expectedBatches)
     }
 
-    @Test
+    @Test("Observation fires once per transaction")
     func observationFiresOncePerTransaction() {
         let router = StackRouter(configuration: .permissive)
         let fired = FireCounter()
@@ -68,7 +68,7 @@ struct TransactionTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("A failed step rolls back the whole transaction")
     func failedStepRollsBackTransaction() throws {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
@@ -87,14 +87,14 @@ struct TransactionTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("An empty transaction is already there")
     func emptyTransactionIsAlreadyThere() {
         let router = StackRouter(configuration: .permissive)
 
         #expect(router.transaction { _ in } == .alreadyThere)
     }
 
-    @Test
+    @Test("A transaction can present a flow and navigate inside it")
     func transactionCanNavigateAPresentedFlow() throws {
         let router = StackRouter(configuration: .permissive)
 
@@ -109,7 +109,7 @@ struct TransactionTests {
         #expect(child.isActive)
     }
 
-    @Test
+    @Test("A transaction pushes several routes at once")
     func transactionPushesSeveralRoutesAtOnce() {
         let router = StackRouter(configuration: .permissive)
 
@@ -125,7 +125,7 @@ struct TransactionTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("A transaction pops to the last route of a type")
     func transactionPopsToTheLastRouteOfAType() {
         let router = StackRouter(configuration: .permissive)
         router.push {
@@ -143,7 +143,7 @@ struct TransactionTests {
         #expect(router.state.path == expectedPath)
     }
 
-    @Test
+    @Test("A transaction dismisses what its router presents")
     func transactionDismissesWhatItsRouterPresents() {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -158,7 +158,7 @@ struct TransactionTests {
         #expect(router.state.path.count == 1)
     }
 
-    @Test
+    @Test("A transaction inside a presented flow can dismiss it")
     func transactionDismissesThePresentedFlowFromInside() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -173,7 +173,7 @@ struct TransactionTests {
         #expect(!child.isActive)
     }
 
-    @Test
+    @Test("A tab step on a stack fails and rolls back")
     func stepOnATabOfAStackFailsAndRollsBack() {
         let router = StackRouter(configuration: .permissive)
 
@@ -186,7 +186,7 @@ struct TransactionTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A rolled back presentation leaves no child")
     func rolledBackPresentationLeavesNoChild() {
         let router = StackRouter(configuration: .permissive)
 
@@ -201,7 +201,7 @@ struct TransactionTests {
         #expect(router.presented?.flowID == FlowID("settings"))
     }
 
-    @Test
+    @Test("A tab transaction changes the tabs and their stacks together")
     func tabTransactionChangesTabsAndStacksTogether() {
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .home, configuration: .permissive)
         tabs.present(SettingsRoute())
@@ -222,7 +222,7 @@ struct TransactionTests {
         #expect(tabs.router(for: .shop).state.path == expectedPath)
     }
 
-    @Test
+    @Test("Selecting a tab in a stack transaction fails")
     func selectOnAStackTransactionFails() {
         let router = StackRouter(configuration: .permissive)
 
@@ -233,7 +233,7 @@ struct TransactionTests {
         #expect(outcome.failure?.issue.kind == .unknownTab)
     }
 
-    @Test
+    @Test("A transaction started during a change is queued and runs after it")
     func transactionDuringChangeIsQueued() {
         let router = StackRouter(configuration: .permissive)
         let inner = Spy<NavigationOutcome, Void>()

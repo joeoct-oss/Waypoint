@@ -16,7 +16,7 @@ import WaypointCore
 struct SheetDemoCoordinatorTests {
     private static let flowID = FlowID("labSheet")
 
-    @Test
+    @Test("The router is made for the sheet story")
     func routerIsMadeForTheSheetStory() {
         let demo = TestLab.makeFactory().makeSheetDemo(onClose: { })
 

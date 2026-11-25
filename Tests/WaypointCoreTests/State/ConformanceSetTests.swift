@@ -15,7 +15,7 @@ import WaypointTestSupport
 /// documentation names.
 @Suite("Conformance sets")
 struct ConformanceSetTests {
-    @Test
+    @Test("Route and state value types are navigation values")
     func valuesAreNavigationValues() {
         #expect(isNavigationValue(FlowID.self))
         #expect(isNavigationValue(RouteKey.self))
@@ -27,7 +27,7 @@ struct ConformanceSetTests {
         #expect(isNavigationValue(MainTab.self))
     }
 
-    @Test
+    @Test("Reported values are navigation records")
     func reportedValuesAreNavigationRecords() {
         #expect(isNavigationRecord(NavigationChange.self))
         #expect(isNavigationRecord(NavigationOutcome.self))
@@ -37,7 +37,7 @@ struct ConformanceSetTests {
         #expect(isNavigationRecord(RouteDecodingError.self))
     }
 
-    @Test
+    @Test("State values are navigation state values")
     func stateValuesAreSavedRecords() {
         #expect(isNavigationStateValue(StackState.self))
         #expect(isNavigationStateValue(TabState<MainTab>.self))
