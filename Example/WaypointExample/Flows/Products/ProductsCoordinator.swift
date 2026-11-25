@@ -46,7 +46,6 @@ final class ProductsCoordinator: StackCoordinator {
     private let factory: ProductsFactory
     private let launchSteps: ShopLaunchSteps
     private let navigation: ProductsNavigation
-    private let onAddToCart: (Product) -> Void
     private let cart: ProductsCart
     // `var` because Search's view model is made the first time Search's root draws, on the router
     // Waypoint has made by then, and kept. Only `searchModel` changes it. Not observed, because it
@@ -97,21 +96,19 @@ final class ProductsCoordinator: StackCoordinator {
         return router.presented === sheetRouter
     }
 
+    // `ProductsFactory` makes it, and hands it the feature's dependencies.
     init(
-        start: ProductsStart,
-        dependencies: ProductsDependencies,
         factory: ProductsFactory,
-        launchSteps: ShopLaunchSteps,
-        onAddToCart: @escaping (Product) -> Void,
+        start: ProductsStart,
         cart: ProductsCart
     ) {
+        let dependencies = factory.dependencies
         self.start = start
         store = dependencies.store
         gate = dependencies.gate
         self.factory = factory
-        self.launchSteps = launchSteps
+        launchSteps = start.launchSteps
         navigation = dependencies.navigation
-        self.onAddToCart = onAddToCart
         self.cart = cart
         madeSearchModel = nil
         presentedSheet = nil
@@ -288,7 +285,7 @@ final class ProductsCoordinator: StackCoordinator {
     }
 
     func addToCart(_ product: Product) {
-        onAddToCart(product)
+        cart.onAddToCart(product)
     }
 
     func goToCart() {
@@ -493,6 +490,16 @@ final class ProductsCoordinator: StackCoordinator {
 }
 
 extension ProductsStart {
+    // The product steps Shop plays the first time it appears; Search plays none.
+    var launchSteps: ShopLaunchSteps {
+        switch self {
+        case .browse(let steps):
+            return steps
+        case .search:
+            return .none
+        }
+    }
+
     // Names the stack's first screen in the journey lines.
     var rootName: String {
         switch self {

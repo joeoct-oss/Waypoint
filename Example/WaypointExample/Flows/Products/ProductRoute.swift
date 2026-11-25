@@ -76,9 +76,10 @@ struct ProductReviewsRoute: Route {
     let productID: Int
 }
 
-// Where a products stack starts: browsing the shop, or searching it.
+// Where a products stack starts: browsing the shop, which first plays the launch's product steps,
+// or searching it.
 enum ProductsStart {
-    case browse
+    case browse(ShopLaunchSteps)
     case search
 }
 

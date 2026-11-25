@@ -90,19 +90,18 @@ final class AuthCoordinator: FlowCoordinator {
         router.presented != nil
     }
 
+    // `AuthFactory` makes it, hands it the feature's dependencies and its Create account builder,
+    // and passes in why it opened.
     init(
-        dependencies: AuthDependencies,
         factory: AuthFactory,
-        builder: CreateAccountBuilder,
-        reason: SignInReason,
-        signedInStep: SignedInStep?
+        request: AuthRequest
     ) {
-        session = dependencies.session
-        service = dependencies.service
+        session = factory.dependencies.session
+        service = factory.dependencies.service
         self.factory = factory
-        self.builder = builder
-        self.reason = reason
-        self.signedInStep = signedInStep
+        builder = factory.makeCreateAccountBuilder()
+        reason = request.reason
+        signedInStep = request.signedInStep
         presentedSheet = nil
         sheetRouter = nil
         sheetOptions = nil

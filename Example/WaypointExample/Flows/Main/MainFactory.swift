@@ -62,26 +62,20 @@ struct MainFactory {
     // Shop, which plays the launch's product steps the first time it appears.
     func makeShop(
         gate: AccountGate,
-        onAddToCart: @escaping (Product) -> Void,
         cart: ProductsCart
     ) -> ProductsCoordinator {
         makeProductsFactory(gate: gate).makeCoordinator(
-            start: .browse,
-            launchSteps: launch.shopSteps,
-            onAddToCart: onAddToCart,
+            start: .browse(launch.shopSteps),
             cart: cart
         )
     }
 
     func makeSearch(
         gate: AccountGate,
-        onAddToCart: @escaping (Product) -> Void,
         cart: ProductsCart
     ) -> ProductsCoordinator {
         makeProductsFactory(gate: gate).makeCoordinator(
             start: .search,
-            launchSteps: .none,
-            onAddToCart: onAddToCart,
             cart: cart
         )
     }

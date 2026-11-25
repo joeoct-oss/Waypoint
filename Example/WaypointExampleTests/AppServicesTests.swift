@@ -69,13 +69,12 @@ struct AppServicesTests {
         let cart = cartFactory.makeCoordinator(onShopMore: { })
         let productsCart = ProductsCart(
             products: { cart.products },
+            onAddToCart: { cart.add($0) },
             onGoToCart: { },
             onCheckout: { }
         )
         let shop = productsFactory.makeCoordinator(
-            start: .browse,
-            launchSteps: .none,
-            onAddToCart: { cart.add($0) },
+            start: .browse(.none),
             cart: productsCart
         )
         let lamp = try #require(Product.find(id: Self.lampID))

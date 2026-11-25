@@ -50,12 +50,13 @@ final class AccountCoordinator: StackCoordinator {
         makeAccountFlow()
     }
 
+    // `AccountFactory` makes it, and hands it the feature's dependencies.
     init(
-        launch: LaunchOptions,
-        dependencies: AccountDependencies,
         factory: AccountFactory,
+        launch: LaunchOptions,
         onClearAllData: @escaping () -> Void
     ) {
+        let dependencies = factory.dependencies
         addressBook = dependencies.addresses
         gate = dependencies.gate
         self.factory = factory

@@ -17,7 +17,8 @@ struct AccountFactory {
     // The pushed wish list suggests nothing; only the wish list sheet on Shop does.
     private static let noSuggestions: [Product] = []
 
-    private let dependencies: AccountDependencies
+    // What the feature uses, which its coordinator reads too.
+    let dependencies: AccountDependencies
 
     init(dependencies: AccountDependencies) {
         self.dependencies = dependencies
@@ -30,9 +31,8 @@ struct AccountFactory {
         onClearAllData: @escaping () -> Void
     ) -> AccountCoordinator {
         AccountCoordinator(
-            launch: launch,
-            dependencies: dependencies,
             factory: self,
+            launch: launch,
             onClearAllData: onClearAllData
         )
     }
