@@ -111,7 +111,8 @@ struct StackRouterTests {
         let outcome = router.pop(count: 3)
 
         #expect(outcome.recoveredIssue?.kind == .notEnoughRoutes)
-        #expect(outcome.recoveredIssue?.message.hasPrefix("pop(count: 3) asked for 3 routes, but the path holds 1.") == true)
+        let counts = "pop(count: 3) asked for 3 routes, but the path holds 1."
+        #expect(outcome.recoveredIssue?.message.hasPrefix(counts) == true)
         #expect(outcome.description == "recovered notEnoughRoutes by=popToRoot")
         #expect(router.state.path.isEmpty)
     }

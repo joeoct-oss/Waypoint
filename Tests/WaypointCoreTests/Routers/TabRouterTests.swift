@@ -107,10 +107,16 @@ struct TabRouterTests {
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, configuration: .permissive)
         let shop = tabs.router(for: .shop)
         let newTabs: [MainTab] = [.home, .profile]
+        let applied = Recorder<[AppliedChange]>()
+        tabs.tree.onApplied { changes in
+            applied.record(changes)
+        }
 
         #expect(tabs.setTabs(newTabs) == .applied)
 
         #expect(tabs.selection == .home)
+        let moved = [AppliedChange(flow: tabs.flowID, change: .tabSelected(from: "shop", to: "home"))]
+        #expect(applied.values == [moved])
         #expect(shop.push(ProductRoute(id: 1)) == .ignored)
         #expect(tabs.router(for: .profile).isActive)
     }
