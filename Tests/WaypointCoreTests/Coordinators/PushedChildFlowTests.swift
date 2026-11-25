@@ -21,7 +21,7 @@ struct PushedChildFlowTests {
     /// The order number the checkout flow finishes with.
     private static let order = "A-1"
 
-    @Test
+    @Test("Pushing a child flow nests its router on the parent's stack")
     func pushingChildFlowNestsRouter() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()
@@ -46,7 +46,7 @@ struct PushedChildFlowTests {
         #expect(parent.state.path == parentPath)
     }
 
-    @Test
+    @Test("A pushed flow is cancelled and released when popped")
     func pushedFlowReleasedOnPop() {
         let parent = StackRouter()
         let results = Spy<FlowResult<String>, Void>()
@@ -75,7 +75,7 @@ struct PushedChildFlowTests {
         #expect(weakRouter == nil)
     }
 
-    @Test
+    @Test("Finishing a pushed child pops to below its root screen")
     func finishPopsBelowTheChildsRootScreen() {
         let parent = StackRouter()
         parent.register(SettingsRoute.self)
@@ -96,7 +96,7 @@ struct PushedChildFlowTests {
         #expect(!child.router.isActive)
     }
 
-    @Test
+    @Test("dismissFlow from a pushed child pops it and delivers cancelled")
     func dismissFlowFromPushedChildPopsIt() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()
@@ -113,7 +113,7 @@ struct PushedChildFlowTests {
         #expect(parent.state.path.isEmpty)
     }
 
-    @Test
+    @Test("The user going back past the child's root cancels it")
     func userBackPastTheChildsRootCancels() {
         let parent = StackRouter()
         let results = Spy<FlowResult<String>, Void>()
@@ -128,7 +128,7 @@ struct PushedChildFlowTests {
         #expect(parent.pushedFlow == nil)
     }
 
-    @Test
+    @Test("A parent push ends the child on top")
     func parentPushEndsTheChildOnTop() {
         let parent = StackRouter()
         parent.register(SettingsRoute.self)
@@ -147,7 +147,7 @@ struct PushedChildFlowTests {
         #expect(parent.pushedFlow == nil)
     }
 
-    @Test
+    @Test("A second pushed child cancels the first")
     func secondPushedChildEndsTheFirst() {
         let parent = StackRouter()
         let first = Spy<FlowResult<String>, Void>()
@@ -168,7 +168,7 @@ struct PushedChildFlowTests {
         #expect(parent.state.path.count == 1)
     }
 
-    @Test
+    @Test("A parent pop cancels nested pushed children")
     func parentPopCancelsNestedPushedChildren() {
         let parent = StackRouter()
         let outer = Spy<FlowResult<String>, Void>()
@@ -190,7 +190,7 @@ struct PushedChildFlowTests {
         #expect(!grandchild.router.isActive)
     }
 
-    @Test
+    @Test("A pushed child holding the caller's router is refused")
     func pushedChildWithCallersRouterIsRefused() {
         let parent = StackRouter()
         let results = Spy<FlowResult<Int>, Void>()
@@ -204,7 +204,7 @@ struct PushedChildFlowTests {
         #expect(results.calls.isEmpty)
     }
 
-    @Test
+    @Test("A flow's role decides whether it is pushed or presented")
     func flowRoleDecidesHowItIsBuilt() {
         let pushing = StackRouter()
         let presenting = StackRouter()
@@ -224,7 +224,7 @@ struct PushedChildFlowTests {
         #expect(presenting.pushedFlow == nil)
     }
 
-    @Test
+    @Test("A double tap pushes the flow once")
     func doubleTapPushesTheFlowOnce() {
         let parent = StackRouter()
         let first = Spy<FlowResult<String>, Void>()
@@ -250,7 +250,7 @@ struct PushedChildFlowTests {
         #expect(parent.pushedFlow === child.router)
     }
 
-    @Test
+    @Test("An ignored push builds nothing and never calls onFinish")
     func ignoredPushBuildsNothing() {
         let inert = StackRouter.inert()
         let built = Spy<CheckoutFlowCoordinator, Void>()
@@ -269,7 +269,7 @@ struct PushedChildFlowTests {
         #expect(results.calls.isEmpty)
     }
 
-    @Test
+    @Test("A rolled back push leaves the child as it was, and a retry works")
     func rolledBackPushLeavesChildAsItWas() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()

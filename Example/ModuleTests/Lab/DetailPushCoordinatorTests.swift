@@ -1,15 +1,15 @@
 //
 //  DetailPushCoordinatorTests.swift
-//  WaypointExampleTests
+//  ExampleLabTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleLab
 import ExampleNavigation
 import Testing
 import Waypoint
-@testable import WaypointExample
 
 // The Lab's Detail push coordinator stores no router (planning #313): Waypoint makes it from the
 // Lab's configuration the first time it is read, names it after the coordinator, and makes it inert
@@ -17,7 +17,7 @@ import Waypoint
 struct DetailPushCoordinatorTests {
     private static let flowID = FlowID("detailPush")
 
-    @Test
+    @Test("The router is made for the detail push flow")
     func routerIsMadeForTheDetailPushFlow() {
         let coordinator = TestLab.makeFactory().makeDetailPush(onClose: { })
 
@@ -31,7 +31,7 @@ struct DetailPushCoordinatorTests {
 
     // Its `destinations` are registered when the router is made, with no `register` call, so a
     // push before the stack is drawn is applied.
-    @Test
+    @Test("Destinations are registered without register calls")
     func destinationsRegisteredWithoutRegisterCalls() {
         let coordinator = TestLab.makeFactory().makeDetailPush(onClose: { })
 
@@ -44,7 +44,7 @@ struct DetailPushCoordinatorTests {
         #expect(declared == ObjectIdentifier(DetailPushFlow.self))
     }
 
-    @Test
+    @Test("A closed demo leaves no live router")
     func closedDemoLeavesNoLiveRouter() throws {
         let lab = TestLab.makeFactory().makeDemos()
         lab.showDemo(.detailPush)

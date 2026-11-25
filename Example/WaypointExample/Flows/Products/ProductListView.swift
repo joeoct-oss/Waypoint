@@ -14,14 +14,14 @@ import SwiftUI
 // Shop: the "Nebula nights" banner, the first two of `products` picked as cards, then the rest as
 // rows. Filter and Wish list are `ShopToolbar`, which the main tabs put in the navigation bar. The
 // screen reports each choice.
-struct ProductListView: View {
+package struct ProductListView: View {
     private static let pickedCount = 2
 
-    let products: [Product]
-    let cart: [Product]
-    let onGoToCart: () -> Void
-    let onSelect: (Product) -> Void
-    let onSelectCollection: (ProductCollection) -> Void
+    package let products: [Product]
+    package let cart: [Product]
+    package let onGoToCart: () -> Void
+    package let onSelect: (Product) -> Void
+    package let onSelectCollection: (ProductCollection) -> Void
 
     private var picked: [Product] {
         Array(products.prefix(Self.pickedCount))
@@ -31,7 +31,7 @@ struct ProductListView: View {
         Array(products.dropFirst(Self.pickedCount))
     }
 
-    var body: some View {
+    package var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 Text("Small things for long nights")
@@ -85,11 +85,11 @@ struct ProductListView: View {
 //
 // Conformances:
 // - `ToolbarContent`, so the main tabs can put it in their toolbar.
-struct ShopToolbar: ToolbarContent {
-    let onFilter: () -> Void
-    let onWishlist: () -> Void
+package struct ShopToolbar: ToolbarContent {
+    package let onFilter: () -> Void
+    package let onWishlist: () -> Void
 
-    var body: some ToolbarContent {
+    package var body: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Button("Wish list", systemImage: "heart", action: onWishlist)
                 .accessibilityIdentifier(Identifiers.shopWishlist)
@@ -102,10 +102,10 @@ struct ShopToolbar: ToolbarContent {
 }
 
 // A section's small uppercase title on Shop.
-struct ShopSectionHeader: View {
-    let title: String
+package struct ShopSectionHeader: View {
+    package let title: String
 
-    var body: some View {
+    package var body: some View {
         Text(title)
             .font(Typography.label)
             .textCase(.uppercase)
@@ -117,11 +117,11 @@ struct ShopSectionHeader: View {
 
 // Products as rows inside one card, divided by hairlines, for screens that scroll on their own
 // instead of using a list.
-struct ProductRowCard: View {
-    let products: [Product]
-    let onSelect: (Product) -> Void
+package struct ProductRowCard: View {
+    package let products: [Product]
+    package let onSelect: (Product) -> Void
 
-    var body: some View {
+    package var body: some View {
         VStack(spacing: 0) {
             ForEach(products) { product in
                 makeRow(for: product)
@@ -156,16 +156,16 @@ struct ProductRowCard: View {
 
 // Shop's "Your cart is waiting" card: the cart's first product, how many more there are, and Go to
 // cart, which the card only reports.
-struct CartWaitingCard: View {
-    let first: Product
-    let count: Int
-    let onGoToCart: () -> Void
+package struct CartWaitingCard: View {
+    package let first: Product
+    package let count: Int
+    package let onGoToCart: () -> Void
 
     private var summary: String {
         count > 1 ? "\(first.name) and \(count - 1) more" : first.name
     }
 
-    var body: some View {
+    package var body: some View {
         HStack(spacing: Spacing.medium) {
             IconTile(
                 symbolName: "cart",

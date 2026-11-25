@@ -20,19 +20,19 @@ import Waypoint
 // Conformances:
 // - `FlowCoordinator`, so the Detail push flow pushes it with `push(_:onFinish:)` and gets the
 //   stars.
-final class DetailReviewCoordinator: FlowCoordinator {
+package final class DetailReviewCoordinator: FlowCoordinator {
     // The stars the review gives.
-    typealias Output = Int
+    package typealias Output = Int
 
     private let product: Product
     private let factory: LabFactory
 
     // The journey's name for the flow's first screen.
-    var rootName: String {
+    package var rootName: String {
         "Write a review"
     }
 
-    var root: some View {
+    package var root: some View {
         factory.makeDetailReviewRating(onRate: { self.showNote(rating: $0) })
             .screenChrome(
                 title: rootName,
@@ -42,12 +42,12 @@ final class DetailReviewCoordinator: FlowCoordinator {
             )
     }
 
-    var destinations: some Destinations {
+    package var destinations: some Destinations {
         Destination(DetailReviewNoteRoute.self) { self.makeNoteScreen($0) }
     }
 
     // `LabFactory` makes it, and builds its screens.
-    init(
+    package init(
         product: Product,
         factory: LabFactory
     ) {
@@ -55,7 +55,7 @@ final class DetailReviewCoordinator: FlowCoordinator {
         self.factory = factory
     }
 
-    func makeNoteScreen(_ route: DetailReviewNoteRoute) -> some View {
+    package func makeNoteScreen(_ route: DetailReviewNoteRoute) -> some View {
         factory.makeDetailReviewNote(
             rating: route.rating,
             onPost: { self.post(rating: route.rating) }
@@ -68,11 +68,11 @@ final class DetailReviewCoordinator: FlowCoordinator {
         )
     }
 
-    func showNote(rating: Int) {
+    package func showNote(rating: Int) {
         router.push(DetailReviewNoteRoute(rating: rating))
     }
 
-    func post(rating: Int) {
+    package func post(rating: Int) {
         finish(with: rating)
     }
 }

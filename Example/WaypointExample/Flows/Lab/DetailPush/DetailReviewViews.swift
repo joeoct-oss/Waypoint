@@ -12,12 +12,12 @@ import SwiftUI
 
 // The Write a review flow's first screen: one button for each number of stars, and a tap reports
 // the stars picked.
-struct DetailReviewRatingView: View {
+package struct DetailReviewRatingView: View {
     private static let ratings = 1...5
 
-    let onRate: (Int) -> Void
+    package let onRate: (Int) -> Void
 
-    var body: some View {
+    package var body: some View {
         List {
             Section {
                 ForEach(Self.ratings, id: \.self) { rating in
@@ -34,11 +34,11 @@ struct DetailReviewRatingView: View {
 }
 
 // The Write a review flow's note: the stars picked, and Post review, which finishes the flow.
-struct DetailReviewNoteView: View {
-    let rating: Int
-    let onPost: () -> Void
+package struct DetailReviewNoteView: View {
+    package let rating: Int
+    package let onPost: () -> Void
 
-    var body: some View {
+    package var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 LabNote(
@@ -64,8 +64,8 @@ struct DetailReviewNoteView: View {
 }
 
 // The words the review screens and the product show for a number of stars.
-nonisolated enum DetailReviewText {
-    static func stars(_ rating: Int) -> String {
+package nonisolated enum DetailReviewText {
+    package static func stars(_ rating: Int) -> String {
         rating == 1 ? "1 star" : "\(rating) stars"
     }
 }

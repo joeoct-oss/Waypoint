@@ -16,14 +16,14 @@ import SwiftUI
 // the reader types, it offers recent searches and the shop's categories, and a tap on either fills
 // the field. Once there is a query, it lists the products whose name or category holds every word
 // of it, under a count. A tapped result goes to the view model, which pushes the product.
-struct SearchView: View {
+package struct SearchView: View {
     private static let recentSearches = [
         "lamp",
         "mug",
         "star print",
     ]
 
-    let model: SearchModel
+    package let model: SearchModel
 
     @State private var query = ""
 
@@ -35,7 +35,7 @@ struct SearchView: View {
         results.count == 1 ? "1 result" : "\(results.count) results"
     }
 
-    var body: some View {
+    package var body: some View {
         List {
             searchField
             if query.isEmpty {

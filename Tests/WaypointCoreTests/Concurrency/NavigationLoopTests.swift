@@ -22,7 +22,7 @@ struct NavigationLoopTests {
     /// More calls than the limit allows.
     private static let callCount = 10
 
-    @Test
+    @Test("A navigation loop is stopped at the queue limit and reported once")
     func navigationLoopStopsAndReportsReentrantLoop() {
         let failures = Spy<NavigationIssue.Kind, Void>()
         let configuration = NavigationConfiguration(maxQueuedChanges: Self.limit, registry: .permissive) { failure in
@@ -42,7 +42,7 @@ struct NavigationLoopTests {
         #expect(router.state.path.count == Self.limit)
     }
 
-    @Test
+    @Test("The app navigates normally after a loop is stopped")
     func appNavigatesNormallyAfterALoopIsStopped() {
         let configuration = NavigationConfiguration(maxQueuedChanges: Self.limit, registry: .permissive)
         let router = StackRouter(configuration: configuration)
@@ -57,7 +57,7 @@ struct NavigationLoopTests {
         #expect(router.state.path.count == 1 + Self.limit)
     }
 
-    @Test
+    @Test("The loop limit counts calls per outermost call")
     func loopLimitCountsCallsPerOutermostCall() {
         let configuration = NavigationConfiguration(maxQueuedChanges: Self.limit, registry: .permissive)
         let router = StackRouter(configuration: configuration)
@@ -68,7 +68,7 @@ struct NavigationLoopTests {
         #expect((first + second).allSatisfy { $0 == .queued })
         #expect(router.state.path.count == 2 * Self.limit)
     }
-    @Test
+    @Test("The queue limit defaults to 32 and is shared by the tree")
     func queueLimitDefaultsTo32AndIsSharedByTheTree() throws {
         let configuration = NavigationConfiguration(maxQueuedChanges: Self.limit, registry: .permissive)
         let router = StackRouter(configuration: configuration)
@@ -82,7 +82,7 @@ struct NavigationLoopTests {
         #expect(outcomes.filter { $0 == .queued }.count == Self.limit)
     }
 
-    @Test
+    @Test("A failure handler that navigates can't overflow after a loop")
     func failureHandlerThatNavigatesCannotOverflowAfterLoop() {
         let issues = Spy<NavigationIssue.Kind, Void>()
         let holder = RouterHolder()

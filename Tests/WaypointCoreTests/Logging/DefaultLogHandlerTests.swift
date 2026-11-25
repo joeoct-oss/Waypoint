@@ -22,7 +22,7 @@ struct DefaultLogHandlerTests {
         StackRouter(configuration: NavigationConfiguration(logging: logging, registry: .permissive))
     }
 
-    @Test
+    @Test("A log configuration without a handler uses the default one")
     func configurationWithoutHandlerUsesTheDefault() {
         let handler = RecordingLogHandler()
 
@@ -35,7 +35,7 @@ struct DefaultLogHandlerTests {
         #expect(!LogConfiguration(handler: handler).withMinimumLevel(.debug).usesDefaultHandler)
     }
 
-    @Test
+    @Test("Installing replaces the default handler once")
     func installReplacesTheDefaultHandlerOnce() {
         let installed = RecordingLogHandler()
         let later = RecordingLogHandler()
@@ -51,7 +51,7 @@ struct DefaultLogHandlerTests {
         #expect(later.messages.isEmpty)
     }
 
-    @Test
+    @Test("Installing keeps the app's own handler")
     func installKeepsTheAppsHandler() {
         let apps = RecordingLogHandler()
         let installed = RecordingLogHandler()
@@ -64,7 +64,7 @@ struct DefaultLogHandlerTests {
         #expect(installed.messages.isEmpty)
     }
 
-    @Test
+    @Test("Installing keeps disabled logging off")
     func installKeepsLoggingDisabled() {
         let installed = RecordingLogHandler()
         let router = Self.router(.disabled)
@@ -76,7 +76,7 @@ struct DefaultLogHandlerTests {
         #expect(installed.checks == 0)
     }
 
-    @Test
+    @Test("Installing on a child covers the whole tree")
     func installOnAChildCoversTheWholeTree() throws {
         let installed = RecordingLogHandler()
         let root = Self.router(LogConfiguration(minimumLevel: .debug, format: .structured))
@@ -90,7 +90,7 @@ struct DefaultLogHandlerTests {
         #expect(installed.routerTexts == ["pushed [HomeRoute] flow=main"])
     }
 
-    @Test
+    @Test("Installing on a tab container covers the whole tree")
     func installOnATabContainerCoversTheWholeTree() {
         let installed = RecordingLogHandler()
         let logging = LogConfiguration(minimumLevel: .debug, format: .structured)
@@ -102,7 +102,7 @@ struct DefaultLogHandlerTests {
         #expect(tabs.configuration.logging.handler is RecordingLogHandler)
     }
 
-    @Test
+    @Test("A push is measured as a renderer interval")
     func pushIsMeasuredAsARendererInterval() {
         let handler = RecordingLogHandler()
         let router = Self.router(LogConfiguration(handler: handler, minimumLevel: .debug))
@@ -117,7 +117,7 @@ struct DefaultLogHandlerTests {
         #expect(handler.intervals == expected)
     }
 
-    @Test
+    @Test("A replaced push's interval ends before the new one begins")
     func replacedPushEndsBeforeTheNewOneBegins() {
         let handler = RecordingLogHandler()
         let router = Self.router(LogConfiguration(handler: handler, minimumLevel: .debug))
@@ -140,7 +140,7 @@ struct DefaultLogHandlerTests {
         #expect(handler.intervals == expected)
     }
 
-    @Test
+    @Test("A push is not measured when the renderer category is off")
     func pushIsNotMeasuredWhenRendererIsOff() {
         let handler = RecordingLogHandler()
         let navigationOnly: Set<LogCategory> = [.navigation]
@@ -154,7 +154,7 @@ struct DefaultLogHandlerTests {
         #expect(handler.intervals.isEmpty)
     }
 
-    @Test
+    @Test("A held change is logged at debug in the renderer category")
     func heldChangeIsLoggedAtDebugInRenderer() {
         let handler = RecordingLogHandler()
         let structured = Self.router(LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured))
@@ -169,7 +169,7 @@ struct DefaultLogHandlerTests {
         #expect(handler.routerTexts[1] == "Waypoint  main       hold     waits 450 ms for the running transition")
     }
 
-    @Test
+    @Test("A held change is not logged at notice")
     func heldChangeIsQuietAtNotice() {
         let handler = RecordingLogHandler()
         let router = Self.router(LogConfiguration(handler: handler))

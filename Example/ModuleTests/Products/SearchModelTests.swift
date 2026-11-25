@@ -1,18 +1,19 @@
 //
 //  SearchModelTests.swift
-//  WaypointExampleTests
+//  ExampleProductsTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleProducts
 import ExampleServices
 import ExampleStore
+import ExampleTestSupport
 import Foundation
 import Testing
 import Understudy
 import WaypointCore
-@testable import WaypointExample
 
 // Search's view model navigates on its own (planning #417): a tapped result pushes the product
 // through the stack's navigator scoped to the shop, on a real router with no screen. Each test
@@ -26,7 +27,7 @@ struct SearchModelTests {
     private static let throwID = 3
     private static let shopFlowID = FlowID("search")
 
-    @Test
+    @Test("Search finds only matching products")
     func searchFindsOnlyMatchingProducts() {
         let store = TestStore.make()
         defer {
@@ -43,7 +44,7 @@ struct SearchModelTests {
         #expect(results.map(\.id) == expected)
     }
 
-    @Test
+    @Test("The search model pushes the product on the shop flow")
     func searchModelPushesProduct() throws {
         let store = TestStore.make()
         defer {
@@ -64,7 +65,7 @@ struct SearchModelTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("A navigator scoped to another flow logs a mismatch")
     func scopedNavigatorRefusesOtherFlow() {
         let store = TestStore.make()
         defer {

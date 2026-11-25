@@ -34,32 +34,32 @@ import Waypoint
 // - `Observable` (from `@Observable`), so the flow redraws when Reset password or the signed-in
 //   account changes.
 @Observable
-final class AuthCoordinator: FlowCoordinator {
+package final class AuthCoordinator: FlowCoordinator {
     // The account the reader signed in to, or created.
-    typealias Output = Account
+    package typealias Output = Account
 
     private let session: Session
     private let service: any AuthService
     private let factory: AuthFactory
-    let builder: CreateAccountBuilder
+    package let builder: CreateAccountBuilder
     private let reason: SignInReason
     private let signedInStep: SignedInStep?
     // Reset password or the terms, which `showResetPassword()` and `showTerms()` keep and
     // `releaseSheet()` drops once the sheet has slid away, so it still draws meanwhile.
-    let sheet: PresentedSheet<AuthSheet>
+    package let sheet: PresentedSheet<AuthSheet>
     // `var` for the same reason as `sheet`: Reset password's coordinator, which draws that sheet.
-    private(set) var resetPassword: ResetPasswordCoordinator?
+    package private(set) var resetPassword: ResetPasswordCoordinator?
     // `var` because signing in over another sheet sets it with the account Signed in names.
     private var signedInAccount: Account?
     // Whether a call to the auth service is running, and the last failure's message.
-    let form: AuthForm
+    package let form: AuthForm
 
     // The journey's name for Sign in, the flow's first screen.
-    var rootName: String {
+    package var rootName: String {
         "Sign in"
     }
 
-    var root: some View {
+    package var root: some View {
         factory.makeSignIn(
             reason: reason,
             isWorking: form.isWorking,
@@ -77,19 +77,19 @@ final class AuthCoordinator: FlowCoordinator {
         )
     }
 
-    var destinations: some Destinations {
+    package var destinations: some Destinations {
         Destination(CreateAccountRoute.self) { self.makeCreateAccountScreen($0) }
         Destination(SignedInRoute.self) { _ in self.makeSignedInScreen() }
     }
 
     // Whether Reset password or the terms is presented over the flow.
-    var isShowingSheet: Bool {
+    package var isShowingSheet: Bool {
         router.presented != nil
     }
 
     // `AuthFactory` makes it, hands it the feature's dependencies and its Create account builder,
     // and passes in why it opened.
-    init(
+    package init(
         factory: AuthFactory,
         request: AuthRequest
     ) {
@@ -106,12 +106,12 @@ final class AuthCoordinator: FlowCoordinator {
     }
 
     // Also registers the terms, which this router presents rather than pushes.
-    func registerDestinations(on router: StackRouter) {
+    package func registerDestinations(on router: StackRouter) {
         destinations.registerRoutes(on: router)
         router.register(TermsRoute.self)
     }
 
-    func makeCreateAccountScreen(_ route: CreateAccountRoute) -> some View {
+    package func makeCreateAccountScreen(_ route: CreateAccountRoute) -> some View {
         builder.makeStep(
             route.step,
             isWorking: form.isWorking,
@@ -127,7 +127,7 @@ final class AuthCoordinator: FlowCoordinator {
         )
     }
 
-    func makeSignedInScreen() -> some View {
+    package func makeSignedInScreen() -> some View {
         factory.makeSignedIn(
             name: signedInAccount?.name ?? Account.sample.name,
             reason: reason,
@@ -142,7 +142,7 @@ final class AuthCoordinator: FlowCoordinator {
     }
 
     @ViewBuilder
-    func makeSheetFlow() -> some View {
+    package func makeSheetFlow() -> some View {
         if let sheetRouter = sheet.router, let presentedSheet = sheet.sheet {
             WaypointStack(sheetRouter) {
                 makeSheetScreen(for: presentedSheet)
@@ -151,14 +151,14 @@ final class AuthCoordinator: FlowCoordinator {
         }
     }
 
-    func showCreateAccount() {
+    package func showCreateAccount() {
         form.clearError()
         router.push(CreateAccountRoute(step: .details))
     }
 
     // Starts Reset password as a child flow. A link it sent clears a sign-in error, since the
     // reader is choosing a new password.
-    func showResetPassword() {
+    package func showResetPassword() {
         let reset = factory.makeResetPassword()
         // No fallback, so a second tap while the sheet is up is refused and keeps the flow on
         // screen, with what the reader typed, instead of the app's `.replacePresentation`.
@@ -172,12 +172,12 @@ final class AuthCoordinator: FlowCoordinator {
         sheet.keep(.resetPassword, presentedBy: router)
     }
 
-    func showTerms() {
+    package func showTerms() {
         router.present(TermsRoute(), style: AppSheets.terms)
         sheet.keep(.terms, presentedBy: router)
     }
 
-    func signIn(
+    package func signIn(
         email: String,
         password: String
     ) {
@@ -190,13 +190,13 @@ final class AuthCoordinator: FlowCoordinator {
     }
 
     // Cancel: ends the flow, which the account gate gets as `.cancelled`.
-    func cancel() {
+    package func cancel() {
         router.dismissFlow()
     }
 
     // Signs the session in, then finishes with the account, or, over another sheet, runs what the
     // gate asked for and shows Signed in.
-    func signedIn(as account: Account) {
+    package func signedIn(as account: Account) {
         session.signIn(account)
         guard let signedInStep else {
             finish(with: account)
@@ -207,12 +207,12 @@ final class AuthCoordinator: FlowCoordinator {
         router.push(SignedInRoute())
     }
 
-    func dismissSheet() {
+    package func dismissSheet() {
         router.dismiss()
     }
 
     // Takes the system's own dismissal of the sheet, a swipe down.
-    func syncSheet(_ isShowing: Bool) {
+    package func syncSheet(_ isShowing: Bool) {
         guard !isShowing else {
             return
         }
@@ -220,7 +220,7 @@ final class AuthCoordinator: FlowCoordinator {
     }
 
     // Drops the sheet's router once the sheet has gone.
-    func releaseSheet() {
+    package func releaseSheet() {
         sheet.release()
         resetPassword = nil
     }
@@ -238,7 +238,7 @@ final class AuthCoordinator: FlowCoordinator {
     }
 
     // Continue on a Create account step: the next step, registering the account, or signing in.
-    func continueCreatingAccount(after step: CreateAccountStep) {
+    package func continueCreatingAccount(after step: CreateAccountStep) {
         switch step {
         case .details:
             showStep(.password)

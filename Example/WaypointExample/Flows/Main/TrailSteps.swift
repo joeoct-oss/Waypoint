@@ -6,7 +6,12 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAccount
+import ExampleAuth
+import ExampleCart
+import ExampleLab
 import ExampleNavigation
+import ExampleProducts
 import WaypointCore
 
 // Every route the example app's trail names, which `AppWindow` puts in the environment for the
@@ -53,7 +58,7 @@ extension SheetDemoRoute: TrailStep { }
 // Conformances:
 // - `TrailStep`, so the trail names the step: `payment` or `review`.
 extension CheckoutStep: TrailStep {
-    var trailName: String {
+    package var trailName: String {
         switch self {
         case .payment:
             return "payment"
@@ -66,7 +71,7 @@ extension CheckoutStep: TrailStep {
 // Conformances:
 // - `TrailStep`, so the trail shows which product the Detail push story pushed.
 extension DetailProductRoute: TrailStep {
-    var trailName: String {
+    package var trailName: String {
         "product \(productID)"
     }
 }
@@ -74,7 +79,7 @@ extension DetailProductRoute: TrailStep {
 // Conformances:
 // - `TrailStep`, so the trail shows the cart the Detail push story pops back to.
 extension DetailCartRoute: TrailStep {
-    var trailName: String {
+    package var trailName: String {
         "cart"
     }
 }

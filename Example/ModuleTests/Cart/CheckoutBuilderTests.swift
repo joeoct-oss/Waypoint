@@ -1,15 +1,16 @@
 //
 //  CheckoutBuilderTests.swift
-//  WaypointExampleTests
+//  ExampleCartTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleCart
 import ExampleServices
 import ExampleStore
+import ExampleTestSupport
 import Testing
-@testable import WaypointExample
 
 // One checkout's draft (planning #424): the order it places has the cart's products, the chosen
 // address and the card, placing it empties the cart, and with no address it can't be placed.
@@ -17,7 +18,7 @@ struct CheckoutBuilderTests {
     private static let lampID = 1
     private static let mugID = 2
 
-    @Test
+    @Test("Checkout places an order with the chosen address and payment")
     func checkoutPlacesOrderWithChosenAddressAndPayment() throws {
         let store = TestStore.make()
         defer {
@@ -37,7 +38,7 @@ struct CheckoutBuilderTests {
         #expect(order == expected)
     }
 
-    @Test
+    @Test("Checkout without an address can't place an order")
     func checkoutWithoutAddressCannotPlaceOrder() {
         let store = TestStore.make()
         defer {
@@ -53,7 +54,7 @@ struct CheckoutBuilderTests {
         #expect(store.cartProductIDs == cartIDs())
     }
 
-    @Test
+    @Test("A placed order empties the cart")
     func placedOrderEmptiesCart() {
         let store = TestStore.make()
         defer {

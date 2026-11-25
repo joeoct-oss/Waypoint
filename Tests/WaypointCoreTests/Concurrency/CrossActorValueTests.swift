@@ -31,7 +31,7 @@ struct CrossActorValueTests {
         case screenVisit
     }
 
-    @Test(arguments: ValueKind.allCases)
+    @Test("Navigation values cross actors unchanged", arguments: ValueKind.allCases)
     func navigationValuesCrossActorsUnchanged(_ kind: ValueKind) async throws {
         let service = BackgroundService()
 
@@ -40,7 +40,7 @@ struct CrossActorValueTests {
         #expect(crossed)
     }
 
-    @Test
+    @Test("A path encoded on a background actor restores the same screens")
     func stackPathEncodedOnBackgroundActorRestoresTheSameScreens() async throws {
         let configuration = NavigationConfiguration(registry: RouteRegistry().registering(ItemRoute.self))
         let router = StackRouter(configuration: configuration)
@@ -62,7 +62,7 @@ struct CrossActorValueTests {
         #expect(restored.state.path == router.state.path)
     }
 
-    @Test
+    @Test("Route descriptions read off the main actor match the main actor's")
     func routeDescriptionsReadOnBackgroundActorMatchMain() async {
         let route = AnyRoute(ItemRoute(id: 7))
         let onMain = route.debugDescription(revealingPrivateValues: false)
@@ -73,7 +73,7 @@ struct CrossActorValueTests {
         #expect(offMain == onMain)
     }
 
-    @Test
+    @Test("A configuration built on a background actor works on the main actor")
     func configurationBuiltOnBackgroundActorWorksOnMain() async {
         let handler = RecordingLogHandler()
         let service = BackgroundService()

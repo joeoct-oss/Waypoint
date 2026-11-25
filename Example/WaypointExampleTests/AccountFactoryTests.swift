@@ -6,7 +6,10 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAccount
+import ExampleAuth
 import ExampleNavigation
+import ExampleTestSupport
 import Testing
 import WaypointCore
 @testable import WaypointExample
@@ -17,7 +20,7 @@ struct AccountFactoryTests {
     private static let mugID = 2
     private static let missingID = 999
 
-    @Test
+    @Test("The wishlist lists the saved products from the catalog")
     func wishlistListsSavedProductsFromTheCatalog() {
         let store = TestStore.make()
         defer {

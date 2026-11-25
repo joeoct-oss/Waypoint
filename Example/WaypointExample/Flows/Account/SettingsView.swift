@@ -17,7 +17,7 @@ import SwiftUI
 // pushes Orders twice in a row to try it. It shows the queued-call limit and how many calls failed
 // with no fallback, and tries the two calls the app's fallbacks recover and one no fallback covers.
 // The screen reports each choice to the account coordinator.
-struct SettingsView: View {
+package struct SettingsView: View {
     private static let rulesTitle = "Navigation rules"
     private static let pushesTwiceTitle = "Allow the same push twice"
     private static let rulesFooter = "By default a second push of the screen already on its way is "
@@ -25,11 +25,11 @@ struct SettingsView: View {
         + "the app's fallbacks recover them; the last one has no fallback, so it counts as not "
         + "recovered. The issue banner and the Lab's event log show each one."
 
-    let isSignedIn: Bool
-    let onShowLab: () -> Void
-    let onClearAllData: () -> Void
-    let onSignOut: () -> Void
-    let rules: SettingsRules
+    package let isSignedIn: Bool
+    package let onShowLab: () -> Void
+    package let onClearAllData: () -> Void
+    package let onSignOut: () -> Void
+    package let rules: SettingsRules
 
     // `var` because the toggle changes it; the sample app keeps it for this screen only.
     @State private var notifies = true
@@ -44,7 +44,7 @@ struct SettingsView: View {
         return "\(short) (\(build))"
     }
 
-    var body: some View {
+    package var body: some View {
         List {
             Section("App") {
                 LabeledContent("Appearance", value: "System")
@@ -145,22 +145,22 @@ struct SettingsView: View {
 }
 
 // The four calls Settings' navigation rules section tries, which the account coordinator makes.
-struct SettingsTries {
-    let pushTwice: () -> Void
-    let missingPop: () -> Void
-    let presentTwice: () -> Void
-    let unrecovered: () -> Void
+package struct SettingsTries {
+    package let pushTwice: () -> Void
+    package let missingPop: () -> Void
+    package let presentTwice: () -> Void
+    package let unrecovered: () -> Void
 }
 
 // What Settings shows of the app's navigation rules, and what it reports.
-struct SettingsRules {
+package struct SettingsRules {
     // Whether the duplicate push rule is `.allow`, so a second push of the same route goes ahead.
-    let pushesTwice: Bool
-    let queueLimit: Int
-    let failureCount: Int
-    let onSetPushesTwice: (Bool) -> Void
-    let onTryPushTwice: () -> Void
-    let onTryMissingPop: () -> Void
-    let onTryPresentTwice: () -> Void
-    let onTryUnrecovered: () -> Void
+    package let pushesTwice: Bool
+    package let queueLimit: Int
+    package let failureCount: Int
+    package let onSetPushesTwice: (Bool) -> Void
+    package let onTryPushTwice: () -> Void
+    package let onTryMissingPop: () -> Void
+    package let onTryPresentTwice: () -> Void
+    package let onTryUnrecovered: () -> Void
 }

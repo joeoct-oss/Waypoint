@@ -21,9 +21,9 @@ import Waypoint
 // Conformances:
 // - `FlowCoordinator`, so the accounts flow starts it with `present(_:style:onFinish:)` and gets
 //   its result.
-final class ResetPasswordCoordinator: FlowCoordinator {
+package final class ResetPasswordCoordinator: FlowCoordinator {
     // The email the reset link went to.
-    typealias Output = String
+    package typealias Output = String
 
     private let factory: AuthFactory
     private let service: any AuthService
@@ -32,11 +32,11 @@ final class ResetPasswordCoordinator: FlowCoordinator {
     private var sentTo: String?
 
     // The journey's name for the flow's only screen.
-    var rootName: String {
+    package var rootName: String {
         "Reset password"
     }
 
-    var root: some View {
+    package var root: some View {
         factory.makeForgotPassword(
             onSend: { self.sendLink(to: $0) },
             onDone: { self.done() },
@@ -45,13 +45,13 @@ final class ResetPasswordCoordinator: FlowCoordinator {
     }
 
     // `AuthFactory` makes it, hands it the auth service and builds its screen.
-    init(factory: AuthFactory) {
+    package init(factory: AuthFactory) {
         self.factory = factory
         service = factory.dependencies.service
         sentTo = nil
     }
 
-    func sendLink(to email: String) {
+    package func sendLink(to email: String) {
         sentTo = email
         Task {
             await service.sendResetLink(to: email)
@@ -59,7 +59,7 @@ final class ResetPasswordCoordinator: FlowCoordinator {
     }
 
     // Finishes with the email the link went to, or ends the flow when none was sent.
-    func done() {
+    package func done() {
         guard let sentTo else {
             cancel()
             return
@@ -67,7 +67,7 @@ final class ResetPasswordCoordinator: FlowCoordinator {
         finish(with: sentTo)
     }
 
-    func cancel() {
+    package func cancel() {
         router.dismissFlow()
     }
 }

@@ -12,10 +12,10 @@ import SwiftUI
 
 // Draws the Tabs story's tab container with the system tab bar, one tab for each tab the router
 // has now.
-struct TabsDemoFlowView: View {
-    let demo: TabsDemoCoordinator
+package struct TabsDemoFlowView: View {
+    package let demo: TabsDemoCoordinator
 
-    var body: some View {
+    package var body: some View {
         TabView(selection: Binding(reading: demo.router.selection, writing: demo.selectTab)) {
             ForEach(demo.router.state.tabs, id: \.self) { tab in
                 demo.makeTabFlow(for: tab)
@@ -29,12 +29,12 @@ struct TabsDemoFlowView: View {
 
 // One tab of the Tabs story: which tab is selected, the button that changes the tabs, and Close.
 // The view only reports the taps.
-struct TabsDemoView: View {
-    let tab: DemoTab
-    let selection: DemoTab
-    let showsAllTabs: Bool
-    let onChangeTabs: () -> Void
-    let onClose: () -> Void
+package struct TabsDemoView: View {
+    package let tab: DemoTab
+    package let selection: DemoTab
+    package let showsAllTabs: Bool
+    package let onChangeTabs: () -> Void
+    package let onClose: () -> Void
 
     private var buttonTitle: String {
         showsAllTabs ? "Show two tabs" : "Show all four tabs"
@@ -47,7 +47,7 @@ struct TabsDemoView: View {
         }
     }
 
-    var body: some View {
+    package var body: some View {
         List {
             Section {
                 LabeledContent("Selected", value: selection.title)

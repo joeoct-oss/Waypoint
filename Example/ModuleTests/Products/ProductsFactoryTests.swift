@@ -1,14 +1,15 @@
 //
 //  ProductsFactoryTests.swift
-//  WaypointExampleTests
+//  ExampleProductsTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleProducts
+import ExampleTestSupport
 import SwiftUI
 import Testing
-@testable import WaypointExample
 
 // Shop and Search, built by `ProductsFactory` (planning #424): a product page shows the product the
 // route names from the catalog it was given, and a route to a product the catalog lacks draws
@@ -17,7 +18,7 @@ struct ProductsFactoryTests {
     private static let mugID = 2
     private static let missingID = 999
 
-    @Test
+    @Test("Product detail shows the routed product")
     func productDetailShowsRoutedProduct() {
         let store = TestStore.make()
         defer {
@@ -30,7 +31,7 @@ struct ProductsFactoryTests {
         #expect(detail?.product.id == Self.mugID)
     }
 
-    @Test
+    @Test("An unknown product draws nothing")
     func unknownProductDrawsNothing() {
         let store = TestStore.make()
         defer {

@@ -1,22 +1,23 @@
 //
 //  ResetPasswordCoordinatorTests.swift
-//  WaypointExampleTests
+//  ExampleAuthTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAuth
 import ExampleServices
+import ExampleTestSupport
 import Testing
 import Waypoint
-@testable import WaypointExample
 
 // Reset password is a child flow (planning #313): the accounts flow starts it, its router joins the
 // accounts flow's tree, and the accounts flow gets the email the link went to, or `.cancelled`.
 struct ResetPasswordCoordinatorTests {
     private static let email = "reader@example.com"
 
-    @Test
+    @Test("Done after sending finishes with the email and closes the flow")
     func doneAfterSendingFinishesWithTheEmail() {
         let store = TestStore.make()
         defer {
@@ -37,7 +38,7 @@ struct ResetPasswordCoordinatorTests {
         #expect(parent.presented == nil)
     }
 
-    @Test
+    @Test("Cancel ends the reset password flow cancelled")
     func cancelEndsTheFlowCancelled() {
         let store = TestStore.make()
         defer {
@@ -58,7 +59,7 @@ struct ResetPasswordCoordinatorTests {
         #expect(results.values == expected)
     }
 
-    @Test
+    @Test("A second tap keeps the same flow on screen")
     func secondTapKeepsTheFlowOnScreen() {
         let store = TestStore.make()
         defer {
@@ -82,15 +83,5 @@ struct ResetPasswordCoordinatorTests {
             service: MockAuthService(store: store)
         )
         return AuthFactory(dependencies: dependencies)
-    }
-}
-
-// The results a parent flow got from its child flow, oldest first.
-final class ResultLog<Value: Sendable> {
-    // `var` because each ended flow adds its result. Only `record(_:)` changes it.
-    private(set) var values: [FlowResult<Value>] = []
-
-    func record(_ result: FlowResult<Value>) {
-        values.append(result)
     }
 }

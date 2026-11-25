@@ -19,7 +19,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 example_dir="${1:-$root/Example}"
-checked="WaypointExample WaypointExampleTests"
+checked="WaypointExample WaypointExampleTests ModuleTests"
 
 if [ ! -d "$example_dir" ]; then
     echo "error: $example_dir does not exist" >&2
