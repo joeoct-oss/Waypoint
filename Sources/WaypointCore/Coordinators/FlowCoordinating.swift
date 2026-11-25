@@ -10,7 +10,8 @@
 ///
 /// A parent gets it exactly once for each child flow it started, in the `onFinish:` of
 /// ``StackRouter/present(_:style:trigger:else:file:line:onFinish:)``, or of `push(_:onFinish:)`
-/// in `Waypoint`, which pushes a `FlowCoordinator`'s flow on the parent's stack.
+/// in `Waypoint`, which pushes a `FlowCoordinator`'s flow on the parent's stack. The `await`
+/// form, ``StackRouter/present(_:style:trigger:else:file:line:)``, returns it instead.
 ///
 /// `Value` is `Sendable` because the result is `Sendable`, so the value it carries must be too.
 ///
