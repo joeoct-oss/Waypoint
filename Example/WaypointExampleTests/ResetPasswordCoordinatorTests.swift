@@ -22,7 +22,7 @@ struct ResetPasswordCoordinatorTests {
             store.clearAll()
         }
         let parent = StackRouter()
-        let reset = ResetPasswordCoordinator(service: MockAuthService(store: store))
+        let reset = Self.makeFactory(store: store).makeResetPassword()
         let results = ResultLog<String>()
         parent.present(reset) { result in
             results.record(result)
@@ -43,7 +43,7 @@ struct ResetPasswordCoordinatorTests {
             store.clearAll()
         }
         let parent = StackRouter()
-        let reset = ResetPasswordCoordinator(service: MockAuthService(store: store))
+        let reset = Self.makeFactory(store: store).makeResetPassword()
         let results = ResultLog<String>()
         parent.present(reset) { result in
             results.record(result)
@@ -63,11 +63,7 @@ struct ResetPasswordCoordinatorTests {
         defer {
             store.clearAll()
         }
-        let dependencies = AuthDependencies(
-            session: Session(store: store),
-            service: MockAuthService(store: store)
-        )
-        let auth = AuthFactory(dependencies: dependencies).makeAuth(reason: .account)
+        let auth = Self.makeFactory(store: store).makeAuth(reason: .account)
         // The app's rules replace a presentation that is already up.
         auth.router.setFallback(.replacePresentation, for: .alreadyPresenting)
         auth.showResetPassword()
@@ -77,6 +73,14 @@ struct ResetPasswordCoordinatorTests {
 
         #expect(auth.resetPassword === first)
         #expect(auth.router.presented === first?.router)
+    }
+
+    private static func makeFactory(store: LocalStore) -> AuthFactory {
+        let dependencies = AuthDependencies(
+            session: Session(store: store),
+            service: MockAuthService(store: store)
+        )
+        return AuthFactory(dependencies: dependencies)
     }
 }
 
