@@ -15,8 +15,9 @@ import Foundation
 // push a route with no destination in its stack, or make the Lab's demo reviews load slower. UI
 // tests use them to start a journey or open any Lab entry directly. `startingOver()` gives the
 // options for starting a window over after Clear all data: the same splash, and no screen opened
-// directly.
-package struct LaunchOptions {
+// directly. Plain values read once, so `nonisolated`: a route, which is nonisolated, reads them
+// from another module to build the Lab's launch path.
+package nonisolated struct LaunchOptions {
     private static let defaultSplashDuration = Duration.seconds(1)
 
     package let clearsData: Bool
