@@ -101,7 +101,8 @@ final class AppServices {
             catalog: catalog,
             store: store,
             gate: gate,
-            navigation: products
+            navigation: products,
+            cartScreen: { FeatureScreens.cart($0) }
         )
     }
 
@@ -133,7 +134,8 @@ final class AppServices {
             issues: issues,
             events: events,
             lab: lab,
-            describeTree: describeTree
+            describeTree: describeTree,
+            wishlistScreen: { FeatureScreens.wishlist($0) }
         )
     }
 

@@ -7,7 +7,8 @@
 //
 
 import Observation
-import WaypointCore
+import SwiftUI
+import Waypoint
 
 // Asks for an account only when an action needs one. Guests use the same app as signed-in readers;
 // when a guest does something that needs an account, such as Check out, the gate holds the action,
@@ -29,8 +30,10 @@ import WaypointCore
 //   and shows the notice.
 // - `SheetAccountGating`, so a feature that only needs an account for an action, over its stack or
 //   over a sheet, takes any gate, and its tests a fake.
+// - `SessionAccountGating`, so the Account tab opens sign in and signs out without naming this
+//   type.
 @Observable
-final class AccountGate: SheetAccountGating {
+final class AccountGate: SheetAccountGating, SessionAccountGating {
     private static let noticeDuration = Duration.seconds(3)
     private static let signInTrigger = "sign_in"
 
@@ -149,8 +152,11 @@ final class AccountGate: SheetAccountGating {
     }
 
     // The accounts flow over the sheet `router` draws, which that sheet draws.
-    func auth(over router: StackRouter) -> AuthCoordinator? {
-        authPresenter === router ? presentedAuth : nil
+    func authFlow(over router: StackRouter) -> AnyView? {
+        guard authPresenter === router, let presentedAuth else {
+            return nil
+        }
+        return AnyView(AuthFlowView(auth: presentedAuth))
     }
 
     // Ends the session and says so; the reader stays where they are, as a guest.

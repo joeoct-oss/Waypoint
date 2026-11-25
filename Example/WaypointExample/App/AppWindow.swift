@@ -22,5 +22,6 @@ struct AppWindow: View {
     var body: some View {
         app.makeFlow(for: app.root)
             .tint(Palette.brand.color)
+            .environment(\.trailStepTypes, TrailSteps.all)
     }
 }
