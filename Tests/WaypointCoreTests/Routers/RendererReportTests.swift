@@ -15,6 +15,12 @@ import WaypointTestSupport
 @Suite("Renderer reports")
 @MainActor
 struct RendererReportTests {
+    /// Counts a renderer may report for its first screen: zero, and below zero, which reads as zero.
+    nonisolated static let firstScreenCounts = [0, -1]
+
+    /// How each log format marks a change the user made.
+    nonisolated static let userMarkers = [(LogFormat.readable, ", by user"), (LogFormat.structured, "origin=user")]
+
     @Test
     func swipeBackPopsOne() {
         let router = StackRouter(configuration: .permissive)
@@ -59,7 +65,7 @@ struct RendererReportTests {
     }
 
     /// A count below zero reads as zero.
-    @Test(arguments: [0, -1])
+    @Test(arguments: Self.firstScreenCounts)
     func backToFirstScreenEmptiesPath(count: Int) {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -198,7 +204,7 @@ struct RendererReportTests {
     }
 
     /// The readable log says "by user", the structured log `origin=user`.
-    @Test(arguments: [(LogFormat.readable, ", by user"), (LogFormat.structured, "origin=user")])
+    @Test(arguments: Self.userMarkers)
     func userChangesAreLoggedAsTheUsers(format: LogFormat, marker: String) {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration.default.withHandler(handler).withMinimumLevel(.debug).withFormat(format)

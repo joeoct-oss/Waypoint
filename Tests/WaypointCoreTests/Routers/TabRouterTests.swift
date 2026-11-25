@@ -116,7 +116,8 @@ struct TabRouterTests {
 
         #expect(tabs.selection == .home)
         let moved = [AppliedChange(flow: tabs.flowID, change: .tabSelected(from: "shop", to: "home"))]
-        #expect(applied.values == [moved])
+        let movedBatches = [moved]
+        #expect(applied.values == movedBatches)
         #expect(shop.push(ProductRoute(id: 1)) == .ignored)
         #expect(tabs.router(for: .profile).isActive)
     }
