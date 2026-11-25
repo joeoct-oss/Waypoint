@@ -209,7 +209,8 @@ struct TabRouterTests {
     @Test
     func sheetOverTheTabsTakesTheirPresentationDefaults() throws {
         let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
-        let defaults = PresentationDefaults(sheet: SheetOptions(detents: [.medium]))
+        let detents: [SheetDetent] = [.medium]
+        let defaults = PresentationDefaults(sheet: SheetOptions(detents: detents))
 
         tabs.setPresentationDefaults(defaults)
         tabs.present(SettingsRoute())
