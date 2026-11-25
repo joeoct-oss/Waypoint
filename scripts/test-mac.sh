@@ -20,6 +20,10 @@
 #   on the same inputs (planning #429), unless the branch changes a file those hashes don't cover.
 # - release (before a tag): full, plus a build for an iOS device with warnings as errors, and the
 #   package and example app tests again on the iOS 17 simulator. It never skips a test.
+# - stress (at night, on `main`, while a test is quarantined): every step of full, with 4 UI
+#   workers by default, no retry and no selective testing, then each quarantined test 5 times in a
+#   row. A quarantined test that passed every try is printed as `Stress passed:`, and leaves the
+#   quarantine (TESTING.md, Flaky tests and quarantine). It posts no Tuist run report and warms no cache.
 # - coverage (on `main`, as TESTING.md schedules it): every example app test, never skipped, on
 #   `main`'s own commit, then `tuist coverage complete`, so the Tuist dashboard charts `main`'s
 #   code coverage (planning #431). It refuses any other commit, and runs none of the package's steps.
@@ -63,7 +67,7 @@
 # (planning #420). A second run stops at once and names the run that holds it. A lock left by a run that
 # is no longer going is cleared; a lock whose run is still going is never touched.
 #
-# Usage: scripts/test-mac.sh [quick|full|release|coverage] [--ui] [--all] [--only <Target/Class[/test]>] [--plan]
+# Usage: scripts/test-mac.sh [quick|full|release|stress|coverage] [--ui] [--all] [--only <Target/Class[/test]>] [--plan]
 #   --ui    quick also runs the example app's unit and UI tests.
 #   --all   quick runs every part, whatever the branch changed.
 #   --only  quick runs only the guard rail and this example UI test (passed to `tuist test --test-targets`),
@@ -76,8 +80,8 @@
 #   WAYPOINT_SIMULATOR        the project simulator (default waypoint-01), created when missing.
 #   WAYPOINT_IOS17_SIMULATOR  the iOS 17 simulator for release (default waypoint-02); must exist.
 #   WAYPOINT_JOBS             build jobs (default half the performance cores, at least 2).
-#   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 3;
-#                             1 runs them on the simulator itself).
+#   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 3,
+#                             4 in stress; 1 runs them on the simulator itself).
 #   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing, the binary
 #                             cache and uploads (default 0).
 #   WAYPOINT_PULL_REQUEST     the number of the pull request this run tests, whose page gets
@@ -104,7 +108,7 @@ ONLY_TEST=""
 PLAN_ONLY=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        quick | full | release | coverage) TIER="$1" ;;
+        quick | full | release | stress | coverage) TIER="$1" ;;
         --ui) WITH_UI=true ;;
         --all) RUN_ALL=true ;;
         --plan) PLAN_ONLY=true ;;
@@ -123,7 +127,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 if [[ -n "$ONLY_TEST" && "$TIER" != "quick" ]]; then
-    echo "error: --only works with quick; full, release and coverage run every test" >&2
+    echo "error: --only works with quick; full, release, stress and coverage run every test" >&2
     exit 2
 fi
 
@@ -217,6 +221,10 @@ fi
 # can't name them all).
 TUIST_PULL_REQUEST=""
 unset GITHUB_REF
+if [[ -n "${WAYPOINT_PULL_REQUEST:-}" && "$TIER" == stress ]]; then
+    echo "error: a stress run posts no run report, so it takes no WAYPOINT_PULL_REQUEST" >&2
+    exit 2
+fi
 if [[ -n "${WAYPOINT_PULL_REQUEST:-}" ]]; then
     if [[ ! "$WAYPOINT_PULL_REQUEST" =~ ^[1-9][0-9]*$ ]]; then
         echo "error: WAYPOINT_PULL_REQUEST must be a pull request number, not '$WAYPOINT_PULL_REQUEST'" >&2
@@ -244,6 +252,7 @@ fi
 case "$TIER" in
     quick) STOP_AFTER_MINUTES=30 ;;
     full) STOP_AFTER_MINUTES=35 ;;
+    stress) STOP_AFTER_MINUTES=75 ;;
     release) STOP_AFTER_MINUTES=50 ;;
     coverage) STOP_AFTER_MINUTES=30 ;;
 esac
@@ -262,7 +271,11 @@ XCODE_TEST_FLAGS=(-quiet -jobs "$JOBS" -parallel-testing-enabled NO)
 
 # The example app's tests run on this many simulator copies at once (planning #427), so they take about
 # half as long.
-UI_WORKERS="${WAYPOINT_UI_WORKERS:-3}"
+if [[ "$TIER" == stress ]]; then
+    UI_WORKERS="${WAYPOINT_UI_WORKERS:-4}"
+else
+    UI_WORKERS="${WAYPOINT_UI_WORKERS:-3}"
+fi
 if [[ "$UI_WORKERS" -gt 1 ]]; then
     EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled YES -parallel-testing-worker-count "$UI_WORKERS")
 else
@@ -272,7 +285,8 @@ fi
 # A failed example app test runs once more, so one flake can't fail the run on its own; the
 # verdict after the step decides what blocks. `--only` runs exactly once, since it is how a person
 # tells a flaky test from a broken one.
-if [[ -n "$ONLY_TEST" ]]; then
+# A stress run never retries: it is there to see a test fail.
+if [[ -n "$ONLY_TEST" || "$TIER" == stress ]]; then
     EXAMPLE_RETRY_FLAGS=()
     RETRY=off
 else
@@ -280,6 +294,8 @@ else
     RETRY=on
 fi
 QUARANTINE_FILE=Example/quarantine.json
+# How many times in a row a stress run runs each quarantined test, after the full run's one try.
+STRESS_REPEATS=5
 
 # The steps run so far, with the seconds each took, printed when the script ends.
 STEP_NAMES=()
@@ -797,7 +813,7 @@ case "$TIER" in
         RUN_UI=true
         RUN_COVERAGE_COMPLETE=true
         ;;
-    full | release)
+    full | release | stress)
         # Every part runs; the changes decide only whether selective testing is on.
         detect_changes
         RUN_SANITIZER=true
@@ -818,7 +834,7 @@ esac
 # for by name, --ui and --all always run every test.
 if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
     SELECTIVE_TESTING=offline
-elif [[ "$TIER" == release || "$TIER" == coverage || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CHANGED_OUTSIDE_TEST_HASHES; then
+elif [[ "$TIER" == release || "$TIER" == stress || "$TIER" == coverage || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CHANGED_OUTSIDE_TEST_HASHES; then
     SELECTIVE_TESTING=off
 else
     SELECTIVE_TESTING=on
@@ -839,8 +855,8 @@ echo "selective testing: $SELECTIVE_TESTING, release reports selective testing $
 # That is the `coverage` run, which charts `main`, and a run for a pull request, whose Tuist run
 # report shows its coverage. The release reports step always builds from source (Release isn't
 # warmed).
-if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 || "$TIER" == release || "$TIER" == coverage ||
-    -n "$TUIST_PULL_REQUEST" ]]; then
+if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 || "$TIER" == release || "$TIER" == stress ||
+    "$TIER" == coverage || -n "$TUIST_PULL_REQUEST" ]]; then
     BINARY_CACHE=off
 else
     BINARY_CACHE=on
@@ -857,10 +873,18 @@ if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
 else
     PACKAGE_TEST_INSIGHTS=on
 fi
+# The quarantined tests a stress run repeats: the entries that still count today.
+STRESS_TESTS=()
+if [[ "$TIER" == stress ]]; then
+    while IFS= read -r stress_test; do
+        [[ -n "$stress_test" ]] && STRESS_TESTS+=("$stress_test")
+    done < <(scripts/flaky-tests.py --list-quarantine "$QUARANTINE_FILE")
+    echo "stress: ${#STRESS_TESTS[@]} quarantined test(s), each $STRESS_REPEATS times after the full run"
+fi
 echo "tuist branch: ${GITHUB_HEAD_REF:-none}"
 echo "tuist pull request: ${TUIST_PULL_REQUEST:-none}"
 if $PLAN_ONLY; then
-    echo "plan: $TIER, example tests $RUN_UI, retry $RETRY, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, binary cache $BINARY_CACHE, warm binary cache $WARM_BINARY_CACHE, package test insights $PACKAGE_TEST_INSIGHTS, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}"
+    echo "plan: $TIER, example tests $RUN_UI, retry $RETRY, stress repeats ${#STRESS_TESTS[@]}, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, binary cache $BINARY_CACHE, warm binary cache $WARM_BINARY_CACHE, package test insights $PACKAGE_TEST_INSIGHTS, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}"
     trap - EXIT
     exit 0
 fi
@@ -918,6 +942,36 @@ if $RUN_UI; then
         step "tuist test example app on $SIMULATOR_NAME" \
             judged_example_tests_on "$UDID" "$SIMULATOR_NAME" example
     fi
+fi
+
+# A stress run then runs each quarantined test STRESS_REPEATS times in a row, on the project
+# simulator alone, with no retry, and stops at its first failure. scripts/flaky-tests.py says
+# whether it passed every try, the full run's included: `Stress passed:` or `Stress failed:`. The
+# step never fails the run, since a stress run gates nothing; the log's `Flaky tests:` list ends
+# with each quarantined test's result.
+stress_repeat_on() {
+    local udid="$1" simulator="$2" bundle_name="$3" test="$4"
+    local bundle="$RESULTS_DIR/$bundle_name.xcresult" results status=0
+    local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
+    local EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled NO)
+    local EXAMPLE_RETRY_FLAGS=(-test-iterations "$STRESS_REPEATS" -run-tests-until-failure)
+    TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 \
+        example_tests_on "$udid" "$simulator" "$bundle_name" --test-targets "$test" || status=$?
+    results=$(mktemp "${TMPDIR:-/tmp}/waypoint-test-results.XXXXXX")
+    if [[ -d "$bundle" ]]; then
+        xcrun xcresulttool get test-results tests --path "$bundle" >"$results" 2>/dev/null || true
+    fi
+    scripts/flaky-tests.py --stress "$test" --repeats "$STRESS_REPEATS" --step-status "$status" \
+        --results-dir "$RESULTS_DIR" --out "$RESULTS_DIR/$bundle_name-stress.json" <"$results" || true
+    rm -f "$results"
+}
+if [[ ${#STRESS_TESTS[@]} -gt 0 ]]; then
+    stress_index=0
+    for stress_test in "${STRESS_TESTS[@]}"; do
+        stress_index=$((stress_index + 1))
+        step "tuist test $stress_test $STRESS_REPEATS times on $SIMULATOR_NAME" \
+            stress_repeat_on "$UDID" "$SIMULATOR_NAME" "stress-$stress_index" "$stress_test"
+    done
 fi
 
 # A coverage run tells Tuist that `main`'s commit has every run it will get, so the dashboard

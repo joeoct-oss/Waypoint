@@ -25,7 +25,16 @@
 #   xcrun xcresulttool get test-results tests --path <bundle> |
 #       scripts/flaky-tests.py --step-status <n> [--quarantine <file>] [--today YYYY-MM-DD] [--out <json>]
 #   scripts/flaky-tests.py --check-quarantine <file> [--today YYYY-MM-DD]
+#   scripts/flaky-tests.py --list-quarantine <file> [--today YYYY-MM-DD]
+#   xcrun xcresulttool get test-results tests --path <bundle> |
+#       scripts/flaky-tests.py --stress <test> --repeats <n> --step-status <n> --results-dir <folder>
+#           [--out <json>]
 #   scripts/flaky-tests.py --summary <results folder>
+#
+# A stress run (`--stress`) judges one quarantined test that ran `--repeats` times in a row with
+# no retry: it passed the stress run when it passed every one of those tries and didn't fail in
+# the run's earlier steps, whose verdicts are in `--results-dir`. It prints `Stress passed: <test>`
+# or `Stress failed: <test>` with why, and always exits 0: a stress run gates nothing.
 
 import argparse
 import datetime
@@ -167,16 +176,63 @@ def judge(data, step_status, active, expired):
     return blocking, records
 
 
+def earlier_failures(folder, test):
+    """The steps in `folder` whose verdict lists `test` as flaky or quarantined."""
+    steps = []
+    for entry in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
+        if entry.endswith("-flaky.json"):
+            with open(os.path.join(folder, entry), encoding="utf-8") as handle:
+                if any(record.get("test") == test for record in json.load(handle)):
+                    steps.append(entry[:-len("-flaky.json")])
+    return steps
+
+
+def stress(data, test, repeats, step_status, folder):
+    """A stress record for `test`: passed only when every try passed, here and earlier."""
+    tries = []
+    failure = ""
+    for name, _, case_tries, case_failure in test_cases(data.get("testNodes", [])):
+        if name == test:
+            tries += case_tries
+            failure = failure or case_failure
+    passes = sum(1 for result in tries if result == "Passed")
+    earlier = earlier_failures(folder, test)
+    if earlier:
+        why = f"it failed in {', '.join(earlier)}"
+    elif not tries:
+        why = "it didn't run"
+    elif passes < len(tries):
+        why = f"it failed {len(tries) - passes} of {len(tries)} tries" + (f" ({failure})" if failure else "")
+    elif passes < repeats:
+        why = f"it ran {passes} of {repeats} times"
+    elif step_status != 0:
+        why = f"its step failed (status {step_status})"
+    else:
+        why = ""
+    if why:
+        print(f"Stress failed: {test}: {why}")
+    else:
+        print(f"Stress passed: {test} passed {passes} of {passes} tries and the full run's")
+    return {"test": test, "kind": "stress", "passed": not why, "why": why, "tries": len(tries)}
+
+
 def summary(folder):
     lines = []
-    for entry in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
-        if not entry.endswith("-flaky.json"):
-            continue
-        with open(os.path.join(folder, entry), encoding="utf-8") as handle:
-            for record in json.load(handle):
+    for suffix in ("-flaky.json", "-stress.json"):
+        for entry in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
+            if not entry.endswith(suffix):
+                continue
+            with open(os.path.join(folder, entry), encoding="utf-8") as handle:
+                records = json.load(handle)
+            for record in records if isinstance(records, list) else [records]:
+                if record["kind"] == "stress":
+                    result = "Stress passed" if record["passed"] else "Stress failed"
+                    why = f": {record['why']}" if record.get("why") else ""
+                    lines.append(f"  {result}: {record['test']}{why}")
+                    continue
                 kind = "Flaky" if record["kind"] == "flaky" else "Quarantined"
                 failure = f": {record['failure']}" if record.get("failure") else ""
-                lines.append(f"  {kind}: {record['test']} ({entry[:-len('-flaky.json')]}){failure}")
+                lines.append(f"  {kind}: {record['test']} ({entry[:-len(suffix)]}){failure}")
     print("Flaky tests:")
     print("\n".join(lines) if lines else "  none")
 
@@ -189,11 +245,38 @@ def main():
     parser.add_argument("--out")
     parser.add_argument("--check-quarantine")
     parser.add_argument("--summary")
+    parser.add_argument("--list-quarantine")
+    parser.add_argument("--stress")
+    parser.add_argument("--repeats", type=int, default=5)
+    parser.add_argument("--results-dir", default=".")
     args = parser.parse_args()
     today = datetime.date.fromisoformat(args.today) if args.today else datetime.date.today()
 
     if args.summary:
         summary(args.summary)
+        return 0
+
+    if args.list_quarantine:
+        try:
+            active, _ = read_quarantine(args.list_quarantine, today)
+        except QuarantineError as error:
+            print(f"error: the quarantine file is wrong: {error}", file=sys.stderr)
+            return 2
+        for name in active:
+            print(name)
+        return 0
+
+    if args.stress:
+        try:
+            data = json.load(sys.stdin)
+            if not isinstance(data, dict):
+                raise ValueError("not an object")
+        except ValueError:
+            data = {}
+        record = stress(data, args.stress, args.repeats, args.step_status or 0, args.results_dir)
+        if args.out:
+            with open(args.out, "w", encoding="utf-8") as handle:
+                json.dump(record, handle, indent=2)
         return 0
 
     if args.check_quarantine:

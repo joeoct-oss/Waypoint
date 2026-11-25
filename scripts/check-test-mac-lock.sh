@@ -345,6 +345,31 @@ expect_cache() {
         fail "$name (plan: ${got:-none})"
     fi
 }
+# 1c1b. A stress run (planning #508) runs every test on 4 workers with no retry, uses no binary cache,
+# warms none, and repeats each quarantined entry that still counts.
+expect_retry "a stress run never retries" off stress
+expect_cache "a stress run builds from source and doesn't warm the cache" \
+    "binary cache off, warm binary cache false" stress
+expect_plan "a stress run never skips a test" off stress
+TODAY_DATE=$(date +%F)
+cat >"$TREE/Example/quarantine.json" <<JSON
+{ "tests": [ { "test": "WaypointExampleUITests/StackTests/testPushAndBack", "issue": 1, "since": "$TODAY_DATE" } ] }
+JSON
+got=$(plan_of stress || true)
+git -C "$TREE" checkout -q -- Example/quarantine.json
+if [[ "$got" == *", stress repeats 1,"* ]]; then
+    pass "a stress run repeats each quarantined test"
+else
+    fail "a stress run repeats each quarantined test (plan: ${got:-none})"
+fi
+if ! (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+    WAYPOINT_PULL_REQUEST=42 scripts/test-mac.sh stress --plan >"$WORK/stress-pr.log" 2>&1) &&
+    grep -q "a stress run posts no run report" "$WORK/stress-pr.log"; then
+    pass "a stress run takes no pull request"
+else
+    fail "a stress run takes no pull request ($(cat "$WORK/stress-pr.log"))"
+fi
+
 expect_cache "a quick run uses the binary cache and doesn't warm it" \
     "binary cache on, warm binary cache false" quick
 expect_cache "a full run uses the binary cache and warms it" \

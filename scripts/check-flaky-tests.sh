@@ -13,6 +13,7 @@
 # - a UI test that fails both tries blocks, unless it is quarantined and its entry hasn't expired;
 # - a unit test that needed a retry blocks;
 # - a step that failed with no failed test blocks;
+# - a quarantined test passes a stress run only when it passed every repeat and the full run;
 # - a quarantine file with too many tests, a test without an issue, a bad or future date, or a
 #   test listed twice is refused.
 #
@@ -249,6 +250,56 @@ if [[ $VERDICT -eq 2 ]]; then
     pass "a run with a wrong quarantine file fails"
 else
     fail "a run with a wrong quarantine file fails"
+fi
+
+# A stress run: a quarantined test passes only when it passed every repeat and didn't fail in the
+# run's earlier steps.
+stress_judge() {
+    local tries="$1"
+    bundle "$tries" Passed |
+        scripts/flaky-tests.py --stress "$UI" --repeats 5 --step-status "${2:-0}" \
+            --results-dir "$WORK/results" --out "$WORK/results/stress-1-stress.json" \
+            >"$WORK/stress.log" 2>&1
+}
+mkdir -p "$WORK/results"
+if stress_judge Passed,Passed,Passed,Passed,Passed && grep -q "^Stress passed: $UI" "$WORK/stress.log"; then
+    pass "a quarantined test that passes all 5 stress repeats passes the stress run"
+else
+    fail "a quarantined test that passes all 5 stress repeats passes ($(cat "$WORK/stress.log"))"
+fi
+if scripts/flaky-tests.py --summary "$WORK/results" | grep -q "^  Stress passed: $UI$"; then
+    pass "the run's list ends with the stress result"
+else
+    fail "the run's list ends with the stress result"
+fi
+if stress_judge Passed,Passed,Passed,Passed,Failed &&
+    grep -q "^Stress failed: $UI: it failed 1 of 5 tries" "$WORK/stress.log"; then
+    pass "a quarantined test that fails one stress repeat fails the stress run"
+else
+    fail "a quarantined test that fails one stress repeat fails ($(cat "$WORK/stress.log"))"
+fi
+if stress_judge Passed,Passed,Passed && grep -q "^Stress failed: $UI: it ran 3 of 5 times" "$WORK/stress.log"; then
+    pass "a quarantined test that ran fewer than 5 times fails the stress run"
+else
+    fail "a quarantined test that ran fewer than 5 times fails ($(cat "$WORK/stress.log"))"
+fi
+echo "[{\"test\": \"$UI\", \"kind\": \"quarantined\"}]" >"$WORK/results/example-flaky.json"
+if stress_judge Passed,Passed,Passed,Passed,Passed &&
+    grep -q "^Stress failed: $UI: it failed in example" "$WORK/stress.log"; then
+    pass "a quarantined test that failed in the full run fails the stress run, whatever its repeats did"
+else
+    fail "a quarantined test that failed in the full run fails the stress run ($(cat "$WORK/stress.log"))"
+fi
+quarantine <<EOF
+{ "tests": [
+  { "test": "$UI", "issue": 12, "since": "2026-11-25" },
+  { "test": "WaypointExampleUITests/A/testA", "issue": 1, "since": "2026-11-10" }
+] }
+EOF
+if [[ "$(scripts/flaky-tests.py --list-quarantine "$WORK/quarantine.json" --today "$TODAY")" == "$UI" ]]; then
+    pass "a stress run repeats only the entries that still count"
+else
+    fail "a stress run repeats only the entries that still count"
 fi
 
 # The repo's own list.
