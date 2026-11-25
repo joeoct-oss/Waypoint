@@ -15,13 +15,25 @@ import SwiftUI
 // event log, with its count). The screen reports the branch, story or tool the reader picks, and
 // the account coordinator opens it. The bar already shows the Lab's name, so the
 // list's header shows only its slogan.
-struct LabView: View {
-    let onSelectBranch: (Branch) -> Void
-    let onSelectStory: (ViewModelStory) -> Void
-    let eventCount: Int
-    let onSelectTool: (LabTool) -> Void
+package struct LabView: View {
+    package let onSelectBranch: (Branch) -> Void
+    package let onSelectStory: (ViewModelStory) -> Void
+    package let eventCount: Int
+    package let onSelectTool: (LabTool) -> Void
 
-    var body: some View {
+    package init(
+        onSelectBranch: @escaping (Branch) -> Void,
+        onSelectStory: @escaping (ViewModelStory) -> Void,
+        eventCount: Int,
+        onSelectTool: @escaping (LabTool) -> Void
+    ) {
+        self.onSelectBranch = onSelectBranch
+        self.onSelectStory = onSelectStory
+        self.eventCount = eventCount
+        self.onSelectTool = onSelectTool
+    }
+
+    package var body: some View {
         List {
             Section {
                 ForEach(Branch.allCases, id: \.self) { branch in

@@ -1,20 +1,20 @@
 //
 //  AuthFormTests.swift
-//  WaypointExampleTests
+//  ExampleAuthTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleAuth
 import ExampleServices
 import Testing
-@testable import WaypointExample
 
 // What Sign in and Create account show of a call to the auth service (planning #462): a failed
 // call shows its message and the form isn't busy once the call ends, and the reader moving on
 // clears the message.
 struct AuthFormTests {
-    @Test
+    @Test("A failed call shows its message until it is cleared")
     func failedCallShowsItsMessageUntilCleared() async {
         let form = AuthForm()
 

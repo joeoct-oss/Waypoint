@@ -39,7 +39,7 @@ There are two places a test can run:
 | Core unit tests | `Tests/WaypointCoreTests` | ✅ plain and thread sanitizer | ✅ macOS host and simulator |
 | Renderer unit tests | `Tests/WaypointTests`, `Tests/WaypointUIKitTests` (the parts not behind `canImport(SwiftUI)` or `canImport(UIKit)` also run on Linux) | partly | ✅ macOS host and simulator |
 | Unified log tests | `Tests/WaypointOSLogTests` | | ✅ thread sanitizer in `full` and `release` |
-| Example app unit tests (Swift Testing: view models, the services container and the store) | `Example/WaypointExampleTests` | | ✅ simulator, with the UI tests |
+| Example app unit tests (Swift Testing: view models, the services container and the store) | `Example/ModuleTests/<module>` (one target per module, without the app) and `Example/WaypointExampleTests` (inside the app) | | ✅ simulator, with the UI tests |
 | Example app UI tests (XCUITest) | `Example/WaypointExampleUITests`, run through `tuist test` on 3 simulator copies at once | | ✅ simulator |
 | iOS device build | `Waypoint-Package` for `generic/platform=iOS` | | ✅ `release` only |
 

@@ -16,20 +16,20 @@ import UIKit
 //
 // Conformances:
 // - `UITableViewDataSource`, so the table asks this controller for one row per flow.
-final class UIKitBranchViewController: UIViewController, UITableViewDataSource {
+package final class UIKitBranchViewController: UIViewController, UITableViewDataSource {
     private let onSelect: (FlowEntry) -> Void
 
-    init(onSelect: @escaping (FlowEntry) -> Void) {
+    package init(onSelect: @escaping (FlowEntry) -> Void) {
         self.onSelect = onSelect
         super.init(nibName: nil, bundle: nil)
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    package required init?(coder: NSCoder) {
         fatalError("UIKitBranchViewController is built in code")
     }
 
-    override func viewDidLoad() {
+    package override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Palette.background.uiColor
         let tableView = makeTableView()
@@ -46,14 +46,14 @@ final class UIKitBranchViewController: UIViewController, UITableViewDataSource {
         return styled
     }
 
-    func tableView(
+    package func tableView(
         _ tableView: UITableView,
         numberOfRowsInSection section: Int
     ) -> Int {
         ExampleFlow.allCases.count
     }
 
-    func tableView(
+    package func tableView(
         _ tableView: UITableView,
         cellForRowAt indexPath: IndexPath
     ) -> UITableViewCell {

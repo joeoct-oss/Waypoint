@@ -17,7 +17,7 @@ import WaypointTestSupport
 @Suite("Drawn path of pushed child flows")
 @MainActor
 struct DrawnPathTests {
-    @Test
+    @Test("The drawn path follows the marker with the child's path")
     func drawnPathFollowsTheMarkerWithTheChildsPath() throws {
         let parent = StackRouter(configuration: .permissive)
         parent.push(HomeRoute())
@@ -32,7 +32,7 @@ struct DrawnPathTests {
         #expect(child.router.drawnPath == childPath)
     }
 
-    @Test
+    @Test("Each drawn screen belongs to the router whose path holds it")
     func eachDrawnScreenBelongsToTheRouterWhosePathHoldsIt() {
         let parent = StackRouter(configuration: .permissive)
         parent.push(HomeRoute())
@@ -45,7 +45,7 @@ struct DrawnPathTests {
         #expect(parent.drawnOwner(ofIndex: 2) === child.router)
     }
 
-    @Test
+    @Test("A grandchild's screens follow its parent's on the one stack")
     func aGrandchildsScreensFollowItsParentsOnTheOneStack() throws {
         let parent = StackRouter(configuration: .permissive)
         let child = CheckoutFlowCoordinator()
@@ -65,7 +65,7 @@ struct DrawnPathTests {
         #expect(parent.drawnParent(ofMarker: AnyRoute(CartRoute())) == nil)
     }
 
-    @Test
+    @Test("Going back inside the child pops the child's path")
     func backInsideTheChildPopsTheChildsPath() {
         let parent = StackRouter(configuration: .permissive)
         let child = CheckoutFlowCoordinator()
@@ -87,7 +87,7 @@ struct DrawnPathTests {
         #expect(results.calls.isEmpty)
     }
 
-    @Test
+    @Test("Going back past the child's root ends it cancelled")
     func backPastTheChildsRootEndsItCancelled() {
         let parent = StackRouter(configuration: .permissive)
         parent.push(HomeRoute())
@@ -107,7 +107,7 @@ struct DrawnPathTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("The same flow pushed again gets a new marker")
     func theSameFlowPushedAgainGetsANewMarker() throws {
         let parent = StackRouter(configuration: .permissive)
         let first = CheckoutFlowCoordinator()
@@ -125,7 +125,7 @@ struct DrawnPathTests {
         #expect(parent.drawnPath == expected)
     }
 
-    @Test
+    @Test("A drawn count past the end is reported as a mismatch")
     func drawnCountPastTheEndIsAMismatch() {
         let parent = StackRouter(configuration: .permissive)
         let reported = Spy<NavigationIssue, Void>()

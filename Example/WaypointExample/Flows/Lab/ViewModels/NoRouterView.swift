@@ -16,11 +16,11 @@ import Waypoint
 // nothing and returns `.failed` with a `noRouterInScope` issue, which names the wrapper, its file
 // and line, and the fix, and is logged as a fault. In debug builds the screen shows that issue
 // under the view.
-struct NoRouterView: View {
+package struct NoRouterView: View {
     // `var` because a tap on Open reviews keeps what the push returned, to show it.
     @State private var failure: NavigationFailure?
 
-    var body: some View {
+    package var body: some View {
         List {
             Section {
                 ReviewsPreview(onResult: { failure = $0.failure })
@@ -44,12 +44,12 @@ struct NoRouterView: View {
 
 // A small reviews view that navigates on its own with `@StackNavigation`. It reports what its push
 // returned.
-struct ReviewsPreview: View {
-    let onResult: (NavigationOutcome) -> Void
+package struct ReviewsPreview: View {
+    package let onResult: (NavigationOutcome) -> Void
 
     @StackNavigation private var navigation
 
-    var body: some View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: Spacing.medium) {
             Text("Reviews")
                 .font(Typography.headline)
@@ -66,10 +66,10 @@ struct ReviewsPreview: View {
 }
 
 // What the failed push said: its issue, the call site, and the issue's message with the fix.
-struct MissingRouterNote: View {
-    let failure: NavigationFailure
+package struct MissingRouterNote: View {
+    package let failure: NavigationFailure
 
-    var body: some View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: Spacing.small) {
             Label(failure.issue.description, systemImage: "exclamationmark.triangle.fill")
                 .font(Typography.callout.weight(.semibold))

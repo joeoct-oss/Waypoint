@@ -17,13 +17,13 @@ import WaypointTestSupport
 @Suite("Flow navigator")
 @MainActor
 struct FlowNavigatorTests {
-    @Test
+    @Test("Routes belong to no flow by default")
     func routesAreUnscopedByDefault() {
         #expect(HomeRoute.Flow.self == AnyFlow.self)
         #expect(CartRoute.Flow.self == ShopFlow.self)
     }
 
-    @Test
+    @Test("A flow navigator pushes its flow's routes")
     func flowNavigatorPushesOwnRoutes() {
         let router = StackRouter(configuration: .permissive)
         let shop = router.navigator(for: ShopFlow.self)
@@ -35,7 +35,7 @@ struct FlowNavigatorTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("A flow navigator pops to its flow's routes")
     func flowNavigatorPopsToOwnRoutes() {
         let router = StackRouter(configuration: .permissive)
         let shop = router.navigator(for: ShopFlow.self)
@@ -49,7 +49,7 @@ struct FlowNavigatorTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("The unscoped navigator pushes any route")
     func unscopedEscapeHatchPushesAnyRoute() {
         let router = StackRouter(configuration: .permissive)
         let shop = router.navigator(for: ShopFlow.self)
@@ -61,7 +61,7 @@ struct FlowNavigatorTests {
         #expect(router.state.path == expected)
     }
 
-    @Test
+    @Test("A flow navigator pops, presents and dismisses")
     func flowNavigatorPopsPresentsAndDismisses() throws {
         let router = StackRouter(configuration: .permissive)
         let shop = router.navigator(for: ShopFlow.self)
@@ -83,7 +83,7 @@ struct FlowNavigatorTests {
         #expect(shop.isActive)
     }
 
-    @Test
+    @Test("A navigator for the stack's declared flow reports nothing")
     func navigatorForTheDeclaredFlowReportsNothing() {
         let router = StackRouter(configuration: .permissive)
         let reported = Spy<NavigationIssue, Void>()
@@ -99,7 +99,7 @@ struct FlowNavigatorTests {
         #expect(shop.isActive)
     }
 
-    @Test
+    @Test("A navigator for a stack with no declared flow reports nothing")
     func navigatorForAnUndeclaredStackReportsNothing() {
         let router = StackRouter(configuration: .permissive)
         let reported = Spy<NavigationIssue, Void>()
@@ -113,7 +113,7 @@ struct FlowNavigatorTests {
         #expect(reported.callCount == 0)
     }
 
-    @Test
+    @Test("A navigator for another flow reports a mismatch and still navigates")
     func navigatorForAnotherFlowReportsMismatchAndStillNavigates() throws {
         let router = StackRouter(configuration: .permissive)
         let reported = Spy<NavigationIssue, Void>()
@@ -136,7 +136,7 @@ struct FlowNavigatorTests {
         #expect(outcome == .applied)
     }
 
-    @Test
+    @Test("Declaring another flow replaces the first")
     func declaringAnotherFlowReplacesTheFirst() {
         let router = StackRouter(configuration: .permissive)
 
@@ -146,7 +146,7 @@ struct FlowNavigatorTests {
         #expect(router.declaredFlow == SettingsFlow.self)
     }
 
-    @Test
+    @Test("A flow navigator made from a stack navigator works and reports a mismatch")
     func scopedNavigatorFromAStackNavigator() throws {
         let router = StackRouter(configuration: .permissive)
         let reported = Spy<NavigationIssue, Void>()
@@ -169,7 +169,7 @@ struct FlowNavigatorTests {
         #expect(issue.line == line)
     }
 
-    @Test
+    @Test("A view model navigates its flow with a real router")
     func viewModelNavigatesWithRealRouter() {
         let router = StackRouter(configuration: .permissive)
         let model = ProductModel(navigation: router.navigator(for: ShopFlow.self))

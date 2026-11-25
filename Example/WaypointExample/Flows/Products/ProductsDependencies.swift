@@ -16,17 +16,31 @@ import SwiftUI
 // window's link settings for the products stacks, and the Cart feature's cart screen, which Go to
 // cart pushes on Shop. The app hands in the cart screen, so this feature never names Cart's types
 // (planning #445).
-struct ProductsDependencies {
-    let catalog: any ProductCatalog
-    let store: LocalStore
-    let gate: any SheetAccountGating
-    let navigation: ProductsNavigation
-    let cartScreen: (ShopCartScreen) -> AnyView
+package struct ProductsDependencies {
+    package let catalog: any ProductCatalog
+    package let store: LocalStore
+    package let gate: any SheetAccountGating
+    package let navigation: ProductsNavigation
+    package let cartScreen: (ShopCartScreen) -> AnyView
+
+    package init(
+        catalog: any ProductCatalog,
+        store: LocalStore,
+        gate: any SheetAccountGating,
+        navigation: ProductsNavigation,
+        cartScreen: @escaping (ShopCartScreen) -> AnyView
+    ) {
+        self.catalog = catalog
+        self.store = store
+        self.gate = gate
+        self.navigation = navigation
+        self.cartScreen = cartScreen
+    }
 }
 
 // What the cart pushed on Shop shows, and what its two buttons do.
-struct ShopCartScreen {
-    let products: [Product]
-    let onCheckout: () -> Void
-    let onShopMore: () -> Void
+package struct ShopCartScreen {
+    package let products: [Product]
+    package let onCheckout: () -> Void
+    package let onShopMore: () -> Void
 }

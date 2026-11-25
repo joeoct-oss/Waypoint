@@ -16,10 +16,16 @@ import Waypoint
 //
 // Conformances:
 // - `ViewModifier`, so `MainTabView` gives it to the stack.
-struct CheckoutCover: ViewModifier {
-    let cart: CartCoordinator
+package struct CheckoutCover: ViewModifier {
+    package let cart: CartCoordinator
 
-    func body(content: Content) -> some View {
+    package init(
+        cart: CartCoordinator
+    ) {
+        self.cart = cart
+    }
+
+    package func body(content: Content) -> some View {
         content.fullScreenCover(
             isPresented: Binding(reading: cart.isCheckingOut, writing: cart.syncCheckout),
             onDismiss: cart.releaseCheckout

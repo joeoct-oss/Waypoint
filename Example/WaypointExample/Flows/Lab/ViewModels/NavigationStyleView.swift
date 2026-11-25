@@ -13,12 +13,12 @@ import SwiftUI
 // VM-01: pick how the demo product navigates, read the code that style needs, and try it. All three
 // styles push the same cart through the same router, so guards, events and outcomes don't change.
 // The screen reports Try it with the chosen style.
-struct NavigationStyleView: View {
-    let onTry: (NavigationStyle) -> Void
+package struct NavigationStyleView: View {
+    package let onTry: (NavigationStyle) -> Void
 
     @State private var style = NavigationStyle.navigator
 
-    var body: some View {
+    package var body: some View {
         List {
             Section("How screens navigate") {
                 picker

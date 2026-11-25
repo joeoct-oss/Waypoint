@@ -17,7 +17,7 @@ import WaypointTestSupport
 @Suite("Navigation configuration")
 @MainActor
 struct NavigationConfigurationTests {
-    @Test
+    @Test("The root configuration reaches every router in the tree")
     func rootConfigurationReachesEveryRouter() throws {
         let handler = RecordingLogHandler()
         let failures = Spy<NavigationFailure, Void>()
@@ -46,7 +46,7 @@ struct NavigationConfigurationTests {
         #expect(failures.lastCall?.issue.flow == settings.flowID)
     }
 
-    @Test
+    @Test("A child can't change tree-wide settings")
     func childCannotChangeTreeWideSettings() throws {
         // Non-root routers have no setter for logging, the queue limit or the failure handler,
         // so a leaf can't change them: that part is checked by the compiler. The one tree-wide
@@ -65,7 +65,7 @@ struct NavigationConfigurationTests {
         #expect(router.registry.isRegistered(ProductRoute.self))
     }
 
-    @Test
+    @Test("Flow-wide settings still apply to their flow only")
     func flowWideSettingsStillScopeToFlow() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -82,7 +82,7 @@ struct NavigationConfigurationTests {
         #expect(router.presentationDefaults == .default)
     }
 
-    @Test
+    @Test("The default configuration logs nothing and queues up to 32 changes")
     func defaultsMatchTodayBehaviour() {
         let configuration = NavigationConfiguration.default
         let router = StackRouter()
@@ -96,7 +96,7 @@ struct NavigationConfigurationTests {
         #expect(router.configuration.logging.handler is DisabledLogHandler)
     }
 
-    @Test
+    @Test("A registry in the configuration is known from the start")
     func registryInTheConfigurationIsKnownFromTheStart() {
         let registry = RouteRegistry().registering(ProductRoute.self)
 
@@ -107,7 +107,7 @@ struct NavigationConfigurationTests {
         #expect(router.push(HomeRoute()).failure?.issue.kind == .unregisteredRoute)
     }
 
-    @Test
+    @Test("Registry problems in the configuration are logged")
     func registryProblemsInTheConfigurationAreLogged() {
         let handler = RecordingLogHandler()
         let registry = RouteRegistry().registering(RouteFixtures.EmptyFormerKeyRoute.self)
@@ -119,7 +119,7 @@ struct NavigationConfigurationTests {
         #expect(handler.routerMessages.map(\.level) == expectedLevels)
     }
 
-    @Test
+    @Test("A tab router refuses a queue limit below one and logs it")
     func tabRouterReportsAQueueLimitBelowOne() {
         let handler = RecordingLogHandler()
         let configuration = NavigationConfiguration(

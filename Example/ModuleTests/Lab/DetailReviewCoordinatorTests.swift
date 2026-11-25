@@ -1,15 +1,16 @@
 //
 //  DetailReviewCoordinatorTests.swift
-//  WaypointExampleTests
+//  ExampleLabTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
+import ExampleLab
 import ExampleStore
+import ExampleTestSupport
 import Testing
 import Waypoint
-@testable import WaypointExample
 
 // The Lab's Write a review flow, pushed on the Detail push stack (planning #313): its screens
 // follow the product on the parent's stack, Post review finishes with the stars and pops back to
@@ -18,7 +19,7 @@ struct DetailReviewCoordinatorTests {
     private static let productID = 1
     private static let rating = 4
 
-    @Test
+    @Test("Posting the review finishes with the stars and pops back")
     func postingTheReviewFinishesWithTheStarsAndPopsBack() throws {
         let product = try #require(Product.find(id: Self.productID))
         let parent = StackRouter()
@@ -43,7 +44,7 @@ struct DetailReviewCoordinatorTests {
         #expect(parent.state.path == expectedParentPath)
     }
 
-    @Test
+    @Test("A posted review is shown and a cancelled one is not")
     func postedReviewIsShownAndALeftOneIsNot() throws {
         let product = try #require(Product.find(id: Self.productID))
         let detailPush = TestLab.makeFactory().makeDetailPush(onClose: { })
@@ -56,7 +57,7 @@ struct DetailReviewCoordinatorTests {
         #expect(detailPush.postedReviews[product.id] == Self.rating)
     }
 
-    @Test
+    @Test("Write a review pushes its flow above the product")
     func writeReviewPushesTheFlowAboveTheProduct() throws {
         let product = try #require(Product.find(id: Self.productID))
         let detailPush = TestLab.makeFactory().makeDetailPush(onClose: { })

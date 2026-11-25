@@ -16,13 +16,13 @@ import SwiftUI
 // coordinator's draft, so going back keeps what the reader typed. Continue closes the keyboard
 // first, so going back never brings it up over Continue. The screen reports Continue and Read the
 // terms, and the accounts coordinator decides what comes next.
-struct CreateAccountStepView: View {
-    let step: CreateAccountStep
-    @Bindable var draft: SignUpDraft
-    let isWorking: Bool
-    let errorMessage: String?
-    let onContinue: () -> Void
-    let onShowTerms: () -> Void
+package struct CreateAccountStepView: View {
+    package let step: CreateAccountStep
+    @Bindable package var draft: SignUpDraft
+    package let isWorking: Bool
+    package let errorMessage: String?
+    package let onContinue: () -> Void
+    package let onShowTerms: () -> Void
 
     // `var` because SwiftUI moves focus between the fields, and Continue clears it.
     @FocusState private var focusedField: Field?
@@ -40,7 +40,7 @@ struct CreateAccountStepView: View {
         }
     }
 
-    var body: some View {
+    package var body: some View {
         Form {
             fields
             FormErrorSection(message: errorMessage)

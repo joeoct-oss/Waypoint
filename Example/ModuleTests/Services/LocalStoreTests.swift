@@ -1,15 +1,15 @@
 //
 //  LocalStoreTests.swift
-//  WaypointExampleTests
+//  ExampleServicesTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
 import ExampleServices
+import ExampleTestSupport
 import Foundation
 import Testing
-@testable import WaypointExample
 
 // A store made for a test keeps its data in a domain of its own (planning #424), so tests never
 // change what the app keeps between launches, and the app's data never leaks into a test.
@@ -23,7 +23,7 @@ struct LocalStoreTests {
         return NSDictionary(dictionary: data)
     }
 
-    @Test
+    @Test("Tests never touch the app's data")
     func testsNeverTouchAppData() {
         let appData = Self.appData()
         let store = TestStore.make()
@@ -41,7 +41,7 @@ struct LocalStoreTests {
         #expect(Self.appData() == appData)
     }
 
-    @Test
+    @Test("A test store starts empty")
     func testStoreStartsEmpty() {
         let store = TestStore.make()
         defer {

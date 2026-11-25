@@ -15,13 +15,13 @@ import Waypoint
 // list, which the sheet reports, and Close. Close needs no coordinator: `@DismissFlow` closes the
 // flow the view is in, the saved sheet, through the router that presented it. The router sizes the
 // sheet to its content (`AppSheets.saved`).
-struct SavedView: View {
-    let onViewWishlist: () -> Void
+package struct SavedView: View {
+    package let onViewWishlist: () -> Void
 
     // `var` because a property wrapper needs one; it reads the sheet's router from the stack.
     @DismissFlow private var dismissFlow
 
-    var body: some View {
+    package var body: some View {
         VStack(spacing: Spacing.medium) {
             Image(systemName: "heart.fill")
                 .font(Typography.display)

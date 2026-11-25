@@ -12,10 +12,10 @@ import SwiftUI
 
 // The SwiftUI placeholder for a flow: its icon, name and summary, and a line naming the entry that
 // opened it.
-struct PlaceholderView: View {
-    let entry: FlowEntry
+package struct PlaceholderView: View {
+    package let entry: FlowEntry
 
-    var body: some View {
+    package var body: some View {
         VStack(spacing: Spacing.large) {
             IconTile(
                 symbolName: entry.flow.symbolName,

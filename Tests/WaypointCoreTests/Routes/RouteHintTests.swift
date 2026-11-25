@@ -25,13 +25,13 @@ struct RouteHintTests {
         preview: LoadedProduct(name: "Orbit Lamp")
     )
 
-    @Test
+    @Test("A route's hint is readable")
     func hintIsReadable() {
         #expect(Self.hinted.preview?.name == "Orbit Lamp")
         #expect(HintedProductRoute(id: 42).preview == nil)
     }
 
-    @Test
+    @Test("A hint is not encoded")
     func hintIsNotEncoded() throws {
         let data = try JSONEncoder().encode(Self.hinted)
         let json = String(decoding: data, as: UTF8.self)
@@ -39,7 +39,7 @@ struct RouteHintTests {
         #expect(json == #"{"id":42}"#)
     }
 
-    @Test
+    @Test("An erased route saves without the hint")
     func erasedRouteSavesWithoutTheHint() throws {
         let data = try JSONEncoder().encode(AnyRoute(Self.hinted))
         let json = String(decoding: data, as: UTF8.self)
@@ -48,7 +48,7 @@ struct RouteHintTests {
         #expect(!json.contains("Orbit Lamp"))
     }
 
-    @Test
+    @Test("A hint decodes to nil")
     func hintDecodesToNil() throws {
         let data = try JSONEncoder().encode(Self.hinted)
 
@@ -58,7 +58,7 @@ struct RouteHintTests {
         #expect(decoded.preview == nil)
     }
 
-    @Test
+    @Test("A restored route has no hint and still equals the original")
     func restoredRouteHasNoHint() throws {
         let saved = try JSONEncoder().encode(AnyRoute(Self.hinted))
         let decoder = JSONDecoder()
@@ -70,7 +70,7 @@ struct RouteHintTests {
         #expect(restored == AnyRoute(Self.hinted))
     }
 
-    @Test
+    @Test("Routes with the same id are equal whatever the hint")
     func routesWithSameIdAreEqualWhateverTheHint() {
         let other = HintedProductRoute(
             id: 42,
@@ -89,7 +89,7 @@ struct RouteHintTests {
         #expect(Self.hinted != HintedProductRoute(id: 7))
     }
 
-    @Test
+    @Test("Descriptions never print the hint")
     func descriptionsNeverPrintTheHint() {
         let route = AnyRoute(Self.hinted)
 
@@ -98,7 +98,7 @@ struct RouteHintTests {
         #expect(RouteDescriber.readable(Self.hinted, revealingPrivateValues: true) == "Hinted product (id: 42)")
     }
 
-    @Test
+    @Test("A saved hint is dropped on restore")
     func aSavedHintIsDroppedOnRestore() throws {
         let saved = Data(#"{"id":42,"preview":{"name":"Orbit Lamp"}}"#.utf8)
 
@@ -108,7 +108,7 @@ struct RouteHintTests {
         #expect(route.preview == nil)
     }
 
-    @Test
+    @Test("A hint on its own saves as null and restores empty")
     func aHintOnItsOwnSavesAsNullAndRestoresEmpty() throws {
         let hint = RouteHint(wrappedValue: LoadedProduct(name: "Orbit Lamp"))
 
@@ -119,7 +119,7 @@ struct RouteHintTests {
         #expect(restored.wrappedValue == nil)
     }
 
-    @Test
+    @Test("A route built from a link has no hint")
     func linkBuiltRouteHasNoHint() throws {
         let linkValues = Data(#"{"id":42}"#.utf8)
 

@@ -17,7 +17,7 @@ import WaypointTestSupport
 @Suite("Logging")
 @MainActor
 struct LoggingTests {
-    @Test
+    @Test("The default log configuration is quiet and logs nothing")
     func defaultConfigurationIsQuietAndCheap() {
         let configuration = LogConfiguration.default
 
@@ -28,7 +28,7 @@ struct LoggingTests {
         #expect(StackRouter(configuration: .permissive).configuration.logging.handler is DisabledLogHandler)
     }
 
-    @Test
+    @Test("A disabled handler never builds a message")
     func disabledHandlerNeverBuildsMessage() {
         let handler = RecordingLogHandler(accepts: false)
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
@@ -47,7 +47,7 @@ struct LoggingTests {
         #expect(handler.intervals.isEmpty)
     }
 
-    @Test
+    @Test("A level below the minimum is skipped")
     func levelBelowMinimumIsSkippedBeforeAskingTheHandler() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .notice, format: .structured)
@@ -62,7 +62,7 @@ struct LoggingTests {
         #expect(handler.checks == 2)
     }
 
-    @Test
+    @Test("A disabled category is skipped")
     func disabledCategoryIsSkipped() {
         let handler = RecordingLogHandler()
         let presentationOnly: Set<LogCategory> = [.presentation]
@@ -82,7 +82,7 @@ struct LoggingTests {
         #expect(handler.routerTexts.first?.hasPrefix("presented ") == true)
     }
 
-    @Test
+    @Test("Changes are logged at debug in their category")
     func changesAreLoggedAtDebugInTheirCategory() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
@@ -99,7 +99,7 @@ struct LoggingTests {
         #expect(handler.routerTexts.last?.hasSuffix(" flow=shop") == true)
     }
 
-    @Test
+    @Test("A child router shares the log configuration")
     func childRouterSharesTheConfiguration() throws {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
@@ -115,7 +115,7 @@ struct LoggingTests {
         #expect(handler.routerTexts == expectedTexts)
     }
 
-    @Test
+    @Test("Private values are redacted by default")
     func privateValuesAreRedactedByDefault() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
@@ -127,7 +127,7 @@ struct LoggingTests {
         #expect(handler.routerTexts == expectedTexts)
     }
 
-    @Test
+    @Test("Public log fields are shown and private ones hidden")
     func publicLogFieldsAreShown() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, minimumLevel: .debug, format: .structured)
@@ -140,7 +140,7 @@ struct LoggingTests {
         #expect(!text.contains("shoes"))
     }
 
-    @Test
+    @Test("Revealing private values shows everything")
     func revealsPrivateValuesShowsEverything() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(
@@ -157,7 +157,7 @@ struct LoggingTests {
         #expect(handler.routerTexts == expectedTexts)
     }
 
-    @Test
+    @Test("Fallback changes say where they came from")
     func fallbackChangesSayWhereTheyCameFrom() {
         let handler = RecordingLogHandler()
         let navigationOnly: Set<LogCategory> = [.navigation]
@@ -177,7 +177,7 @@ struct LoggingTests {
         #expect(handler.routerTexts == expectedTexts)
     }
 
-    @Test
+    @Test("Every issue is logged with its level and call site")
     func everyIssueIsLoggedWithItsCallSite() throws {
         let handler = RecordingLogHandler()
         let issuesOnly: Set<LogCategory> = [.issues]
@@ -202,7 +202,7 @@ struct LoggingTests {
         #expect(messages[1].text.contains("\n  "))
     }
 
-    @Test
+    @Test("Unchanged, stale and reentrant calls are logged with their call site")
     func unchangedQueuedAndIgnoredCallsLogAtDebug() throws {
         let handler = RecordingLogHandler()
         let navigationOnly: Set<LogCategory> = [.navigation]
@@ -241,7 +241,7 @@ struct LoggingTests {
         #expect(texts[4].hasPrefix("popped "))
     }
 
-    @Test
+    @Test("Registry problems are logged as errors")
     func registryProblemsAreLoggedAsErrors() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, format: .structured)
@@ -255,7 +255,7 @@ struct LoggingTests {
         #expect(handler.routerMessages.map(\.category) == expectedCategories)
     }
 
-    @Test
+    @Test("Each transaction is one interval, also when it fails")
     func eachTransactionIsOneIntervalAlsoWhenItFails() {
         let handler = RecordingLogHandler()
         let logging = LogConfiguration(handler: handler, format: .structured)
@@ -278,7 +278,7 @@ struct LoggingTests {
         #expect(handler.intervals == expectedIntervals)
     }
 
-    @Test
+    @Test("Intervals are skipped when their category is off")
     func intervalsAreSkippedWhenTheCategoryIsOff() {
         let handler = RecordingLogHandler()
         let issuesOnly: Set<LogCategory> = [.issues]
@@ -292,7 +292,7 @@ struct LoggingTests {
         #expect(handler.intervals.isEmpty)
     }
 
-    @Test
+    @Test("The recording handler keeps every message from many threads")
     func recordingHandlerKeepsOrderAcrossThreads() async {
         let handler = RecordingLogHandler()
 

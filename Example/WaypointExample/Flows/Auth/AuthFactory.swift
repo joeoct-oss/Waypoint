@@ -14,17 +14,17 @@ import SwiftUI
 // Create account builder, Sign in, Signed in, the terms, and Reset password's coordinator and
 // screen. The coordinator passes in what each screen reports, so navigation stays in the
 // coordinator.
-struct AuthFactory {
+package struct AuthFactory {
     // What the feature uses, which its coordinator reads too.
-    let dependencies: AuthDependencies
+    package let dependencies: AuthDependencies
 
-    init(dependencies: AuthDependencies) {
+    package init(dependencies: AuthDependencies) {
         self.dependencies = dependencies
     }
 
     // The accounts flow, opened because of `reason`. With `signedInStep`, signing in keeps the
     // flow open on Signed in instead of finishing it.
-    func makeAuth(
+    package func makeAuth(
         reason: SignInReason,
         signedInStep: SignedInStep? = nil
     ) -> AuthCoordinator {
@@ -38,16 +38,16 @@ struct AuthFactory {
     }
 
     // What Sign in and Create account show of a call to the auth service, for one accounts flow.
-    func makeForm() -> AuthForm {
+    package func makeForm() -> AuthForm {
         AuthForm()
     }
 
     // A new Create account journey, which keeps what the reader types across its steps.
-    func makeCreateAccountBuilder() -> CreateAccountBuilder {
+    package func makeCreateAccountBuilder() -> CreateAccountBuilder {
         CreateAccountBuilder(service: dependencies.service)
     }
 
-    func makeSignIn(
+    package func makeSignIn(
         reason: SignInReason,
         isWorking: Bool,
         errorMessage: String?,
@@ -67,7 +67,7 @@ struct AuthFactory {
         )
     }
 
-    func makeSignedIn(
+    package func makeSignedIn(
         name: String,
         reason: SignInReason,
         onDone: @escaping () -> Void
@@ -79,16 +79,16 @@ struct AuthFactory {
         )
     }
 
-    func makeTerms(onDone: @escaping () -> Void) -> TermsView {
+    package func makeTerms(onDone: @escaping () -> Void) -> TermsView {
         TermsView(onDone: onDone)
     }
 
-    func makeResetPassword() -> ResetPasswordCoordinator {
+    package func makeResetPassword() -> ResetPasswordCoordinator {
         ResetPasswordCoordinator(factory: self)
     }
 
     // Reset password's one screen: Send link sends `onSend` the email.
-    func makeForgotPassword(
+    package func makeForgotPassword(
         onSend: @escaping (String) -> Void,
         onDone: @escaping () -> Void,
         onCancel: @escaping () -> Void
@@ -103,7 +103,7 @@ struct AuthFactory {
 
 // What the accounts flow does when it opened over another sheet: signing in runs `onSignedIn` at
 // once and shows Signed in, whose Done runs `onDone`, so the caller closes both sheets together.
-struct SignedInStep {
-    let onSignedIn: (Account) -> Void
-    let onDone: () -> Void
+package struct SignedInStep {
+    package let onSignedIn: (Account) -> Void
+    package let onDone: () -> Void
 }

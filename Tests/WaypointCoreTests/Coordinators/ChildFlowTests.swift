@@ -20,7 +20,7 @@ struct ChildFlowTests {
     /// The order number the checkout flow finishes with.
     private static let order = "A-1"
 
-    @Test
+    @Test("Presenting a child flow gives it an active, named router under the parent")
     func presentingChildCreatesChildRouter() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()
@@ -37,7 +37,7 @@ struct ChildFlowTests {
         #expect(child.router.coordinatorName == "CheckoutFlowCoordinator")
     }
 
-    @Test
+    @Test("A child keeps the screens it pushed before it started")
     func childKeepsScreensPushedBeforeStart() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()
@@ -51,7 +51,7 @@ struct ChildFlowTests {
         #expect(child.router.push(ProductRoute(id: 8)) == .applied)
     }
 
-    @Test
+    @Test("Finishing a child delivers its value to the parent and dismisses it")
     func finishDeliversValueToParent() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()
@@ -68,7 +68,7 @@ struct ChildFlowTests {
         #expect(!child.router.isActive)
     }
 
-    @Test
+    @Test("A user dismiss of a child flow delivers cancelled")
     func userDismissDeliversCancelled() {
         let parent = StackRouter()
         let results = Spy<FlowResult<String>, Void>()
@@ -82,7 +82,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("A child can dismiss its own flow, and the parent gets cancelled")
     func dismissFlowFromChild() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()
@@ -98,7 +98,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("A child flow replaced by another presentation delivers cancelled")
     func replacedPresentationDeliversCancelled() {
         let parent = StackRouter(configuration: .permissive)
         let results = Spy<FlowResult<String>, Void>()
@@ -113,7 +113,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("A child's result is delivered exactly once")
     func resultDeliveredExactlyOnce() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()
@@ -131,7 +131,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("Dismissing while a child finishes delivers one result")
     func dismissWhileFinishingDeliversOnce() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()
@@ -148,7 +148,7 @@ struct ChildFlowTests {
         #expect(results.callCount == 1)
     }
 
-    @Test
+    @Test("Finishing while a dismiss is queued delivers the value")
     func finishWhileTheDismissIsQueuedDeliversTheValue() {
         let parent = StackRouter(configuration: .permissive)
         let child = CheckoutFlowCoordinator()
@@ -166,7 +166,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("The result arrives after the call that ended the flow")
     func resultArrivesAfterTheCallThatEndedTheFlow() {
         let parent = StackRouter()
         let child = CheckoutFlowCoordinator()
@@ -181,7 +181,7 @@ struct ChildFlowTests {
         #expect(presentedWhenDelivered.calls == expected)
     }
 
-    @Test
+    @Test("Dismissing a parent cancels its nested children and releases them")
     func parentDismissCancelsNestedChildren() {
         let parent = StackRouter()
         let outer = CheckoutFlowCoordinator()
@@ -206,7 +206,7 @@ struct ChildFlowTests {
         #expect(weakInner == nil)
     }
 
-    @Test
+    @Test("A swept parent cancels its children")
     func sweptParentCancelsItsChildren() {
         let results = Spy<FlowResult<String>, Void>()
         do {
@@ -222,7 +222,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("A child and its router are released after it finishes")
     func childReleasedAfterFinish() {
         let parent = StackRouter()
         // `var` because a weak reference must be one: it reads `nil` once the test lets go.
@@ -243,7 +243,7 @@ struct ChildFlowTests {
         #expect(weakRouter == nil)
     }
 
-    @Test
+    @Test("A dropped parent releases and cancels its child")
     func droppedParentReleasesAndCancelsItsChild() {
         let results = Spy<FlowResult<String>, Void>()
         // `var` because a weak reference must be one: it reads `nil` once the test lets go.
@@ -267,7 +267,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("A presented flow is released when dismissed")
     func presentedFlowReleasedOnDismiss() {
         let parent = StackRouter()
         // `var` because a weak reference must be one: it reads `nil` once the test lets go.
@@ -287,7 +287,7 @@ struct ChildFlowTests {
         #expect(weakRouter == nil)
     }
 
-    @Test
+    @Test("Finishing releases the child's coordinator and delivers once")
     func finishReleasesRouterAndCoordinator() {
         let parent = StackRouter()
         let results = Spy<FlowResult<String>, Void>()
@@ -308,7 +308,7 @@ struct ChildFlowTests {
         #expect(results.callCount == 1)
     }
 
-    @Test(arguments: Self.refusingRouters)
+    @Test("A child holding the caller's router is refused", arguments: Self.refusingRouters)
     func childWithCallersRouterIsRefused(refusing: RefusingRouter) {
         let root = StackRouter()
         if refusing == .ancestor {
@@ -326,7 +326,7 @@ struct ChildFlowTests {
         #expect(results.calls.isEmpty)
     }
 
-    @Test
+    @Test("A child from another tree is refused, named in the report, and left where it was")
     func childFromAnotherTreeIsRefused() throws {
         let first = StackRouter()
         let second = StackRouter()
@@ -345,7 +345,7 @@ struct ChildFlowTests {
         #expect(results.calls.isEmpty)
     }
 
-    @Test
+    @Test("A refused present builds no child and never calls onFinish")
     func refusedPresentNeverCallsOnFinish() {
         let parent = StackRouter(configuration: .permissive)
         parent.present(SettingsRoute())
@@ -366,7 +366,7 @@ struct ChildFlowTests {
         #expect(results.calls.isEmpty)
     }
 
-    @Test
+    @Test("A recovered present delivers one result")
     func recoveredPresentDeliversOnce() {
         let parent = StackRouter(configuration: .permissive)
         parent.present(SettingsRoute())
@@ -383,7 +383,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("An ignored present builds nothing and never calls onFinish")
     func ignoredPresentBuildsNothing() {
         let inert = StackRouter.inert()
         let built = Spy<CheckoutFlowCoordinator, Void>()
@@ -402,7 +402,7 @@ struct ChildFlowTests {
         #expect(results.calls.isEmpty)
     }
 
-    @Test
+    @Test("A queued present that fails builds nothing and never calls onFinish")
     func queuedPresentThatFailsNeverCallsOnFinish() {
         let parent = StackRouter(configuration: .permissive)
         let built = Spy<CheckoutFlowCoordinator, Void>()
@@ -431,7 +431,7 @@ struct ChildFlowTests {
         #expect(results.calls.isEmpty)
     }
 
-    @Test
+    @Test("A queued present builds the child when it runs")
     func queuedPresentBuildsTheChildWhenItRuns() {
         let parent = StackRouter(configuration: .permissive)
         let built = Spy<CheckoutFlowCoordinator, Void>()
@@ -455,7 +455,7 @@ struct ChildFlowTests {
         #expect(parent.presented === built.lastCall?.router)
     }
 
-    @Test
+    @Test("A lazily built child's push in its init uses the root's settings")
     func lazyChildPushInInitUsesRootSettings() throws {
         let parent = StackRouter(configuration: .permissive)
         let lazyChild = Spy<PushingInInitFlowCoordinator, Void>()
@@ -474,7 +474,7 @@ struct ChildFlowTests {
         #expect(eagerChild.outcomes.lastCall?.failure?.issue.kind == .unregisteredRoute)
     }
 
-    @Test
+    @Test("An extra router made in the lazy closure stays out of the tree")
     func extraRouterInLazyClosureStaysSeparate() throws {
         let parent = StackRouter()
         let made = Spy<InnerMakingFlowCoordinator, Void>()
@@ -491,7 +491,7 @@ struct ChildFlowTests {
         #expect(child.inner.router.parent == nil)
     }
 
-    @Test
+    @Test("A grandchild's router made in the lazy closure is detached and reported")
     func markedRouterOfAGrandchildIsDetached() throws {
         let parent = StackRouter()
         let reported = Spy<NavigationIssue, Void>()
@@ -517,7 +517,7 @@ struct ChildFlowTests {
         #expect(kinds == expected)
     }
 
-    @Test
+    @Test("A lazy child's own router joins the parent when it starts")
     func lazyChildOwnMakeRouterJoinsOnStart() throws {
         let parent = StackRouter()
         let made = Spy<OwnRouterFlowCoordinator, Void>()
@@ -535,7 +535,7 @@ struct ChildFlowTests {
         #expect(child.router.parent === parent)
     }
 
-    @Test
+    @Test("A lazy child with a router from another tree is refused")
     func lazyChildRouterFromAnotherTreeIsRefused() {
         let other = StackRouter()
         other.present(CheckoutFlowCoordinator()) { _ in }
@@ -553,7 +553,7 @@ struct ChildFlowTests {
         #expect(results.calls.isEmpty)
     }
 
-    @Test
+    @Test("Two lazy starts in one turn each join their own parent")
     func twoLazyStartsInOneTurnJoinTheirOwnParents() throws {
         let first = StackRouter()
         let second = StackRouter()
@@ -573,7 +573,7 @@ struct ChildFlowTests {
         #expect(second.presented === grandchild.router)
     }
 
-    @Test
+    @Test("A coordinator dying in the lazy closure never takes the child's place")
     func dyingCoordinatorInLazyClosureNeverTakesTheMark() throws {
         let parent = StackRouter()
         let deinitRouters = Spy<StackRouter, Void>()
@@ -594,7 +594,7 @@ struct ChildFlowTests {
         #expect(child.router.flowID == FlowID("dyingFlow"))
     }
 
-    @Test(arguments: Self.bothForms)
+    @Test("Both ways of starting a child deliver the same results", arguments: Self.bothForms)
     func bothFormsDeliverTheSameResults(form: StartForm) {
         let finished = Spy<FlowResult<String>, Void>()
         let cancelled = Spy<FlowResult<String>, Void>()
@@ -613,7 +613,7 @@ struct ChildFlowTests {
         #expect(cancelled.calls == expectedCancelled)
     }
 
-    @Test
+    @Test("A child presented over tabs joins the tabs and delivers its result")
     func presentingChildOverTabsJoinsTheContainer() {
         let tabs = TabRouter(selection: MainTab.home)
         let child = CheckoutFlowCoordinator()
@@ -629,7 +629,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("Tabs keep their presented child until it finishes")
     func tabsKeepTheirChildUntilItFinishes() {
         let tabs = TabRouter(selection: MainTab.home)
         let results = Spy<FlowResult<String>, Void>()
@@ -653,7 +653,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("A user dismiss over tabs delivers cancelled")
     func userDismissOverTabsDeliversCancelled() {
         let tabs = TabRouter(selection: MainTab.home)
         let results = Spy<FlowResult<String>, Void>()
@@ -667,7 +667,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("Dropped tabs release and cancel their child")
     func droppedTabsReleaseAndCancelTheirChild() {
         let results = Spy<FlowResult<String>, Void>()
         // `var` because a weak reference must be one: it reads `nil` once the test lets go.
@@ -688,7 +688,7 @@ struct ChildFlowTests {
         #expect(results.calls == expected)
     }
 
-    @Test
+    @Test("A start over tabs that is rolled back leaves the child as it was")
     func rolledBackStartOverTabsLeavesChildAsItWas() {
         let tabs = TabRouter(selection: MainTab.home)
         let child = CheckoutFlowCoordinator()
@@ -715,7 +715,7 @@ struct ChildFlowTests {
         #expect(results.calls.isEmpty)
     }
 
-    @Test
+    @Test("Finishing outside a flow is reported")
     func finishOutsideAFlowIsReported() {
         let child = CheckoutFlowCoordinator()
         let reported = Spy<NavigationIssue, Void>()
@@ -730,7 +730,7 @@ struct ChildFlowTests {
         #expect(kinds == expected)
     }
 
-    @Test
+    @Test("A rolled back start leaves the child as it was, and a retry works")
     func rolledBackStartLeavesChildAsItWas() {
         let parent = StackRouter()
         parent.register(SettingsRoute.self)

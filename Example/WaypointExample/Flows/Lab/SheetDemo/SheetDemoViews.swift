@@ -14,13 +14,13 @@ import Waypoint
 // Draws one stack of the Sheet story, the story's own or a presented level's, with the sheet or
 // cover its router presents over it. A presented level draws the same way, so levels nest as deep
 // as the reader presents them.
-struct SheetDemoStack: View {
-    let demo: SheetDemoCoordinator
-    let router: StackRouter
+package struct SheetDemoStack: View {
+    package let demo: SheetDemoCoordinator
+    package let router: StackRouter
     // `nil` for the story's own stack.
-    let level: SheetDemoLevel?
+    package let level: SheetDemoLevel?
 
-    var body: some View {
+    package var body: some View {
         WaypointStack(router) {
             screen
         }
@@ -71,7 +71,7 @@ struct SheetDemoStack: View {
 
 // The Sheet story's own screen: the next sheet's size and swipe-to-close, Present sheet and
 // Present cover, and the router's tree. The screen only reports the taps.
-struct SheetDemoRootView: View {
+package struct SheetDemoRootView: View {
     private static let title = "Sheet"
     private static let sizeTitle = "Size"
     private static let swipeTitle = "Swipe down to close"
@@ -79,7 +79,7 @@ struct SheetDemoRootView: View {
     private static let coverTitle = "Present cover"
     private static let treeTitle = "Navigation tree"
 
-    let demo: SheetDemoCoordinator
+    package let demo: SheetDemoCoordinator
 
     private var closeItem: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
@@ -88,7 +88,7 @@ struct SheetDemoRootView: View {
         }
     }
 
-    var body: some View {
+    package var body: some View {
         List {
             Section {
                 Picker(Self.sizeTitle, selection: Binding(reading: demo.size, writing: demo.setSize)) {
@@ -123,16 +123,16 @@ struct SheetDemoRootView: View {
 // A level the Sheet story presented: Present on top, Dismiss through the router that presented it,
 // Dismiss flow through its own router, and Dismiss all through the story's router. The screen
 // only reports the taps.
-struct SheetDemoLevelView: View {
+package struct SheetDemoLevelView: View {
     private static let presentTitle = "Present on top"
     private static let dismissTitle = "Dismiss"
     private static let dismissFlowTitle = "Dismiss flow"
     private static let dismissAllTitle = "Dismiss all"
 
-    let demo: SheetDemoCoordinator
-    let level: SheetDemoLevel
+    package let demo: SheetDemoCoordinator
+    package let level: SheetDemoLevel
 
-    var body: some View {
+    package var body: some View {
         List {
             Button(Self.presentTitle) { demo.presentSheet(from: level) }
                 .accessibilityIdentifier(Identifiers.sheetDemoPresentOnTop)

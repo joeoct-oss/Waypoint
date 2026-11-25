@@ -17,7 +17,7 @@ import WaypointTestSupport
 @Suite("Stack navigator")
 @MainActor
 struct StackNavigatorTests {
-    @Test
+    @Test("A stack navigator pushes as the router does")
     func stackNavigatorPushesOnRouter() {
         let viaRouter = StackRouter(configuration: .permissive)
         let viaNavigator = StackRouter(configuration: .permissive)
@@ -40,7 +40,7 @@ struct StackNavigatorTests {
         #expect(navigatorChanges == routerChanges)
     }
 
-    @Test
+    @Test("A stack navigator pops")
     func stackNavigatorPops() {
         let router = StackRouter(configuration: .permissive)
         // The root screen's navigator, so popping the screens above doesn't make it stale.
@@ -60,7 +60,7 @@ struct StackNavigatorTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A stack navigator presents a flow")
     func stackNavigatorPresentsAFlow() throws {
         let router = StackRouter(configuration: .permissive)
 
@@ -72,7 +72,7 @@ struct StackNavigatorTests {
         #expect(presentation.style == .fullScreenCover)
     }
 
-    @Test
+    @Test("A child's navigator can dismiss its flow")
     func dismissFlowFromChildHandle() throws {
         let router = StackRouter(configuration: .permissive)
         router.present(SettingsRoute())
@@ -86,7 +86,7 @@ struct StackNavigatorTests {
         #expect(!navigation.isActive)
     }
 
-    @Test
+    @Test("A navigator passes on the fallback")
     func navigatorPassesTheFallback() {
         let router = StackRouter(configuration: .permissive)
         router.push(ProductRoute(id: 1))
@@ -97,7 +97,7 @@ struct StackNavigatorTests {
         #expect(router.state.path.isEmpty)
     }
 
-    @Test
+    @Test("A navigator reports the caller's line")
     func navigatorReportsTheCallersLine() throws {
         let router = StackRouter(configuration: .permissive)
         let line: UInt = #line + 1
@@ -109,7 +109,7 @@ struct StackNavigatorTests {
         #expect(failure.issue.callSite.hasPrefix("StackNavigatorTests.swift:"))
     }
 
-    @Test
+    @Test("A navigator with no router fails and reports it")
     func missingNavigatorFailsAndReports() throws {
         let reported = Spy<NavigationIssue, Void>()
         let message = "@StackNavigation found no Waypoint stack above it."
@@ -128,7 +128,7 @@ struct StackNavigatorTests {
         #expect(!navigation.isActive)
     }
 
-    @Test
+    @Test("A view model navigates with a real router")
     func viewModelNavigatesWithRealRouter() {
         let router = StackRouter(configuration: .permissive)
         let model = ProductListModel(navigation: router.navigator)

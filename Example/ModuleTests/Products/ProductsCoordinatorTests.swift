@@ -1,24 +1,25 @@
 //
 //  ProductsCoordinatorTests.swift
-//  WaypointExampleTests
+//  ExampleProductsTests
 //
 //  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
 import ExampleNavigation
+import ExampleProducts
 import ExampleServices
 import ExampleStore
+import ExampleTestSupport
 import Testing
 import WaypointCore
-@testable import WaypointExample
 
 // Save on a product (planning #424): a guest is asked to sign in first and the wish list stays as
 // it is, and a signed-in reader's Save adds the product to the wish list the store keeps.
 struct ProductsCoordinatorTests {
     private static let lampID = 1
 
-    @Test
+    @Test("A guest saving a product is asked to sign in first")
     func guestSaveAsksToSignInFirst() throws {
         let store = TestStore.make()
         defer {
@@ -37,7 +38,7 @@ struct ProductsCoordinatorTests {
         #expect(store.wishlistProductIDs.isEmpty)
     }
 
-    @Test
+    @Test("A signed-in save adds the product to the wishlist")
     func signedInSaveAddsToWishlist() throws {
         let store = TestStore.make()
         defer {

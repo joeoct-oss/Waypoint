@@ -15,10 +15,16 @@ import Waypoint
 //
 // Conformances:
 // - `ViewModifier`, so `MainTabView` gives it to the stack.
-struct LabDemoCover: ViewModifier {
-    let account: AccountCoordinator
+package struct LabDemoCover: ViewModifier {
+    package let account: AccountCoordinator
 
-    func body(content: Content) -> some View {
+    package init(
+        account: AccountCoordinator
+    ) {
+        self.account = account
+    }
+
+    package func body(content: Content) -> some View {
         content.fullScreenCover(
             item: Binding(reading: account.labDemos.presentedDemo, writing: account.labDemos.syncDemo),
             onDismiss: account.labDemos.releaseDemo

@@ -11,14 +11,14 @@ import SwiftUI
 
 // The top of each checkout step: a bar of three segments filled up to this step, "Step n of 3"
 // with the step's name, and the step's heading.
-struct CheckoutStepHeader: View {
-    static let stepCount = 3
+package struct CheckoutStepHeader: View {
+    package static let stepCount = 3
 
-    let number: Int
-    let name: String
-    let heading: String
+    package let number: Int
+    package let name: String
+    package let heading: String
 
-    var body: some View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: Spacing.medium) {
             progress
             Text("Step \(number) of \(Self.stepCount) · \(name)")

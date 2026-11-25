@@ -244,6 +244,23 @@ The package writes every isolation explicitly (`@MainActor` on routers, `nonisol
 
 This covers every test: the package's core and renderer tests, the example app's unit tests, and the tests every plan lists. A test uses the double its case needs: a fake for working behaviour (an in-memory catalog), a stub for set answers (an auth service that always refuses), or a mock to check that a call happened (the account gate was asked to sign in). A real object is fine where it gives the test full control, such as a real `StackRouter` on Linux or a real `LocalStore` on a domain of its own. There is no fixed rule for which; the test's case decides. Review checks the choice.
 
+## Every test names the promise it pins
+
+Every Swift Testing `@Test` has a display name that states, as a plain sentence, the promise the test pins: what a user of the code can count on, as the test's checks show it. The function name stays a short identifier, which `swift test --filter`, `--only` and the docs use to point at the test. For example:
+
+```swift
+@Test("Going back visits the screen below, with the time spent on the one above")
+func goingBackVisitsTheScreenBelowWithTheTimeOnTheOneAbove() throws {
+```
+
+- The name says what is true, not what the test does: "A pop on an empty path fails with an issue naming the flow and call site", not "Test popping an empty path".
+- It is a sentence in sentence case with no full stop. Code names keep their case (`dismissFlow`, `AnyRoute`).
+- It promises nothing the checks don't show. A test whose name and checks drift apart is fixed in the same change.
+- Arguments follow the name: `@Test("Sample refuses what it can't write, where the problem is", arguments: refused)`.
+- XCUITest UI tests are XCTest, which has no display names, so their method names stay the only name.
+
+Review checks that each name matches what its test asserts.
+
 ## An example app service gets a protocol only at a boundary or for a test
 
 In the example app, a service gets a protocol when it reaches outside the app (auth, a server, a catalog that will be fetched), or when a test needs to control it, such as checking that the account gate was asked to sign in. The protocol arrives in the change whose test first needs it. Values and state holders that only read and write the local store stay concrete, and a test can use the real ones on a store of its own (`LocalStore(domain:)`). The test then picks its double as [Each test picks its own test double](#each-test-picks-its-own-test-double) says. A feature's dependency struct lists the services it uses, as a protocol's existential (`any AuthService`) or a concrete type. Services are protocols, not structs of closures, so the calls that belong together stay grouped by a type. Today `AuthService` and `ProductCatalog` are protocols. A linter can't judge when a test needs a protocol, so review checks this rule.

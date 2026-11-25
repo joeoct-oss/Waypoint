@@ -17,18 +17,18 @@ import SwiftUI
 //
 // Conformances:
 // - `Related: View`: the link to the related product, which the coordinator draws.
-struct ProductDetailView<Related: View>: View {
+package struct ProductDetailView<Related: View>: View {
     // Computed, because a generic type can't keep a static stored property.
     private static var rating: String {
         "4.8 out of 5"
     }
 
-    let product: Product
-    let onAddToCart: () -> Void
-    let onSave: () -> Void
-    @ViewBuilder let related: Related
+    package let product: Product
+    package let onAddToCart: () -> Void
+    package let onSave: () -> Void
+    @ViewBuilder package let related: Related
 
-    var body: some View {
+    package var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.large) {
                 picture
