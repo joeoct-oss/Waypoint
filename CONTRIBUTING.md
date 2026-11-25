@@ -14,7 +14,7 @@ Every change starts from an issue. Maintainers keep issues in the private Waypoi
 <type>/<issue-number>-<short-kebab-description>
 ```
 
-The types are `feature`, `fix`, `docs`, `test`, `refactor` and `chore`, for example `feature/12-typed-routes` or `fix/31-sheet-dismiss-crash`. After the number comes a short plain-English phrase, two to five words, that a person understands at a glance. Leave out decision, plan and issue numbers and code ids: `docs/251-explain-coordinators-and-renderers`, not `docs/251-align-docs-with-decisions-0017-and-0018`.
+The type is one lowercase word that names the kind of work. The list is open: `feature`, `fix`, `docs`, `test`, `refactor`, `chore`, `ci` and `spike` are common ones, and any other plain word that fits is fine. For example `feature/12-typed-routes` or `fix/31-sheet-dismiss-crash`. After the number comes a short plain-English phrase, two to five words, that a person understands at a glance. Leave out decision, plan and issue numbers and code ids: `docs/251-explain-coordinators-and-renderers`, not `docs/251-align-docs-with-decisions-0017-and-0018`.
 
 ## Test first
 
