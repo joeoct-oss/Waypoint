@@ -7,9 +7,10 @@
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
 # Fails when a folder of the example app uses a type, a member an extension adds, or a top-level
-# function or constant from a folder its future module may not depend on (planning #445). The example app is splitting into
-# modules along its folders; a framework can't use the app, a module above it, or a feature beside
-# it, so this check keeps the folders in that order before and while the modules exist:
+# function or constant from a folder its future module may not depend on (planning #445). The
+# example app is splitting into modules along its folders; a framework can't use the app, a module
+# above it, or a feature beside it, so this check keeps the folders in that order before and while
+# the modules exist:
 #
 #   Catalog, Store                   nothing
 #   Services                         Store
