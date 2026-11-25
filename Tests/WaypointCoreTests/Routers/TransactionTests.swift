@@ -8,6 +8,7 @@
 
 import Observation
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -20,9 +21,9 @@ struct TransactionTests {
     func transactionAppliesOnceWithAllChanges() {
         let router = StackRouter(configuration: .permissive)
         router.push(HomeRoute())
-        let applied = Recorder<[AppliedChange]>()
+        let applied = Spy<[AppliedChange], Void>()
         router.tree.onApplied { changes in
-            applied.record(changes)
+            applied(changes)
         }
 
         let outcome = router.transaction {
@@ -43,7 +44,7 @@ struct TransactionTests {
             AppliedChange(flow: main, change: .pushed(second)),
         ]
         let expectedBatches = [expectedBatch]
-        #expect(applied.values == expectedBatches)
+        #expect(applied.calls == expectedBatches)
     }
 
     @Test
@@ -235,7 +236,7 @@ struct TransactionTests {
     @Test
     func transactionDuringChangeIsQueued() {
         let router = StackRouter(configuration: .permissive)
-        let inner = Recorder<NavigationOutcome>()
+        let inner = Spy<NavigationOutcome, Void>()
         let once = Once()
         router.tree.onApplied { _ in
             guard once.claim() else {
@@ -244,13 +245,13 @@ struct TransactionTests {
             let outcome = router.transaction {
                 $0.push(SettingsRoute())
             }
-            inner.record(outcome)
+            inner(outcome)
         }
 
         router.push(HomeRoute())
 
         let expectedOutcomes: [NavigationOutcome] = [.queued]
-        #expect(inner.values == expectedOutcomes)
+        #expect(inner.calls == expectedOutcomes)
         let expectedPath = [AnyRoute(HomeRoute()), AnyRoute(SettingsRoute())]
         #expect(router.state.path == expectedPath)
     }

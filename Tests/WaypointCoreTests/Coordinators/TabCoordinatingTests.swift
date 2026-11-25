@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -36,33 +37,33 @@ struct TabCoordinatingTests {
     @Test
     func tabCoordinatorJoinsOnFirstRouterRead() {
         let tabs = MainTabsCoordinator()
-        let askedBeforeRead = tabs.asked.values
+        let askedBeforeRead = tabs.asked.calls
 
         _ = tabs.router
         _ = tabs.router
 
         #expect(askedBeforeRead.isEmpty)
-        #expect(tabs.asked.values == MainTab.allCases)
+        #expect(tabs.asked.calls == MainTab.allCases)
     }
 
     @Test
     func tabCoordinatorHandsChildrenTheirRouters() throws {
-        let children = Recorder<(MainTab, any StackCoordinating)>()
+        let children = Spy<(MainTab, any StackCoordinating), Void>()
         let tabs = MainTabsCoordinator { tab, _ in
             let child = TabChildCoordinator()
-            children.record((tab, child))
+            children((tab, child))
             return child
         }
 
         let router = tabs.router
 
-        #expect(children.count == MainTab.allCases.count)
-        for (tab, child) in children.values {
+        #expect(children.callCount == MainTab.allCases.count)
+        for (tab, child) in children.calls {
             #expect(router.router(for: tab) === child.router)
             #expect(child.router.isActive)
             #expect(child.router.parent === router)
         }
-        let home = try #require(children.values.first)
+        let home = try #require(children.calls.first)
         #expect(home.1.router.push(ProductRoute(id: 1)) == .applied)
         #expect(router.router(for: .home).state.path.count == 1)
     }
@@ -94,23 +95,23 @@ struct TabCoordinatingTests {
 
     @Test
     func tabChildPushInInitKeepsItsRouter() {
-        let child = Recorder<EarlyPushCoordinator>()
+        let child = Spy<EarlyPushCoordinator, Void>()
         let tabs = MainTabsCoordinator { tab, _ in
             guard tab == .shop else {
                 return TabChildCoordinator()
             }
             let early = EarlyPushCoordinator()
-            child.record(early)
+            child(early)
             return early
         }
 
         let stack = tabs.router.router(for: .shop)
 
-        #expect(stack === child.last?.made)
+        #expect(stack === child.lastCall?.made)
         #expect(stack.state.path.count == 1)
         #expect(stack.parent === tabs.router)
         #expect(stack.push(ProductRoute(id: 2)) == .applied)
-        #expect(tabs.reported.values.isEmpty)
+        #expect(tabs.reported.calls.isEmpty)
     }
 
     @Test
@@ -129,17 +130,17 @@ struct TabCoordinatingTests {
 
     @Test
     func tabNavigatorBuiltBeforeChildAdoptionForwards() throws {
-        let child = Recorder<ParentReadingCoordinator>()
+        let child = Spy<ParentReadingCoordinator, Void>()
         let tabs = MainTabsCoordinator { tab, parent in
             guard tab == .shop else {
                 return TabChildCoordinator()
             }
             let reader = ParentReadingCoordinator(tab: tab, parent: parent)
-            child.record(reader)
+            child(reader)
             return reader
         }
         let router = tabs.router
-        let reader = try #require(child.last)
+        let reader = try #require(child.lastCall)
 
         let outcome = reader.tabNavigator.push(ProductRoute(id: 1))
 
@@ -150,37 +151,37 @@ struct TabCoordinatingTests {
 
     @Test
     func tabPushBeforeChildAdoptionIsKept() throws {
-        let child = Recorder<ParentReadingCoordinator>()
+        let child = Spy<ParentReadingCoordinator, Void>()
         let tabs = MainTabsCoordinator { tab, parent in
             guard tab == .shop else {
                 return TabChildCoordinator()
             }
             let reader = ParentReadingCoordinator(tab: tab, parent: parent)
             reader.tabNavigator.push(ProductRoute(id: 1))
-            child.record(reader)
+            child(reader)
             return reader
         }
 
         let stack = tabs.router.router(for: .shop)
 
-        let reader = try #require(child.last)
+        let reader = try #require(child.lastCall)
         #expect(stack.state.path.count == 1)
         #expect(reader.router === stack)
         #expect(stack.coordinatorName == "ParentReadingCoordinator")
         #expect(reader.router.push(ProductRoute(id: 2)) == .applied)
         #expect(stack.state.path.count == 2)
-        #expect(tabs.reported.values.isEmpty)
+        #expect(tabs.reported.calls.isEmpty)
     }
 
     @Test
     func tabPushFromChildOfAddedTabIsKept() throws {
-        let child = Recorder<ParentReadingCoordinator>()
+        let child = Spy<ParentReadingCoordinator, Void>()
         let tabs = MainTabsCoordinator(tabs: MainTab.homeAndShop) { tab, parent in
             guard tab == .profile else {
                 return TabChildCoordinator()
             }
             let reader = ParentReadingCoordinator(tab: tab, parent: parent)
-            child.record(reader)
+            child(reader)
             reader.tabNavigator.push(ProductRoute(id: 1))
             return reader
         }
@@ -188,26 +189,26 @@ struct TabCoordinatingTests {
 
         router.setTabs(MainTab.allCases)
 
-        let reader = try #require(child.last)
+        let reader = try #require(child.lastCall)
         let stack = router.router(for: .profile)
         #expect(stack.state.path.count == 1)
         #expect(reader.router === stack)
-        #expect(tabs.reported.values.isEmpty)
+        #expect(tabs.reported.calls.isEmpty)
     }
 
     @Test
     func tabChildReadingParentRouterInInitDoesNotRejoin() throws {
-        let child = Recorder<ParentReadingCoordinator>()
+        let child = Spy<ParentReadingCoordinator, Void>()
         let tabs = MainTabsCoordinator { tab, parent in
             let reader = ParentReadingCoordinator(tab: tab, parent: parent)
-            child.record(reader)
+            child(reader)
             return reader
         }
 
         let router = tabs.router
 
-        #expect(tabs.asked.values == MainTab.allCases)
-        let reader = try #require(child.values.first)
+        #expect(tabs.asked.calls == MainTab.allCases)
+        let reader = try #require(child.calls.first)
         #expect(reader.parentRouter === router)
         #expect(tabs.router === router)
     }
@@ -230,7 +231,7 @@ struct TabCoordinatingTests {
 
         router.setTabs(MainTab.allCases)
 
-        #expect(tabs.asked.values == MainTab.allCases)
+        #expect(tabs.asked.calls == MainTab.allCases)
         let profile = router.router(for: .profile)
         #expect(profile.isActive)
         #expect(profile.coordinatorName == "TabChildCoordinator")
@@ -255,22 +256,22 @@ struct TabCoordinatingTests {
         #expect(stack.isActive)
         #expect(stack.coordinatorName == "TabChildCoordinator")
         #expect(kept.navigator.push(ProductRoute(id: 1)) == .applied)
-        #expect(tabs.reported.values.isEmpty)
+        #expect(tabs.reported.calls.isEmpty)
     }
 
     @Test(arguments: Self.bothLayouts)
     func keptMergedChildReturnedForATabAddedBackGetsTheNewStack(stacks: TabStacks) throws {
-        let kept = Recorder<ParentReadingCoordinator>()
+        let kept = Spy<ParentReadingCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: stacks) { tab, parent in
             guard tab == .shop else {
                 return TabChildCoordinator()
             }
-            if let child = kept.last {
+            if let child = kept.lastCall {
                 return child
             }
             let reader = ParentReadingCoordinator(tab: tab, parent: parent)
             reader.tabNavigator.push(ProductRoute(id: 1))
-            kept.record(reader)
+            kept(reader)
             return reader
         }
         let router = tabs.router
@@ -280,13 +281,13 @@ struct TabCoordinatingTests {
         router.setTabs(MainTab.allCases)
         router.select(.shop)
 
-        let child = try #require(kept.last)
+        let child = try #require(kept.lastCall)
         let stack = router.router(for: .shop)
         #expect(child.router === stack)
         #expect(stack.isActive)
         #expect(stack.coordinatorName == "ParentReadingCoordinator")
         #expect(child.navigator.push(ProductRoute(id: 2)) == .applied)
-        #expect(tabs.reported.values.isEmpty)
+        #expect(tabs.reported.calls.isEmpty)
     }
 
     @Test(arguments: Self.bothLayouts)
@@ -326,7 +327,7 @@ struct TabCoordinatingTests {
 
     @Test
     func childDeinitDuringSetTabsDoesNotCrash() throws {
-        let outcomes = Recorder<(NavigationOutcome, StackRouter)>()
+        let outcomes = Spy<(NavigationOutcome, StackRouter), Void>()
         let tabs = MainTabsCoordinator(giving: .profile) {
             DeinitReadingCoordinator(outcomes: outcomes)
         }
@@ -334,7 +335,7 @@ struct TabCoordinatingTests {
 
         tabs.router.setTabs(MainTab.homeAndShop)
 
-        let (outcome, read) = try #require(outcomes.last)
+        let (outcome, read) = try #require(outcomes.lastCall)
         #expect(outcome == .ignored)
         #expect(!read.isActive)
         #expect(!profile.isActive)
@@ -350,39 +351,39 @@ struct TabCoordinatingTests {
         _ = tabs.router
 
         let expected: [MainTab] = [.shop, .home, .profile]
-        #expect(tabs.asked.values == expected)
+        #expect(tabs.asked.calls == expected)
     }
 
     @Test
     func sharedStackMergesLaterChildRouter() throws {
-        let children = Recorder<any StackCoordinating>()
+        let children = Spy<any StackCoordinating, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { _, _ in
             let child = TabChildCoordinator()
-            children.record(child)
+            children(child)
             return child
         }
 
         let shared = tabs.router.router(for: .home)
 
-        #expect(children.count == MainTab.allCases.count)
-        for child in children.values {
+        #expect(children.callCount == MainTab.allCases.count)
+        for child in children.calls {
             #expect(child.router === shared)
         }
-        let later = try #require(children.last)
+        let later = try #require(children.lastCall)
         #expect(later.router.push(ProductRoute(id: 1)) == .applied)
         #expect(shared.state.path.count == 1)
-        #expect(tabs.reported.values.isEmpty)
+        #expect(tabs.reported.calls.isEmpty)
     }
 
     @Test
     func unselectedTabChildEarlyScreensAreDropped() throws {
-        let early = Recorder<EarlyPushCoordinator>()
+        let early = Spy<EarlyPushCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
             guard tab == .profile else {
                 return TabChildCoordinator()
             }
             let child = EarlyPushCoordinator()
-            early.record(child)
+            early(child)
             return child
         }
 
@@ -391,25 +392,25 @@ struct TabCoordinatingTests {
         #expect(shared.state.path.isEmpty)
         let expected: [NavigationIssue.Kind] = [.tabChildRouterMerged]
         #expect(tabs.reportedKinds == expected)
-        let issue = try #require(tabs.reported.last)
+        let issue = try #require(tabs.reported.lastCall)
         #expect(issue.message.contains("EarlyPushCoordinator"))
         #expect(issue.message.contains("profile"))
-        #expect(early.last?.router === shared)
+        #expect(early.lastCall?.router === shared)
     }
 
     @Test
     func transactionOnMergedChildRouterForwards() throws {
-        let early = Recorder<EarlyPushCoordinator>()
+        let early = Spy<EarlyPushCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
             guard tab == .profile else {
                 return TabChildCoordinator()
             }
             let child = EarlyPushCoordinator()
-            early.record(child)
+            early(child)
             return child
         }
         let shared = tabs.router.router(for: .home)
-        let child = try #require(early.last)
+        let child = try #require(early.lastCall)
 
         let outcome = child.made.transaction { transaction in
             transaction.push(ProductRoute(id: 2))
@@ -422,17 +423,17 @@ struct TabCoordinatingTests {
 
     @Test
     func mergedChildsEarlyPresentedFlowLeavesTheTree() throws {
-        let early = Recorder<EarlyPresentCoordinator>()
+        let early = Spy<EarlyPresentCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
             guard tab == .profile else {
                 return TabChildCoordinator()
             }
             let child = EarlyPresentCoordinator()
-            early.record(child)
+            early(child)
             return child
         }
         _ = tabs.router
-        let child = try #require(early.last)
+        let child = try #require(early.lastCall)
         let presented = try #require(child.presentedFlow)
 
         let outcome = presented.push(ProductRoute(id: 1))
@@ -445,17 +446,17 @@ struct TabCoordinatingTests {
 
     @Test
     func staleNavigatorOfMergedChildForwards() throws {
-        let early = Recorder<EarlyPushCoordinator>()
+        let early = Spy<EarlyPushCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
             guard tab == .profile else {
                 return TabChildCoordinator()
             }
             let child = EarlyPushCoordinator()
-            early.record(child)
+            early(child)
             return child
         }
         let shared = tabs.router.router(for: .home)
-        let child = try #require(early.last)
+        let child = try #require(early.lastCall)
 
         let outcome = child.rootNavigator.push(ProductRoute(id: 2))
 
@@ -466,18 +467,18 @@ struct TabCoordinatingTests {
 
     @Test
     func mergedStoredRouterIsNotReadopted() throws {
-        let stored = Recorder<StoredRouterCoordinator>()
+        let stored = Spy<StoredRouterCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: .shared) { tab, _ in
             guard tab == .profile else {
                 return TabChildCoordinator()
             }
             let child = StoredRouterCoordinator(router: StackRouter())
-            stored.record(child)
+            stored(child)
             return child
         }
         let shared = tabs.router.router(for: .home)
-        let child = try #require(stored.last)
-        let registrations = child.registrations.count
+        let child = try #require(stored.lastCall)
+        let registrations = child.registrations.callCount
 
         _ = child.navigator
         _ = child.navigator
@@ -485,9 +486,9 @@ struct TabCoordinatingTests {
         #expect(child.navigator.push(ProductRoute(id: 1)) == .applied)
         #expect(child.navigator.pop() == .applied)
         #expect(shared.state.path.isEmpty)
-        #expect(child.registrations.count == registrations)
-        #expect(child.registrations.last === shared)
-        #expect(tabs.reported.values.isEmpty)
+        #expect(child.registrations.callCount == registrations)
+        #expect(child.registrations.lastCall === shared)
+        #expect(tabs.reported.calls.isEmpty)
     }
 
     @Test
@@ -549,7 +550,7 @@ struct TabCoordinatingTests {
         }
         let expected: [NavigationIssue.Kind] = [.coordinatorDrawnTwice]
         #expect(tabs.reportedKinds == expected)
-        let issue = try #require(tabs.reported.last)
+        let issue = try #require(tabs.reported.lastCall)
         #expect(issue.message.contains("TabChildCoordinator"))
         #expect(issue.message.contains("shop"))
         let wording = stacks == .shared ? "shared stack" : "a stack of its own"
@@ -575,21 +576,21 @@ struct TabCoordinatingTests {
     @Test
     func storedTabRouterIsReportedAndJoins() throws {
         let stored = TabRouter(tabs: MainTab.allCases, selection: .home, configuration: .permissive)
-        let reported = Recorder<NavigationIssue>()
+        let reported = Spy<NavigationIssue, Void>()
         stored.tree.onReported { issue in
-            reported.record(issue)
+            reported(issue)
         }
         let tabs = StoredTabsCoordinator(router: stored)
-        let askedBeforeTouch = tabs.asked.values
+        let askedBeforeTouch = tabs.asked.calls
 
         let navigator = tabs.navigator(for: .shop)
         _ = tabs.navigator(for: .shop)
 
         #expect(askedBeforeTouch.isEmpty)
-        #expect(tabs.asked.values == MainTab.allCases)
+        #expect(tabs.asked.calls == MainTab.allCases)
         let expected: [NavigationIssue.Kind] = [.routerNotFromWaypoint]
-        #expect(reported.values.map(\.kind) == expected)
-        let issue = try #require(reported.last)
+        #expect(reported.calls.map(\.kind) == expected)
+        let issue = try #require(reported.lastCall)
         #expect(issue.message.contains("StoredTabsCoordinator"))
         #expect(stored.router(for: .shop).coordinatorName == "TabChildCoordinator")
         #expect(navigator.push(ProductRoute(id: 1)) == .applied)
@@ -598,9 +599,9 @@ struct TabCoordinatingTests {
     @Test
     func tabChildStoredRouterIsReportedAndJoins() {
         let stored = StackRouter(configuration: .permissive)
-        let issues = Recorder<NavigationIssue>()
+        let issues = Spy<NavigationIssue, Void>()
         stored.tree.onReported { issue in
-            issues.record(issue)
+            issues(issue)
         }
         let tabs = MainTabsCoordinator(giving: .shop) {
             StoredRouterCoordinator(router: stored)
@@ -611,16 +612,16 @@ struct TabCoordinatingTests {
         #expect(router.router(for: .shop) === stored)
         #expect(stored.parent === router)
         let expected: [NavigationIssue.Kind] = [.routerNotFromWaypoint]
-        #expect(issues.values.map(\.kind) == expected)
-        #expect(tabs.reported.values.isEmpty)
+        #expect(issues.calls.map(\.kind) == expected)
+        #expect(tabs.reported.calls.isEmpty)
     }
 
     @Test(arguments: Self.bothLayouts)
     func tabChildStoringItsOwnTabRouterIsAccepted(stacks: TabStacks) {
-        let children = Recorder<StoredRouterCoordinator>()
+        let children = Spy<StoredRouterCoordinator, Void>()
         let tabs = MainTabsCoordinator(stacks: stacks) { tab, parent in
             let child = StoredRouterCoordinator(router: parent.router.router(for: tab))
-            children.record(child)
+            children(child)
             return child
         }
 
@@ -629,9 +630,9 @@ struct TabCoordinatingTests {
         let stack = router.router(for: .shop)
         #expect(stack.isActive)
         #expect(stack.coordinatorName == "StoredRouterCoordinator")
-        #expect(tabs.reported.values.isEmpty)
-        for child in children.values {
-            #expect(child.registrations.last === child.router)
+        #expect(tabs.reported.calls.isEmpty)
+        for child in children.calls {
+            #expect(child.registrations.lastCall === child.router)
             #expect(child.navigator.push(ProductRoute(id: 1)) == .applied)
         }
     }
@@ -661,13 +662,13 @@ struct TabCoordinatingTests {
 
         _ = thief.router
 
-        #expect(thief.asked.values.isEmpty)
+        #expect(thief.asked.calls.isEmpty)
         #expect(taken.router(for: .home) === homeStack)
         #expect(homeStack.isActive)
         #expect(taken.coordinatorName == "MainTabsCoordinator")
         let expected: [NavigationIssue.Kind] = [.routerOwnedByAnotherCoordinator]
         #expect(owner.reportedKinds == expected)
-        let issue = try #require(owner.reported.last)
+        let issue = try #require(owner.reported.lastCall)
         #expect(issue.message.contains("GivenTabsCoordinator"))
     }
 
@@ -688,7 +689,7 @@ struct TabCoordinatingTests {
         #expect(shop.coordinatorName == "TabChildCoordinator")
         let expected: [NavigationIssue.Kind] = [.routerOwnedByAnotherCoordinator]
         #expect(tabs.reportedKinds == expected)
-        let issue = try #require(tabs.reported.last)
+        let issue = try #require(tabs.reported.lastCall)
         #expect(issue.message.contains("StoredRouterCoordinator"))
     }
 
@@ -696,9 +697,9 @@ struct TabCoordinatingTests {
     func tabChildWithAnotherCoordinatorsRouterGetsItsOwn() {
         let owner = ShopListCoordinator()
         let taken = owner.router
-        let issues = Recorder<NavigationIssue>()
+        let issues = Spy<NavigationIssue, Void>()
         taken.tree.onReported { issue in
-            issues.record(issue)
+            issues(issue)
         }
         let tabs = MainTabsCoordinator(giving: .shop) {
             GivenRouterCoordinator(given: taken)
@@ -710,7 +711,7 @@ struct TabCoordinatingTests {
         #expect(router.router(for: .shop).isActive)
         #expect(taken.parent == nil)
         let expected: [NavigationIssue.Kind] = [.routerOwnedByAnotherCoordinator]
-        #expect(issues.values.map(\.kind) == expected)
+        #expect(issues.calls.map(\.kind) == expected)
     }
 
     @Test
@@ -728,7 +729,7 @@ struct TabCoordinatingTests {
         #expect(taken.parent === other)
         let expected: [NavigationIssue.Kind] = [.routerInAnotherTree]
         #expect(tabs.reportedKinds == expected)
-        let issue = try #require(tabs.reported.last)
+        let issue = try #require(tabs.reported.lastCall)
         #expect(issue.message.contains("GivenRouterCoordinator"))
     }
 
@@ -736,10 +737,10 @@ struct TabCoordinatingTests {
 
     @Test
     func readInDeinitOfATabCoordinatorWithARouterGetsItInert() throws {
-        let outcomes = Recorder<(NavigationOutcome, TabRouter<MainTab>)>()
+        let outcomes = Spy<(NavigationOutcome, TabRouter<MainTab>), Void>()
         let router = makeAndDropDeinitReadingTabs(outcomes: outcomes, readsFirst: true)
 
-        let (outcome, read) = try #require(outcomes.last)
+        let (outcome, read) = try #require(outcomes.lastCall)
         #expect(outcome == .ignored)
         #expect(read === router)
         #expect(!router.isActive)
@@ -749,10 +750,10 @@ struct TabCoordinatingTests {
 
     @Test
     func firstReadInDeinitOfATabCoordinatorGetsAnInertRouter() throws {
-        let outcomes = Recorder<(NavigationOutcome, TabRouter<MainTab>)>()
+        let outcomes = Spy<(NavigationOutcome, TabRouter<MainTab>), Void>()
         _ = makeAndDropDeinitReadingTabs(outcomes: outcomes, readsFirst: false)
 
-        let (outcome, read) = try #require(outcomes.last)
+        let (outcome, read) = try #require(outcomes.lastCall)
         #expect(outcome == .ignored)
         #expect(!read.isActive)
     }
@@ -774,7 +775,7 @@ struct TabCoordinatingTests {
     /// Makes a tab coordinator that selects in `deinit`, reading its router first when
     /// `readsFirst`, and drops it. Returns the router it read first, or a new one.
     private func makeAndDropDeinitReadingTabs(
-        outcomes: Recorder<(NavigationOutcome, TabRouter<MainTab>)>,
+        outcomes: Spy<(NavigationOutcome, TabRouter<MainTab>), Void>,
         readsFirst: Bool
     ) -> TabRouter<MainTab> {
         let coordinator = DeinitReadingTabsCoordinator(outcomes: outcomes)

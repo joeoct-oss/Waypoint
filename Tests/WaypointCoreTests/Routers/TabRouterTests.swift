@@ -7,6 +7,7 @@
 //
 
 import Testing
+import Understudy
 import WaypointTestSupport
 
 @testable import WaypointCore
@@ -107,9 +108,9 @@ struct TabRouterTests {
         let tabs = TabRouter(tabs: MainTab.homeAndShop, selection: .shop, configuration: .permissive)
         let shop = tabs.router(for: .shop)
         let newTabs: [MainTab] = [.home, .profile]
-        let applied = Recorder<[AppliedChange]>()
+        let applied = Spy<[AppliedChange], Void>()
         tabs.tree.onApplied { changes in
-            applied.record(changes)
+            applied(changes)
         }
 
         #expect(tabs.setTabs(newTabs) == .applied)
@@ -117,7 +118,7 @@ struct TabRouterTests {
         #expect(tabs.selection == .home)
         let moved = [AppliedChange(flow: tabs.flowID, change: .tabSelected(from: "shop", to: "home"))]
         let movedBatches = [moved]
-        #expect(applied.values == movedBatches)
+        #expect(applied.calls == movedBatches)
         #expect(shop.push(ProductRoute(id: 1)) == .ignored)
         #expect(tabs.router(for: .profile).isActive)
     }
@@ -192,9 +193,9 @@ struct TabRouterTests {
     @Test
     func pushFallbackOnTheTabsOnlySetsForRouteNotInPath() {
         let tabs = TabRouter(selection: MainTab.home, configuration: .permissive)
-        let reported = Recorder<NavigationIssue.Kind>()
+        let reported = Spy<NavigationIssue.Kind, Void>()
         tabs.tree.onReported { issue in
-            reported.record(issue.kind)
+            reported(issue.kind)
         }
 
         tabs.setFallback(.push, for: .emptyPath)
@@ -203,7 +204,7 @@ struct TabRouterTests {
         #expect(tabs.fallbackPolicy[.emptyPath] == nil)
         #expect(tabs.fallbackPolicy[.routeNotInPath] == .push)
         let expectedKinds: [NavigationIssue.Kind] = [.invalidSetting]
-        #expect(reported.values == expectedKinds)
+        #expect(reported.calls == expectedKinds)
     }
 
     @Test

@@ -48,5 +48,7 @@ let package = Package(
     name: "WaypointExampleDependencies",
     dependencies: [
         .package(path: "../.."),
+        // The unit tests' spies. Waypoint's own test targets take it too, at the same version.
+        .package(url: "https://github.com/joeoct-oss/Understudy", from: "0.1.0"),
     ]
 )
