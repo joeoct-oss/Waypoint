@@ -67,11 +67,13 @@ final class FallbackTests: XCTestCase {
         let shown = XCTWaiter.wait(for: popToWaits, timeout: UITestSteps.timeout)
         XCTAssertEqual(shown, .completed, "the banner didn't show the issue: \(banner.label)")
 
+        // The log lists the newest call first, so the popTo comes before the replaced sheet: a row
+        // scrolled above the screen leaves the list, and `reveal` can't scroll back to it.
         app.openLabTool(.eventLog)
-        let replaced = recoveredEntries(in: app).matching(Self.alreadyPresenting).firstMatch
-        XCTAssertTrue(app.reveal(replaced), "the event log doesn't show the replaced sheet")
         let popped = recoveredEntries(in: app).matching(Self.missingRoute).firstMatch
         XCTAssertTrue(app.reveal(popped), "the event log doesn't show the recovered popTo")
+        let replaced = recoveredEntries(in: app).matching(Self.alreadyPresenting).firstMatch
+        XCTAssertTrue(app.reveal(replaced), "the event log doesn't show the replaced sheet")
     }
 
     // A real double tap can't show the duplicate push rule: iOS drops the second tap while the push
