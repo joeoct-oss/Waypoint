@@ -444,6 +444,11 @@ let testInsights = ExecutionAction.executionAction(
     target: "WaypointExample"
 )
 
+// A failed UI test keeps screenshots, not a screen recording (planning #489): with recordings, a
+// failing run's result bundle grew from about 10 MB to 200 MB, and uploading it to Tuist took
+// 6.5 minutes or timed out (measured 2026-11-25). The screenshots still show where a test failed.
+let testOptions = TestActionOptions.options(preferredScreenCaptureFormat: .screenshots)
+
 let scheme = Scheme.scheme(
     name: "WaypointExample",
     shared: true,
@@ -452,7 +457,7 @@ let scheme = Scheme.scheme(
         postActions: [buildInsights],
         runPostActionsOnFailure: true
     ),
-    testAction: .targets(schemeTestTargets, postActions: [testInsights]),
+    testAction: .targets(schemeTestTargets, postActions: [testInsights], options: testOptions),
     runAction: .runAction(executable: "WaypointExample")
 )
 

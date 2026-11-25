@@ -14,6 +14,10 @@
 #   cleared and the run goes on;
 # - the lock is gone after a pass, a failure, and a stop with TERM, and a stopped run never says it passed.
 #
+# It also checks the phase timeline and the memory lines every report prints, that the release
+# reports step runs without parallel workers, and that a run removes only the simulator copies it
+# made, by UDID (planning #489).
+#
 # It also checks what the script hands Tuist: selective testing per tier (planning #429), the derived data
 # folder after `--` (planning #430), the branch through GITHUB_HEAD_REF and the `coverage` tier on `main`
 # (planning #431), the pull request through GITHUB_REF, and that the Build Insights
@@ -54,6 +58,18 @@ CALLS="$WORK/calls"
 cat >"$STUBS/xcrun" <<'EOF'
 #!/usr/bin/env bash
 echo "xcrun $*" >>"$STUB_CALLS"
+# Xcode's own device set lists the copies in STUB_CLONES, a file the stand-in tuist may change.
+if [[ "$1 $2" == "simctl --set" ]]; then
+    if [[ "$*" == *"list devices"* ]]; then
+        # STUB_CLONES_FAIL makes the first listing fail, as simctl can.
+        if [[ -n "${STUB_CLONES_FAIL:-}" && ! -e "$STUB_CLONES_FAIL" ]]; then
+            touch "$STUB_CLONES_FAIL"
+            exit 1
+        fi
+        cat "${STUB_CLONES:-/dev/null}"
+    fi
+    exit 0
+fi
 if [[ "$1 $2" == "simctl shutdown" && -L "$WAYPOINT_RUN_LOCK" ]]; then
     echo "shutdown while the run lock was held" >>"$STUB_CALLS"
 fi
@@ -81,6 +97,8 @@ if [[ "$1" == test ]]; then
     echo "GITHUB_REF seen by tuist test: ${GITHUB_REF:-}" >>"$STUB_CALLS"
     echo "TUIST_WAYPOINT_BINARY_CACHE seen by tuist test: ${TUIST_WAYPOINT_BINARY_CACHE:-}" >>"$STUB_CALLS"
     echo "WAYPOINT_TUIST_TEST_RUN seen by tuist test: ${WAYPOINT_TUIST_TEST_RUN:-}" >>"$STUB_CALLS"
+    # The tests boot simulator copies: STUB_CLONES_DURING replaces what Xcode's device set lists.
+    [[ -z "${STUB_CLONES_DURING:-}" ]] || cp "$STUB_CLONES_DURING" "$STUB_CLONES"
     "$(dirname "$0")/stub-grandchild" "${STUB_SECONDS:-0}"
     exit "${STUB_STATUS:-0}"
 fi
@@ -672,10 +690,17 @@ if grep -q '"$MISE" exec -C "$SRCROOT" -- tuist inspect \\(command)' Example/Pro
     ! grep -q 'activate -C "$SRCROOT"' Example/Project.swift &&
     grep -q 'insightsScript("build", skippedBy: \["WAYPOINT_TUIST_OFFLINE"\])' Example/Project.swift &&
     grep -q 'skippedBy: \["WAYPOINT_TUIST_OFFLINE", "WAYPOINT_TUIST_TEST_RUN"\]' Example/Project.swift &&
-    grep -q 'testAction: .targets(schemeTestTargets, postActions: \[testInsights\])' Example/Project.swift; then
+    grep -q 'testAction: .targets(schemeTestTargets, postActions: \[testInsights\], options: testOptions)' Example/Project.swift; then
     pass "the Build and Test Insights post-actions run Tuist through mise exec"
 else
     fail "the Build and Test Insights post-actions run Tuist through mise exec"
+fi
+# A failed UI test keeps screenshots, not a screen recording, so a failing run's result bundle stays
+# small enough to upload (planning #489).
+if grep -q '^let testOptions = TestActionOptions.options(preferredScreenCaptureFormat: .screenshots)$' Example/Project.swift; then
+    pass "a failed UI test keeps screenshots, not a screen recording"
+else
+    fail "a failed UI test keeps screenshots, not a screen recording"
 fi
 
 # 2. A second run stops at once and runs nothing while the first holds the lock.
@@ -817,6 +842,74 @@ if [[ $stalled_status -ne 0 && $first_status -eq 0 && -n "$holder" ]] &&
     pass "a run that stalls on a stale lock stops, and leaves the live run's lock alone"
 else
     fail "a run that stalls on a stale lock stops ($stalled_status, $first_status, holder ${holder:-none})"
+fi
+
+# 8. The report prints the phase timeline, each step with the clock time it started, and the
+# memory at the start and the end (planning #489).
+: >"$CALLS"
+run_script >"$WORK/8.log" 2>&1 || true
+if grep -Eq '^==> [0-9]{2}:[0-9]{2}:[0-9]{2} ' "$WORK/8.log" &&
+    grep -Eq '^  [0-9]{2}:[0-9]{2}:[0-9]{2} +[0-9]+s  tuist test' "$WORK/8.log" &&
+    grep -Eq '^  [0-9]{2}:[0-9]{2}:[0-9]{2} +[0-9]+s  total$' "$WORK/8.log"; then
+    pass "the report prints when each step started"
+else
+    fail "the report prints when each step started (log: $(grep -A4 '^Step times' "$WORK/8.log"))"
+fi
+if grep -q '^Memory at the start: ' "$WORK/8.log" && grep -q '^Memory at the end: ' "$WORK/8.log"; then
+    pass "the report prints the memory at the start and the end"
+else
+    fail "the report prints the memory at the start and the end"
+fi
+
+# 8b. The release reports step runs its two classes on the project simulator, with no copies.
+if sed -n '/^release_reports_on() {/,/^}/p' scripts/test-mac.sh |
+    grep -q 'local EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled NO)'; then
+    pass "the release reports step runs without parallel workers"
+else
+    fail "the release reports step runs without parallel workers"
+fi
+
+# 8c. A run removes, by UDID, only the shut-down copies it made: a copy there before the run stays,
+# booted or not, a copy still booted at the end (someone else's test run) stays, and the pool
+# simulators are never touched.
+DEVICES="$WORK/XCTestDevices"
+mkdir -p "$DEVICES"
+clone() {
+    echo "{\"name\":\"Clone $1 of waypoint-01\",\"udid\":\"CLONE-$1\",\"state\":\"$2\"}"
+}
+pool='{"name":"waypoint-01","udid":"POOL-UDID","state":"Booted"}'
+echo "{\"devices\":{\"iOS-27-2\":[$(clone 1 Booted),$(clone 2 Shutdown),$pool]}}" >"$WORK/clones"
+echo "{\"devices\":{\"iOS-27-2\":[$(clone 1 Booted),$(clone 2 Shutdown),$(clone 3 Booted),$(clone 4 Shutdown),$(clone 5 Shutdown),$pool]}}" >"$WORK/clones-during"
+: >"$CALLS"
+if run_script WAYPOINT_TEST_DEVICES="$DEVICES" STUB_CLONES="$WORK/clones" \
+    STUB_CLONES_DURING="$WORK/clones-during" >"$WORK/8c.log" 2>&1; then
+    touched=$(grep "^xcrun simctl --set $DEVICES \(shutdown\|delete\|erase\)" "$CALLS" | sort || true)
+    expected=$(printf '%s\n' "delete CLONE-4" "delete CLONE-5" |
+        sed "s|^|xcrun simctl --set $DEVICES |")
+    if [[ "$touched" == "$expected" ]]; then
+        pass "a run removes only the copies it made, by UDID"
+    else
+        fail "a run removes only the copies it made (calls: ${touched:-none})"
+    fi
+    if ! grep -Eq "simctl (shutdown|delete|erase) .*(POOL-UDID|waypoint-0)|shutdown all|delete (all|unavailable)" "$CALLS"; then
+        pass "a run never removes a pool simulator or everything at once"
+    else
+        fail "a run never removes a pool simulator or everything at once"
+    fi
+else
+    fail "a run with simulator copies passes (log: $(tail -3 "$WORK/8c.log"))"
+fi
+
+# 8d. When the copies can't be listed at the start, the run removes none of them.
+cp "$WORK/clones" "$WORK/clones-8d"
+: >"$CALLS"
+if run_script WAYPOINT_TEST_DEVICES="$DEVICES" STUB_CLONES="$WORK/clones-8d" \
+    STUB_CLONES_DURING="$WORK/clones-during" STUB_CLONES_FAIL="$WORK/listing-failed" >"$WORK/8d.log" 2>&1 &&
+    ! grep -q "^xcrun simctl --set $DEVICES \(shutdown\|delete\)" "$CALLS" &&
+    grep -q "this run removes none" "$WORK/8d.log"; then
+    pass "a run that can't list the copies at the start removes none"
+else
+    fail "a run that can't list the copies at the start removes none (calls: $(grep -- '--set' "$CALLS" | tail -3))"
 fi
 
 if [[ $FAILURES -gt 0 ]]; then
