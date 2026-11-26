@@ -1,0 +1,6 @@
+# Settings for the Swift Package Index, which builds the package on each platform and Swift version
+# it supports. Its Documentation link opens the project's own docs site, built on a Mac for iOS, so
+# the Index doesn't host a second copy.
+version: 1
+external_links:
+  documentation: "https://waypoint-docs-9zj.pages.dev/documentation"
