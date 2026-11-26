@@ -7,10 +7,10 @@
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
 # Runs the WaypointCore checks that must pass on Linux: the import check, the concurrency guard
-# rail, the Mac test script's run lock check, the merge batch check, the
-# flaky-test verdict and quarantine check, the UI test shard checks, the public text check, one build with warnings as errors that the compile-fixture
-# check and the unit tests reuse, and the unit tests
-# again under the thread sanitizer.
+# rail, the Mac test script's run lock check, the merge batch check, the flaky-test verdict and
+# quarantine check, the UI test shard checks, the public text check, one build with warnings as
+# errors that the compile-fixture check and the unit tests reuse, and the unit tests again under
+# the thread sanitizer.
 # The renderer targets compile empty on Linux, so this covers the core only.
 #
 # The script checks need no Swift, only bash, git, perl, python3 and procps, so CI runs them on
