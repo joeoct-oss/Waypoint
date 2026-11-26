@@ -38,7 +38,8 @@ TEMPLATE = ".github/pull_request_template.md"
 CHANGELOG = "CHANGELOG.md"
 UNRELEASED = "## Unreleased"
 # A release heading, such as "## 1.2.0 - 2026-12-01".
-MARKDOWN_HEADING = re.compile(r"^#{1,6}(\s|$)")
+# A Markdown heading: up to three spaces, one to six #, then a space or the line's end.
+MARKDOWN_HEADING = re.compile(r"^ {0,3}#{1,6}(\s|$)")
 VERSION_HEADING = re.compile(r"^## \d+\.\d+\.\d+\b")
 WHAT = "What changed and why"
 MERGE = "Merge method"
@@ -435,6 +436,17 @@ def self_check_cases():
         (
             "an edited Unreleased heading alone fails",
             changelog_errors(CHANGELOG_SAMPLE, [3, 5], [CHANGELOG], FILLED, SAMPLE_TEMPLATE),
+            1,
+        ),
+        (
+            "an indented heading alone fails",
+            changelog_errors(
+                CHANGELOG_SAMPLE.replace("### Added", " ### Added"),
+                [5],
+                [CHANGELOG],
+                FILLED,
+                SAMPLE_TEMPLATE,
+            ),
             1,
         ),
         (
