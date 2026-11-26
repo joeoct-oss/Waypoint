@@ -136,7 +136,7 @@ def heading_above(lines, number):
 
 
 def added_changelog_errors(changelog, added_lines):
-    lines = changelog.splitlines()
+    lines = changelog.split("\n")
     new_headings = {number for number in added_lines if VERSION_HEADING.match(lines[number - 1])}
     headings = [
         heading_above(lines, number) for number in added_lines if lines[number - 1].strip()
@@ -203,10 +203,13 @@ GIT = shutil.which("git") or "git"
 
 
 def git(*args):
+    """Runs git with every path taken literally. The output is decoded without newline
+    translation, so a carriage return inside a line stays in that line."""
     # The arguments are this script's own, plus commit ids from the pull request event.
-    return subprocess.run(  # noqa: S603
-        [GIT, *args], check=True, capture_output=True, text=True
+    output = subprocess.run(  # noqa: S603
+        [GIT, "--literal-pathspecs", *args], check=True, capture_output=True
     ).stdout
+    return output.decode("utf-8", "replace")
 
 
 def added_lines(patch):
@@ -217,7 +220,8 @@ def added_lines(patch):
     added = []
     number = 0
     old_left = new_left = 0
-    for line in patch.splitlines():
+    # Only a line feed ends a patch line; other separators are part of the content.
+    for line in patch.split("\n"):
         if old_left == 0 and new_left == 0:
             hunk = re.match(r"@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", line)
             if hunk:
@@ -480,6 +484,15 @@ def self_check_cases():
         ),
     ]
     patch = "--- a/n.md\n+++ b/n.md\n@@ -0,0 +1,2 @@\n+++ looks like a header\n+second\n"
+    for name, separator in (("a line separator", "\u2028"), ("a carriage return", "\r")):
+        odd = f"--- a/n.md\n+++ b/n.md\n@@ -0,0 +1,2 @@\n+one{separator}two\n+filler\n"
+        cases.append(
+            (
+                f"an added line holding {name} stays one line",
+                [] if added_lines(odd) == [(1, f"one{separator}two"), (2, "filler")] else ["x"],
+                0,
+            )
+        )
     cases.append(
         (
             "an added line that looks like a header is still content",
