@@ -1250,7 +1250,7 @@ else
 fi
 if ! slack_run STUB_STATUS=1 >"$WORK/9b.log" 2>&1 &&
     slack_text | grep -q '^:x: \*Mac quick failed\*' &&
-    slack_text | grep -q '^• `tuist test example app on waypoint-01`$'; then
+    slack_text | grep -q '^• `tuist test WaypointExampleUITests/StackTests/testPushAndBack on waypoint-01`$'; then
     pass "a failing run posts that it failed, and names the failed step"
 else
     fail "a failing run posts that it failed, and names the failed step (message: $(slack_text | tr '\n' ';'))"
@@ -1265,7 +1265,7 @@ sleep 0.5
 kill -TERM "$(readlink "$LOCK" || true)" || true
 wait "$run" 2>/dev/null || true
 if slack_text | grep -q '^:octagonal_sign: \*Mac quick stopped by TERM\*' &&
-    slack_text | grep -q '^• `tuist test example app on waypoint-01`$'; then
+    slack_text | grep -q '^• `tuist test WaypointExampleUITests/StackTests/testPushAndBack on waypoint-01`$'; then
     pass "a run stopped with TERM posts that it stopped, and the step it was in"
 else
     fail "a run stopped with TERM posts that it stopped (message: $(slack_text | tr '\n' ';'))"
