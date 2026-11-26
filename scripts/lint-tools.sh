@@ -31,7 +31,8 @@ LINT_PATHS=(
 
 # Prints the value of `key = "value"` from .mise.toml.
 pinned() {
-    sed -n "s/^$1 *= *\"\(.*\)\"/\1/p" .mise.toml | head -n 1
+    local key="$1"
+    sed -n "s/^$key *= *\"\(.*\)\"/\1/p" .mise.toml | head -n 1
 }
 
 find_swiftlint() {

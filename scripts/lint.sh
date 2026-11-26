@@ -30,6 +30,11 @@ part=all
 case "${1:-}" in
     --swift-format-only) part=swift-format ;;
     --swiftlint-only) part=swiftlint ;;
+    "") ;;
+    *)
+        echo "usage: scripts/lint.sh [--swift-format-only | --swiftlint-only]" >&2
+        exit 2
+        ;;
 esac
 
 failed=0
