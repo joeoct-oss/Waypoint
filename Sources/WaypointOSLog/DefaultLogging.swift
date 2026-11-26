@@ -9,9 +9,9 @@
 #if canImport(os)
     import WaypointCore
 
-    /// How the renderers make the unified log the default (decision 0008, section 6): before a
-    /// renderer draws a tree, it installs one shared ``OSLogHandler`` when the app gave no
-    /// handler. A handler the app chose, `.disabled` included, is kept.
+    /// How the renderers make the unified log the default: before a renderer draws a tree, it
+    /// installs one shared ``OSLogHandler`` when the app gave no handler. A handler the app chose,
+    /// `.disabled` included, is kept.
     package enum DefaultLogging {
         /// The handler every tree without one of its own writes to, so all of them share one
         /// logger per category.

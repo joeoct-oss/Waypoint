@@ -4,7 +4,7 @@ Test coordinators and view models without a UI, on any platform Swift runs on.
 
 ## Overview
 
-> Note: Draft until planning #294. The API in this article is planned, not built, and can still change when planning #294 lands.
+> Note: Draft. The API in this article is planned, not built, and can still change when `WaypointTesting` lands.
 
 Routers are plain objects, so most navigation tests need no simulator. Create a real router, call your code, and check the state.
 

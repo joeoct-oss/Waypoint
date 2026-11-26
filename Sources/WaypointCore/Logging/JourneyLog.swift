@@ -27,7 +27,7 @@
 /// └────────────────────────────────────────────────────────────┘
 /// ```
 ///
-/// Wording and symbols are not API (decision 0015); tests pin them.
+/// Wording and symbols are not API; tests pin them.
 enum JourneyLog {
     /// The labels in the box are padded to this width.
     static let labelWidth = 12

@@ -6,7 +6,7 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# The concurrency guard rail (planning #278). Fails when:
+# The concurrency guard rail. Fails when:
 #
 # - Sources/ uses an unsafe concurrency escape: `@unchecked Sendable`, `nonisolated(unsafe)`,
 #   `@preconcurrency`, `assumeIsolated`, `unsafeBitCast`, `unsafeDowncast`, `Unmanaged`,
@@ -18,8 +18,9 @@
 #   WaypointCore. Those tests use the public API only, like an app.
 #
 # Patterns allow any whitespace or line break inside them. Comments are skipped. The only
-# exception is a use with `// concurrency-escape: <reason> (<issue link>)` on the line right above
-# it that is also listed in ALLOWED below, so adding one is a reviewed change.
+# exception is a use with `// concurrency-escape: <reason> (<link>)` on the line right above
+# it that is also listed in ALLOWED below, so adding one is a reviewed change. The link points
+# at the public page that explains the escape, such as the Concurrency article.
 #
 # Usage: scripts/check-concurrency.sh [root]
 
@@ -85,7 +86,7 @@ sub check {
             my $tagged = $above =~ m{^\s*//\s*concurrency-escape:\s*\S.*\(\S+\)\s*$};
             next if $tagged && $allowed{"$file|$name"};
             my $why = $tagged ? "is tagged but not in the allowlist of scripts/check-concurrency.sh"
-                : "needs a // concurrency-escape: <reason> (<issue link>) line above it and an allowlist entry";
+                : "needs a // concurrency-escape: <reason> (<link>) line above it and an allowlist entry";
             print STDERR "$file:$line: $name $why\n";
             $failed = 1;
         }
