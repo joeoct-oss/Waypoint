@@ -15,8 +15,8 @@ reviews:
   # thread has to be resolved. The tone and path instructions keep the inline comments to
   # blockers and should-fix items.
   profile: chill
-  # Facts for the merge risk and security risk ratings in each review. They only rate the PR:
-  # automatic approvals are off, so they never approve or block a merge.
+  # Facts for the merge risk and security risk ratings in each review. They only rate the PR;
+  # automatic approvals below look at blocking findings and pre-merge checks, not these ratings.
   merge_risk_instructions: >-
     Waypoint is a navigation package for SwiftUI apps. High risk: a breaking change to public API in Sources/WaypointCore, Sources/Waypoint
     or Sources/WaypointUIKit; a change to Package.swift platforms, swift-tools-version or
@@ -50,8 +50,9 @@ reviews:
   in_progress_fortune: false
   poem: false
   review_status: false
-  # The "CodeRabbit" status is pending while the review runs, and a review that stops on an
-  # error fails it, so once it is a required check nothing merges unreviewed.
+  # The "CodeRabbit" check is pending while the review runs, and a review that stops on an error
+  # fails it. A rate-limited or skipped review still passes it, by design, so the check alone
+  # doesn't prove a review happened; the approval below does.
   commit_status: true
   fail_commit_status: true
   # Use "@coderabbitai configuration" to see the resolved config when needed.
@@ -80,11 +81,17 @@ reviews:
       enabled: false
     resolve_merge_conflict:
       enabled: false
+  # CodeRabbit approves a PR once its blocking findings are resolved and no pre-merge check
+  # fails, and requests changes otherwise. Main's ruleset requires one approving review, so a PR
+  # it hasn't reviewed, such as one whose review was rate limited, waits instead of merging
+  # (Yousef, 2026-11-26).
+  auto_approvals:
+    enabled: true
   # The pull request rules as checks (Yousef, 2026-11-26). The required "Pull request rules"
   # job (.github/workflows/pr-rules.yml, scripts/check-pr-rules.py) decides the four yes-or-no
-  # rules and holds the merge, since a CodeRabbit check in error mode blocks only with automatic
-  # approvals on, and reruns only on a push or a comment. The checks of the same names here only
-  # warn: they explain a failure in words. Judgment calls warn too. Dependabot's own PRs carry no
+  # rules exactly and reruns when the body is edited. The checks of the same names here explain
+  # a failure in words and only warn, like the judgment calls: in error mode a model's misreading
+  # would withhold the approval until a push or a comment. Dependabot's own PRs carry no
   # template and pass. Linked issue assessment stays off, since the issues live in a private repo.
   pre_merge_checks:
     # The built-in docstring check is retired; "Public symbols documented" below replaces it.
@@ -252,7 +259,7 @@ reviews:
     - path: ".coderabbit.yaml"
       instructions: >-
         Check every key against the schema in the first line (schema.v2.json). Flag a change
-        that turns on high_level_summary, a finishing touch, automatic approvals, the poem,
+        that turns on high_level_summary, a finishing touch, the poem,
         issue enrichment or anything else that writes commits, edits the PR description or
         comments on issues; that removes a path from review without saying why it can't be
         reviewed by reading; or that turns off a linter without naming the CI job that runs
