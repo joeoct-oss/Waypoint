@@ -22,12 +22,18 @@ if [[ $# -lt 1 || $# -gt 2 ]]; then
 fi
 
 xcrun simctl list devices available --json | /usr/bin/python3 -c '
-import json, sys
+import json, re, sys
 name, wanted = sys.argv[1], (sys.argv[2] if len(sys.argv) > 2 else "")
 runtimes = json.load(sys.stdin)["devices"]
+# A key is like com.apple.CoreSimulator.SimRuntime.iOS-27-2; some runners add a suffix after the
+# version (iOS-27-2-iPhone19...), so only the leading numbers count, and a plain key comes before
+# a suffixed one of the same version.
+VERSION = re.compile(r"\.iOS-([0-9]+(?:-[0-9]+)*)(.*)$")
 def version(key):
-    return [int(n) for n in key.rsplit(".iOS-", 1)[1].split("-")]
-ios = sorted((key for key in runtimes if ".iOS-" in key), key=version, reverse=True)
+    return [int(n) for n in VERSION.search(key).group(1).split("-")]
+def order(key):
+    return (version(key), VERSION.search(key).group(2) == "")
+ios = sorted((key for key in runtimes if VERSION.search(key)), key=order, reverse=True)
 if wanted:
     ios = [key for key in ios if ".".join(map(str, version(key))) == wanted]
 for key in ios:
