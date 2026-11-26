@@ -72,7 +72,8 @@ final class StackTests: XCTestCase {
     // shop. Without the duplicate push rule, the second tap pushes the lamp again and Back shows
     // the lamp.
     func testDoubleTapPushesOnce() {
-        let app = ExampleApp.launch(signedIn: true)
+        // Real speed: the second tap must land while the first push still moves.
+        let app = ExampleApp.launch(signedIn: true, animationSpeed: .real)
         let lampRow = app.buttons[Identifiers.product(id: Self.lampID)]
         XCTAssertTrue(lampRow.waitForExistence(timeout: UITestSteps.timeout))
 
@@ -87,7 +88,8 @@ final class StackTests: XCTestCase {
     // shop, so one Back returns to it. Had the swipe not reached the router, Back would show the
     // lamp.
     func testSwipeBackReachesRouter() {
-        let app = ExampleApp.launch(signedIn: true)
+        // Real speed: the interactive swipe back follows the gesture's real timing.
+        let app = ExampleApp.launch(signedIn: true, animationSpeed: .real)
         app.buttons[Identifiers.product(id: Self.lampID)].tapWhenReady()
         XCTAssertTrue(app.navigationBars[Self.lampTitle].waitForExistence(timeout: UITestSteps.timeout))
 
@@ -138,10 +140,12 @@ final class StackTests: XCTestCase {
     }
 
     func testPopMidTransition() {
+        // Real speed: the pop must arrive while the pushes still move.
         let app = ExampleApp.launch(
             signedIn: true,
             shopPath: Self.launchPath,
-            shopFollowUp: .pop
+            shopFollowUp: .pop,
+            animationSpeed: .real
         )
 
         XCTAssertTrue(app.navigationBars[Self.mugTitle].waitForExistence(timeout: Self.launchSettleTimeout))
@@ -149,10 +153,12 @@ final class StackTests: XCTestCase {
     }
 
     func testPopToRootMidTransition() {
+        // Real speed: the pop to root must arrive while the pushes still move.
         let app = ExampleApp.launch(
             signedIn: true,
             shopPath: Self.launchPath,
-            shopFollowUp: .popToRoot
+            shopFollowUp: .popToRoot,
+            animationSpeed: .real
         )
 
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: Self.launchSettleTimeout))
@@ -160,10 +166,12 @@ final class StackTests: XCTestCase {
     }
 
     func testLinkMidTransition() {
+        // Real speed: the new path must arrive while the pushes still move.
         let app = ExampleApp.launch(
             signedIn: true,
             shopPath: Self.launchPath,
-            shopFollowUp: .link
+            shopFollowUp: .link,
+            animationSpeed: .real
         )
 
         XCTAssertTrue(app.navigationBars[Self.printTitle].waitForExistence(timeout: Self.launchSettleTimeout))

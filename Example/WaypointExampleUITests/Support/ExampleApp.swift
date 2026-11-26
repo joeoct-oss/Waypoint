@@ -13,7 +13,34 @@ import XCTest
 // skipped, which saves a second on every launch, unless a test holds it up to see it. `systemLinks`
 // draws the product page's related link as a system `NavigationLink`, and `missingDestination`
 // makes it push a route with no destination in its stack.
+//
+// Animations run three times as fast, so each step settles sooner (planning #489). A test whose
+// promise depends on an animation's real length passes `animationSpeed: .real`, with a comment
+// saying why. This is the one list of those tests:
+// - StackTests: testDoubleTapPushesOnce, testSwipeBackReachesRouter, testPopMidTransition,
+//   testPopToRootMidTransition and testLinkMidTransition, which act while a push or pop is still
+//   moving, or rely on a gesture's timing.
+// - LabSheetTests: testLabSheetCoverOpensAndCloses and testLabSheetPresentsRightAfterDismiss,
+//   which present while a sheet or cover still slides.
+// - SheetTests: testFiltersSheetUsesItsDetents, which drags the sheet between its sizes.
 enum ExampleApp {
+    // How fast the app's animations run during a test.
+    enum AnimationSpeed {
+        // Three times as fast, which every test uses unless it needs real timing.
+        case fast
+        // The usual speed, for the tests listed above.
+        case real
+
+        var launchValue: String? {
+            switch self {
+            case .fast:
+                "3"
+            case .real:
+                nil
+            }
+        }
+    }
+
     private static let yes = "YES"
 
     @MainActor
@@ -28,7 +55,8 @@ enum ExampleApp {
         shopFollowUp: ShopFollowUp? = nil,
         systemLinks: Bool = false,
         missingDestination: Bool = false,
-        labReviewsSeconds: Int? = nil
+        labReviewsSeconds: Int? = nil,
+        animationSpeed: AnimationSpeed = .fast
     ) -> XCUIApplication {
         // A fresh launch has no offer from an earlier test's sign in.
         UITestSteps.savePasswordOfferMayCome = false
@@ -44,7 +72,8 @@ enum ExampleApp {
             shopFollowUp: shopFollowUp,
             systemLinks: systemLinks,
             missingDestination: missingDestination,
-            labReviewsSeconds: labReviewsSeconds
+            labReviewsSeconds: labReviewsSeconds,
+            animationSpeed: animationSpeed
         )
         app.launch()
         return app
@@ -61,7 +90,8 @@ enum ExampleApp {
         shopFollowUp: ShopFollowUp?,
         systemLinks: Bool,
         missingDestination: Bool,
-        labReviewsSeconds: Int?
+        labReviewsSeconds: Int?,
+        animationSpeed: AnimationSpeed
     ) -> [String] {
         let path = shopPath.isEmpty ? nil : shopPath.map(String.init).joined(separator: ",")
         let values: [(LaunchArgument, String?)] = [
@@ -77,6 +107,7 @@ enum ExampleApp {
             (LaunchArgument.systemLinks, systemLinks ? yes : nil),
             (LaunchArgument.missingDestination, missingDestination ? yes : nil),
             (LaunchArgument.labReviewsSeconds, labReviewsSeconds.map(String.init)),
+            (LaunchArgument.animationSpeed, animationSpeed.launchValue),
         ]
         return values.flatMap { argumentPair($0.0, $0.1) }
     }

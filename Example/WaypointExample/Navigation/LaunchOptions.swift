@@ -12,13 +12,15 @@ import Foundation
 // What the launch arguments ask for: start from a fresh install, start signed in, open the
 // Navigation Lab, open one of its entries, skip the splash or keep it up longer, push products onto
 // the shop with a change mid-push, draw the product page's related link as a system link, make it
-// push a route with no destination in its stack, or make the Lab's demo reviews load slower. UI
-// tests use them to start a journey or open any Lab entry directly. `startingOver()` gives the
-// options for starting a window over after Clear all data: the same splash, and no screen opened
-// directly. Plain values read once, so `nonisolated`: a route, which is nonisolated, reads them
-// from another module to build the Lab's launch path.
+// push a route with no destination in its stack, make the Lab's demo reviews load slower, or run
+// the app's animations faster. UI tests use them to start a journey or open any Lab entry directly.
+// `startingOver()` gives the options for starting a window over after Clear all data: the same
+// splash and animation speed, and no screen opened directly. Plain values read once, so
+// `nonisolated`: a route, which is nonisolated, reads them from another module to build the Lab's
+// launch path.
 package nonisolated struct LaunchOptions {
     private static let defaultSplashDuration = Duration.seconds(1)
+    private static let usualAnimationSpeed: Float = 1
 
     package let clearsData: Bool
     package let signsIn: Bool
@@ -31,6 +33,8 @@ package nonisolated struct LaunchOptions {
     package let linksToMissingDestination: Bool
     // `nil` keeps the Lab's usual reviews delay.
     package let labReviewsDelay: Duration?
+    // How fast the windows' animations run: 1 is the usual speed.
+    package let animationSpeed: Float
 
     package init(defaults: UserDefaults) {
         let branch = Self.value(Branch.self, for: .branch, in: defaults)
@@ -54,9 +58,13 @@ package nonisolated struct LaunchOptions {
         usesSystemLinks = defaults.bool(forKey: LaunchArgument.systemLinks.rawValue)
         linksToMissingDestination = defaults.bool(forKey: LaunchArgument.missingDestination.rawValue)
         labReviewsDelay = Self.makeLabReviewsDelay(in: defaults)
+        animationSpeed = Self.makeAnimationSpeed(in: defaults)
     }
 
-    private init(splashDuration: Duration) {
+    private init(
+        splashDuration: Duration,
+        animationSpeed: Float
+    ) {
         clearsData = false
         signsIn = false
         opensLab = false
@@ -67,6 +75,7 @@ package nonisolated struct LaunchOptions {
         usesSystemLinks = false
         linksToMissingDestination = false
         labReviewsDelay = nil
+        self.animationSpeed = animationSpeed
     }
 
     // Conformances:
@@ -98,6 +107,15 @@ package nonisolated struct LaunchOptions {
         return .seconds(max(0, seconds))
     }
 
+    // No `-animationSpeed`, or a value of 0 or less, keeps the usual speed.
+    private static func makeAnimationSpeed(in defaults: UserDefaults) -> Float {
+        let speed = defaults.float(forKey: LaunchArgument.animationSpeed.rawValue)
+        guard speed > 0 else {
+            return usualAnimationSpeed
+        }
+        return speed
+    }
+
     private static func makeProductIDs(in defaults: UserDefaults) -> [Int] {
         let text = defaults.string(forKey: LaunchArgument.shopPath.rawValue) ?? ""
         return text.split(separator: ",").compactMap { Int($0) }
@@ -119,6 +137,9 @@ package nonisolated struct LaunchOptions {
     }
 
     package func startingOver() -> LaunchOptions {
-        LaunchOptions(splashDuration: splashDuration)
+        LaunchOptions(
+            splashDuration: splashDuration,
+            animationSpeed: animationSpeed
+        )
     }
 }

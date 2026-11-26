@@ -35,7 +35,8 @@ final class SheetTests: XCTestCase {
     private static let filterPresentation = NSPredicate(format: "label CONTAINS 'detents: [medium, large]'")
 
     func testFiltersSheetUsesItsDetents() {
-        let app = ExampleApp.launch()
+        // Real speed: the drags wait for the sheet to settle at each size, timed for real speed.
+        let app = ExampleApp.launch(animationSpeed: .real)
         app.buttons[Identifiers.filterButton].tapWhenReady()
 
         let bar = app.navigationBars[Self.filterTitle]

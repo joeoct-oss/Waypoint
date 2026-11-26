@@ -62,7 +62,8 @@ final class LabSheetTests: XCTestCase {
     }
 
     func testLabSheetCoverOpensAndCloses() {
-        let app = openSheetStory()
+        // Real speed: the cover's frame is checked as it settles, at the usual timing.
+        let app = openSheetStory(animationSpeed: .real)
 
         app.buttons[Identifiers.sheetDemoCover].tapWhenReady()
         let cover = level(1, in: app)
@@ -77,7 +78,8 @@ final class LabSheetTests: XCTestCase {
     // Present right after Dismiss, while the old sheet still slides away, draws the new level, not
     // a blank sheet.
     func testLabSheetPresentsRightAfterDismiss() {
-        let app = openSheetStory()
+        // Real speed: Present must come while the old sheet still slides away.
+        let app = openSheetStory(animationSpeed: .real)
         app.buttons[Identifiers.sheetDemoPresent].tapWhenReady()
         let first = level(1, in: app)
         first.buttons[Identifiers.sheetDemoDismiss].tapWhenReady()
@@ -87,8 +89,10 @@ final class LabSheetTests: XCTestCase {
         XCTAssertTrue(presentOnTop.waitForExistence(timeout: UITestSteps.timeout), "the new sheet is blank")
     }
 
-    private func openSheetStory() -> XCUIApplication {
-        let app = ExampleApp.launch(lab: true)
+    private func openSheetStory(
+        animationSpeed: ExampleApp.AnimationSpeed = .fast
+    ) -> XCUIApplication {
+        let app = ExampleApp.launch(lab: true, animationSpeed: animationSpeed)
         let entry = FlowEntry.sheet
         app.buttons[Identifiers.branch(entry.branch)].tapWhenReady()
         let button = app.buttons[Identifiers.entry(entry)]
