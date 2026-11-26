@@ -1059,10 +1059,23 @@ for how in step script; do
     : >"$CALLS"
     run_script STUB_SECONDS=20 >"$WORK/6-$how.log" 2>&1 &
     run=$!
-    for _ in $(seq 1 50); do
-        grep -q '^tuist test' "$CALLS" 2>/dev/null && [[ -L "$LOCK" ]] && break
+    reached=false
+    for _ in $(seq 1 100); do
+        if grep -q '^tuist test' "$CALLS" 2>/dev/null && [[ -L "$LOCK" ]]; then
+            reached=true
+            break
+        fi
         sleep 0.1
     done
+    # TERM is sent only to a run that reached its test step, so the checks below test that step.
+    if [[ "$reached" != true ]]; then
+        fail "a run stopped with TERM ($how) reaches its test step within 10 s (log: $(tail -3 "$WORK/6-$how.log"))"
+        kill -TERM "$run" 2>/dev/null || true
+        wait "$run" 2>/dev/null || true
+        pkill -f "$STUBS/tuist|$STUBS/stub-grandchild" || true
+        rm -f "$LOCK" "$LOCK.info"
+        continue
+    fi
     sleep 0.5
     script_pid=$(readlink "$LOCK" || true)
     if [[ "$how" == step ]]; then
