@@ -34,8 +34,12 @@ def version(key):
 def order(key):
     return (version(key), VERSION.search(key).group(2) == "")
 ios = sorted((key for key in runtimes if VERSION.search(key)), key=order, reverse=True)
+# With no OS named, only the newest version counts, so a device missing there never falls back to
+# an older iOS.
 if wanted:
     ios = [key for key in ios if ".".join(map(str, version(key))) == wanted]
+elif ios:
+    ios = [key for key in ios if version(key) == version(ios[0])]
 for key in ios:
     for device in runtimes[key]:
         if device["name"] == name:

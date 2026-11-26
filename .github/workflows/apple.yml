@@ -73,17 +73,17 @@ jobs:
 
       # One build with warnings as errors serves the fixtures and the tests.
       - name: Build the tests on the macOS host, with warnings as errors
-        run: swift build --build-tests -Xswiftc -warnings-as-errors
+        run: swift build --build-tests --force-resolved-versions -Xswiftc -warnings-as-errors
 
       - name: Check the compile fixtures
         run: WAYPOINT_SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" scripts/check-compile-failures.sh
 
       - name: Test on the macOS host, with warnings as errors
-        run: swift test -Xswiftc -warnings-as-errors
+        run: swift test --force-resolved-versions -Xswiftc -warnings-as-errors
 
       - name: Test the unified log under the thread sanitizer
         run: |
-          swift test --sanitize=thread --scratch-path .build/thread-sanitizer \
+          swift test --force-resolved-versions --sanitize=thread --scratch-path .build/thread-sanitizer \
             --filter WaypointOSLogTests
 
       - name: Test on the iPhone simulator, with warnings as errors in Waypoint's own code
@@ -108,6 +108,15 @@ jobs:
       # Build only: the docs site is deployed from the Mac.
       - name: Build the docs
         run: scripts/build-docs.sh
+
+      - name: Keep the result bundle of a failed run
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: package-results
+          path: .build/results
+          retention-days: 7
+          if-no-files-found: ignore
 
   example:
     name: Example app build and unit tests (Xcode 27.2)
@@ -157,7 +166,8 @@ jobs:
         with:
           name: example-test-products
           path: .build/example-test-products.tar
-          retention-days: 1
+          # As long as GitHub lets a failed shard be re-run on its own, which never builds again.
+          retention-days: 30
           if-no-files-found: error
 
       # Every test bundle but the UI tests: the app's own unit tests and each module's.
@@ -218,10 +228,14 @@ jobs:
           SHARD: ${{ matrix.shard }}
         run: |
           scripts/ui-test-shards.py 3 --list
+          # Read first, so a failing selector stops the step instead of leaving the shard empty.
+          selection=$(scripts/ui-test-shards.py 3 "$SHARD")
           only=()
           while IFS= read -r argument; do
-            only+=("$argument")
-          done < <(scripts/ui-test-shards.py 3 "$SHARD")
+            if [[ -n "$argument" ]]; then
+              only+=("$argument")
+            fi
+          done <<<"$selection"
           if [[ ${#only[@]} -eq 0 ]]; then
             echo "This shard has no UI test class."
             exit 0
