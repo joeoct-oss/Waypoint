@@ -15,8 +15,8 @@ reviews:
   # thread has to be resolved. The tone and path instructions keep the inline comments to
   # blockers and should-fix items.
   profile: chill
-  # Facts for the merge risk and security risk ratings in each review. They only rate the PR:
-  # automatic approvals are off, so they never approve or block a merge.
+  # Facts for the merge risk and security risk ratings in each review. They only rate the PR;
+  # automatic approvals below look at blocking findings and pre-merge checks, not these ratings.
   merge_risk_instructions: >-
     Waypoint is a navigation package for SwiftUI apps. High risk: a breaking change to public API in Sources/WaypointCore, Sources/Waypoint
     or Sources/WaypointUIKit; a change to Package.swift platforms, swift-tools-version or
@@ -50,8 +50,9 @@ reviews:
   in_progress_fortune: false
   poem: false
   review_status: false
-  # The "CodeRabbit" status is pending while the review runs, and a review that stops on an
-  # error fails it, so once it is a required check nothing merges unreviewed.
+  # The "CodeRabbit" check is pending while the review runs, and a review that stops on an error
+  # fails it. A rate-limited or skipped review still passes it, by design, so the check alone
+  # doesn't prove a review happened; the approval below does.
   commit_status: true
   fail_commit_status: true
   # Use "@coderabbitai configuration" to see the resolved config when needed.
@@ -80,9 +81,22 @@ reviews:
       enabled: false
     resolve_merge_conflict:
       enabled: false
+  # CodeRabbit approves a PR once its blocking findings are resolved and no pre-merge check
+  # fails, and requests changes otherwise. Main's ruleset requires one approving review and
+  # dismisses an approval when new commits are pushed, so a PR it hasn't reviewed at its head,
+  # such as one whose review was rate limited, waits instead of merging (Yousef, 2026-11-26).
+  auto_approvals:
+    enabled: true
+  # The pull request rules as checks (Yousef, 2026-11-26). The required "Pull request rules"
+  # job (.github/workflows/pr-rules.yml, scripts/check-pr-rules.py) decides the four yes-or-no
+  # rules exactly and reruns when the body is edited. The checks of the same names here explain
+  # a failure in words and only warn, like the judgment calls: in error mode a model's misreading
+  # would withhold the approval until a push or a comment. Dependabot's own PRs carry no
+  # template and pass. Linked issue assessment stays off, since the issues live in a private repo.
   pre_merge_checks:
-    docstrings:
-      mode: "off"
+    # The built-in docstring check is retired; "Public symbols documented" below replaces it.
+    # The built-in description check takes no instructions, so "PR template filled in" checks
+    # the template instead.
     description:
       mode: "off"
     issue_assessment:
@@ -92,8 +106,76 @@ reviews:
       requirements: >-
         One plain imperative sentence that says exactly what changes, with no prefix, no
         issue or ticket number and no jargon.
-    # Advisory only: a breaking API change must be recorded for package users.
     custom_checks:
+      - name: "PR template filled in"
+        mode: warning
+        instructions: >-
+          Pass if the PR's head branch starts with dependabot/. Otherwise the description must
+          follow .github/pull_request_template.md. Fail if any of these headings is missing:
+          "What changed and why", "Merge method", "Tests", "Docs and CHANGELOG", "Checklist".
+          Fail if "What changed and why" holds no text of the author's own (HTML comments and
+          the template's placeholder text don't count), or doesn't say why the change is made.
+          Fail if "Merge method" doesn't name squash or a merge commit with a reason, or names
+          a rebase merge. Fail if "Tests" neither names what the tests pin nor says why no test
+          is needed. Unticked checkboxes alone don't fail this check.
+      - name: "One issue per PR"
+        mode: warning
+        instructions: >-
+          Pass if the PR's head branch starts with dependabot/. Otherwise count the lines in
+          the description that start with "Closes", "Fixes" or "Resolves" followed by an issue
+          reference (#n or owner/repo#n), and the lines that start with "Part of" followed by
+          one. Fail if there are two or more closing lines, or a closing line holds more than
+          one reference. Fail if there is no closing line and no "Part of" line, or if a
+          reference is still the template's placeholder.
+      - name: "CHANGELOG under Unreleased"
+        mode: warning
+        instructions: >-
+          Pass if the PR's head branch starts with dependabot/. Pass if the diff adds or changes
+          a line of CHANGELOG.md under the "## Unreleased" heading, or moves the Unreleased
+          entries under a new version heading (a release PR). Also pass if CHANGELOG.md is
+          unchanged, no file under Sources/ and no Package.swift changes, and the description
+          says why there is no entry. Fail otherwise, and also if a changed CHANGELOG.md line
+          sits under an already released version heading.
+      - name: "No attribution or private refs"
+        mode: warning
+        instructions: >-
+          Pass if the PR's head branch starts with dependabot/. Otherwise fail if the
+          description, a commit message in the PR or an added line in the diff holds AI or tool
+          attribution: a Co-Authored-By trailer naming Claude, Anthropic or
+          another AI tool, a Claude-Session line, "Generated with" or "Generated by" followed
+          by Claude Code or another AI tool, or a claude.ai/code/session link. The description's
+          first two lines, a claude-projects-attribution HTML comment and a "Requested by"
+          credit line, pass. Also fail if an added line in a file cites a private planning
+          issue ("planning #" then a number), names a repo ending in -planning, or cites a
+          numbered decision ("decision" then a number); scripts/check-public-text.sh, which
+          holds those patterns, is exempt. The description's Closes, Part of and Plan lines may
+          cite planning issues and plans.
+      - name: "Public symbols documented"
+        mode: warning
+        instructions: >-
+          Fail if the PR adds or changes a public or open declaration (type, function,
+          initializer, property, subscript, case, macro or associated type) that has no ///
+          doc comment saying what it does for the caller. Internal and private declarations,
+          tests and Package.swift are out of scope.
+      - name: "Docs in sync"
+        mode: warning
+        instructions: >-
+          Fail if the PR changes a behaviour, a public API, a script's options, a workflow's
+          checks or a written rule, and a doc in the repo that states the old version (README,
+          CONTRIBUTING, CODE_STYLE, TESTING, DocC articles, doc comments, script usage text)
+          still states it after the PR. Name each such doc and the line. A fact has one home:
+          another doc may link to it instead of restating it.
+      - name: "Tests pin promises"
+        mode: warning
+        instructions: >-
+          Fail if an added or changed Swift Testing test has no display name that states the
+          promise it pins (@Test("...")); XCUITest UI tests are named by their methods. Also
+          fail if any added or changed test imports with @testable, reads private or internal
+          state, checks internal call order or counts the user can't observe, or sleeps to wait
+          for an event (Task.sleep, sleep, usleep, Thread.sleep). A spy that checks an effect
+          the user relies on is fine. Also fail if the PR changes code under Sources/, adds or
+          changes no test, and the description doesn't say why no test is needed.
+      # Advisory only: a breaking API change must be recorded for package users.
       - name: "Breaking change recorded"
         mode: warning
         instructions: >-
@@ -178,7 +260,7 @@ reviews:
     - path: ".coderabbit.yaml"
       instructions: >-
         Check every key against the schema in the first line (schema.v2.json). Flag a change
-        that turns on high_level_summary, a finishing touch, automatic approvals, the poem,
+        that turns on high_level_summary, a finishing touch, the poem,
         issue enrichment or anything else that writes commits, edits the PR description or
         comments on issues; that removes a path from review without saying why it can't be
         reviewed by reading; or that turns off a linter without naming the CI job that runs
