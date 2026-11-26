@@ -40,6 +40,8 @@ The site's look lives in `docs-theme`: `theme-settings.json` (DocC colors and fo
 
 The deploy reads a Cloudflare API token (Account, Cloudflare Pages, Edit) and the account ID from `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, as set in the project's cloud environment, which allows `api.cloudflare.com`. On a Mac without them it falls back to the Keychain items `waypoint-cloudflare-api-token` and `waypoint-cloudflare-account-id`. Never commit either value. Set `WAYPOINT_DOCS_PROJECT` to use a Pages project other than `waypoint-docs`.
 
+This site is the only home of the docs. `.spi.yml` points the Swift Package Index's Documentation link at it, so the Index doesn't build docs of its own; change that link if the site's address changes.
+
 ## Code style
 
 The code style lives in [CODE_STYLE.md](CODE_STYLE.md): braces and bodies, member order, wrapping, naming, conformance comments and `let` by default, each with an example and how it is checked. Once the lint setup lands (planning #324), `scripts/lint.sh` must pass before a pull request is reviewed.
