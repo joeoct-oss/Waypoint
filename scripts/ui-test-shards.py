@@ -46,11 +46,11 @@ TEST = re.compile(
 )
 
 
-# A line comment, a block comment, a raw string (`#"..."#`, closed by as many `#`), a multi-line
-# string or a one-line string, whichever starts first. A nested block comment ends at its first
+# A line comment, a block comment, a raw multi-line or one-line string (`#"""..."""#`, `#"..."#`,
+# closed by as many `#`), a multi-line string or a one-line string, whichever starts first. A nested block comment ends at its first
 # `*/`; a brace after that makes the count below disagree, so the check in main() fails loudly.
 NOT_CODE = re.compile(
-    r'//[^\n]*|/\*.*?\*/|(#+)".*?"\1|""".*?"""|"(?:\\.|[^"\\\n])*"', re.S
+    r'//[^\n]*|/\*.*?\*/|(#+)""".*?"""\1|(#+)".*?"\2|""".*?"""|"(?:\\.|[^"\\\n])*"', re.S
 )
 
 
@@ -153,6 +153,13 @@ def self_check():
     code = code_only(raw)
     found = {match.group(1): count_tests(code, match) for match in CLASS.finditer(code)}
     assert found == {"Foo": 1}, f"a raw string's quote and brace don't end the class: {found}"
+    multiline = (
+        'final class Foo: XCTestCase {\n    let text = #"""\n"#\n"""#\n    func testOne() {}\n}\n'
+        'final class Bar: XCTestCase {\n    func testTwo() {}\n}\n'
+    )
+    code = code_only(multiline)
+    found = {match.group(1): count_tests(code, match) for match in CLASS.finditer(code)}
+    assert found == {"Foo": 1, "Bar": 1}, f"a raw multi-line string doesn't end early: {found}"
     print("ok: UI test shards take every class once, balanced and the same every time")
 
 
@@ -179,6 +186,17 @@ def main(argv):
             "body of a class that subclasses XCTestCase; the shards would leave the others out. Move "
             "each into its class's body; if it is there, a nested block comment or an unusual "
             "string may hide where the class ends",
+            file=sys.stderr,
+        )
+        return 1
+    # Blanking that swallowed a class declaration would hide its tests from both counts above, so
+    # every class declared in the files must still be seen.
+    declared = sum(len(CLASS.findall(path.read_text(encoding="utf-8"))) for path in FOLDER.rglob("*.swift"))
+    seen = sum(len(CLASS.findall(code_only(path.read_text(encoding="utf-8")))) for path in FOLDER.rglob("*.swift"))
+    if seen != declared:
+        print(
+            f"error: {declared} XCTestCase classes in {FOLDER}, but only {seen} outside comments and "
+            "strings; a string or comment the script misreads may hide a class",
             file=sys.stderr,
         )
         return 1
