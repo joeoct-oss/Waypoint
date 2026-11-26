@@ -19,8 +19,7 @@ import WaypointCore
 // through the stack's navigator scoped to the shop, on a real router with no screen. Each test
 // builds the model with `ProductsFactory`, as the shop's coordinator does, so a stack that stops
 // declaring `ShopFlow` fails here: the declared flow is checked, and a navigator scoped to another
-// flow is no longer reported. The results come from the catalog the factory was given (planning
-// #424).
+// flow is no longer reported. The results come from the catalog the factory was given.
 struct SearchModelTests {
     private static let lampID = 1
     private static let mugID = 2
