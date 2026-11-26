@@ -1,154 +1,172 @@
-# Runs the Linux checks (scripts/test-linux.sh) on pull requests to main, in two parts that run
-# side by side: the script checks, which need no Swift, on the runner host, and the Swift part in
-# the swift:6.4 container. A first short job only lists the changed files (and runs the two
-# Markdown checks on a docs only pull request), so every other job starts as soon as it ends.
-# Every job runs on Tuist runners (`tuist-linux`, planning #433), not GitHub-hosted runners, so CI uses the
-# Tuist account's Linux minutes instead of GitHub Actions minutes. Built to use few of them:
-# - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
-# - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**, docs-theme/**)
-#   skips "Script checks" and both Swift jobs, which GitHub counts as passed; the first job,
-#   "Changed files and docs checks" (a required check too), runs the two checks that read docs
-#   instead. If that job fails, every other job runs in full anyway,
-# - a newer push cancels the run still going for the same PR,
-# - the SwiftPM build folder is cached between runs, keyed by Package.swift and Package.resolved
-#   only, so a pull request saves it once and later pushes restore it without saving again,
-# - the script checks run on the runner host, which has bash, git, perl, python3 and procps, so
-#   the Swift container installs nothing.
-# A second job builds the package with Swift 6.2, the minimum Package.swift declares (build only, no tests).
-# The Mac stays the full test gate (scripts/test-mac.sh, see TESTING.md); there is no macOS job here.
-# Switched off unless the repository variable CI_ENABLED is "true".
-name: Linux checks on pull requests
+# Builds and tests the package on Linux, where WaypointCore builds and tests and the renderer
+# targets compile empty (TESTING.md, "Where each test runs").
+# - The checks workflow (checks.yml) calls it on pull requests to main and on pushes to main, once
+#   its fast checks and SonarQube Cloud's quality gate passed; drafts are skipped until they are
+#   ready for review. A docs-only pull request (docs-only input) skips every job, and the gate
+#   reports a pass.
+# - "Linux build and tests" is the one required check: it passes only when every job below passed.
+# - Swift 6.4: one build with warnings as errors, which the compile fixtures and the tests reuse.
+#   Then, in steps that never fail the job, the tests run again with coverage on, and the lines of
+#   Sources/WaypointCore they ran are kept as the "coverage" artifact (coverage.lcov), which the
+#   checks workflow uploads to Codecov. A coverage problem never blocks a pull request.
+# - The thread sanitizer runs in its own job beside it, since it rebuilds everything.
+# - Swift 6.2, the tools version in Package.swift: every test, warnings as errors.
+# - The script checks run in the checks workflow's fast checks, before this one. A run by hand of
+#   scripts/test-linux.sh runs the build, fixtures, tests and thread sanitizer with the Swift
+#   installed, without coverage; to reproduce the Swift 6.2 job, run `swift test -Xswiftc
+#   -warnings-as-errors` in the swift:6.2 image this job pins.
+# Hardening: free GitHub-hosted Linux runners only. Every action is pinned to a full commit SHA and
+# every image to a digest, with the version in a comment; Dependabot bumps the actions, and the
+# images are bumped by hand. Each job reads the repo and nothing else, and no checkout keeps the
+# token. The build cache is used on pull requests only, so nothing a cache holds reaches main.
+name: Linux checks
 
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_call:
+    inputs:
+      docs-only:
+        description: The change touches only docs no build reads, so every job is skipped
+        type: boolean
+        default: false
   workflow_dispatch:
 
-permissions:
-  contents: read
-
-concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+permissions: {}
 
 jobs:
-  changes:
-    name: Changed files and docs checks
-    if: vars.CI_ENABLED == 'true' && !github.event.pull_request.draft
-    runs-on: tuist-linux
-    timeout-minutes: 5
-    outputs:
-      code: ${{ steps.files.outputs.code }}
-    steps:
-      - name: Check out
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      # "code" is false only when every changed file is docs only. Renames list both names, so a
-      # Swift file renamed to a .md file still counts as code. A run started by hand has no pull
-      # request to compare with, so it runs everything.
-      - name: List the changed files
-        id: files
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
-        run: |
-          code=true
-          if [ -n "$BASE" ]; then
-            changed=$(git diff --name-only --no-renames "$BASE...$HEAD")
-            printf '%s\n' "$changed"
-            if [ -z "$(printf '%s\n' "$changed" | grep -Ev '\.md$|\.docc/|^docs-theme/|^$')" ]; then
-              code=false
-            fi
-          fi
-          echo "code=$code" >> "$GITHUB_OUTPUT"
-          echo "Swift jobs run: $code"
-
-      # A docs only pull request skips the other jobs, so the two checks that read Markdown run here.
-      - name: Check comment line width and one import in docs
-        if: steps.files.outputs.code == 'false'
-        run: |
-          scripts/check-comment-width.sh
-          scripts/check-single-import.sh
-
-  scripts:
-    name: Script checks
-    needs: changes
-    # Runs unless the first job passed and found docs only, so a failed or cancelled first job
-    # never lets the checks skip.
-    if: >-
-      !cancelled() && vars.CI_ENABLED == 'true' && !github.event.pull_request.draft &&
-      !(needs.changes.result == 'success' && needs.changes.outputs.code == 'false')
-    runs-on: tuist-linux
-    timeout-minutes: 10
-    steps:
-      - name: Check out
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      # The script checks need no Swift, so they run on the runner host, each once, beside the
-      # Swift jobs.
-      - name: Run the Linux script checks
-        run: scripts/test-linux.sh --checks-only
-
-  linux:
-    name: Linux checks
-    needs: changes
-    # Runs unless the first job passed and found docs only, so a failed or cancelled first job
-    # never lets the Swift jobs skip.
-    if: >-
-      !cancelled() && vars.CI_ENABLED == 'true' && !github.event.pull_request.draft &&
-      !(needs.changes.result == 'success' && needs.changes.outputs.code == 'false')
-    runs-on: tuist-linux
-    timeout-minutes: 20
+  tests:
+    name: Build and tests (Swift 6.4)
+    if: ${{ !github.event.pull_request.draft && !inputs.docs-only }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
     container:
-      image: swift:6.4
-      # The thread sanitizer turns off address randomization for itself, which Docker's default
-      # seccomp profile forbids; without this it stops with "incompatible memory layout".
+      image: swift:6.4.3@sha256:e0f67c4120502628d4ced5058df25d334332e21501ae1a0797fd0c0a96486e79
+    env:
+      SWIFT_FLAGS: -Xswiftc -warnings-as-errors
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Restore the build cache
+        if: github.event_name == 'pull_request'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .build
+          key: swift-6.4.3-${{ hashFiles('Package.swift', 'Package.resolved') }}
+
+      # SWIFT_FLAGS is split into words on purpose: each flag is its own argument.
+      - name: Build the tests, with warnings as errors
+        run: |
+          # shellcheck disable=SC2086
+          swift build --build-tests $SWIFT_FLAGS
+
+      - name: Check the compile fixtures
+        run: WAYPOINT_SWIFT_BUILD_FLAGS="$SWIFT_FLAGS" scripts/check-compile-failures.sh
+
+      - name: Test, with warnings as errors
+        run: |
+          # shellcheck disable=SC2086
+          swift test $SWIFT_FLAGS
+
+      # Only feeds the Codecov report, so a failed run, export or upload never fails the job.
+      - name: Measure the coverage of WaypointCore
+        id: coverage
+        continue-on-error: true
+        run: |
+          # shellcheck disable=SC2086
+          swift test $SWIFT_FLAGS --enable-code-coverage
+          # shellcheck disable=SC2086
+          scripts/core-coverage.sh coverage.lcov $SWIFT_FLAGS --enable-code-coverage
+
+      - name: Keep the coverage report
+        if: ${{ !cancelled() && steps.coverage.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage
+          path: coverage.lcov
+          retention-days: 1
+
+  tsan:
+    name: Thread sanitizer (Swift 6.4)
+    if: ${{ !github.event.pull_request.draft && !inputs.docs-only }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    # The thread sanitizer turns off address randomisation with `personality`, which Docker's
+    # default seccomp profile blocks, so the container runs without it.
+    container:
+      image: swift:6.4.3@sha256:e0f67c4120502628d4ced5058df25d334332e21501ae1a0797fd0c0a96486e79
       options: --security-opt seccomp=unconfined
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          persist-credentials: false
 
+      # Its own key: a sanitizer build shares nothing with the other jobs' builds.
       - name: Restore the build cache
-        uses: actions/cache@v4
+        if: github.event_name == 'pull_request'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .build
-          key: linux-swift-6.4-${{ hashFiles('Package.swift', 'Package.resolved') }}
-          restore-keys: |
-            linux-swift-6.4-
+          key: swift-6.4.3-tsan-${{ hashFiles('Package.swift', 'Package.resolved') }}
 
-      # "Script checks" runs the script part beside this job, so this runs only the Swift part.
-      - name: Run the Linux Swift checks
-        run: scripts/test-linux.sh --swift-only
+      - name: Test with the thread sanitizer
+        run: swift test --sanitize=thread
 
-  minimum-swift:
-    name: Builds with Swift 6.2
-    needs: changes
-    # Runs unless the first job passed and found docs only, so a failed or cancelled first job
-    # never lets the Swift jobs skip.
-    if: >-
-      !cancelled() && vars.CI_ENABLED == 'true' && !github.event.pull_request.draft &&
-      !(needs.changes.result == 'success' && needs.changes.outputs.code == 'false')
-    runs-on: tuist-linux
-    timeout-minutes: 15
-    container: swift:6.2
+  lowest:
+    name: Tests on Swift 6.2
+    if: ${{ !github.event.pull_request.draft && !inputs.docs-only }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    container:
+      image: swift:6.2.4@sha256:576698469fd3cf95b2abdeb91a7571d3afcd91806c87283dd01d564803554c0f
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Restore the build cache
-        uses: actions/cache@v4
+        if: github.event_name == 'pull_request'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .build
-          key: linux-swift-6.2-${{ hashFiles('Package.swift', 'Package.resolved') }}
-          restore-keys: |
-            linux-swift-6.2-
+          key: swift-6.2.4-${{ hashFiles('Package.swift', 'Package.resolved') }}
 
-      - name: swift build
-        run: swift build
+      - name: Test, with warnings as errors
+        run: swift test -Xswiftc -warnings-as-errors
+
+  # Skipped, not failed, when a newer push cancels the run, since that push's run replaces it.
+  gate:
+    name: Linux build and tests
+    needs: [tests, tsan, lowest]
+    if: ${{ !cancelled() && !github.event.pull_request.draft }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      # A docs-only change skips every job on purpose, so it passes.
+      - name: Check that every job passed
+        env:
+          DOCS_ONLY: ${{ inputs.docs-only }}
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          if [[ "$DOCS_ONLY" == "true" ]]; then
+            echo "Docs-only change: no build reads these files, so the tests were skipped."
+            exit 0
+          fi
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            if [[ "$result" != "success" ]]; then
+              echo "::error::A Linux check didn't pass: $RESULTS."
+              exit 1
+            fi
+          done
