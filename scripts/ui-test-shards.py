@@ -38,12 +38,19 @@ CLASS = re.compile(
     r"class\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*XCTestCase\b",
     re.M,
 )
-TEST = re.compile(
-    r"^[ \t]*" + ATTRIBUTES
-    + r"(?:(?:public|internal|private|fileprivate|open|override|final|nonisolated|dynamic)\s+)*"
-    r"func\s+(test[A-Za-z0-9_]*)\s*\(",
-    re.M,
-)
+# Any `func test...(`, wherever it sits on its line, so a method on the line of its class's `{`
+# counts too. A `static` or `class` one isn't an XCTest test, so test_methods() leaves it out.
+TEST = re.compile(r"(?<![A-Za-z0-9_])func\s+(test[A-Za-z0-9_]*)\s*\(")
+TYPE_METHOD = re.compile(r"(?<![A-Za-z0-9_])(?:static|class)\s+(?:[A-Za-z_]+\s+)*$")
+
+
+def test_methods(code, start=0, end=None):
+    """The instance methods named test... in code[start:end]."""
+    end = len(code) if end is None else end
+    for test in TEST.finditer(code, start, end):
+        line_start = code.rfind("\n", 0, test.start()) + 1
+        if not TYPE_METHOD.search(code, line_start, test.start()):
+            yield test
 
 
 # A line comment, a block comment, a raw multi-line or one-line string (`#"""..."""#`, `#"..."#`,
@@ -81,7 +88,7 @@ def count_tests(code, match):
     type declared after it, belong to no class here, and the check in main() refuses them."""
     opening, closing = class_body(code, match)
     count = 0
-    for test in TEST.finditer(code, opening, closing):
+    for test in test_methods(code, opening, closing):
         depth = code.count("{", opening, test.start()) - code.count("}", opening, test.start())
         if depth == 1:
             count += 1
@@ -148,7 +155,7 @@ def self_check():
     code = code_only(extended)
     found = {match.group(1): count_tests(code, match) for match in CLASS.finditer(code)}
     assert found == {"A": 0, "B": 1}, f"a test in an extension counts for no class: {found}"
-    assert len(TEST.findall(code)) == 2, "the whole-folder count still sees the extension's test"
+    assert len(list(test_methods(code))) == 2, "the whole-folder count still sees the extension's test"
     raw = 'final class Foo: XCTestCase {\n    let text = #"a " } // "#\n    func testOne() {}\n}\n'
     code = code_only(raw)
     found = {match.group(1): count_tests(code, match) for match in CLASS.finditer(code)}
@@ -160,6 +167,13 @@ def self_check():
     code = code_only(multiline)
     found = {match.group(1): count_tests(code, match) for match in CLASS.finditer(code)}
     assert found == {"Foo": 1, "Bar": 1}, f"a raw multi-line string doesn't end early: {found}"
+    inline = (
+        "final class Hidden: XCTestCase { func testHidden() {} }\n"
+        "final class Shown: XCTestCase {\n    func testShown() {}\n    static func testNot() {}\n}\n"
+    )
+    code = code_only(inline)
+    found = {match.group(1): count_tests(code, match) for match in CLASS.finditer(code)}
+    assert found == {"Hidden": 1, "Shown": 1}, f"reads a test on its class's line, not a static one: {found}"
     print("ok: UI test shards take every class once, balanced and the same every time")
 
 
@@ -178,7 +192,7 @@ def main(argv):
     # A test outside the body of an XCTestCase subclass, such as one in an extension or in a class
     # that subclasses a base test class, would run in no shard, so the split refuses to leave it out.
     every_test = sum(
-        len(TEST.findall(code_only(path.read_text(encoding="utf-8")))) for path in FOLDER.rglob("*.swift")
+        len(list(test_methods(code_only(path.read_text(encoding="utf-8"))))) for path in FOLDER.rglob("*.swift")
     )
     if every_test != sum(classes.values()):
         print(
