@@ -1053,8 +1053,10 @@ else
     fail "a failing run releases the lock"
 fi
 
-# 6. A run stopped with TERM, the way TESTING.md stops a hung run, leaves no lock.
+# 6. A run stopped with TERM, the way TESTING.md stops a hung run, leaves no lock. The calls log
+# is cleared first, so the wait below sees this run's own `tuist test` and not an earlier check's.
 for how in step script; do
+    : >"$CALLS"
     run_script STUB_SECONDS=20 >"$WORK/6-$how.log" 2>&1 &
     run=$!
     for _ in $(seq 1 50); do
