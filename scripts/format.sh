@@ -39,7 +39,12 @@ for path, spots in places.items():
     # From the end of each line, so an earlier fix never moves a later column.
     for line, column in sorted(spots, reverse=True):
         text = lines[line - 1]
-        index = column - 1
+        # SwiftLint counts columns in UTF-16 units; find the string index they point at.
+        units = 0
+        index = 0
+        while index < len(text) and units < column - 1:
+            units += 2 if ord(text[index]) > 0xFFFF else 1
+            index += 1
         if text[index:index + 2] == "{}":
             lines[line - 1] = text[:index] + "{ }" + text[index + 2:]
     with open(path, "w", encoding="utf-8") as source:

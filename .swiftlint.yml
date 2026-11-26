@@ -83,7 +83,7 @@ custom_rules:
   # CODE_STYLE.md: "No one-line type bodies".
   no_single_line_type_body:
     name: 'no_single_line_type_body'
-    regex: '^[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|indirect|nonisolated)[ \t]+)*(?:enum|struct|class|actor|protocol|extension)\b[^{\n]*\{[ \t]*[^ \t}\n][^\n]*\}[ \t]*(?://[^\n]*)?$'
+    regex: '^[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|indirect|nonisolated)[ \t]+)*(?:enum|struct|class|actor|protocol|extension)\b(?=[^{\n]*\{[ \t]*[^ \t}\n][^\n]*\}[ \t]*(?://[^\n]*)?$)'
     excluded_match_kinds: [comment, doccomment, string]
     message: 'Put each member of this type on its own line.'
     severity: error
