@@ -22,7 +22,7 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 # shellcheck source=scripts/lint-tools.sh
 source scripts/lint-tools.sh
 
@@ -58,7 +58,9 @@ if [[ "$part" != swiftlint ]]; then
             IFS=: read -r path line column _ <<< "$finding"
             if [[ -f "$path" && "$line" =~ ^[0-9]+$ && "$column" =~ ^[0-9]+$ && "$column" -ge 2 ]]; then
                 text="$(sed -n "${line}p" "$path")"
-                if [[ "${text:column-2:3}" == "{ }" ]]; then
+                # swift-format counts columns in bytes, so slice bytes too.
+                snippet="$(LC_ALL=C; printf '%s' "${text:column-2:3}")"
+                if [[ "$snippet" == "{ }" ]]; then
                     continue
                 fi
             fi
