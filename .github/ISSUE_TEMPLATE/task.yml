@@ -4,7 +4,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Waypoint's planned work is tracked in the private planning repo, created with its script `tools/issues/new-issue.py`, so maintainers don't file issues here. This form is kept for reports from package users once the package is public; when work starts on one, a planning issue links back to it. If you use this form, add one `type:`, at least one `area:`, one `priority:`, at least one `test:` and a `runs:` label.
+        Thanks for helping Waypoint. Maintainers plan the work privately; when work starts on this issue, it is linked back here. Fill in what you know: fields about plans and checkpoints are for maintainers, and they add the labels.
   - type: textarea
     id: goal
     attributes:
@@ -16,10 +16,9 @@ body:
     id: plan
     attributes:
       label: Plan
-      description: Link to the plan file, plans/planning-<issue-number>-<slug>.md in Waypoint-planning. Every issue has one; write a stub plan first if needed.
-      placeholder: "[Plan: Example](https://github.com/joeoct-oss/Waypoint-planning/blob/HEAD/plans/planning-12-example.md)"
+      description: Link to the plan, if there is one. Maintainers add it when work starts.
     validations:
-      required: true
+      required: false
   - type: dropdown
     id: checkpoint
     attributes:
@@ -31,7 +30,7 @@ body:
         - C5 Events, testing and real app
         - C6 0.x in a real app
         - Later (1.0 and 1.1)
-        - Not set yet (Yousef schedules it)
+        - Not set yet (maintainers schedule it)
     validations:
       required: true
   - type: textarea
@@ -83,6 +82,6 @@ body:
     id: links
     attributes:
       label: Links
-      description: A bullet list, one per line, each a readable link such as "[Flow results between coordinators (planning #314)](url)". Never a bare #n or a raw URL. Write None if nothing.
+      description: A bullet list, one per line, each a readable link such as "[Flow results between coordinators](url)". Never a bare #n or a raw URL. Write None if nothing.
     validations:
       required: true

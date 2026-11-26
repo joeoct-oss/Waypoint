@@ -6,13 +6,13 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Checks that Tuist's selective testing sees every part of the package (planning #429). Selective testing
+# Checks that Tuist's selective testing sees every part of the package. Selective testing
 # skips a test target that already passed with the same hash, so the hash must change whenever
 # something the tests run changes. In a copy of the working tree, this adds a line to one file of
 # each part, one at a time: every package module, every folder of the example app (its modules,
 # the app's own folders and its asset catalog) and every test folder. It checks that each edit
 # changes the hash of every test target that uses that part, and of no other, and that a new file
-# counts as an edit. The module test targets (planning #445) run without the app, so an edit in a
+# counts as an edit. The module test targets run without the app, so an edit in a
 # feature must leave the other features' tests alone, or selective testing would never skip them.
 # A docs edit must change no hash. Both directions matter: a hash that misses an edit lets a run
 # skip a test that would now fail, and a hash that moves without one reruns tests for nothing.
@@ -21,8 +21,8 @@
 # hashes: `scripts/test-mac.sh` turns selective testing and the binary cache off for a branch that
 # changes a file the hashes don't cover, and after the tools change (TESTING.md, Trust the caches).
 #
-# The same edits prove that Tuist's binary cache (planning #441) never hands a run a stale
-# module, the package's or the example app's (planning #445): an edit in a module changes its
+# The same edits prove that Tuist's binary cache never hands a run a stale
+# module, the package's or the example app's: an edit in a module changes its
 # cache key (`tuist hash cache`) and the keys of every module that depends on it, and no other, so
 # a run builds them from source until a green run warms the new keys.
 #
@@ -110,8 +110,8 @@ hashes_moved_by() {
         *) echo "" ;;
     esac
 }
-# The modules the binary cache may take as binaries: the package's, and the example app's own
-# (planning #445). An edit in a part must change the cache keys of the modules built from it and
+# The modules the binary cache may take as binaries: the package's, and the example app's own.
+# An edit in a part must change the cache keys of the modules built from it and
 # of every module that depends on them, and leave every other key alone.
 CACHED_MODULES=(
     WaypointCore

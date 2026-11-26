@@ -6,7 +6,7 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Checks the promises the compiler keeps (planning #279, planning #278):
+# Checks the promises the compiler keeps:
 #
 # - Each file in Tests/CompileFailures must fail to type-check against WaypointCore, in the Swift 6
 #   language mode, with an error containing the text of its `// expected-error: <text>` line.

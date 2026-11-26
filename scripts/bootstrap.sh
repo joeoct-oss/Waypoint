@@ -8,7 +8,7 @@
 #
 # Installs the developer tools at the versions pinned in .mise.toml.
 # With mise on the PATH (the Mac), it trusts the file and runs `mise install`.
-# Without mise on Linux (cloud threads, where mise's servers are blocked), it downloads the pinned
+# Without mise on Linux (cloud containers, where mise's servers are blocked), it downloads the pinned
 # SwiftLint release from GitHub into .tools/, checks its sha256, and links it as .tools/bin/swiftlint.
 # Tuist and Periphery only run on macOS, so Linux skips them. swift-format needs no install.
 #

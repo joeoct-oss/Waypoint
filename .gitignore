@@ -10,7 +10,7 @@ Example/*.xcodeproj
 Example/*.xcworkspace
 Example/Derived/
 # Tuist writes the package's own project into the package root, since the example app takes the
-# package through Tuist's package integration (planning #429).
+# package through Tuist's package integration.
 /Waypoint.xcodeproj/
 /Derived/
 .wrangler/
