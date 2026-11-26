@@ -10,7 +10,7 @@ import ExampleStore
 import Foundation
 import WaypointCore
 
-// Search's view model (planning #417): a tapped result pushes the product itself, through a
+// Search's view model: a tapped result pushes the product itself, through a
 // navigator its coordinator hands it, instead of reporting the tap. The navigator is the stack's,
 // scoped to the shop (`scoped(to: ShopFlow.self)`), so the model can push only shop routes, which
 // the compiler checks. It also finds the results in the catalog it is given, and lists the

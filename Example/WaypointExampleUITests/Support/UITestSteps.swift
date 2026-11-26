@@ -14,7 +14,7 @@ enum UITestSteps {
     // How long a step waits for state that stays until something changes it: a screen, a banner, a
     // count, a sheet. A wait ends as soon as its element shows, so a passing test doesn't spend it;
     // only a failure takes the whole time to report. It is 10 s because a Mac under memory load can
-    // take more than 5 s to show lasting state (planning #479). A short-lived message, such as a
+    // take more than 5 s to show lasting state. A short-lived message, such as a
     // toast or a notice, is read right after the action that shows it, never after another wait.
     static let timeout: TimeInterval = 10
     // How long a step watches an element to prove it stays, for example a locked sheet after a
@@ -36,7 +36,7 @@ enum UITestSteps {
     // How long a step waits for iOS's offer to save a password after a sign in. iOS 27.2 offers
     // it about 4.5 seconds after the tap, and the step goes on as soon as it shows. iOS 17.5
     // never offers it, so there the step doesn't wait. An offer that comes later still, as it
-    // did once on a Mac under memory load (planning #479), is closed by `tapWhenReady()`.
+    // did once on a Mac under memory load, is closed by `tapWhenReady()`.
     static let savePasswordOfferTimeout: TimeInterval = 10
     // The newest major iOS version that never offers to save a password.
     static let lastVersionWithoutSavePasswordOffer = 17
@@ -55,7 +55,7 @@ extension XCUIApplication {
     // A short-lived message, such as a toast or a notice, with this identifier whose label contains
     // `text`. Waiting for it checks the label in the same query that finds the message, since on a
     // loaded Mac reading `label` in a later step took more than 3 s, and the message was gone by
-    // then (planning #479).
+    // then.
     @MainActor
     func message(
         _ identifier: String,
@@ -65,7 +65,7 @@ extension XCUIApplication {
         return descendants(matching: .any).matching(matching).firstMatch
     }
 
-    // Closes iOS's "Save Password?" offer when it shows after a sign in (planning #422). The offer
+    // Closes iOS's "Save Password?" offer when it shows after a sign in. The offer
     // is the system's, not the app's, and it covers the app, so every tap after it misses until it
     // goes.
     @MainActor
@@ -115,7 +115,7 @@ extension XCUIApplication {
 extension XCUIElement {
     // Waits for the element, fails the test if it never shows, and taps it. On a loaded Mac iOS's
     // save password offer can come after `closeSavePasswordOffer()` stopped waiting and cover the
-    // app (planning #479), so a late offer is closed first. `reveal(_:)` and `goBack()` do the
+    // app, so a late offer is closed first. `reveal(_:)` and `goBack()` do the
     // same.
     @MainActor
     func tapWhenReady(
@@ -249,7 +249,7 @@ extension XCUIApplication {
     // least `revealSwipes` times, and goes on until `timeout` passes: a caller often reveals right
     // after a tap that pushes, so on a loaded Mac the first swipes can land on the old screen
     // before the new one arrives, and each swipe can take seconds, so a time limit alone can
-    // leave too few swipes to reach a row far down a list (planning #479).
+    // leave too few swipes to reach a row far down a list.
     @MainActor
     func reveal(_ element: XCUIElement) -> Bool {
         closeLateSavePasswordOffer()

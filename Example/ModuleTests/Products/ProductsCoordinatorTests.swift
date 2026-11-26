@@ -14,7 +14,7 @@ import ExampleTestSupport
 import Testing
 import WaypointCore
 
-// Save on a product (planning #424): a guest is asked to sign in first and the wish list stays as
+// Save on a product: a guest is asked to sign in first and the wish list stays as
 // it is, and a signed-in reader's Save adds the product to the wish list the store keeps.
 struct ProductsCoordinatorTests {
     private static let lampID = 1

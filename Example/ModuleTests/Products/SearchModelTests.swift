@@ -15,7 +15,7 @@ import Testing
 import Understudy
 import WaypointCore
 
-// Search's view model navigates on its own (planning #417): a tapped result pushes the product
+// Search's view model navigates on its own: a tapped result pushes the product
 // through the stack's navigator scoped to the shop, on a real router with no screen. Each test
 // builds the model with `ProductsFactory`, as the shop's coordinator does, so a stack that stops
 // declaring `ShopFlow` fails here: the declared flow is checked, and a navigator scoped to another

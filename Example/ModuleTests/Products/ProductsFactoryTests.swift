@@ -11,7 +11,7 @@ import ExampleTestSupport
 import SwiftUI
 import Testing
 
-// Shop and Search, built by `ProductsFactory` (planning #424): a product page shows the product the
+// Shop and Search, built by `ProductsFactory`: a product page shows the product the
 // route names from the catalog it was given, and a route to a product the catalog lacks draws
 // nothing.
 struct ProductsFactoryTests {

@@ -9,7 +9,7 @@
 import ExampleNavigation
 import SwiftUI
 
-// The app's navigation starts here (decision 0009). The app asks for each window's view with
+// The app's navigation starts here. The app asks for each window's view with
 // `makeWindow(services:launch:)`, and each call makes a new coordinator, so two iPad windows never
 // share a root or a stack. The coordinator owns the root: the splash, then the main tabs, which
 // guests and signed-in readers share; an action that needs an account asks for it in a sheet over

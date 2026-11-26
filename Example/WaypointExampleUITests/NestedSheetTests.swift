@@ -8,7 +8,7 @@
 
 import XCTest
 
-// A sheet over a sheet, and every way Waypoint closes presentations (planning #413). Shop's wish
+// A sheet over a sheet, and every way Waypoint closes presentations. Shop's wish
 // list sheet asks a guest to sign in over it, two levels deep: Cancel closes one level, and Done on
 // Signed in closes both in one change with `dismissAll`. The saved sheet's Close uses
 // `@DismissFlow`, and the wish list's Done uses `dismissFlow`. After each close the Lab's

@@ -11,7 +11,7 @@ import ExampleTestSupport
 import Foundation
 import Testing
 
-// A store made for a test keeps its data in a domain of its own (planning #424), so tests never
+// A store made for a test keeps its data in a domain of its own, so tests never
 // change what the app keeps between launches, and the app's data never leaks into a test.
 struct LocalStoreTests {
     private static let lampID = 1

@@ -11,7 +11,7 @@ import ExampleNavigation
 import Testing
 import Waypoint
 
-// The Lab's Detail push coordinator stores no router (planning #313): Waypoint makes it from the
+// The Lab's Detail push coordinator stores no router: Waypoint makes it from the
 // Lab's configuration the first time it is read, names it after the coordinator, and makes it inert
 // once the Lab lets the demo go, so a navigator kept past the demo changes nothing.
 struct DetailPushCoordinatorTests {

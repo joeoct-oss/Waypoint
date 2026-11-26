@@ -8,8 +8,8 @@
 
 import XCTest
 
-// A system `NavigationLink(value:)` inside a Waypoint stack is refused and reported
-// (planning #349). The app draws the lamp page's related link as a system link, and its products
+// A system `NavigationLink(value:)` inside a Waypoint stack is refused and reported.
+// The app draws the lamp page's related link as a system link, and its products
 // stacks log navigation issues to a banner. `scripts/test-mac.sh full` runs this class a second
 // time in the release configuration, where the banner's value says "release", to prove the report
 // doesn't depend on a debug build.

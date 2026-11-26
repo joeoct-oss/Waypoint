@@ -12,7 +12,7 @@ import ExampleStore
 import SwiftUI
 
 // The screens one feature shows from another, which the app builds and hands in through the
-// features' dependency structs, so no feature names another feature's types (planning #445): the
+// features' dependency structs, so no feature names another feature's types: the
 // Cart feature's cart, which Go to cart pushes on Shop, and the Products feature's wish list, which
 // the Account tab pushes.
 enum FeatureScreens {
