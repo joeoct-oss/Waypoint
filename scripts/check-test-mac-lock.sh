@@ -25,6 +25,11 @@
 # #445): a clean run trusts none, records its tools when it passes, and a run whose tools differ
 # from that record, or a branch that changes a file the test hashes don't cover, trusts none either.
 #
+# It also checks the run's Slack message (planning #522): what a passed, failed and stopped run posts,
+# that the webhook URL shows neither in the log nor on curl's command line, and that a missing URL,
+# a failed post, `--plan` or a run turned away at the run lock never changes a result. A stand-in
+# curl takes every post, so no check ever reaches Slack.
+#
 # Each case runs `test-mac.sh quick --only` with its own lock path and temporary folder, so a
 # real run on the Mac is never touched.
 #
@@ -51,6 +56,8 @@ cleanup() {
 trap cleanup EXIT
 # The tools of the last green clean run, so no case reads or writes the clone's own record.
 export WAYPOINT_TOOLCHAIN_RECORD="$WORK/toolchain"
+# No webhook unless a case gives one, so no case posts with the Mac's real one.
+export WAYPOINT_SLACK_WEBHOOK_FILE="$WORK/no-slack-webhook"
 
 STUBS="$WORK/bin"
 mkdir -p "$STUBS"
@@ -143,11 +150,30 @@ done
 shift
 exec "$@"
 EOF
-# `gh pr view` names the pull request's branch: STUB_PR_BRANCH, or fails when that is empty.
+# `gh pr view` names the pull request's branch: STUB_PR_BRANCH, or fails when that is empty. Asked
+# for the title, it answers STUB_PR_TITLE.
 cat >"$STUBS/gh" <<'EOF'
 #!/usr/bin/env bash
+if [[ "$*" == *"--json title"* ]]; then
+    [[ -n "${STUB_PR_TITLE:-}" ]] || exit 1
+    echo "$STUB_PR_TITLE"
+    exit 0
+fi
 [[ -n "${STUB_PR_BRANCH:-}" ]] || exit 1
 echo "$STUB_PR_BRANCH"
+EOF
+# `curl` takes the Slack post: its arguments go to the calls, the config it reads on standard
+# input to STUB_CURL_CONFIG and the message to STUB_CURL_PAYLOAD. It exits STUB_CURL_STATUS.
+cat >"$STUBS/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "curl $*" >>"$STUB_CALLS"
+cat >"${STUB_CURL_CONFIG:-/dev/null}"
+previous=""
+for argument in "$@"; do
+    [[ "$previous" == --data-binary ]] && cp "${argument#@}" "${STUB_CURL_PAYLOAD:-/dev/null}"
+    previous="$argument"
+done
+exit "${STUB_CURL_STATUS:-0}"
 EOF
 cat >"$STUBS/sysctl" <<'EOF'
 #!/usr/bin/env bash
@@ -982,7 +1008,8 @@ for _ in $(seq 1 40); do
     sleep 0.1
 done
 holder=$(readlink "$LOCK" || true)
-if run_script >"$WORK/2b.log" 2>&1; then
+echo "https://hooks.slack.com/services/T000/B000/turned-away" >"$WORK/webhook-2b"
+if run_script WAYPOINT_SLACK_WEBHOOK_FILE="$WORK/webhook-2b" >"$WORK/2b.log" 2>&1; then
     fail "a second run stops while the first holds the lock"
 elif ! grep -q "another Mac test run holds the run lock (pid $holder," "$WORK/2b.log"; then
     fail "the second run names the holder (log: $(tail -3 "$WORK/2b.log"))"
@@ -994,6 +1021,11 @@ if [[ "$(grep -c '^tuist test' "$CALLS")" == 1 ]] && lock_gone; then
     pass "the second run ran nothing, and the first released the lock"
 else
     fail "the second run ran nothing, and the first released the lock ($(grep -c '^tuist test' "$CALLS") tuist test calls)"
+fi
+if grep -q '^curl' "$CALLS"; then
+    fail "a run turned away at the run lock posts nothing to Slack"
+else
+    pass "a run turned away at the run lock posts nothing to Slack"
 fi
 
 # 2b. A run turned away at the run lock leaves Tuist's package project where the run holding the
@@ -1180,6 +1212,96 @@ if run_script WAYPOINT_TEST_DEVICES="$DEVICES" STUB_CLONES="$WORK/clones-8d" \
     pass "a run that can't list the copies at the start removes none"
 else
     fail "a run that can't list the copies at the start removes none (calls: $(grep -- '--set' "$CALLS" | tail -3))"
+fi
+
+# 9. Every run that held the lock posts how it ended to Slack's #mac-runs (planning #522), and the
+# post never changes the run's result.
+WEBHOOK_URL="https://hooks.slack.com/services/T000/B000/not-a-real-secret"
+WEBHOOK="$WORK/slack-webhook"
+echo "$WEBHOOK_URL" >"$WEBHOOK"
+PAYLOAD="$WORK/slack-payload.json"
+CURL_CONFIG="$WORK/curl-config"
+slack_run() {
+    rm -f "$PAYLOAD" "$CURL_CONFIG"
+    : >"$CALLS"
+    run_script WAYPOINT_SLACK_WEBHOOK_FILE="$WEBHOOK" STUB_CURL_PAYLOAD="$PAYLOAD" \
+        STUB_CURL_CONFIG="$CURL_CONFIG" GITHUB_HEAD_REF=feature/first-part WAYPOINT_PULL_REQUEST=42 \
+        STUB_PR_BRANCH=feature/first-part STUB_PR_TITLE="Show the cart badge" "$@"
+}
+# The message's text, read from the JSON curl was given.
+slack_text() {
+    python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["text"])' "$PAYLOAD" 2>/dev/null
+}
+if slack_run >"$WORK/9a.log" 2>&1 &&
+    slack_text | grep -q '^:white_check_mark: \*Mac quick passed\* in [0-9]*m [0-9][0-9]s$' &&
+    slack_text | grep -qF 'Branch: `feature/first-part`' &&
+    slack_text | grep -qF '<https://github.com/joeoct-oss/Waypoint/pull/42|Show the cart badge>' &&
+    slack_text | grep -qF 'Command: `test-mac.sh quick --only WaypointExampleUITests/StackTests/testPushAndBack`' &&
+    ! slack_text | grep -q 'Failed'; then
+    pass "a passing run posts that it passed, with its tier, branch, pull request and time"
+else
+    fail "a passing run posts that it passed (message: $(slack_text | tr '\n' ';'), log: $(tail -2 "$WORK/9a.log"))"
+fi
+if grep -qF "url = \"$WEBHOOK_URL\"" "$CURL_CONFIG" 2>/dev/null &&
+    ! grep -qF "$WEBHOOK_URL" "$CALLS" && ! grep -qF "$WEBHOOK_URL" "$WORK/9a.log"; then
+    pass "the webhook URL reaches curl on its standard input, never its command line or the log"
+else
+    fail "the webhook URL reaches curl on its standard input, never its command line or the log"
+fi
+if ! slack_run STUB_STATUS=1 >"$WORK/9b.log" 2>&1 &&
+    slack_text | grep -q '^:x: \*Mac quick failed\*' &&
+    slack_text | grep -q '^• `tuist test example app on waypoint-01`$'; then
+    pass "a failing run posts that it failed, and names the failed step"
+else
+    fail "a failing run posts that it failed, and names the failed step (message: $(slack_text | tr '\n' ';'))"
+fi
+slack_run STUB_SECONDS=20 >"$WORK/9c.log" 2>&1 &
+run=$!
+for _ in $(seq 1 50); do
+    grep -q '^tuist test' "$CALLS" 2>/dev/null && [[ -L "$LOCK" ]] && break
+    sleep 0.1
+done
+sleep 0.5
+kill -TERM "$(readlink "$LOCK" || true)" || true
+wait "$run" 2>/dev/null || true
+if slack_text | grep -q '^:octagonal_sign: \*Mac quick stopped by TERM\*' &&
+    slack_text | grep -q '^• `tuist test example app on waypoint-01`$'; then
+    pass "a run stopped with TERM posts that it stopped, and the step it was in"
+else
+    fail "a run stopped with TERM posts that it stopped (message: $(slack_text | tr '\n' ';'))"
+fi
+if slack_run STUB_CURL_STATUS=7 >"$WORK/9d.log" 2>&1 &&
+    grep -q "posting the result to Slack #mac-runs failed" "$WORK/9d.log"; then
+    pass "a failed post warns and leaves a passing run passed"
+else
+    fail "a failed post warns and leaves a passing run passed (log: $(tail -2 "$WORK/9d.log"))"
+fi
+status=0
+slack_run STUB_STATUS=3 STUB_CURL_STATUS=7 >"$WORK/9e.log" 2>&1 || status=$?
+if [[ $status -eq 3 ]]; then
+    pass "a failed post leaves a failing run's exit status as it was"
+else
+    fail "a failed post leaves a failing run's exit status as it was (exit $status)"
+fi
+if slack_run WAYPOINT_SLACK_WEBHOOK_FILE="$WORK/no-such-webhook" >"$WORK/9f.log" 2>&1 &&
+    ! grep -q '^curl' "$CALLS" && grep -q "posts nothing to #mac-runs" "$WORK/9f.log"; then
+    pass "with no webhook file a run posts nothing and still passes"
+else
+    fail "with no webhook file a run posts nothing and still passes (log: $(tail -2 "$WORK/9f.log"))"
+fi
+echo "https://example.com/not-slack" >"$WORK/wrong-webhook"
+if slack_run WAYPOINT_SLACK_WEBHOOK_FILE="$WORK/wrong-webhook" >"$WORK/9g.log" 2>&1 &&
+    ! grep -q '^curl' "$CALLS"; then
+    pass "a webhook file without a Slack webhook URL posts nothing"
+else
+    fail "a webhook file without a Slack webhook URL posts nothing"
+fi
+: >"$CALLS"
+if env PATH="$STUBS:$PATH" STUB_CALLS="$CALLS" WAYPOINT_SLACK_WEBHOOK_FILE="$WEBHOOK" \
+    scripts/test-mac.sh full --plan >/dev/null 2>&1 && ! grep -q '^curl' "$CALLS"; then
+    pass "--plan posts nothing to Slack"
+else
+    fail "--plan posts nothing to Slack"
 fi
 
 if [[ $FAILURES -gt 0 ]]; then

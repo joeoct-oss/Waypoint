@@ -72,6 +72,13 @@
 # (planning #420). A second run stops at once and names the run that holds it. A lock left by a run that
 # is no longer going is cleared; a lock whose run is still going is never touched.
 #
+# Every run that took the run lock ends by posting how it ended to the joeoct-oss Slack's #mac-runs
+# channel (planning #522): the arguments, branch, pull request, commit, passed, failed or stopped,
+# how long it took, and the failed steps. The webhook URL is a secret and lives only in
+# WAYPOINT_SLACK_WEBHOOK_FILE on the Mac: it never goes in the repo or the log, nor on curl's
+# command line. With no URL the run posts nothing, and a failed post only warns: neither changes
+# the run's result. `--plan` and a run turned away at the run lock post nothing.
+#
 # Usage: scripts/test-mac.sh [quick|full|release|stress|coverage] [--ui] [--all]
 #                           [--only <Target/Class[/test]>] [--clean] [--plan]
 #   --ui    quick also runs the example app's unit and UI tests.
@@ -106,6 +113,9 @@
 #                             script's own checks set it.
 #   WAYPOINT_QUARANTINE_FILE  the quarantine list (default Example/quarantine.json); only the
 #                             script's own checks set it.
+#   WAYPOINT_SLACK_WEBHOOK_FILE the file whose first line is #mac-runs' Slack webhook URL (default
+#                             ~/.config/waypoint/mac-runs-slack-webhook); a missing or empty file
+#                             means no post (TESTING.md, Results in Slack).
 
 set -euo pipefail
 
@@ -117,6 +127,8 @@ usage() {
     exit 2
 }
 
+# The arguments as given, for the run's Slack message.
+RUN_ARGUMENTS="$*"
 TIER="quick"
 WITH_UI=false
 RUN_ALL=false
@@ -457,6 +469,84 @@ report_simulator_size() {
     fi
 }
 
+# The step that is running, or the step that failed once the script ends; empty between steps.
+CURRENT_STEP=""
+SLACK_WEBHOOK_FILE="${WAYPOINT_SLACK_WEBHOOK_FILE:-$HOME/.config/waypoint/mac-runs-slack-webhook}"
+SLACK_WEBHOOK_PATTERN='^https://hooks\.slack\.com/services/[A-Za-z0-9/_-]+$'
+
+# Escapes text for Slack's message format, where &, < and > mark links and mentions.
+slack_escape() {
+    sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'
+}
+
+# The run's Slack message as plain text: how it ended, what it tested and, when it failed, where.
+slack_message() {
+    local result="$1" status="$2" icon what title failed=() line
+    case "$result" in
+        passed) icon=":white_check_mark:" ;;
+        failed) icon=":x:" ;;
+        *) icon=":octagonal_sign:" ;;
+    esac
+    printf '%s *Mac %s %s* in %dm %02ds\n' "$icon" "$TIER" "$result" $((SECONDS / 60)) $((SECONDS % 60))
+    what="Branch: \`$(printf '%s' "${GITHUB_HEAD_REF:-none}" | slack_escape)\`"
+    if [[ "${WAYPOINT_PULL_REQUEST:-}" =~ ^[1-9][0-9]*$ ]]; then
+        title=$(gh pr view "$WAYPOINT_PULL_REQUEST" --repo joeoct-oss/Waypoint --json title \
+            --jq .title 2>/dev/null) || title=""
+        title=$(printf '%s' "${title:-pull request $WAYPOINT_PULL_REQUEST}" | tr -d '|' | slack_escape)
+        what+=" · <https://github.com/joeoct-oss/Waypoint/pull/$WAYPOINT_PULL_REQUEST|$title>"
+    fi
+    what+=" · Commit: \`$(git rev-parse --short HEAD 2>/dev/null || echo unknown)\`"
+    printf '%s\n' "$what"
+    printf 'Command: `test-mac.sh %s`\n' "$(printf '%s' "$RUN_ARGUMENTS" | slack_escape)"
+    [[ "$result" == passed ]] && return 0
+    # A stress run carries on past failed example steps and lists them; any run stops at its
+    # failed step.
+    if [[ -f "${STRESS_FAILED_STEPS:-}" ]]; then
+        while IFS= read -r line; do
+            failed+=("$line")
+        done <"$STRESS_FAILED_STEPS"
+    fi
+    [[ -n "$CURRENT_STEP" ]] && failed+=("$CURRENT_STEP")
+    if [[ ${#failed[@]} -eq 0 ]]; then
+        echo "Failed outside a step (exit status $status); the log says where."
+        return 0
+    fi
+    if [[ "$result" == failed ]]; then
+        echo "Failed steps:"
+    else
+        echo "Steps that failed or were stopped:"
+    fi
+    for line in "${failed[@]}"; do
+        printf '• `%s`\n' "$(printf '%s' "$line" | slack_escape)"
+    done
+}
+
+# Posts the run's message to #mac-runs (planning #522). Never fails: with no URL it posts nothing,
+# and a failed post only warns. curl reads the URL from its standard input, so it shows neither in
+# the log nor in `ps`.
+post_to_slack() {
+    local result="$1" status="$2" url payload
+    if [[ ! -s "$SLACK_WEBHOOK_FILE" ]]; then
+        echo "note: no Slack webhook in $SLACK_WEBHOOK_FILE, so this run posts nothing to #mac-runs"
+        return 0
+    fi
+    url=$(head -n 1 "$SLACK_WEBHOOK_FILE" | tr -d '[:space:]')
+    if [[ ! "$url" =~ $SLACK_WEBHOOK_PATTERN ]]; then
+        echo "warning: $SLACK_WEBHOOK_FILE doesn't start with a Slack webhook URL, so this run posts nothing" >&2
+        return 0
+    fi
+    payload=$(mktemp "${TMPDIR:-/tmp}/waypoint-slack.XXXXXX") || return 0
+    if slack_message "$result" "$status" |
+        python3 -c 'import json, sys; print(json.dumps({"text": sys.stdin.read().rstrip()}))' >"$payload" &&
+        printf 'url = "%s"\n' "$url" | curl --silent --show-error --fail --max-time 20 --config - \
+            --header 'Content-Type: application/json' --data-binary "@$payload" >/dev/null; then
+        echo "posted the result to Slack #mac-runs"
+    else
+        echo "warning: posting the result to Slack #mac-runs failed; the run's result stands" >&2
+    fi
+    rm -f "$payload"
+}
+
 finish() {
     local status=$?
     local udid lock index
@@ -500,6 +590,17 @@ finish() {
     # The run lock goes last, once the simulators are shut down and their locks are gone.
     if $OWNS_RUN_LOCK && [[ "$(readlink "$RUN_LOCK" 2>/dev/null)" == "$$" ]]; then
         rm -f "$RUN_LOCK" "$RUN_LOCK.info"
+    fi
+    # Slack hears of every run that held the lock, after the lock is gone, so the next run never
+    # waits on the post. A run turned away at the lock posts nothing.
+    if $OWNS_RUN_LOCK; then
+        if [[ -n "$STOPPED_BY" ]]; then
+            post_to_slack "stopped by $STOPPED_BY" "$status" || true
+        elif [[ $status -eq 0 ]]; then
+            post_to_slack passed "$status" || true
+        else
+            post_to_slack failed "$status" || true
+        fi
     fi
 }
 trap finish EXIT
@@ -587,6 +688,7 @@ step() {
     local start=$SECONDS status=0 clock
     clock=$(date +%H:%M:%S)
     echo "==> $clock $name"
+    CURRENT_STEP="$name"
     # Each step runs in a process group of its own, so stopping the run stops everything the
     # step started, a script's own tools included (`stop_step_tools`).
     set -m
@@ -598,6 +700,7 @@ step() {
         exit "$status"
     fi
     STEP_PID=""
+    CURRENT_STEP=""
     STEP_NAMES+=("$name")
     STEP_STARTS+=("$clock")
     STEP_SECONDS+=($((SECONDS - start)))

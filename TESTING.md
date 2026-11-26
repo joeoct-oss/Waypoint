@@ -269,6 +269,21 @@ What keeps them honest:
 
 Copy the `Step times` table, the slowest-test lists and the two `Memory` lines from the end of the log into the report either way. The table is the run's phase timeline: each step's line starts with the clock time it started, and each `==> ` line in the log has that time too (planning #489).
 
+### Results in Slack
+
+Every run that took the run lock ends by posting one message to the `#mac-runs` channel of the joeoct-oss Slack, through the OSS Alerts app's incoming webhook (planning #522): passed, failed or stopped, the tier and command, the branch (a merge batch's branches joined with `+`), the pull request from `WAYPOINT_PULL_REQUEST` as a title link, the commit, how long it took, and every failed step. The log then says `posted the result to Slack #mac-runs`. `--plan` and a run turned away at the run lock post nothing.
+
+The message never decides a run: the log's pass line does. With no webhook the log says `posts nothing to #mac-runs`, a failed post prints a warning, and neither changes the run's result or exit status. Write either one in the report's **Slack** line.
+
+The webhook URL is a secret. It lives only in one file on the Mac, `~/.config/waypoint/mac-runs-slack-webhook` (or the file `WAYPOINT_SLACK_WEBHOOK_FILE` names), with the URL on its first line, readable only by its owner:
+
+```sh
+mkdir -p ~/.config/waypoint && chmod 700 ~/.config/waypoint
+pbpaste > ~/.config/waypoint/mac-runs-slack-webhook && chmod 600 ~/.config/waypoint/mac-runs-slack-webhook
+```
+
+Copy the URL from the `#mac-runs` row under **Incoming Webhooks** of the OSS Alerts app at api.slack.com/apps, and run the lines above while it is on the clipboard. Never paste it into a chat, an issue, the repo or a command line: the script hands it to curl on standard input, so it shows in no log and no `ps`. Only a URL starting with `https://hooks.slack.com/services/` is used. When Slack reports the webhook gone, make a new one for `#mac-runs` and replace the file.
+
 ### Teardown
 
 Teardown runs after every run, passed or failed, in this order:
@@ -381,6 +396,7 @@ Selective testing: off | on: <the targets `tuist test` listed under "Testing the
 Caches: toolchain <same | changed | unrecorded>, binary cache <on | off>, clean <yes | no>
 Tuist run report: on pull request <n> | none (<why>)
 Batch: none | <the merge-batch.sh line>
+Slack: posted | not posted (<the log's note or warning>)
 Step times: <the table from the end of the log, Mac only>
 Slowest tests: <the slowest-test lists from the end of the log, Mac only>
 Teardown: simulators shut down, locks gone, clone back on main | <what is left>
