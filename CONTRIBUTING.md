@@ -62,7 +62,7 @@ New source files start with this header:
 
 - **One issue per pull request.** Put `Closes #<issue>` in the body, or the full `owner/repo#<issue>` reference when the issue lives in another repo, and copy the issue's labels.
 - **Title:** one plain English sentence in the imperative that says what the change does for the package, with no prefix and no trailing period. For example: "Refuse a push when the route has no destination".
-- **Body:** fill in the template. Say what changed, why, and how it was tested, and flag any public API change.
+- **Body:** fill in every section of the template: what changed and why, the merge method and why, what the tests pin, the CHANGELOG and docs. Flag any public API change. CodeRabbit's pre-merge checks hold the merge while the template isn't filled in, the body doesn't name one issue, `CHANGELOG.md` has no entry under Unreleased, or the body, a commit or a file carries AI or tool attribution or cites private planning issues. Its other checks only warn. The checks and their exact rules are in [`.coderabbit.yaml`](.coderabbit.yaml).
 - **Changelog:** add a line to `CHANGELOG.md` under **Unreleased** for anything a package user would notice.
 - **Keep the branch current.** It must contain the latest `main` when its [merge batch](TESTING.md#merge-batches) is built.
 
