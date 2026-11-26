@@ -141,9 +141,12 @@ def added_changelog_errors(changelog, added_lines):
     headings = [
         heading_above(lines, number) for number in added_lines if lines[number - 1].strip()
     ]
+    # Only an entry counts, never a heading: editing "## Unreleased" itself adds no entry.
     unreleased = any(
-        heading is not None and lines[heading - 1].strip() == UNRELEASED
-        for heading in headings
+        (heading := heading_above(lines, number)) is not None
+        and lines[heading - 1].strip() == UNRELEASED
+        for number in added_lines
+        if lines[number - 1].strip() and not lines[number - 1].startswith("#")
     )
     errors = [
         f'{CHANGELOG} adds a line under "{lines[heading - 1].strip()}", which is already released'
@@ -426,6 +429,11 @@ def self_check_cases():
         (
             "no entry with a package change fails",
             changelog_errors("", [], ["Sources/A.swift"], FILLED, SAMPLE_TEMPLATE),
+            1,
+        ),
+        (
+            "an edited Unreleased heading alone fails",
+            changelog_errors(CHANGELOG_SAMPLE, [3, 5], [CHANGELOG], FILLED, SAMPLE_TEMPLATE),
             1,
         ),
         (
