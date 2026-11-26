@@ -63,7 +63,7 @@ New source files start with this header:
 - **One issue per pull request.** Put one `Closes #<issue>` line in the body, or the full `owner/repo#<issue>` reference when the issue lives in another repo, and copy the issue's labels. A pull request that is one step of a larger issue uses `Part of` lines instead.
 - **Title:** one plain English sentence in the imperative that says what the change does for the package, with no prefix and no trailing period. For example: "Refuse a push when the route has no destination".
 - **Body:** fill in every section of the [template](.github/pull_request_template.md). Flag any public API change. The required **Pull request rules** check ([`scripts/check-pr-rules.py`](scripts/check-pr-rules.py)) holds the merge until the body and branch meet the rules it lists, and reruns when the body is edited. CodeRabbit's pre-merge checks explain a failure in words and warn on the judgment calls; they are in [`.coderabbit.yaml`](.coderabbit.yaml).
-- **Changelog:** add a line to `CHANGELOG.md` under **Unreleased** for anything a package user would notice, and always when `Sources/` or `Package.swift` changes. A pull request that changes none of `CHANGELOG.md`, `Sources/` and `Package.swift` may skip it and says why under "Docs and CHANGELOG" in the template.
+- **Changelog:** add a line to `CHANGELOG.md` under **Unreleased** for anything a package user would notice. When an entry is required, and when it can be skipped, is the "Docs and CHANGELOG" section of the [pull request template](.github/pull_request_template.md).
 - **Keep the branch current.** It must contain the latest `main` when its [merge batch](TESTING.md#merge-batches) is built.
 
 ## Review and merge
