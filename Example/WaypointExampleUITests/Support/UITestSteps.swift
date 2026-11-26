@@ -52,6 +52,19 @@ enum UITestSteps {
 }
 
 extension XCUIApplication {
+    // A short-lived message, such as a toast or a notice, with this identifier whose label contains
+    // `text`. Waiting for it checks the label in the same query that finds the message, since on a
+    // loaded Mac reading `label` in a later step took more than 3 s, and the message was gone by
+    // then (planning #479).
+    @MainActor
+    func message(
+        _ identifier: String,
+        containing text: String
+    ) -> XCUIElement {
+        let matching = NSPredicate(format: "identifier == %@ AND label CONTAINS %@", identifier, text)
+        return descendants(matching: .any).matching(matching).firstMatch
+    }
+
     // Closes iOS's "Save Password?" offer when it shows after a sign in (planning #422). The offer
     // is the system's, not the app's, and it covers the app, so every tap after it misses until it
     // goes.

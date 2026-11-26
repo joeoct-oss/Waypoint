@@ -91,9 +91,8 @@ final class JourneyTests: XCTestCase {
             in: app
         )
 
-        let notice = app.descendants(matching: .any)[Identifiers.notice]
-        XCTAssertTrue(notice.waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(notice.label.contains(Self.signedInAs), notice.label)
+        let notice = app.message(Identifiers.notice, containing: Self.signedInAs)
+        XCTAssertTrue(notice.waitForExistence(timeout: UITestSteps.timeout), "no \"\(Self.signedInAs)\" notice")
         // The notice goes after a few seconds, so it's checked before the offer is closed.
         app.closeSavePasswordOffer()
         let addressStep = app.descendants(matching: .any)[Identifiers.checkoutAddress]
@@ -276,9 +275,8 @@ final class JourneyTests: XCTestCase {
 
         // The notice first: it shows for 3 s, and on a loaded Mac the way back to Account can take
         // longer than that, so it would be gone by the time the test looked for it.
-        let notice = app.descendants(matching: .any)[Identifiers.notice]
-        XCTAssertTrue(notice.waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(notice.label.contains(Self.signedOut), notice.label)
+        let notice = app.message(Identifiers.notice, containing: Self.signedOut)
+        XCTAssertTrue(notice.waitForExistence(timeout: UITestSteps.timeout), "no \"\(Self.signedOut)\" notice")
         XCTAssertTrue(app.buttons[Identifiers.accountSignIn].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertTrue(app.navigationBars[Self.accountTitle].exists)
         let orders = app.buttons[Identifiers.ordersButton]
