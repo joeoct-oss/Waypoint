@@ -152,9 +152,8 @@ def added_changelog_errors(changelog, added_lines):
     )
     errors = [
         f'{CHANGELOG} adds a line under "{lines[heading - 1].strip()}", which is already released'
-        for heading in sorted(set(headings))
-        if heading is not None
-        and lines[heading - 1].strip() != UNRELEASED
+        for heading in sorted({heading for heading in headings if heading is not None})
+        if lines[heading - 1].strip() != UNRELEASED
         and heading not in new_headings
     ]
     if not unreleased and not new_headings:
@@ -437,6 +436,11 @@ def self_check_cases():
             "an edited Unreleased heading alone fails",
             changelog_errors(CHANGELOG_SAMPLE, [3, 5], [CHANGELOG], FILLED, SAMPLE_TEMPLATE),
             1,
+        ),
+        (
+            "an edited title with an entry passes",
+            changelog_errors(CHANGELOG_SAMPLE, [1, 7], [CHANGELOG], FILLED, SAMPLE_TEMPLATE),
+            0,
         ),
         (
             "an indented heading alone fails",
