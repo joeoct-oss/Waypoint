@@ -38,7 +38,7 @@ scan() {
                 [qr/\bplanning[ \t]*(?:\n[ \t]*(?:\/\/+|#+|\*+|<!--)?[ \t]*)?#[0-9]+/i,
                     "cites a planning issue"],
                 [qr/\Q$repo\E/i, "names the private planning repo"],
-                [qr/\bdecisions?[ \t-]+(?:\n[ \t]*(?:\/\/+|#+|\*+)?[ \t]*)?0[0-9]{3}\b/i,
+                [qr/\bdecisions?[ \t-]+(?:\n[ \t]*(?:\/\/+|#+|\*+)?[ \t]*)?[0-9]{4}\b/i,
                     "cites a numbered decision"],
             );
             for my $name (split /[,\n]/, $ENV{PRIVATE_NAMES}) {
@@ -75,9 +75,9 @@ expect() {
     printf '%s\n' "$text" > "$work/file.swift"
     git -C "$work" add file.swift
     if (cd "$work" && PRIVATE_NAMES="$names" scan 2> "$work/log"); then got=passes; else got=fails; fi
-    rm -rf "$work"
+    rm -rf "${work:?}"
     if [[ "$got" != "$want" ]]; then
-        echo "error: check-public-text self-check: expected '$text' to $want, it ${got%s}ed" >&2
+        echo "error: check-public-text self-check: '$text' should be '$want' but $got" >&2
         exit 1
     fi
 }
@@ -98,8 +98,9 @@ expect passes "/// Pushes once, so a second tap pushes nothing."
 expect passes "// Planned with tabs; issue #12 in this repo; $d made in 2026."
 expect passes "// Built for Acmeville." "Acme"
 expect passes "// Built for Acme." ""
+expect fails "// See ${d} 1234." ""
 
-cd "$root"
+cd "$root" || exit 1
 if ! scan; then
     echo "Say the reason in words instead of citing private planning issues, decisions or names." >&2
     exit 1
