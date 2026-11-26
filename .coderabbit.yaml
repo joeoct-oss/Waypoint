@@ -229,13 +229,17 @@ reviews:
     # CODE_STYLE.md. Turn it on with the repo's own config once that lands.
     swiftlint:
       enabled: false
+    # No CI job runs these two, on purpose. markdownlint's defaults (line length, list style)
+    # disagree with the docs, which keep one paragraph per line, and LanguageTool flags names and
+    # code words as spelling. The "**/*.md" path instructions review what matters in the docs.
     markdownlint:
       enabled: false
     languagetool:
       enabled: false
     # actionlint and zizmor run pinned in CI's fast checks; a second run here would post the same
-    # findings again. yamllint's default line length disagrees with the workflows, and actionlint
-    # already validates them.
+    # findings again. yamllint has no CI job: its default line length disagrees with the
+    # workflows, actionlint validates those, and the "**/*.{yml,yaml}" path instructions check
+    # the other settings files against each tool's schema.
     actionlint:
       enabled: false
     zizmor:

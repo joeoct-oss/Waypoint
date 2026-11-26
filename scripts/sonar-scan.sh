@@ -37,7 +37,7 @@ work_dir="${RUNNER_TEMP:-$(mktemp -d)}"
 cache_dir="${SONAR_SCANNER_CACHE:-$HOME/.cache/sonar-scanner}"
 mkdir -p "$cache_dir"
 jar="$cache_dir/sonar-scanner-cli-$scanner_version.jar"
-if ! echo "$scanner_sha256  $jar" | sha256sum --check --status 2>/dev/null; then
+if ! echo "$scanner_sha256  $jar" | shasum -a 256 --check --status 2>/dev/null; then
     # From SonarSource's own download site, since Maven Central answers 429 (too many requests)
     # to shared runners. The download waits longer each time it fails: 15, 30, 60 and 120 s.
     zip=$(mktemp "$work_dir/sonar-scanner-cli.XXXXXX")
@@ -53,9 +53,9 @@ if ! echo "$scanner_sha256  $jar" | sha256sum --check --status 2>/dev/null; then
         echo "::warning::The scanner download failed. Retrying in $delay seconds." >&2
         sleep "$delay"
     done
-    echo "$zip_sha256  $zip" | sha256sum --check --status
+    echo "$zip_sha256  $zip" | shasum -a 256 --check --status
     unzip -p "$zip" "sonar-scanner-$scanner_version/lib/sonar-scanner-cli-$scanner_version.jar" >"$jar"
-    echo "$scanner_sha256  $jar" | sha256sum --check --status
+    echo "$scanner_sha256  $jar" | shasum -a 256 --check --status
 fi
 
 java -jar "$jar" \
