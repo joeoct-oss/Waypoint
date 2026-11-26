@@ -32,16 +32,16 @@ UI_BUNDLE = "WaypointExampleUITests"
 ROOT = Path(__file__).resolve().parent.parent
 FOLDER = ROOT / "Example" / UI_BUNDLE
 # Attributes such as `@MainActor` or `@objc` and access or `final` modifiers may come first.
-ATTRIBUTES = r"(?:@[A-Za-z_][A-Za-z0-9_]*(?:\([^)\n]*\))?\s+)*"
+ATTRIBUTES = r"(?:@[A-Za-z_]\w*(?:\([^)\n]*\))?\s+)*"
 CLASS = re.compile(
     r"^[ \t]*" + ATTRIBUTES + r"(?:(?:public|internal|private|fileprivate|open|final)\s+)*"
-    r"class\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*XCTestCase\b",
+    r"class\s+([A-Za-z_]\w*)\s*:\s*XCTestCase\b",
     re.M,
 )
 # Any `func test...(`, wherever it sits on its line, so a method on the line of its class's `{`
 # counts too. A `static` or `class` one isn't an XCTest test, so test_methods() leaves it out.
-TEST = re.compile(r"(?<![A-Za-z0-9_])func\s+(test[A-Za-z0-9_]*)\s*\(")
-TYPE_METHOD = re.compile(r"(?<![A-Za-z0-9_])(?:static|class)\s+(?:[A-Za-z_]+\s+)*$")
+TEST = re.compile(r"(?<!\w)func\s+(test\w*)\s*\(")
+TYPE_METHOD = re.compile(r"(?<!\w)(?:static|class)\s+(?:[A-Za-z_]+\s+)*$")
 
 
 def test_methods(code, start=0, end=None):
@@ -54,10 +54,21 @@ def test_methods(code, start=0, end=None):
 
 
 # A line comment, a block comment, a raw multi-line or one-line string (`#"""..."""#`, `#"..."#`,
-# closed by as many `#`), a multi-line string or a one-line string, whichever starts first. A nested block comment ends at its first
-# `*/`; a brace after that makes the count below disagree, so the check in main() fails loudly.
+# closed by as many `#`), a multi-line string or a one-line string, whichever starts first. A
+# nested block comment ends at its first `*/`; a brace after that makes the counts in main()
+# disagree, so it fails loudly.
 NOT_CODE = re.compile(
-    r'//[^\n]*|/\*.*?\*/|(#+)""".*?"""\1|(#+)".*?"\2|""".*?"""|"(?:\\.|[^"\\\n])*"', re.S
+    "|".join(
+        (
+            r"//[^\n]*",
+            r"/\*.*?\*/",
+            r'(#+)""".*?"""\1',
+            r'(#+)".*?"\2',
+            r'""".*?"""',
+            r'"[^"\\\n]*(?:\\.[^"\\\n]*)*"',
+        )
+    ),
+    re.S,
 )
 
 
@@ -95,11 +106,16 @@ def count_tests(code, match):
     return count
 
 
-def test_classes(folder):
-    """Each XCTestCase class with its number of tests, read from the Swift files."""
+def swift_sources(folder):
+    """The text of every Swift file in the folder, in a stable order."""
+    return [path.read_text(encoding="utf-8") for path in sorted(folder.rglob("*.swift"))]
+
+
+def test_classes(sources):
+    """Each XCTestCase class with its number of tests, read from the Swift sources."""
     classes = {}
-    for path in sorted(folder.rglob("*.swift")):
-        code = code_only(path.read_text(encoding="utf-8"))
+    for source in sources:
+        code = code_only(source)
         for match in CLASS.finditer(code):
             count = count_tests(code, match)
             if count:
@@ -185,15 +201,14 @@ def main(argv):
         print(__doc__ or "usage: scripts/ui-test-shards.py <total> <index>|--list", file=sys.stderr)
         return 2
     total = int(argv[0])
-    classes = test_classes(FOLDER)
+    sources = swift_sources(FOLDER)
+    classes = test_classes(sources)
     if not classes:
         print(f"error: no UI test classes in {FOLDER}", file=sys.stderr)
         return 1
     # A test outside the body of an XCTestCase subclass, such as one in an extension or in a class
     # that subclasses a base test class, would run in no shard, so the split refuses to leave it out.
-    every_test = sum(
-        len(list(test_methods(code_only(path.read_text(encoding="utf-8"))))) for path in FOLDER.rglob("*.swift")
-    )
+    every_test = sum(len(list(test_methods(code_only(source)))) for source in sources)
     if every_test != sum(classes.values()):
         print(
             f"error: {every_test} UI tests in {FOLDER}, but only {sum(classes.values())} sit in the "
@@ -205,8 +220,8 @@ def main(argv):
         return 1
     # Blanking that swallowed a class declaration would hide its tests from both counts above, so
     # every class declared in the files must still be seen.
-    declared = sum(len(CLASS.findall(path.read_text(encoding="utf-8"))) for path in FOLDER.rglob("*.swift"))
-    seen = sum(len(CLASS.findall(code_only(path.read_text(encoding="utf-8")))) for path in FOLDER.rglob("*.swift"))
+    declared = sum(len(CLASS.findall(source)) for source in sources)
+    seen = sum(len(CLASS.findall(code_only(source))) for source in sources)
     if seen != declared:
         print(
             f"error: {declared} XCTestCase classes in {FOLDER}, but only {seen} outside comments and "
