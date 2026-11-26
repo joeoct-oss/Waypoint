@@ -2,7 +2,8 @@
 # only when the one before it passed, so a failure stops the run before it spends a SonarQube
 # analysis or Linux and macOS time.
 # 1. "Fast checks", seconds long: actionlint, zizmor, the script checks of scripts/test-linux.sh
-#    (--checks-only, which includes the public text check), the coordinator size limit, dependency
+#    (--checks-only; it gets PRIVATE_NAMES for the public text check, which joins those checks in
+#    its own pull request), the coordinator size limit, dependency
 #    review when the package's dependencies changed, and which kinds of files changed.
 # 2. "SonarQube Cloud quality gate": scripts/sonar-scan.sh analyzes the code and waits for the
 #    gate. Until that script is on main, the job passes without analyzing anything.
