@@ -1070,7 +1070,9 @@ for how in step script; do
     # TERM is sent only to a run that reached its test step, so the checks below test that step.
     if [[ "$reached" != true ]]; then
         fail "a run stopped with TERM ($how) reaches its test step within 10 s (log: $(tail -3 "$WORK/6-$how.log"))"
-        kill -TERM "$run" 2>/dev/null || true
+        # The run is a subshell whose child is test-mac.sh, so TERM goes to that child, which
+        # takes its stop path; the subshell ends with it.
+        pkill -TERM -P "$run" || true
         wait "$run" 2>/dev/null || true
         pkill -f "$STUBS/tuist|$STUBS/stub-grandchild" || true
         rm -f "$LOCK" "$LOCK.info"
