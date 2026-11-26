@@ -35,6 +35,7 @@ import sys
 
 TEMPLATE = ".github/pull_request_template.md"
 CHANGELOG = "CHANGELOG.md"
+UNRELEASED = "## Unreleased"
 WHAT = "What changed and why"
 MERGE = "Merge method"
 TESTS = "Tests"
@@ -138,18 +139,18 @@ def added_changelog_errors(changelog, added_lines):
         heading_above(lines, number) for number in added_lines if lines[number - 1].strip()
     ]
     unreleased = any(
-        heading is not None and lines[heading - 1].strip() == "## Unreleased"
+        heading is not None and lines[heading - 1].strip() == UNRELEASED
         for heading in headings
     )
     errors = [
         f'{CHANGELOG} adds a line under "{lines[heading - 1].strip()}", which is already released'
         for heading in sorted(set(headings))
         if heading is not None
-        and lines[heading - 1].strip() != "## Unreleased"
+        and lines[heading - 1].strip() != UNRELEASED
         and heading not in new_headings
     ]
     if not unreleased and not new_headings:
-        errors.append(f'{CHANGELOG} gains no line under "## Unreleased"')
+        errors.append(f'{CHANGELOG} gains no line under "{UNRELEASED}"')
     return errors
 
 
