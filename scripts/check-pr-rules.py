@@ -35,8 +35,12 @@ import sys
 
 TEMPLATE = ".github/pull_request_template.md"
 CHANGELOG = "CHANGELOG.md"
-SECTIONS = ["What changed and why", "Merge method", "Tests", "Docs and CHANGELOG", "Checklist"]
-AUTHOR_TEXT_SECTIONS = ["What changed and why", "Merge method", "Tests"]
+WHAT = "What changed and why"
+MERGE = "Merge method"
+TESTS = "Tests"
+DOCS = "Docs and CHANGELOG"
+SECTIONS = [WHAT, MERGE, TESTS, DOCS, "Checklist"]
+AUTHOR_TEXT_SECTIONS = [WHAT, MERGE, TESTS]
 # These files hold the patterns below, so their own lines would always match.
 PATTERN_FILES = {"scripts/check-pr-rules.py", "scripts/check-public-text.sh", ".coderabbit.yaml"}
 
@@ -56,7 +60,8 @@ PRIVATE_REFS = [
 ]
 CLOSING = re.compile(r"^\s*(closes|fixes|resolves)\b", re.IGNORECASE)
 PART_OF = re.compile(r"^\s*part of\b", re.IGNORECASE)
-REFERENCE = re.compile(r"(?:[\w.-]+/[\w.-]+)?#\d+")
+# A reference is "#n" or "owner/repo#n"; counting the "#n" part is enough.
+REFERENCE = re.compile(r"#\d+")
 
 
 def strip_comments(text):
@@ -68,9 +73,8 @@ def sections(markdown):
     found = {}
     current = None
     for line in strip_comments(markdown).splitlines():
-        heading = re.match(r"^##\s+(.+?)\s*$", line)
-        if heading:
-            current = heading.group(1)
+        if line.startswith("## "):
+            current = line[3:].strip()
             found[current] = []
         elif current is not None:
             found[current].append(line)
@@ -98,12 +102,12 @@ def template_errors(body, template):
             own = author_lines(body_sections[name], template_sections.get(name, []))
             if not own:
                 errors.append(f'"## {name}" holds no text of your own')
-    method = " ".join(body_sections.get("Merge method", [])).lower()
-    if "Merge method" in body_sections and method.strip():
+    method = " ".join(body_sections.get(MERGE, [])).lower()
+    if MERGE in body_sections and method.strip():
         if "rebase" in method:
-            errors.append('"## Merge method" names a rebase merge, which is never used')
+            errors.append(f'"## {MERGE}" names a rebase merge, which is never used')
         elif "squash" not in method and "merge commit" not in method:
-            errors.append('"## Merge method" names neither squash nor a merge commit')
+            errors.append(f'"## {MERGE}" names neither squash nor a merge commit')
     return errors
 
 
@@ -122,66 +126,70 @@ def issue_errors(body):
     return errors
 
 
+def heading_above(lines, number):
+    """The line number of the nearest "## " heading at or above a line, or None."""
+    return next((n for n in range(number, 0, -1) if lines[n - 1].startswith("## ")), None)
+
+
+def added_changelog_errors(changelog, added_lines):
+    lines = changelog.splitlines()
+    new_headings = {number for number in added_lines if lines[number - 1].startswith("## ")}
+    headings = [
+        heading_above(lines, number) for number in added_lines if lines[number - 1].strip()
+    ]
+    unreleased = any(
+        heading is not None and lines[heading - 1].strip() == "## Unreleased"
+        for heading in headings
+    )
+    errors = [
+        f'{CHANGELOG} adds a line under "{lines[heading - 1].strip()}", which is already released'
+        for heading in sorted(set(headings))
+        if heading is not None
+        and lines[heading - 1].strip() != "## Unreleased"
+        and heading not in new_headings
+    ]
+    if not unreleased and not new_headings:
+        errors.append(f'{CHANGELOG} gains no line under "## Unreleased"')
+    return errors
+
+
 def changelog_errors(changelog, added_lines, changed_files, body, template):
     """added_lines are the 1-based numbers of the lines the PR adds to the changelog."""
     if added_lines:
-        lines = changelog.splitlines()
-        new_headings = {
-            number for number in added_lines if lines[number - 1].startswith("## ")
-        }
-        misplaced = []
-        unreleased = False
-        for number in added_lines:
-            if not lines[number - 1].strip():
-                continue
-            heading = next(
-                (n for n in range(number, 0, -1) if lines[n - 1].startswith("## ")), None
-            )
-            if heading is None:
-                continue
-            if lines[heading - 1].strip() == "## Unreleased":
-                unreleased = True
-            elif heading not in new_headings:
-                misplaced.append(number)
-        errors = [
-            f"{CHANGELOG} line {number} is added under an already released version"
-            for number in misplaced
-        ]
-        if not unreleased and not new_headings:
-            errors.append(f'{CHANGELOG} gains no line under "## Unreleased"')
-        return errors
+        return added_changelog_errors(changelog, added_lines)
     package = [f for f in changed_files if f.startswith("Sources/") or f == "Package.swift"]
     if package:
         return [f"{CHANGELOG} has no entry, and the package changes ({package[0]})"]
-    own = author_lines(
-        sections(body).get("Docs and CHANGELOG", []),
-        sections(template).get("Docs and CHANGELOG", []),
-    )
+    own = author_lines(sections(body).get(DOCS, []), sections(template).get(DOCS, []))
     if not own:
-        return [f'{CHANGELOG} has no entry, and "## Docs and CHANGELOG" doesn\'t say why']
+        return [f'{CHANGELOG} has no entry, and "## {DOCS}" doesn\'t say why']
     return []
+
+
+def credits_a_tool(line):
+    return any(pattern.search(line) for pattern in ATTRIBUTION)
 
 
 def attribution_errors(body, commit_messages, added):
     """added maps each changed file to its added lines."""
-    errors = []
-    for line in body.splitlines():
-        if CREDIT_LINE.match(line):
-            continue
-        if any(pattern.search(line) for pattern in ATTRIBUTION):
-            errors.append(f'the body credits an AI or tool: "{line.strip()[:80]}"')
-    for message in commit_messages:
-        for line in message.splitlines():
-            if any(pattern.search(line) for pattern in ATTRIBUTION):
-                errors.append(f'a commit message credits an AI or tool: "{line.strip()[:80]}"')
+    errors = [
+        f'the body credits an AI or tool: "{line.strip()[:80]}"'
+        for line in body.splitlines()
+        if not CREDIT_LINE.match(line) and credits_a_tool(line)
+    ]
+    errors += [
+        f'a commit message credits an AI or tool: "{line.strip()[:80]}"'
+        for message in commit_messages
+        for line in message.splitlines()
+        if credits_a_tool(line)
+    ]
     for path, lines in added.items():
         if path in PATTERN_FILES:
             continue
-        for line in lines:
-            if any(pattern.search(line) for pattern in ATTRIBUTION):
-                errors.append(f"{path} adds AI or tool attribution")
-            elif any(pattern.search(line) for pattern in PRIVATE_REFS):
-                errors.append(f"{path} adds a private planning or decision reference")
+        if any(credits_a_tool(line) for line in lines):
+            errors.append(f"{path} adds AI or tool attribution")
+        if any(pattern.search(line) for line in lines for pattern in PRIVATE_REFS):
+            errors.append(f"{path} adds a private planning or decision reference")
     return sorted(set(errors))
 
 
