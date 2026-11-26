@@ -35,18 +35,21 @@ jobs:
           GH_TOKEN: ${{ secrets.WAYPOINT_PROJECT_TOKEN }}
           CONTENT_ID: ${{ github.event.pull_request.node_id }}
           IS_DRAFT: ${{ github.event.pull_request.draft }}
+        # The GraphQL variables ($project and the rest) are meant for GitHub, not the shell.
         run: |
           if [ "$IS_DRAFT" = "true" ]; then
             status_option="$STATUS_IN_PROGRESS"
           else
             status_option="$STATUS_IN_REVIEW"
           fi
+          # shellcheck disable=SC2016
           item_id="$(gh api graphql \
             -f query='mutation($project: ID!, $content: ID!) {
               addProjectV2ItemById(input: {projectId: $project, contentId: $content}) { item { id } }
             }' \
             -f project="$PROJECT_ID" -f content="$CONTENT_ID" \
             --jq '.data.addProjectV2ItemById.item.id')"
+          # shellcheck disable=SC2016
           gh api graphql \
             -f query='mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
               updateProjectV2ItemFieldValue(input: {projectId: $project, itemId: $item,
