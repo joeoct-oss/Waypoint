@@ -60,6 +60,9 @@ if [ "$part" != swift ]; then
     echo "==> Checking the flaky-test verdict and the quarantine"
     scripts/check-flaky-tests.sh
 
+    echo "==> Checking the public text for private references"
+    scripts/check-public-text.sh
+
     if [ "$part" = checks ]; then
         echo "==> Linux script checks passed"
         exit 0

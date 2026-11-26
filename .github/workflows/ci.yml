@@ -92,6 +92,9 @@ jobs:
       # The script checks need no Swift, so they run on the runner host, each once, beside the
       # Swift jobs.
       - name: Run the Linux script checks
+        # The public text check reads the private names from a secret, so they stay out of the log.
+        env:
+          PRIVATE_NAMES: ${{ secrets.PRIVATE_NAMES }}
         run: scripts/test-linux.sh --checks-only
 
   linux:
