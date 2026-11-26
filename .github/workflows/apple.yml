@@ -304,10 +304,11 @@ jobs:
           path: .build/results
           retention-days: 7
 
+  # Skipped, not failed, when a newer push cancels the run, since that push's run replaces it.
   gate:
     name: Apple builds and tests
     needs: [package, example, ui, release-reports]
-    if: ${{ always() && !github.event.pull_request.draft }}
+    if: ${{ !cancelled() && !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     permissions: {}
