@@ -14,7 +14,11 @@
 # Runs in the cloud while working, and in CI's fast checks. scripts/format.sh fixes what the
 # tools can fix.
 #
-# Usage: scripts/lint.sh
+# CI runs the two halves apart: swift-format in the pinned Swift image, and SwiftLint on the
+# runner host, because the Linux SwiftLint needs libxml2.so.2, which that image doesn't ship, and
+# finds the host toolchain's SourceKit there.
+#
+# Usage: scripts/lint.sh [--swift-format-only | --swiftlint-only]
 
 set -euo pipefail
 
@@ -22,37 +26,55 @@ cd "$(dirname "$0")/.."
 # shellcheck source=scripts/lint-tools.sh
 source scripts/lint-tools.sh
 
-find_swiftlint
-check_swift_format
+part=all
+case "${1:-}" in
+    --swift-format-only) part=swift-format ;;
+    --swiftlint-only) part=swiftlint ;;
+esac
 
 failed=0
 
-echo "==> swift format lint"
-findings="$(swift format lint --strict --recursive --parallel "${LINT_PATHS[@]}" 2>&1 || true)"
-# Keeps every finding except "remove 1 space" at the space inside `{ }`. Bash only, since CI
-# runs this script in the Swift image, which has no Python or Perl.
-remaining=""
-while IFS= read -r finding; do
-    if [[ "$finding" == *"[Spacing] remove 1 space"* ]]; then
-        IFS=: read -r path line column _ <<< "$finding"
-        if [[ -f "$path" && "$line" =~ ^[0-9]+$ && "$column" =~ ^[0-9]+$ && "$column" -ge 2 ]]; then
-            text="$(sed -n "${line}p" "$path")"
-            if [[ "${text:column-2:3}" == "{ }" ]]; then
-                continue
+if [[ "$part" != swiftlint ]]; then
+    check_swift_format
+    echo "==> swift format lint"
+    findings="$(swift format lint --strict --recursive --parallel "${LINT_PATHS[@]}" 2>&1 || true)"
+    # Keeps every finding except "remove 1 space" at the space inside `{ }`. Bash only, since CI
+    # runs this script in the Swift image, which has no Python or Perl.
+    remaining=""
+    while IFS= read -r finding; do
+        if [[ "$finding" == *"[Spacing] remove 1 space"* ]]; then
+            IFS=: read -r path line column _ <<< "$finding"
+            if [[ -f "$path" && "$line" =~ ^[0-9]+$ && "$column" =~ ^[0-9]+$ && "$column" -ge 2 ]]; then
+                text="$(sed -n "${line}p" "$path")"
+                if [[ "${text:column-2:3}" == "{ }" ]]; then
+                    continue
+                fi
             fi
         fi
-    fi
-    remaining+="$finding"$'\n'
-done <<< "$findings"
-remaining="${remaining%$'\n'}"
-remaining="${remaining#$'\n'}"
-if [[ -n "$remaining" ]]; then
-    echo "$remaining"
-    failed=1
+        remaining+="$finding"$'\n'
+    done <<< "$findings"
+    remaining="${remaining%$'\n'}"
+    remaining="${remaining#$'\n'}"
+    if [[ -n "$remaining" ]]; then
+        echo "$remaining"
+        failed=1
 fi
 
-echo "==> swiftlint lint"
-"$SWIFTLINT" lint --strict --quiet --baseline .swiftlint-baseline.json || failed=1
+fi
+
+if [[ "$part" != swift-format ]]; then
+    find_swiftlint
+    echo "==> swiftlint lint"
+    output="$("$SWIFTLINT" lint --strict --quiet --baseline .swiftlint-baseline.json 2>&1)" || failed=1
+    if [[ -n "$output" ]]; then
+        echo "$output"
+    fi
+    # Without SourceKit, SwiftLint skips the custom rules with only a warning.
+    if grep -q "requires SourceKit" <<< "$output"; then
+        echo "error: SwiftLint can't reach SourceKit; put a Swift toolchain's swift on the PATH." >&2
+        failed=1
+    fi
+fi
 
 if [[ "$failed" -ne 0 ]]; then
     echo "error: lint failed. scripts/format.sh fixes the layout findings; CODE_STYLE.md explains the rest." >&2
