@@ -13,7 +13,7 @@
 import Testing
 import Waypoint
 
-/// `import Waypoint` alone gives an app the core types (planning #425).
+/// `import Waypoint` alone gives an app the core types.
 @Suite("One import")
 @MainActor
 struct OneImportTests {

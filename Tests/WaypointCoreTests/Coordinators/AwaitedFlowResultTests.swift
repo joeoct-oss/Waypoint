@@ -12,7 +12,7 @@ import WaypointCore
 import WaypointTestSupport
 
 /// Awaiting a child flow's result: `await router.present(child)` returns what `onFinish:` would
-/// get, exactly once, and never waits for a flow that didn't start (planning #314).
+/// get, exactly once, and never waits for a flow that didn't start.
 ///
 /// Each test that waits for a flow to start wakes on the router's observable state, as a
 /// renderer does, so none of them sleeps.

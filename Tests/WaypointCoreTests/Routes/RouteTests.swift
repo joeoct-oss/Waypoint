@@ -11,7 +11,7 @@ import Testing
 import WaypointCore
 import WaypointTestSupport
 
-/// Typed routes, erased routes, keys and the registry (planning #264).
+/// Typed routes, erased routes, keys and the registry.
 @Suite("Routes")
 struct RouteTests {
     typealias PaymentRoute = RouteFixtures.PaymentRoute

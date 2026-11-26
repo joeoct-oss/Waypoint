@@ -13,8 +13,7 @@ import WaypointTestSupport
 @testable import WaypointCore
 
 /// Pushing a child coordinator's flow: its screens follow on the parent's stack after a marker,
-/// its router is a child in the tree, and the parent gets the flow's result exactly once
-/// (planning #313).
+/// its router is a child in the tree, and the parent gets the flow's result exactly once.
 @Suite("Pushing child flows")
 @MainActor
 struct PushedChildFlowTests {

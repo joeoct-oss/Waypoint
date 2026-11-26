@@ -13,7 +13,7 @@ import WaypointTestSupport
 @testable import WaypointCore
 
 /// Presenting a child coordinator's flow: its router joins the parent's tree, and the parent gets
-/// the flow's result exactly once (planning #313).
+/// the flow's result exactly once.
 @Suite("Presenting child flows")
 @MainActor
 struct ChildFlowTests {
