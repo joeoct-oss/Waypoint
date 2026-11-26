@@ -30,7 +30,7 @@ A stack or flow coordinator doesn't declare its router. Waypoint makes it the fi
 
 > Warning: Don't read a coordinator's router in `deinit`. A coordinator going away gets an inert router: its calls return `.ignored` and log `staleNavigator`. A coordinator that subclasses `NSObject` traps there instead.
 
-Built so far in planning #313: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`; `TabCoordinating` in `WaypointCore` and `TabCoordinator` in `Waypoint`, with the router, `makeRouter()`, each tab's coordinator and `navigator(for:)`; and `FlowCoordinating` in `WaypointCore` and `FlowCoordinator` in `Waypoint`, with `finish(with:)`, presenting a child flow with `onFinish:` in both forms, and `FlowResult`. The rest of this article is still planned.
+Built so far in planning #313: `StackCoordinating` in `WaypointCore` and `StackCoordinator` in `Waypoint`, with the router, `makeRouter()`, `rootName`, `registerDestinations(on:)`, `navigator` and `navigator(for:)`; `TabCoordinating` in `WaypointCore` and `TabCoordinator` in `Waypoint`, with the router, `makeRouter()`, each tab's coordinator and `navigator(for:)`; and `FlowCoordinating` in `WaypointCore` and `FlowCoordinator` in `Waypoint`, with `finish(with:)`, presenting a child flow with `onFinish:` in both forms, and `FlowResult`; and, from planning #314, the `await` forms of `present` on stack and tab routers. The rest of this article is still planned.
 
 There is one coordinator protocol for each kind, and it is the same in SwiftUI and UIKit apps. The `Waypoint` product adds the screens: `root` and `destinations`, which take SwiftUI views or UIKit view controllers, and `view`, the whole flow drawn by a renderer you can choose. See "Coordinators and renderers" in the `Waypoint` catalog. The parts below have no UI, so a coordinator's logic is tested on Linux.
 
@@ -279,11 +279,50 @@ extension StackRouter {
 }
 ```
 
-Still planned: `await router.present(child, style:)`, which returns the `FlowResult` (planning #314):
+### Awaiting a child flow's result
+
+Each `present` form with `onFinish:` has an `await` form without it, which returns the flow's `FlowResult` once the flow ends. It takes the same `style:`, `trigger:`, `else:`, file and line, works on stack and tab routers, and returns what `onFinish:` would get in every ending path, exactly once:
 
 ```swift
-let result = await router.present(AddressPickerCoordinator(), style: .sheet)
+switch await router.present(AddressPickerCoordinator(), style: .sheet) {
+case .finished(let address):
+    useAddress(address)
+case .cancelled:
+    break   // the user swiped the sheet away, or the present was refused
+}
 ```
+
+The lazy form, `await router.present(style: .sheet) { child }`, builds the child only when the present happens, as the `onFinish:` form does.
+
+An `await` never waits for a flow that didn't start. Whenever `onFinish:` would never be called, it returns `.cancelled` at once: a present that fails, finds its flow already there or is ignored, a fallback that started no flow, such as `.popToRoot` (a `.replacePresentation` that starts the child waits as usual). The refusal is still reported and logged. Code that needs to know why reads the outcome the `onFinish:` form returns.
+
+Cancelling the task that awaits returns `.cancelled` at once and leaves the flow up. Ending the flow instead wouldn't be safe: SwiftUI cancels a screen's `.task` when the screen disappears, and a screen disappears when a pushed screen or a full-screen cover hides it, so an `await` in a screen's `.task` would end the very flow it showed. The flow goes on, and when it ends it is dismissed and released as usual. Nobody waits for its result, so it is logged at debug level in the `flows` category as not delivered and dropped. A flow that already finished keeps its value: cancelling after `finish(with:)` still returns `.finished`.
+
+> Tip: Await a flow's result from a coordinator, or from a task the app keeps, and use the `onFinish:` form from a screen. The "result not delivered" log line shows where a result went nowhere.
+
+```swift
+extension StackRouter {
+    /// Presents a child flow, and returns its result once it ends.
+    @discardableResult
+    public func present<Child: FlowCoordinating>(
+        _ child: Child,
+        style: PresentationStyle = .sheet,
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil
+    ) async -> FlowResult<Child.Output>
+
+    /// The same, building the child only when the present happens.
+    @discardableResult
+    public func present<Child: FlowCoordinating>(
+        style: PresentationStyle = .sheet,
+        trigger: String? = nil,
+        else fallback: NavigationFallback? = nil,
+        _ makeChild: @escaping @MainActor () -> Child
+    ) async -> FlowResult<Child.Output>
+}
+```
+
+`TabRouter` has the same two forms, which present above the whole container.
 
 To start a flow without passing its coordinator, give it a `Flow(...)` entry and call `router.show(_:)`.
 

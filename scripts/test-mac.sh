@@ -20,6 +20,10 @@
 #   on the same inputs (planning #429), unless the branch changes a file those hashes don't cover.
 # - release (before a tag): full, plus a build for an iOS device with warnings as errors, and the
 #   package and example app tests again on the iOS 17 simulator. It never skips a test.
+# - stress (at night, on `main`, while a test is quarantined): every step of full, with 4 UI
+#   workers by default, no retry and no selective testing, then each quarantined test 5 times in a
+#   row. A quarantined test that passed every try is printed as `Stress passed:`, and leaves the
+#   quarantine (TESTING.md, Flaky tests and quarantine). It posts no Tuist run report and warms no cache.
 # - coverage (on `main`, as TESTING.md schedules it): every example app test, never skipped, on
 #   `main`'s own commit, then `tuist coverage complete`, so the Tuist dashboard charts `main`'s
 #   code coverage (planning #431). It refuses any other commit, and runs none of the package's steps.
@@ -56,11 +60,19 @@
 # step took and the 10 slowest tests of each simulator test step, the package's included (planning #421),
 # read from its result bundle.
 #
+# A failed example app test runs once more (`-retry-tests-on-failure -test-iterations 2`), and
+# scripts/flaky-tests.py then decides each example step from its result bundle and
+# Example/quarantine.json: a UI test that passed on its retry is flaky and doesn't block; a UI test
+# that failed both tries blocks unless it is quarantined; a unit test that needed a retry blocks;
+# a step that failed with no failed test blocks. The log ends with the flaky and quarantined tests.
+# `--only` never retries: it is how a person tells a flaky test from a broken one (TESTING.md,
+# Flaky tests and quarantine).
+#
 # One run at a time: the script first takes a run lock that every clone of the repo shares
 # (planning #420). A second run stops at once and names the run that holds it. A lock left by a run that
 # is no longer going is cleared; a lock whose run is still going is never touched.
 #
-# Usage: scripts/test-mac.sh [quick|full|release|coverage] [--ui] [--all]
+# Usage: scripts/test-mac.sh [quick|full|release|stress|coverage] [--ui] [--all]
 #                           [--only <Target/Class[/test]>] [--clean] [--plan]
 #   --ui    quick also runs the example app's unit and UI tests.
 #   --all   quick runs every part, whatever the branch changed.
@@ -77,18 +89,22 @@
 #   WAYPOINT_SIMULATOR        the project simulator (default waypoint-01), created when missing.
 #   WAYPOINT_IOS17_SIMULATOR  the iOS 17 simulator for release (default waypoint-02); must exist.
 #   WAYPOINT_JOBS             build jobs (default half the performance cores, at least 2).
-#   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 3;
-#                             1 runs them on the simulator itself).
+#   WAYPOINT_UI_WORKERS       simulator copies the example app's tests run on at once (default 3,
+#                             4 in stress; 1 runs them on the simulator itself).
 #   WAYPOINT_TUIST_OFFLINE    1 turns off Tuist's server features: selective testing, the binary
 #                             cache and uploads (default 0).
 #   WAYPOINT_PULL_REQUEST     the number of the pull request this run tests, whose page gets
 #                             Tuist's run report; unset for a merge batch of several branches.
 #   WAYPOINT_BASE             what the branch is compared with (default origin/main), for what
 #                             quick runs and whether selective testing is on.
+#   WAYPOINT_TEST_DEVICES     Xcode's own device set, where it makes the simulator copies parallel
+#                             tests run on (default ~/Library/Developer/XCTestDevices).
 #   WAYPOINT_RUN_LOCK         the run lock (default /tmp/waypoint-test-mac.lock); only the
 #                             script's own checks set it, and WAYPOINT_RUN_LOCK_TEST_PAUSE.
 #   WAYPOINT_TOOLCHAIN_RECORD the file holding the tools of the last green clean run (default
 #                             `waypoint-clean-run-toolchain` in the clone's git folder); only the
+#                             script's own checks set it.
+#   WAYPOINT_QUARANTINE_FILE  the quarantine list (default Example/quarantine.json); only the
 #                             script's own checks set it.
 
 set -euo pipefail
@@ -109,7 +125,7 @@ ONLY_TEST=""
 PLAN_ONLY=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        quick | full | release | coverage) TIER="$1" ;;
+        quick | full | release | stress | coverage) TIER="$1" ;;
         --ui) WITH_UI=true ;;
         --all) RUN_ALL=true ;;
         --clean) CLEAN=true ;;
@@ -129,7 +145,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 if [[ -n "$ONLY_TEST" && "$TIER" != "quick" ]]; then
-    echo "error: --only works with quick; full, release and coverage run every test" >&2
+    echo "error: --only works with quick; full, release, stress and coverage run every test" >&2
     exit 2
 fi
 
@@ -223,6 +239,10 @@ fi
 # can't name them all).
 TUIST_PULL_REQUEST=""
 unset GITHUB_REF
+if [[ -n "${WAYPOINT_PULL_REQUEST:-}" && "$TIER" == stress ]]; then
+    echo "error: a stress run posts no run report, so it takes no WAYPOINT_PULL_REQUEST" >&2
+    exit 2
+fi
 if [[ -n "${WAYPOINT_PULL_REQUEST:-}" ]]; then
     if [[ ! "$WAYPOINT_PULL_REQUEST" =~ ^[1-9][0-9]*$ ]]; then
         echo "error: WAYPOINT_PULL_REQUEST must be a pull request number, not '$WAYPOINT_PULL_REQUEST'" >&2
@@ -250,6 +270,7 @@ fi
 case "$TIER" in
     quick) STOP_AFTER_MINUTES=30 ;;
     full) STOP_AFTER_MINUTES=35 ;;
+    stress) STOP_AFTER_MINUTES=75 ;;
     release) STOP_AFTER_MINUTES=50 ;;
     coverage) STOP_AFTER_MINUTES=30 ;;
 esac
@@ -268,15 +289,36 @@ XCODE_TEST_FLAGS=(-quiet -jobs "$JOBS" -parallel-testing-enabled NO)
 
 # The example app's tests run on this many simulator copies at once (planning #427), so they take about
 # half as long.
-UI_WORKERS="${WAYPOINT_UI_WORKERS:-3}"
+if [[ "$TIER" == stress ]]; then
+    UI_WORKERS="${WAYPOINT_UI_WORKERS:-4}"
+else
+    UI_WORKERS="${WAYPOINT_UI_WORKERS:-3}"
+fi
 if [[ "$UI_WORKERS" -gt 1 ]]; then
     EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled YES -parallel-testing-worker-count "$UI_WORKERS")
 else
     EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled NO)
 fi
 
-# The steps run so far, with the seconds each took, printed when the script ends.
+# A failed example app test runs once more, so one flake can't fail the run on its own; the
+# verdict after the step decides what blocks. `--only` runs exactly once, since it is how a person
+# tells a flaky test from a broken one.
+# A stress run never retries: it is there to see a test fail.
+if [[ -n "$ONLY_TEST" || "$TIER" == stress ]]; then
+    EXAMPLE_RETRY_FLAGS=()
+    RETRY=off
+else
+    EXAMPLE_RETRY_FLAGS=(-retry-tests-on-failure -test-iterations 2)
+    RETRY=on
+fi
+QUARANTINE_FILE="${WAYPOINT_QUARANTINE_FILE:-Example/quarantine.json}"
+# How many times in a row a stress run runs each quarantined test, after the full run's one try.
+STRESS_REPEATS=5
+
+# The steps run so far, with the clock time each started and the seconds it took, printed when the
+# script ends as the run's phase timeline (planning #489).
 STEP_NAMES=()
+STEP_STARTS=()
 STEP_SECONDS=()
 # The simulators this run booted or locked, released when the script ends.
 BOOTED_UDIDS=()
@@ -343,6 +385,78 @@ report_slowest_tests() {
     done
 }
 
+# Prints free memory and swap, so a report shows how loaded the Mac was (planning #489). Only a
+# report: it never fails the run, and prints nothing where the tools don't exist.
+report_memory() {
+    local label="$1" swap free_mb
+    swap=$(sysctl -n vm.swapusage 2>/dev/null || true)
+    # vm_stat counts pages and names the page size in its first line.
+    free_mb=$(vm_stat 2>/dev/null | awk '
+        NR == 1 { for (i = 1; i <= NF; i++) if ($i == "of") size = $(i + 1) }
+        /Pages free/ { gsub(/\./, "", $3); if (size) print int($3 * size / 1048576) }' || true)
+    echo "Memory $label: ${free_mb:+$free_mb MB free, }swap ${swap:-unknown}"
+}
+
+# Xcode makes the simulator copies parallel tests run on ("Clone N of <simulator>") in a device set of
+# its own, new for every run, and leaves one of them behind each time, shut down, as big as the
+# simulator it copies (measured 2026-11-25: 43 copies of about 20 GB each, none reused). A run
+# remembers which copies were there when it started, and at the end shuts down and deletes, by UDID,
+# only the copies made since that are shut down. A copy that was there before, and a copy still
+# booted at the end, which only someone else's test run, such as Yousef's own in Xcode, can be
+# using, are never touched; Xcode shuts its copies down when a step ends. The pool simulators
+# are never touched, and nothing runs `shutdown all` (planning #489). Without a good listing at the
+# start, nothing is removed.
+TEST_DEVICES="${WAYPOINT_TEST_DEVICES:-$HOME/Library/Developer/XCTestDevices}"
+CLONES_AT_START=""
+CLONES_RECORDED=false
+# Prints "<udid> <state>" for each copy in the set, or fails when the set can't be listed.
+clones() {
+    [[ -d "$TEST_DEVICES" ]] || return 0
+    local listing
+    listing=$(xcrun simctl --set "$TEST_DEVICES" list devices -j 2>/dev/null) || return 1
+    /usr/bin/python3 -c 'import json,sys
+for r in json.load(sys.stdin)["devices"].values():
+    for x in r:
+        if x["name"].startswith("Clone "): print(x["udid"], x["state"])' <<<"$listing" 2>/dev/null
+}
+record_clones() {
+    local listing
+    if listing=$(clones); then
+        CLONES_AT_START=$(cut -d' ' -f1 <<<"$listing")
+        CLONES_RECORDED=true
+    else
+        echo "warning: couldn't list Xcode's simulator copies; this run removes none" >&2
+    fi
+}
+remove_own_clones() {
+    $CLONES_RECORDED || return 0
+    local listing udid state
+    listing=$(clones) || return 0
+    while read -r udid state; do
+        [[ -n "$udid" ]] || continue
+        grep -qx "$udid" <<<"$CLONES_AT_START" && continue
+        if [[ "$state" != Shutdown ]]; then
+            echo "Leaving simulator copy $udid alone: it is $state, so another test run may be using it"
+            continue
+        fi
+        echo "Removing simulator copy $udid, made by this run"
+        xcrun simctl --set "$TEST_DEVICES" delete "$udid" >/dev/null 2>&1 || true
+    done <<<"$listing"
+}
+
+# Xcode copies the project simulator for every worker, so the larger its data, the longer each copy
+# takes: on 2026-11-25 waypoint-01 held 21 GB, 16 GB of it the wallpaper store, and each copy took
+# 33 to 72 s, one after another. Only a report: it never fails the run or changes the simulator.
+SIMULATOR_DATA_WARN_GB=5
+report_simulator_size() {
+    local udid="$1" name="$2" kb
+    kb=$(du -sk "$HOME/Library/Developer/CoreSimulator/Devices/$udid/data" 2>/dev/null | cut -f1 || true)
+    [[ -n "$kb" ]] || return 0
+    if [[ $((kb / 1048576)) -ge $SIMULATOR_DATA_WARN_GB ]]; then
+        echo "warning: $name holds $((kb / 1048576)) GB of data, so each simulator copy is slow to make; erase it with \`xcrun simctl erase $name\` when no run uses it" >&2
+    fi
+}
+
 finish() {
     local status=$?
     local udid lock index
@@ -355,20 +469,26 @@ finish() {
     for udid in ${BOOTED_UDIDS[@]+"${BOOTED_UDIDS[@]}"}; do
         xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true
     done
+    if $OWNS_RUN_LOCK; then
+        remove_own_clones
+    fi
     for lock in ${LOCK_DIRS[@]+"${LOCK_DIRS[@]}"}; do
         rm -rf "$lock"
     done
     if [[ ${#STEP_NAMES[@]} -gt 0 ]]; then
         echo
-        echo "Step times ($TIER, $JOBS jobs):"
+        echo "Step times ($TIER, $JOBS jobs), with the clock time each started:"
         for index in "${!STEP_NAMES[@]}"; do
-            printf '  %5ss  %s\n' "${STEP_SECONDS[$index]}" "${STEP_NAMES[$index]}"
+            printf '  %s  %5ss  %s\n' "${STEP_STARTS[$index]}" "${STEP_SECONDS[$index]}" "${STEP_NAMES[$index]}"
         done
-        printf '  %5ss  total\n' "$SECONDS"
+        printf '  %s  %5ss  total\n' "$(date +%H:%M:%S)" "$SECONDS"
     fi
     # A run turned away at the run lock reports nothing of the run that holds it.
     if $OWNS_RUN_LOCK; then
         report_slowest_tests
+        echo
+        scripts/flaky-tests.py --summary "$RESULTS_DIR" || true
+        report_memory "at the end"
     fi
     if [[ -n "$STOPPED_BY" ]]; then
         echo "Mac tests stopped by $STOPPED_BY before they finished ($TIER)." >&2
@@ -454,6 +574,8 @@ take_run_lock() {
 }
 if ! $PLAN_ONLY; then
     take_run_lock
+    report_memory "at the start"
+    record_clones
 fi
 # The result bundles of an earlier run would show in this run's report.
 rm -rf "$RESULTS_DIR"
@@ -462,8 +584,9 @@ rm -rf "$RESULTS_DIR"
 step() {
     local name="$1"
     shift
-    echo "==> $name"
-    local start=$SECONDS status=0
+    local start=$SECONDS status=0 clock
+    clock=$(date +%H:%M:%S)
+    echo "==> $clock $name"
     # Each step runs in a process group of its own, so stopping the run stops everything the
     # step started, a script's own tools included (`stop_step_tools`).
     set -m
@@ -476,6 +599,7 @@ step() {
     fi
     STEP_PID=""
     STEP_NAMES+=("$name")
+    STEP_STARTS+=("$clock")
     STEP_SECONDS+=($((SECONDS - start)))
 }
 
@@ -742,9 +866,63 @@ example_tests_on() {
         -T "$bundle" \
         "$@" \
         -- -quiet -jobs "$JOBS" -skipMacroValidation -derivedDataPath "$EXAMPLE_DERIVED_DATA" \
-        "${EXAMPLE_PARALLEL_FLAGS[@]}" \
+        "${EXAMPLE_PARALLEL_FLAGS[@]}" ${EXAMPLE_RETRY_FLAGS[@]+"${EXAMPLE_RETRY_FLAGS[@]}"} \
         WAYPOINT_TUIST_TEST_RUN=1 ${offline_settings[@]+"${offline_settings[@]}"} \
         ${CLEAN_BUILD_SETTINGS[@]+"${CLEAN_BUILD_SETTINGS[@]}"}
+}
+
+# An example app test step, then its verdict (scripts/flaky-tests.py): the step passes when nothing
+# blocks, whatever xcodebuild said, and fails when anything does. A flaky or quarantined test is
+# printed, and listed in `.build/results/<bundle>-flaky.json` for the report. Without a result
+# bundle, or without results in it, the step's own status stands.
+judged_example_tests_on() {
+    local bundle="$RESULTS_DIR/$3.xcresult" status=0 status_after=0 results other_errors quarantine
+    example_tests_on "$@" || status=$?
+    if [[ ! -d "$bundle" ]]; then
+        return "$status"
+    fi
+    results=$(mktemp "${TMPDIR:-/tmp}/waypoint-test-results.XXXXXX")
+    if ! xcrun xcresulttool get test-results tests --path "$bundle" >"$results" 2>/dev/null; then
+        rm -f "$results"
+        echo "note: no test results in $bundle to judge; the step's own status stands"
+        return "$status"
+    fi
+    # A build error the bundle records is a failure outside the tests, so the tests can't excuse it.
+    other_errors=$(xcrun xcresulttool get build-results --path "$bundle" 2>/dev/null |
+        /usr/bin/python3 -c 'import json,sys; print(int(json.load(sys.stdin).get("errorCount", 0)))' \
+            2>/dev/null || true)
+    [[ "$other_errors" =~ ^[0-9]+$ ]] || other_errors=0
+    # `--only` is how a person looks at one test, so the quarantine never excuses it there.
+    quarantine=()
+    if [[ -z "$ONLY_TEST" ]]; then
+        quarantine=(--quarantine "$QUARANTINE_FILE")
+    fi
+    scripts/flaky-tests.py --step-status "$status" --other-errors "$other_errors" \
+        ${quarantine[@]+"${quarantine[@]}"} \
+        --out "$RESULTS_DIR/$3-flaky.json" <"$results" || status_after=$?
+    rm -f "$results"
+    return "$status_after"
+}
+
+# In a stress run, a failed example step is written down and the run goes on, so one flake of
+# another test (no retry, 4 workers) never stops the night before the quarantined tests' repeats.
+# The run still fails at its end ("Checking the stress run's example steps"). Other tiers run the
+# command as it is.
+STRESS_FAILED_STEPS="$RESULTS_DIR/stress-failed-steps"
+stress_carries_on() {
+    local status=0
+    "$@" || status=$?
+    if [[ "$TIER" != stress || $status -eq 0 ]]; then
+        return "$status"
+    fi
+    echo "$4 (status $status)" >>"$STRESS_FAILED_STEPS"
+    echo "note: $4 failed (status $status); a stress run carries on to the quarantined tests"
+}
+stress_failed_steps() {
+    [[ -f "$STRESS_FAILED_STEPS" ]] || return 0
+    echo "error: these example steps failed earlier in the stress run:" >&2
+    sed 's/^/  /' "$STRESS_FAILED_STEPS" >&2
+    return 1
 }
 
 # What this run does.
@@ -780,7 +958,7 @@ case "$TIER" in
         RUN_UI=true
         RUN_COVERAGE_COMPLETE=true
         ;;
-    full | release)
+    full | release | stress)
         # Every part runs; the changes decide only whether selective testing is on.
         detect_changes
         RUN_SANITIZER=true
@@ -827,8 +1005,8 @@ fi
 echo "toolchain since the last green clean run: $TOOLCHAIN_STATE"
 if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
     SELECTIVE_TESTING=offline
-elif [[ "$TIER" == release || "$TIER" == coverage || -n "$ONLY_TEST" ]] || $WITH_UI || $RUN_ALL || $CLEAN ||
-    $CHANGED_OUTSIDE_TEST_HASHES || [[ "$TOOLCHAIN_STATE" != same ]]; then
+elif [[ "$TIER" == release || "$TIER" == stress || "$TIER" == coverage || -n "$ONLY_TEST" ]] || $WITH_UI ||
+    $RUN_ALL || $CLEAN || $CHANGED_OUTSIDE_TEST_HASHES || [[ "$TOOLCHAIN_STATE" != same ]]; then
     SELECTIVE_TESTING=off
 else
     SELECTIVE_TESTING=on
@@ -851,8 +1029,9 @@ echo "selective testing: $SELECTIVE_TESTING, release reports selective testing $
 # warmed). A clean run, a run whose tools changed since the last green clean run, and a run whose
 # branch changes a file Tuist's test hashes don't cover (a manifest, a tool version, a script) build
 # from source too: a key that misses such a change would hand the run a stale module.
-if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 || "$TIER" == release || "$TIER" == coverage ||
-    -n "$TUIST_PULL_REQUEST" || "$TOOLCHAIN_STATE" != same ]] || $CLEAN || $CHANGED_OUTSIDE_TEST_HASHES; then
+if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 || "$TIER" == release || "$TIER" == stress ||
+    "$TIER" == coverage || -n "$TUIST_PULL_REQUEST" || "$TOOLCHAIN_STATE" != same ]] || $CLEAN ||
+    $CHANGED_OUTSIDE_TEST_HASHES; then
     BINARY_CACHE=off
 else
     BINARY_CACHE=on
@@ -869,10 +1048,18 @@ if [[ "${WAYPOINT_TUIST_OFFLINE:-0}" == 1 ]]; then
 else
     PACKAGE_TEST_INSIGHTS=on
 fi
+# The quarantined tests a stress run repeats: the entries that still count today.
+STRESS_TESTS=()
+if [[ "$TIER" == stress ]]; then
+    while IFS= read -r stress_test; do
+        [[ -n "$stress_test" ]] && STRESS_TESTS+=("$stress_test")
+    done < <(scripts/flaky-tests.py --list-quarantine "$QUARANTINE_FILE")
+    echo "stress: ${#STRESS_TESTS[@]} quarantined test(s), each $STRESS_REPEATS times after the full run"
+fi
 echo "tuist branch: ${GITHUB_HEAD_REF:-none}"
 echo "tuist pull request: ${TUIST_PULL_REQUEST:-none}"
 if $PLAN_ONLY; then
-    echo "plan: $TIER, example tests $RUN_UI, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, binary cache $BINARY_CACHE, warm binary cache $WARM_BINARY_CACHE, package test insights $PACKAGE_TEST_INSIGHTS, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}, toolchain $TOOLCHAIN_STATE, clean $CLEAN"
+    echo "plan: $TIER, example tests $RUN_UI, retry $RETRY, stress repeats ${#STRESS_TESTS[@]}, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, binary cache $BINARY_CACHE, warm binary cache $WARM_BINARY_CACHE, package test insights $PACKAGE_TEST_INSIGHTS, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}, toolchain $TOOLCHAIN_STATE, clean $CLEAN"
     trap - EXIT
     exit 0
 fi
@@ -920,6 +1107,9 @@ fi
 if $RUN_SIMULATOR || $RUN_UI; then
     UDID=$(project_simulator_udid)
     claim_simulator "$SIMULATOR_NAME" "$UDID"
+    if $RUN_UI && [[ "$UI_WORKERS" -gt 1 ]]; then
+        report_simulator_size "$UDID" "$SIMULATOR_NAME"
+    fi
 fi
 
 if $RUN_SIMULATOR; then
@@ -929,10 +1119,41 @@ fi
 if $RUN_UI; then
     if [[ -n "$ONLY_TEST" ]]; then
         step "tuist test $ONLY_TEST on $SIMULATOR_NAME" \
-            example_tests_on "$UDID" "$SIMULATOR_NAME" example-only --test-targets "$ONLY_TEST"
+            judged_example_tests_on "$UDID" "$SIMULATOR_NAME" example-only --test-targets "$ONLY_TEST"
     else
-        step "tuist test example app on $SIMULATOR_NAME" example_tests_on "$UDID" "$SIMULATOR_NAME" example
+        step "tuist test example app on $SIMULATOR_NAME" \
+            stress_carries_on judged_example_tests_on "$UDID" "$SIMULATOR_NAME" example
     fi
+fi
+
+# A stress run then runs each quarantined test STRESS_REPEATS times in a row, on the project
+# simulator alone, with no retry, and stops at its first failure. scripts/flaky-tests.py says
+# whether it passed every try, the full run's included: `Stress passed:` or `Stress failed:`. The
+# step never fails the run, since a stress run gates nothing; the log's `Flaky tests:` list ends
+# with each quarantined test's result.
+stress_repeat_on() {
+    local udid="$1" simulator="$2" bundle_name="$3" test="$4"
+    local bundle="$RESULTS_DIR/$bundle_name.xcresult" results status=0
+    local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
+    local EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled NO)
+    local EXAMPLE_RETRY_FLAGS=(-test-iterations "$STRESS_REPEATS" -run-tests-until-failure)
+    TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 \
+        example_tests_on "$udid" "$simulator" "$bundle_name" --test-targets "$test" || status=$?
+    results=$(mktemp "${TMPDIR:-/tmp}/waypoint-test-results.XXXXXX")
+    if [[ -d "$bundle" ]]; then
+        xcrun xcresulttool get test-results tests --path "$bundle" >"$results" 2>/dev/null || true
+    fi
+    scripts/flaky-tests.py --stress "$test" --repeats "$STRESS_REPEATS" --step-status "$status" \
+        --results-dir "$RESULTS_DIR" --out "$RESULTS_DIR/$bundle_name-stress.json" <"$results" || true
+    rm -f "$results"
+}
+if [[ ${#STRESS_TESTS[@]} -gt 0 ]]; then
+    stress_index=0
+    for stress_test in "${STRESS_TESTS[@]}"; do
+        stress_index=$((stress_index + 1))
+        step "tuist test $stress_test $STRESS_REPEATS times on $SIMULATOR_NAME" \
+            stress_repeat_on "$UDID" "$SIMULATOR_NAME" "stress-$stress_index" "$stress_test"
+    done
 fi
 
 # A coverage run tells Tuist that `main`'s commit has every run it will get, so the dashboard
@@ -954,14 +1175,21 @@ release_reports_on() {
     local SELECTIVE_TESTING="$RELEASE_REPORTS_SELECTIVE_TESTING"
     local EXAMPLE_DERIVED_DATA="$RELEASE_REPORTS_DERIVED_DATA"
     local BINARY_CACHE=off
-    TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 example_tests_on "$@"
+    # Two test classes gain nothing from parallel workers, and each worker costs a simulator copy
+    # (planning #489), so they run on the project simulator itself.
+    local EXAMPLE_PARALLEL_FLAGS=(-parallel-testing-enabled NO)
+    TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 judged_example_tests_on "$@"
 }
 if $RUN_RELEASE_REPORTS; then
     step "tuist test release reports (Release) on $SIMULATOR_NAME" \
-        release_reports_on "$UDID" "$SIMULATOR_NAME" release-reports \
+        stress_carries_on release_reports_on "$UDID" "$SIMULATOR_NAME" release-reports \
         --configuration Release \
         --test-targets WaypointExampleUITests/SystemLinkTests \
         --test-targets WaypointExampleUITests/MissingDestinationTests
+fi
+
+if [[ "$TIER" == stress ]]; then
+    step "Checking the stress run's example steps" stress_failed_steps
 fi
 
 # The minimum iOS version runs last, on its own simulator, which the script never creates: it
@@ -975,7 +1203,7 @@ if $RUN_IOS17; then
     claim_simulator "$IOS17_SIMULATOR_NAME" "$IOS17_UDID"
     step "xcodebuild test Waypoint-Package on $IOS17_SIMULATOR_NAME" package_tests_on "$IOS17_UDID" package-ios17
     step "tuist test example app on $IOS17_SIMULATOR_NAME" \
-        example_tests_on "$IOS17_UDID" "$IOS17_SIMULATOR_NAME" example-ios17
+        judged_example_tests_on "$IOS17_UDID" "$IOS17_SIMULATOR_NAME" example-ios17
 fi
 
 # A run for a pull request ends by telling Tuist that its commit has every run it will get, so the

@@ -1,0 +1,4 @@
+{
+  "about": "UI tests whose failure can't block a merge, at most 3, for 7 days each. See TESTING.md, Flaky tests and quarantine.",
+  "tests": []
+}

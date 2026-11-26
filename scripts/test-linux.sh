@@ -7,8 +7,9 @@
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
 # Runs the WaypointCore checks that must pass on Linux: the import check, the concurrency guard
-# rail, the Mac test script's run lock check (planning #420), the merge batch check (planning #421), one build with
-# warnings as errors that the compile-fixture check and the unit tests reuse, and the unit tests
+# rail, the Mac test script's run lock check (planning #420), the merge batch check (planning #421), the
+# flaky-test verdict and quarantine check, one build with warnings as errors that the compile-fixture
+# check and the unit tests reuse, and the unit tests
 # again under the thread sanitizer (planning #278).
 # The renderer targets compile empty on Linux, so this covers the core only.
 #
@@ -55,6 +56,9 @@ if [ "$part" != swift ]; then
 
     echo "==> Checking merge batches"
     scripts/check-merge-batch.sh
+
+    echo "==> Checking the flaky-test verdict and the quarantine"
+    scripts/check-flaky-tests.sh
 
     if [ "$part" = checks ]; then
         echo "==> Linux script checks passed"
