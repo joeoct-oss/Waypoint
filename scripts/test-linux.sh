@@ -60,6 +60,10 @@ if [ "$part" != swift ]; then
     echo "==> Checking the flaky-test verdict and the quarantine"
     scripts/check-flaky-tests.sh
 
+    echo "==> Checking the UI test shards"
+    scripts/ui-test-shards.py --self-check
+    scripts/ui-test-shards.py 3 --list
+
     if [ "$part" = checks ]; then
         echo "==> Linux script checks passed"
         exit 0
