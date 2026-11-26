@@ -471,6 +471,8 @@ report_simulator_size() {
 
 # The step that is running, or the step that failed once the script ends; empty between steps.
 CURRENT_STEP=""
+# The pull request's title for the Slack message, read before the first step.
+PULL_REQUEST_TITLE=""
 SLACK_WEBHOOK_FILE="${WAYPOINT_SLACK_WEBHOOK_FILE:-$HOME/.config/waypoint/mac-runs-slack-webhook}"
 SLACK_WEBHOOK_PATTERN='^https://hooks\.slack\.com/services/[A-Za-z0-9/_-]+$'
 
@@ -490,9 +492,7 @@ slack_message() {
     printf '%s *Mac %s %s* in %dm %02ds\n' "$icon" "$TIER" "$result" $((SECONDS / 60)) $((SECONDS % 60))
     what="Branch: \`$(printf '%s' "${GITHUB_HEAD_REF:-none}" | slack_escape)\`"
     if [[ "${WAYPOINT_PULL_REQUEST:-}" =~ ^[1-9][0-9]*$ ]]; then
-        title=$(gh pr view "$WAYPOINT_PULL_REQUEST" --repo joeoct-oss/Waypoint --json title \
-            --jq .title 2>/dev/null) || title=""
-        title=$(printf '%s' "${title:-pull request $WAYPOINT_PULL_REQUEST}" | tr -d '|' | slack_escape)
+        title=$(printf '%s' "${PULL_REQUEST_TITLE:-pull request $WAYPOINT_PULL_REQUEST}" | tr -d '|' | slack_escape)
         what+=" · <https://github.com/joeoct-oss/Waypoint/pull/$WAYPOINT_PULL_REQUEST|$title>"
     fi
     what+=" · Commit: \`$(git rev-parse --short HEAD 2>/dev/null || echo unknown)\`"
@@ -1165,6 +1165,13 @@ if $PLAN_ONLY; then
     echo "plan: $TIER, example tests $RUN_UI, retry $RETRY, stress repeats ${#STRESS_TESTS[@]}, selective testing $SELECTIVE_TESTING, release reports selective testing $RELEASE_REPORTS_SELECTIVE_TESTING, binary cache $BINARY_CACHE, warm binary cache $WARM_BINARY_CACHE, package test insights $PACKAGE_TEST_INSIGHTS, tuist branch ${GITHUB_HEAD_REF:-none}, tuist pull request ${TUIST_PULL_REQUEST:-none}, toolchain $TOOLCHAIN_STATE, clean $CLEAN"
     trap - EXIT
     exit 0
+fi
+
+# The pull request's title for the run's Slack message, read now, so the end of the run waits on
+# no network call but the post itself. Without an answer the message names its number.
+if [[ "${WAYPOINT_PULL_REQUEST:-}" =~ ^[1-9][0-9]*$ ]]; then
+    PULL_REQUEST_TITLE=$(gh pr view "$WAYPOINT_PULL_REQUEST" --repo joeoct-oss/Waypoint --json title \
+        --jq .title 2>/dev/null) || PULL_REQUEST_TITLE=""
 fi
 
 if $CLEAN; then
