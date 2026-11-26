@@ -367,6 +367,67 @@ expect_cache() {
         fail "$name (plan: ${got:-none})"
     fi
 }
+# 1c1b. A stress run (planning #508) runs every test on 4 workers with no retry, uses no binary cache,
+# warms none, and repeats each quarantined entry that still counts.
+expect_retry "a stress run never retries" off stress
+expect_cache "a stress run builds from source and doesn't warm the cache" \
+    "binary cache off, warm binary cache false" stress
+expect_plan "a stress run never skips a test" off stress
+TODAY_DATE=$(date +%F)
+cat >"$TREE/Example/quarantine.json" <<JSON
+{ "tests": [ { "test": "WaypointExampleUITests/StackTests/testPushAndBack", "issue": 1, "since": "$TODAY_DATE" } ] }
+JSON
+got=$(plan_of stress || true)
+git -C "$TREE" checkout -q -- Example/quarantine.json
+if [[ "$got" == *", stress repeats 1,"* ]]; then
+    pass "a stress run repeats each quarantined test"
+else
+    fail "a stress run repeats each quarantined test (plan: ${got:-none})"
+fi
+if ! (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
+    WAYPOINT_PULL_REQUEST=42 scripts/test-mac.sh stress --plan >"$WORK/stress-pr.log" 2>&1) &&
+    grep -q "a stress run posts no run report" "$WORK/stress-pr.log"; then
+    pass "a stress run takes no pull request"
+else
+    fail "a stress run takes no pull request ($(cat "$WORK/stress-pr.log"))"
+fi
+
+# A stress run carries on past a failed example step, so one flake of another test never stops the
+# night before the quarantined tests' repeats, and still fails at its end. The copy's hash check is
+# a stand-in, since it needs the real Tuist.
+printf '#!/usr/bin/env bash\n' >"$TREE/scripts/check-selective-testing-hashes.sh"
+cat >"$WORK/stress-bundle.json" <<'JSON'
+{"testNodes": [{"nodeType": "UI test bundle", "name": "WaypointExampleUITests", "children": [
+  {"nodeType": "Test Suite", "name": "SheetTests", "children": [
+    {"nodeType": "Test Case", "name": "testOther()", "result": "Failed"}]}]}]}
+JSON
+cat >"$WORK/stress-quarantine.json" <<JSON
+{ "tests": [ { "test": "WaypointExampleUITests/StackTests/testPushAndBack", "issue": 1, "since": "$TODAY_DATE" } ] }
+JSON
+STRESS_STATUS=0
+: >"$CALLS"
+(cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" STUB_CALLS="$CALLS" \
+    WAYPOINT_RUN_LOCK="$LOCK" WAYPOINT_SIMULATOR=waypoint-01 WAYPOINT_BASE=HEAD \
+    STUB_BUNDLE_JSON="$WORK/stress-bundle.json" WAYPOINT_QUARANTINE_FILE="$WORK/stress-quarantine.json" \
+    scripts/test-mac.sh stress >"$WORK/stress.log" 2>&1) || STRESS_STATUS=$?
+git -C "$TREE" checkout -q -- scripts/check-selective-testing-hashes.sh
+if [[ $STRESS_STATUS -ne 0 ]] &&
+    grep -q "^note: example failed (status 1); a stress run carries on" "$WORK/stress.log" &&
+    grep -Eq "^==> [0-9:]+ tuist test WaypointExampleUITests/StackTests/testPushAndBack 5 times" "$WORK/stress.log" &&
+    grep -q "^  Failed: WaypointExampleUITests/SheetTests/testOther (example)" "$WORK/stress.log" &&
+    grep -q "^Mac tests failed (stress).$" "$WORK/stress.log"; then
+    pass "a stress run carries on past another test's failure to the repeats, and still fails at its end"
+else
+    fail "a stress run carries on past another test's failure (log: $(grep -E '^==>|note|error' "$WORK/stress.log" | tail -8))"
+fi
+if grep "^tuist test" "$CALLS" | grep "testPushAndBack" | grep -q -- "-test-iterations 5 -run-tests-until-failure" &&
+    ! grep "^tuist test" "$CALLS" | grep -q -- "-retry-tests-on-failure"; then
+    pass "a stress run repeats the quarantined test 5 times and never retries"
+else
+    fail "a stress run repeats the quarantined test 5 times and never retries"
+fi
+: >"$CALLS"
+
 expect_cache "a quick run uses the binary cache and doesn't warm it" \
     "binary cache on, warm binary cache false" quick
 expect_cache "a full run uses the binary cache and warms it" \
