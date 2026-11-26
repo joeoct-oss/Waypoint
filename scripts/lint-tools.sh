@@ -11,9 +11,23 @@
 # checks that the toolchain's `swift format` is the pinned major.minor. On a version mismatch it
 # stops, because two versions can format the same file two ways.
 # - SwiftLint comes from $SWIFTLINT, then .tools/bin/swiftlint, then the PATH (mise on the Mac).
-# - The linted paths are LINT_PATHS.
+# - The linted paths are LINT_PATHS: the example app's folders by name, so Tuist's generated
+#   Example/Derived is never formatted or linted.
 
-LINT_PATHS=(Sources Tests Example Package.swift)
+set -euo pipefail
+
+LINT_PATHS=(
+    Sources
+    Tests
+    Example/ModuleTests
+    Example/WaypointExample
+    Example/WaypointExampleTests
+    Example/WaypointExampleUITests
+    Example/Project.swift
+    Example/Tuist.swift
+    Example/Tuist/Package.swift
+    Package.swift
+)
 
 # Prints the value of `key = "value"` from .mise.toml.
 pinned() {

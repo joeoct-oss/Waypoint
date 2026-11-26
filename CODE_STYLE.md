@@ -9,7 +9,7 @@ swift-format formats the code and SwiftLint enforces these rules. Each rule says
 - `scripts/lint.sh` runs both tools and fails on any finding. Run it while you work; CI's fast checks run it again on every pull request, so it must pass before a pull request is reviewed. `scripts/format.sh` fixes what the tools can fix, such as indentation and wrapping, and `scripts/bootstrap.sh` installs the pinned SwiftLint.
 - swift-format uses its default rules, with the changes in [`.swift-format`](.swift-format): 120-column lines, 4-space indentation, one argument per line when a call wraps, and no `OnlyOneTrailingClosureArgument`, because SwiftUI's and Waypoint's own calls take a labelled callback and a trailing content closure. It is the toolchain's `swift format`, at the major and minor version `.mise.toml` names.
 - SwiftLint runs its default rules, the opt-in rules and custom rules this file names, every warning as an error, from [`.swiftlint.yml`](.swiftlint.yml), which gives each turned-off rule its reason. The version is pinned in `.mise.toml`.
-- The findings already in the code when the tools were turned on are listed in [`.swiftlint-baseline.json`](.swiftlint-baseline.json), so they don't fail the check while they are fixed. The list only shrinks: new code never adds to it, and a change that fixes a finding regenerates it with `swiftlint lint --write-baseline .swiftlint-baseline.json`.
+- The findings already in the code when the tools were turned on are listed in [`.swiftlint-baseline.json`](.swiftlint-baseline.json), so they don't fail the check while they are fixed. The list only shrinks: new code never adds to it. A change that fixes a finding first makes `scripts/lint.sh` pass, then regenerates the list with `swiftlint lint --write-baseline .swiftlint-baseline.json`, and review checks that the diff only removes entries.
 
 ## Empty braces have one space inside: `{ }`, never `{}`
 
@@ -282,7 +282,7 @@ Immutability catches logic errors before they happen at run time:
 - No `inout` parameters for our own types, no `lazy var`, no stored `static var` or global `var`.
 - Every remaining `var`, stored or local, has a comment above it that starts "`var` because" and names what changes it. Computed properties, protocol requirements and property wrappers (`@State`) are not stored `var`s and need no reason.
 - Tests too: collect calls with a `Spy` from [Understudy](https://github.com/joeoct-oss/Understudy) (`Spy<Value, Void>()`, read back with `calls`) and act once with `Once` instead of captured `var`s.
-- Enforced by the custom SwiftLint rules `stored_var_needs_reason`, `no_public_stored_var`, `no_lazy_var`, `no_mutating_func` and `no_static_stored_var`.
+- Enforced by the custom SwiftLint rules `stored_var_needs_reason`, `no_public_stored_var`, `no_lazy_var`, `no_mutating_func` and `no_static_stored_var`. Review checks `inout` parameters for our own types and that decoding goes through the guarded initializer.
 
 For example:
 

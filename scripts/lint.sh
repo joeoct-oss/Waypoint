@@ -37,7 +37,14 @@ failed=0
 if [[ "$part" != swiftlint ]]; then
     check_swift_format
     echo "==> swift format lint"
-    findings="$(swift format lint --strict --recursive --parallel "${LINT_PATHS[@]}" 2>&1 || true)"
+    # Strict findings exit non-zero too, so only a failure that prints nothing is a failure here.
+    format_status=0
+    findings="$(swift format lint --strict --recursive --parallel "${LINT_PATHS[@]}" 2>&1)" ||
+        format_status=$?
+    if [[ "$format_status" -ne 0 && -z "$findings" ]]; then
+        echo "error: swift format exited with status $format_status and printed nothing." >&2
+        failed=1
+    fi
     # Keeps every finding except "remove 1 space" at the space inside `{ }`. Bash only, since CI
     # runs this script in the Swift image, which has no Python or Perl.
     remaining=""
@@ -56,7 +63,7 @@ if [[ "$part" != swiftlint ]]; then
     remaining="${remaining%$'\n'}"
     remaining="${remaining#$'\n'}"
     if [[ -n "$remaining" ]]; then
-        echo "$remaining"
+        echo "$remaining" >&2
         failed=1
 fi
 
@@ -67,7 +74,7 @@ if [[ "$part" != swift-format ]]; then
     echo "==> swiftlint lint"
     output="$("$SWIFTLINT" lint --strict --quiet --baseline .swiftlint-baseline.json 2>&1)" || failed=1
     if [[ -n "$output" ]]; then
-        echo "$output"
+        echo "$output" >&2
     fi
     # Without SourceKit, SwiftLint skips the custom rules with only a warning.
     if grep -q "requires SourceKit" <<< "$output"; then

@@ -59,6 +59,14 @@ type_contents_order:
     - type_method
     - [ib_action, other_method, subscript]
 
+# `let _ = f()` is how a SwiftUI view body calls a function: `_ = f()` doesn't build there.
+redundant_discardable_let:
+  ignore_swiftui_view_bodies: true
+
+# Public members of a type that conforms to a protocol need a doc comment too.
+missing_docs:
+  excludes_inherited_types: false
+
 # CODE_STYLE.md: "A wrapped call puts each argument on its own line".
 multiline_arguments:
   first_argument_location: next_line
@@ -76,7 +84,7 @@ custom_rules:
   no_single_line_type_body:
     name: 'no_single_line_type_body'
     regex: '^[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|indirect|nonisolated)[ \t]+)*(?:enum|struct|class|actor|protocol|extension)\b[^{\n]*\{[ \t]*[^ \t}\n][^\n]*\}[ \t]*(?://[^\n]*)?$'
-    excluded_match_kinds: [comment, doccomment]
+    excluded_match_kinds: [comment, doccomment, string]
     message: 'Put each member of this type on its own line.'
     severity: error
 
@@ -173,7 +181,7 @@ custom_rules:
   # CODE_STYLE.md: "`let` by default".
   stored_var_needs_reason:
     name: 'stored_var_needs_reason'
-    regex: '^(?![ \t]*//)[^\n]*\n(?:[ \t]*//(?![^\n]*`var` because)[^\n]*\n)*[ \t]*(?!@(?:State|Binding|Bindable|Environment|FocusState|Namespace|UIApplicationDelegateAdaptor|NSApplicationDelegateAdaptor|StackNavigation|FlowNavigation|DismissFlow|FinishFlow|TabSelection)\b)(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|nonisolated|weak|unowned|lazy)(?:\(set\))?[ \t]+)*var[ \t]+\w+(?:[ \t]*:[^{=\n]*)?(?:[ \t]*=[^{\n]*)?[ \t]*(?://[^\n]*)?$'
+    regex: '^(?![ \t]*//)[^\n]*\n(?:[ \t]*//(?![^\n]*`var` because)[^\n]*\n)*[ \t]*(?!@(?:State|Binding|Bindable|Environment|FocusState|Namespace|UIApplicationDelegateAdaptor|NSApplicationDelegateAdaptor|StackNavigation|FlowNavigation|DismissFlow|FinishFlow|TabSelection|RouteHint)\b)(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|nonisolated|weak|unowned|lazy)(?:\(set\))?[ \t]+)*var[ \t]+\w+(?:[ \t]*:[^{=\n]*)?(?:[ \t]*=[^{\n]*)?[ \t]*(?://[^\n]*)?$'
     excluded_match_kinds: [comment, doccomment, string]
     message: 'Say why this is a `var` in a comment above it that starts "`var` because".'
     severity: error

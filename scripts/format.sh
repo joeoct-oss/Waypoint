@@ -27,7 +27,7 @@ echo "==> swift format format"
 swift format format --in-place --recursive --parallel "${LINT_PATHS[@]}"
 
 echo "==> {} to { }"
-"$SWIFTLINT" lint --quiet --reporter json --only-rule empty_braces_spaced \
+"$SWIFTLINT" lint --quiet --lenient --reporter json --only-rule empty_braces_spaced \
     | python3 -I -c '
 import json, sys
 places = {}
