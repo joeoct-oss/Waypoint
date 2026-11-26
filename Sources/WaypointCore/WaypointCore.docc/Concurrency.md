@@ -13,7 +13,7 @@ Waypoint is written in the Swift 6 language mode with strict concurrency checkin
 
 Values can leave the main actor freely, for logging, analytics or saving. Changing navigation always happens on the main actor, which is also where the renderers draw.
 
-Planned types follow the same rules when they land: coordinators ([planning #313](https://github.com/joeoct-oss/Waypoint-planning/issues/313)), events and observers ([planning #276](https://github.com/joeoct-oss/Waypoint-planning/issues/276)), guards ([planning #293](https://github.com/joeoct-oss/Waypoint-planning/issues/293)), the link inbox and navigation plans ([planning #269](https://github.com/joeoct-oss/Waypoint-planning/issues/269)), and snapshots ([planning #270](https://github.com/joeoct-oss/Waypoint-planning/issues/270)).
+Planned types follow the same rules when they land: coordinators, events and observers, guards, the link inbox and navigation plans, and snapshots.
 
 Each promise below names the tests that keep it, in [`Tests/WaypointCoreTests/Concurrency`](https://github.com/joeoct-oss/Waypoint/tree/main/Tests/WaypointCoreTests/Concurrency). Those tests use the public API only, the way an app does.
 
@@ -40,7 +40,7 @@ View models that hold a navigator are `@MainActor`, like the views that own them
 
 Saving and restoring a path can happen off the main actor too: encode the path anywhere, decode it with the registry in `decoder.userInfo[.routeRegistry]`, then call `setPath` on the main actor. Configurations, fallback policies and descriptions can be built and read on any thread. Tests: [`CrossActorValueTests`](https://github.com/joeoct-oss/Waypoint/blob/main/Tests/WaypointCoreTests/Concurrency/CrossActorValueTests.swift).
 
-> Note: Awaiting a flow's result, such as `await router.present(child)`, is planned in [planning #314](https://github.com/joeoct-oss/Waypoint-planning/issues/314). It will resume on the main actor and deliver the result exactly once.
+Awaiting a flow's result, such as `await router.present(child)` or `await router.push(child)`, delivers the result exactly once, unless the task that awaits is cancelled: then it returns `.cancelled` at once, the flow stays open and its later result is dropped, so await from a coordinator or use `onFinish:` when the final result matters (see <doc:CoordinatorsAndChildFlows>). As with any `await`, the code after it runs in the caller's own isolation, so a caller off the main actor does its UI work on the main actor.
 
 ### Calls made during a change
 
@@ -61,7 +61,7 @@ let configuration = NavigationConfiguration { [weak self] failure in
 
 Tests: [`QueuedCallTests`](https://github.com/joeoct-oss/Waypoint/blob/main/Tests/WaypointCoreTests/Concurrency/QueuedCallTests.swift) and [`NavigationLoopTests`](https://github.com/joeoct-oss/Waypoint/blob/main/Tests/WaypointCoreTests/Concurrency/NavigationLoopTests.swift).
 
-> Note: Guards ([planning #293](https://github.com/joeoct-oss/Waypoint-planning/issues/293)) will be the exception. A guard decides on a change, so a navigation call inside `evaluate` will be rejected; it returns `.redirect` instead.
+> Note: Guards will be the exception. A guard decides on a change, so a navigation call inside `evaluate` will be rejected; it returns `.redirect` instead.
 
 ### Late replies: navigators belong to a screen
 
@@ -84,7 +84,7 @@ func showReviews() async {
 
 Tests: [`StaleNavigatorTests`](https://github.com/joeoct-oss/Waypoint/blob/main/Tests/WaypointCoreTests/Concurrency/StaleNavigatorTests.swift).
 
-> Note: Treating an ignored call as a test failure with `StrictMode(failOn:)` is planned in [planning #294](https://github.com/joeoct-oss/Waypoint-planning/issues/294).
+> Note: Treating an ignored call as a test failure with `StrictMode(failOn:)` is planned.
 
 ### Inside the package
 

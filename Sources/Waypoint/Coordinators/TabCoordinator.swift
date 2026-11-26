@@ -11,8 +11,8 @@
 /// Conforming fills in the router, as `TabCoordinating` describes: made with `makeRouter()` the
 /// first time it is read, with each tab's coordinator asked for then, so `router.router(for:)`
 /// returns that coordinator's router from the start. Until the coordinator draws its own `view`
-/// (planning #267), draw it with a SwiftUI `TabView` bound to `router.selection`, with
-/// `WaypointStack(router.router(for: tab))` in each tab.
+/// (planned with the SwiftUI tab renderer), draw it with a SwiftUI `TabView` bound to
+/// `router.selection`, with `WaypointStack(router.router(for: tab))` in each tab.
 ///
 /// ```swift
 /// final class MainCoordinator: TabCoordinator {

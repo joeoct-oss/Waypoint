@@ -6,7 +6,7 @@ Keep one stack per tab or one stack above the tabs, and switch tabs from code or
 
 `TabRouter` owns a tab container. By default each tab has its own child router, so every tab keeps its own stack when the user switches away and back. With `stacks: .shared`, the tabs share one stack above the tab bar instead (see [One stack above the tabs](#One-stack-above-the-tabs)).
 
-> Note: Draft until planning #313. In a tab coordinator, each tab's stack coordinator has its own router, and `router(for:)` returns that same router. See "Joining the tree" in <doc:CoordinatorsAndChildFlows>.
+> Note: Draft. In a tab coordinator, each tab's stack coordinator has its own router, and `router(for:)` returns that same router. See "Joining the tree" in <doc:CoordinatorsAndChildFlows>.
 
 ```swift
 // Conformances:
