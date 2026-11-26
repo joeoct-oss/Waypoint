@@ -13,8 +13,8 @@
 # - Swift 6.2, the tools version in Package.swift: every test, warnings as errors.
 # - The script checks run in the checks workflow's fast checks, before this one. A run by hand of
 #   scripts/test-linux.sh runs the build, fixtures, tests and thread sanitizer with the Swift
-#   installed, without coverage; to reproduce the Swift 6.2 job, run `swift test -Xswiftc
-#   -warnings-as-errors` in the swift:6.2 image this job pins.
+#   installed, without coverage; to reproduce the Swift 6.2 job, run `swift test
+#   --force-resolved-versions -Xswiftc -warnings-as-errors` in the swift:6.2 image this job pins.
 # Hardening: free GitHub-hosted Linux runners only. Every action is pinned to a full commit SHA and
 # every image to a digest, with the version in a comment; Dependabot bumps the actions, and the
 # images are bumped by hand. Each job reads the repo and nothing else, and no checkout keeps the
