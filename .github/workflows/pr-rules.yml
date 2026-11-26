@@ -29,7 +29,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Check the script itself
-        run: python3 scripts/check-pr-rules.py --self-check
+        run: python3 -I scripts/check-pr-rules.py --self-check
       - name: Check the pull request
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
@@ -37,4 +37,4 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: python3 scripts/check-pr-rules.py
+        run: python3 -I scripts/check-pr-rules.py

@@ -161,6 +161,8 @@ def changelog_errors(changelog, added_lines, changed_files, body, template):
     """added_lines are the 1-based numbers of the lines the PR adds to the changelog."""
     if added_lines:
         return added_changelog_errors(changelog, added_lines)
+    if CHANGELOG in changed_files:
+        return [f"{CHANGELOG} changes but gains no line under \"{UNRELEASED}\""]
     package = [f for f in changed_files if f.startswith("Sources/") or f == "Package.swift"]
     if package:
         return [f"{CHANGELOG} has no entry, and the package changes ({package[0]})"]
@@ -422,6 +424,11 @@ def self_check():
             1,
         ),
         (
+            "a changelog that only loses lines fails",
+            changelog_errors(CHANGELOG_SAMPLE, [], [CHANGELOG], FILLED, SAMPLE_TEMPLATE),
+            1,
+        ),
+        (
             "no entry and no reason fails",
             changelog_errors("", [], ["scripts/a.sh"], FILLED, SAMPLE_TEMPLATE),
             1,
@@ -493,5 +500,9 @@ def self_check():
     return 0
 
 
+def main():
+    return self_check() if "--self-check" in sys.argv else run()
+
+
 if __name__ == "__main__":
-    sys.exit(self_check() if "--self-check" in sys.argv else run())
+    sys.exit(main())
