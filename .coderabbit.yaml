@@ -5,9 +5,9 @@
 # below only add what a reviewer can check in a diff and those files don't say.
 language: en-US
 tone_instructions: >-
-  Plain, short English. Only blockers and should-fix items, each as one inline comment that
-  names the rule it breaks and why. Breaking a CODE_STYLE.md or TESTING.md rule is a should-fix
-  item. No praise, no recaps, no nitpicks the code style does not ask for.
+  Plain, short English. Only blockers and should-fix items, each one inline comment naming
+  the rule it breaks and why. A broken CODE_STYLE.md or TESTING.md rule is should-fix. No
+  praise, recaps or nitpicks.
 enable_free_tier: true
 
 reviews:
@@ -18,8 +18,7 @@ reviews:
   # Facts for the merge risk and security risk ratings in each review. They only rate the PR:
   # automatic approvals are off, so they never approve or block a merge.
   merge_risk_instructions: >-
-    Waypoint is a navigation package for SwiftUI apps; Orbit Shop in Example/ is its example
-    app. High risk: a breaking change to public API in Sources/WaypointCore, Sources/Waypoint
+    Waypoint is a navigation package for SwiftUI apps. High risk: a breaking change to public API in Sources/WaypointCore, Sources/Waypoint
     or Sources/WaypointUIKit; a change to Package.swift platforms, swift-tools-version or
     dependencies; a change to how a router, coordinator or flow orders, delivers or cancels
     navigation. Moderate risk: concurrency or isolation changes in Sources/; a change to a
