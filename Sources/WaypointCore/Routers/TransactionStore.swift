@@ -26,7 +26,7 @@ protocol TransactionParticipant: AnyObject {
     func discardWorkingCopy()
 }
 
-/// Who asked for a change. The public form arrives with events (planning #276).
+/// Who asked for a change. The public form arrives with navigation events.
 ///
 /// Conformances:
 /// - `Sendable`, so changes can be handed to observers off the main actor later.

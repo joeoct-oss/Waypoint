@@ -4,7 +4,7 @@ Draw stacks, sheets, tabs and roots with UIKit view controllers.
 
 ## Overview
 
-> Note: Draft until planning #313 and planning #268. The API in this article is planned, not built, and can still change. The UIKit stack renderer is built in planning #268. UIKit tabs, presented flows and roots follow in planning #303, planning #302 and planning #380.
+> Note: Draft. The API in this article is planned, not built, and can still change. The UIKit stack renderer comes first; UIKit tabs, presented flows and roots follow.
 
 The UIKit renderers draw the same coordinators as the SwiftUI ones, with UIKit's own containers: a `UINavigationController`, sheets presented by a `UISheetPresentationController`, and a `UITabBarController`. An app chooses them app-wide or for one coordinator, and the coordinator's code doesn't change. See <doc:Renderers> for how a renderer is chosen.
 
@@ -68,17 +68,17 @@ extension View {
 
 A route with no destination never crashes. The renderer shows the same missing-destination screen as the SwiftUI renderer: debug builds name the route and the fix, and release builds show a blank screen.
 
-**Titles and toolbars.** A prototype of this renderer (planning #396) didn't show a SwiftUI screen's `navigationTitle`, and on iOS 27 its `toolbar` and `searchable` either, and the built renderer is expected to share the gap until planning #399. A view controller screen sets its own `navigationItem` as usual. Closing that gap is planning #399. Until then the default stack renderer stays SwiftUI.
+**Titles and toolbars.** A prototype of this renderer didn't show a SwiftUI screen's `navigationTitle`, and on iOS 27 its `toolbar` and `searchable` either, and the built renderer is expected to share the gap until the screen chrome contract closes it. A view controller screen sets its own `navigationItem` as usual. Until then the default stack renderer stays SwiftUI.
 
 ### Sheets and full-screen covers
 
-Sheet sizes come from the presentation's `SheetOptions` and map to `UISheetPresentationController.Detent`: `.medium` and `.large` directly, `.fraction` and `.height` as custom detents, and `.custom(name)` as the detent registered for that name. Each renderer has its own rules for custom sizes, because SwiftUI and UIKit describe a detent differently. A name the drawing renderer has no rule for is shown at `.large` and reported in debug, so changing a renderer never silently changes a sheet. One registration for both renderers is designed in planning #302. `.fitsContent` is a custom detent sized to the content: its `preferredContentSize` when it sets one, or else its Auto Layout height at the sheet's width, capped at `fitsContentLimit`. When the height changes, the sheet animates to it. Taller content scrolls in its own scroll view, such as a table, or in one the renderer adds. When the user drags a sheet to another size, the selected detent is reported back to the router.
+Sheet sizes come from the presentation's `SheetOptions` and map to `UISheetPresentationController.Detent`: `.medium` and `.large` directly, `.fraction` and `.height` as custom detents, and `.custom(name)` as the detent registered for that name. Each renderer has its own rules for custom sizes, because SwiftUI and UIKit describe a detent differently. A name the drawing renderer has no rule for is shown at `.large` and reported in debug, so changing a renderer never silently changes a sheet. One registration for both renderers is designed with UIKit presented flows. `.fitsContent` is a custom detent sized to the content: its `preferredContentSize` when it sets one, or else its Auto Layout height at the sheet's width, capped at `fitsContentLimit`. When the height changes, the sheet animates to it. Taller content scrolls in its own scroll view, such as a table, or in one the renderer adds. When the user drags a sheet to another size, the selected detent is reported back to the router.
 
-A presented flow is drawn by `UIKitFlowRenderer` when the flow chooses it (planning #302). Until then a presented flow's default is the SwiftUI renderer, and a UIKit stack presented inside it is still drawn by `UIKitStackRenderer`.
+A presented flow is drawn by `UIKitFlowRenderer` when the flow chooses it, once UIKit presented flows land. Until then a presented flow's default is the SwiftUI renderer, and a UIKit stack presented inside it is still drawn by `UIKitStackRenderer`.
 
 ### Tabs and roots
 
-`UIKitTabRenderer` draws a tab coordinator with a `UITabBarController` (planning #303), and `UIKitRootRenderer` draws the app coordinator's roots, with a cross-fade when it switches (planning #380). Each tab hosts its stack coordinator's `view`, drawn by whichever renderer that coordinator uses. Tab labels written with SwiftUI's `.tabItem` work only in the SwiftUI tab renderer. How a tab coordinator gives its labels to the UIKit one is designed in planning #303.
+`UIKitTabRenderer` draws a tab coordinator with a `UITabBarController`, and `UIKitRootRenderer` draws the app coordinator's roots, with a cross-fade when it switches. Each tab hosts its stack coordinator's `view`, drawn by whichever renderer that coordinator uses. Tab labels written with SwiftUI's `.tabItem` work only in the SwiftUI tab renderer. How a tab coordinator gives its labels to the UIKit one is designed with the UIKit tab renderer.
 
 ### A UIKit app
 
@@ -106,7 +106,7 @@ The scene delegate in <doc:ExampleFlowsInUIKit> uses only these. Where to go nex
 
 ### Showing a flow from existing UIKit code
 
-Existing UIKit code that isn't a coordinator shows a Waypoint flow through the coordinator's `viewController`, and gets the flow's result back. How it fits inside the app's own navigation controller is designed in planning #352.
+Existing UIKit code that isn't a coordinator shows a Waypoint flow through the coordinator's `viewController`, and gets the flow's result back. How it fits inside the app's own navigation controller is still to be designed.
 
 ### Incoming links
 

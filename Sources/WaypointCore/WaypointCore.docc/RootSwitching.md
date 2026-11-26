@@ -4,7 +4,7 @@ Swap whole flows, such as login and the main tabs.
 
 ## Overview
 
-> Note: Draft until planning #290. The API in this article is planned, not built, and can still change when planning #290 and planning #313 land.
+> Note: Draft. The API in this article is planned, not built, and can still change when root switching lands.
 
 Apps replace their whole screen at a few moments: from launch to login, from login to the main tabs, and back to login on logout. `RootRouter` holds which root is showing and replaces the whole subtree when it switches. The old flow and every router inside it are released.
 
@@ -148,7 +148,7 @@ public protocol RootCoordinator: AnyObject {
 }
 ```
 
-`makeFlow(for:)` has a `switch` with one `make…Flow()` call per root, and each case can return a different kind of coordinator, as `@ViewBuilder` allows different views. The names `RootFlow`, `RootFlowCoordinator` and `RootFlowBuilder` are drafts, settled in planning #290. See "Coordinators and renderers" in the `Waypoint` catalog for the window entries. `RootRouter` can also be used on its own, as a lower-level building block, but the app coordinator is the place to start.
+`makeFlow(for:)` has a `switch` with one `make…Flow()` call per root, and each case can return a different kind of coordinator, as `@ViewBuilder` allows different views. The names `RootFlow`, `RootFlowCoordinator` and `RootFlowBuilder` are drafts, settled when root switching is built. See "Coordinators and renderers" in the `Waypoint` catalog for the window entries. `RootRouter` can also be used on its own, as a lower-level building block, but the app coordinator is the place to start.
 
 ### Resuming a link after login
 

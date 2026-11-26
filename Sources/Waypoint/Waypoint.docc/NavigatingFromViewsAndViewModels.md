@@ -4,7 +4,7 @@ Pick the style that suits your team: outputs, injected navigators or property wr
 
 ## Overview
 
-> Note: Built in planning #279: the navigators, flow scoping, `WaypointStack(flow:)`, the navigator destination, `@StackNavigation`, `@FlowNavigation`, `@DismissFlow` and the preview helper. `@FinishFlow` landed with flow results (planning #314); `@TabSelection` lands with tabs (planning #267).
+> Note: Built: the navigators, flow scoping, `WaypointStack(flow:)`, the navigator destination, `@StackNavigation`, `@FlowNavigation`, `@DismissFlow` and the preview helper. `@FinishFlow` landed with flow results; `@TabSelection` lands with tabs.
 
 There is one router and three ways to reach it. All three call the same router methods, so guards, events, outcomes and restoration behave the same whichever you use, and you can mix them in one app.
 
@@ -56,7 +56,7 @@ The view model imports only `WaypointCore` and is tested with a real router, on 
 
 ### Property wrappers
 
-They are thin, read the router from the environment, and hold no state of their own. All are optional. `@TabSelection` is planned with tabs (planning #267).
+They are thin, read the router from the environment, and hold no state of their own. All are optional. `@TabSelection` is planned with tabs.
 
 ```swift
 /// The nearest stack's navigator.

@@ -4,7 +4,7 @@ Write one coordinator for each flow, in SwiftUI views or UIKit view controllers,
 
 ## Overview
 
-> Note: Draft until planning #266, planning #267, planning #268 and planning #290. A stack or flow coordinator's screens and `view`, drawn by the SwiftUI stack renderer, are built (planning #313). The SwiftUI renderer for presented flows, tabs and the root comes in planning #266, planning #267 and planning #290, and the UIKit stack renderer in planning #268. UIKit tabs and presented flows follow in planning #303 and planning #302. Names and signatures of what isn't built can still change until then.
+> Note: Draft. A stack or flow coordinator's screens and `view`, drawn by the SwiftUI stack renderer, are built. The SwiftUI renderer for presented flows, tabs and the root comes next, and the UIKit stack renderer with them. UIKit tabs and presented flows follow. Names and signatures of what isn't built can still change until then.
 
 An app writes one coordinator for each flow, whichever kind of app it is. The coordinator says what its screens are, and a renderer draws them. Waypoint has two renderers for each kind of coordinator, one in SwiftUI and one in UIKit, and picks the best one by default. An app can choose another one for the whole app or for one coordinator, or bring its own.
 
@@ -43,9 +43,9 @@ final class ShopCoordinator: StackCoordinator {
 }
 ```
 
-`ProductView` is a SwiftUI view and `ScannerViewController` is a `UIViewController`. Both work in either renderer: the SwiftUI renderer shows a controller through a representable (`ControllerScreen`, built), and the UIKit renderer shows a SwiftUI view in a `UIHostingController` (planning #268).
+`ProductView` is a SwiftUI view and `ScannerViewController` is a `UIViewController`. Both work in either renderer: the SwiftUI renderer shows a controller through a representable (`ControllerScreen`, built), and the UIKit renderer shows a SwiftUI view in a `UIHostingController`, once it lands.
 
-A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made with `makeRouter()` the first time it is read, and released when the flow ends; `StackCoordinating` in `WaypointCore` holds it; a tab coordinator's router is made with its `makeRouter()` too, which has no default because only the app knows its first tab, and `TabCoordinator` with its router and `tabCoordinator(for:)` is built so far in planning #313, as is `FlowCoordinator` (with `FlowCoordinating` in `WaypointCore`), which adds `finish(with:)`, presented with `router.present(child) { result in … }`; the app coordinator declares its router, because only the app knows its first root), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer. A stack or flow coordinator's `root`, `destinations`, `view` and `Renderer` are built as below; `viewController` comes with planning #268.
+A coordinator writes only what is its own: its screens, its flows and its logic. Everything else comes from the conformance and has a default you can override by declaring the member: a stack's or flow's router (made with `makeRouter()` the first time it is read, and released when the flow ends; `StackCoordinating` in `WaypointCore` holds it; a tab coordinator's router is made with its `makeRouter()` too, which has no default because only the app knows its first tab, and `TabCoordinator` with its router and `tabCoordinator(for:)` is built so far, as is `FlowCoordinator` (with `FlowCoordinating` in `WaypointCore`), which adds `finish(with:)`, presented with `router.present(child) { result in … }`; the app coordinator declares its router, because only the app knows its first root), the router's name, the registration of every destination, the navigators, `view`, `viewController` and the renderer. A stack or flow coordinator's `root`, `destinations`, `view` and `Renderer` are built as below; `viewController` comes with the UIKit renderer.
 
 ```swift
 /// App code that owns one stack flow, with its screens.
@@ -132,7 +132,7 @@ public struct Destination<R: Route, Screen: View>: Destinations {
 }
 ```
 
-`presentation:` on `Destination`, which says how `router.show(_:)` shows the route, comes with planning #266.
+`presentation:` on `Destination`, which says how `router.show(_:)` shows the route, comes with SwiftUI sheets and full-screen covers.
 
 A tab coordinator adds the screen for each tab:
 
@@ -162,7 +162,7 @@ public protocol TabCoordinator: TabCoordinating {
 }
 ```
 
-A flow that stands for a route is a `Flow` entry in `destinations`. Its factory builds the flow's coordinator, and its handler receives the result (planning #314):
+A flow that stands for a route is a `Flow` entry in `destinations`. Its factory builds the flow's coordinator, and its handler receives the result:
 
 ```swift
 /// Registers a route that opens a child flow, and the handler for the flow's result.
@@ -182,13 +182,13 @@ public struct Flow<R: Route, C: FlowCoordinator>: Destinations {
 }
 ```
 
-An entry with no `onResult:`, whose result goes to a call that awaits the route, is designed with planning #314, together with how that call is written. Until then every `Flow(...)` entry names its handler, so no result is lost.
+An entry with no `onResult:`, whose result goes to a call that awaits the route, is designed with flow results, together with how that call is written. Until then every `Flow(...)` entry names its handler, so no result is lost.
 
-`RootCoordinator` and `FlowCoordinator` follow the same shape, each with its own router and renderer. Which requirements live in `WaypointCore`, which has no UI, and which in `Waypoint`, which adds the screens, is settled in planning #313: `FlowCoordinating` in the core holds the router, `Output` and `finish(with:)`, and `FlowCoordinator` in `Waypoint` adds the screens, as `StackCoordinator` does. The core part stays testable on Linux. The `presentation:` parameter declares how `router.show(_:)` shows the route, built in planning #266: see "Declared presentation" in the core's presentation article.
+`RootCoordinator` and `FlowCoordinator` follow the same shape, each with its own router and renderer. Which requirements live in `WaypointCore`, which has no UI, and which in `Waypoint`, which adds the screens, is settled: `FlowCoordinating` in the core holds the router, `Output` and `finish(with:)`, and `FlowCoordinator` in `Waypoint` adds the screens, as `StackCoordinator` does. The core part stays testable on Linux. The `presentation:` parameter declares how `router.show(_:)` shows the route, built with SwiftUI sheets and full-screen covers: see "Declared presentation" in the core's presentation article.
 
 ### A coordinator's view
 
-Every coordinator has a `view`: the whole flow, drawn by its renderer. `ShopCoordinator().view` is the shop's stack with all its screens. A parent shows a child's `view` wherever the child's flow goes, and an existing app shows a Waypoint flow anywhere the same way (planning #352).
+Every coordinator has a `view`: the whole flow, drawn by its renderer. `ShopCoordinator().view` is the shop's stack with all its screens. A parent shows a child's `view` wherever the child's flow goes, and an existing app shows a Waypoint flow anywhere the same way.
 
 `viewController` is a `UIHostingController` around `view`, for any UIKit place that needs a controller. `viewController`, view controller screens and the UIKit renderers exist only where UIKit does: their code sits behind `#if canImport(UIKit)`, so the package still builds on macOS and Linux. With the UIKit renderer inside, the screens are still drawn by a real `UINavigationController`.
 
@@ -234,10 +234,10 @@ public protocol StackRenderer: View {
 
 | Kind | SwiftUI renderer | UIKit renderer |
 |---|---|---|
-| Root | `SwiftUIRootRenderer` | `UIKitRootRenderer` (planning #380) |
-| Tabs | `SwiftUITabRenderer`, a `TabView` | `UIKitTabRenderer`, a `UITabBarController` (planning #303) |
-| Stack | `SwiftUIStackRenderer`, a `NavigationStack` | `UIKitStackRenderer`, a `UINavigationController` (planning #268) |
-| Presented flow | `SwiftUIFlowRenderer` | `UIKitFlowRenderer` (planning #302) |
+| Root | `SwiftUIRootRenderer` | `UIKitRootRenderer` |
+| Tabs | `SwiftUITabRenderer`, a `TabView` | `UIKitTabRenderer`, a `UITabBarController` |
+| Stack | `SwiftUIStackRenderer`, a `NavigationStack` | `UIKitStackRenderer`, a `UINavigationController` |
+| Presented flow | `SwiftUIFlowRenderer` | `UIKitFlowRenderer` |
 
 Both renderers of a kind read the same router and follow the same contract with it. Switching renderers never changes how navigation behaves, only how it is drawn. `SwiftUIStackRenderer` draws with `WaypointStack`, so everything <doc:SwiftUIRenderer> says about stacks holds for it.
 
@@ -252,7 +252,7 @@ let configuration = NavigationConfiguration(renderers: .init(stack: .uiKit, tab:
 let router = RootRouter(AppRoot.login, configuration: configuration)
 ```
 
-`NavigationConfiguration` lives in `WaypointCore`, which has no UI, so the core keeps the choice as plain values: `.default`, `.swiftUI` and `.uiKit`. `.custom(MyStackRenderer.self)`, which names a renderer type, comes from `Waypoint`. How the core stores it without knowing the type is settled in planning #313.
+`NavigationConfiguration` lives in `WaypointCore`, which has no UI, so the core keeps the choice as plain values: `.default`, `.swiftUI` and `.uiKit`. `.custom(MyStackRenderer.self)`, which names a renderer type, comes from `Waypoint`. How the core stores it without knowing the type is settled with coordinators.
 
 Or choose for one coordinator, by declaring its `Renderer`:
 
@@ -276,14 +276,14 @@ final class ScannerCoordinator: StackCoordinator {
 
 The choice for a place is made in this order:
 
-1. Waypoint's own rule for the place, where it has one. In 0.x, a Waypoint stack inside the app's own `NavigationStack` is always drawn by the UIKit stack renderer. A coordinator that declares another renderer there is still drawn that way, and the choice is reported in debug. Because `view` keeps the declared type, the declared renderer hands its drawing to the UIKit stack renderer in that place; how is designed in planning #352.
+1. Waypoint's own rule for the place, where it has one. In 0.x, a Waypoint stack inside the app's own `NavigationStack` is always drawn by the UIKit stack renderer. A coordinator that declares another renderer there is still drawn that way, and the choice is reported in debug. Because `view` keeps the declared type, the declared renderer hands its drawing to the UIKit stack renderer in that place; how is still to be designed.
 2. The coordinator's own `Renderer`.
 3. The app-wide choice.
 4. Waypoint's default.
 
 A pushed child flow shares its parent's stack, so its parent's renderer draws it. A pushed child that declares a renderer has it ignored, and that is reported in debug.
 
-`coordinatorDrawnTwice` is reported for a tab coordinator that returns one coordinator for two tabs, and for a coordinator whose `view` is on screen in two places at once. `rendererNotSupportedHere` and `rendererIgnoredForPushedFlow` are added with the first renderer that isn't the default (planning #268).
+`coordinatorDrawnTwice` is reported for a tab coordinator that returns one coordinator for two tabs, and for a coordinator whose `view` is on screen in two places at once. `rendererNotSupportedHere` and `rendererIgnoredForPushedFlow` are added with the first renderer that isn't the default.
 
 ### Mixing SwiftUI and UIKit
 
@@ -291,7 +291,7 @@ Renderers of different kinds work in one tree: a UIKit tab bar can hold SwiftUI 
 
 **The environment.** Screens hosted by the UIKit renderer receive the app's SwiftUI environment where the renderer sits, and redraw when it changes. Waypoint adds its own values for each screen (its router, flow and settings), so the property wrappers in <doc:NavigatingFromViewsAndViewModels> work in both renderers.
 
-**Screen chrome.** Titles, toolbars, the back button, search and `tabBarOnPushedScreens(_:)` follow a contract that both renderers are tested against (planning #399). Inside a `UINavigationController`, iOS doesn't show every SwiftUI modifier on its own: a prototype of the UIKit stack renderer (planning #396) didn't show a SwiftUI screen's `navigationTitle`, and on iOS 27 its `toolbar` and `searchable` either. Until planning #399 closes that gap, a row a renderer can't support counts against it when defaults are chosen, and reports an issue in debug, never a silent difference. The defaults stay SwiftUI meanwhile.
+**Screen chrome.** Titles, toolbars, the back button, search and `tabBarOnPushedScreens(_:)` follow a contract that both renderers are tested against. Inside a `UINavigationController`, iOS doesn't show every SwiftUI modifier on its own: a prototype of the UIKit stack renderer didn't show a SwiftUI screen's `navigationTitle`, and on iOS 27 its `toolbar` and `searchable` either. Until that contract closes the gap, a row a renderer can't support counts against it when defaults are chosen, and reports an issue in debug, never a silent difference. The defaults stay SwiftUI meanwhile.
 
 The journey log names each screen in both renderers: a SwiftUI screen by its view, a controller screen by its type name. A route with no destination shows the same missing-destination screen in both.
 
@@ -299,6 +299,6 @@ The journey log names each screen in both renderers: a SwiftUI screen by its vie
 
 A renderer of your own is any view that conforms to the kind's protocol. Choose it app-wide with `.custom(MyStackRenderer.self)`, or per coordinator with `typealias Renderer = MyStackRenderer`, the same way as the built-in ones. The renderer protocols and the calls a renderer makes on its router are public.
 
-Every renderer, built-in or your own, passes the same two suites (planning #398): the sync-contract suite in `WaypointTesting`, which runs on Linux, and the drawing suite in `WaypointRendererTesting`, which runs on a simulator.
+Every renderer, built-in or your own, passes the same two suites: the sync-contract suite in `WaypointTesting`, which runs on Linux, and the drawing suite in `WaypointRendererTesting`, which runs on a simulator.
 
 What each built-in renderer does in its own framework is in <doc:SwiftUIRenderer> and <doc:UIKitRenderer>.

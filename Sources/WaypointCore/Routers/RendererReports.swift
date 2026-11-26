@@ -12,7 +12,7 @@
 //
 // Reports are idempotent: one that matches the current state changes nothing, so a change the
 // app made that echoes back from the screen is ignored. They are `package`, so only Waypoint's
-// own renderers and testing library can call them (decision 0002).
+// own renderers and testing library can call them.
 
 extension StackRouter {
     /// Reports that the stack now shows `count` routes above its root screen, after the user

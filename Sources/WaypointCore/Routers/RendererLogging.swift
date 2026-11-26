@@ -8,8 +8,7 @@
 
 // What renderers add to the tree's logs: the platform's default log handler, a signpost interval
 // for each push the screen animates, and a line for each change held until a transition ends.
-// They are `package`, so only Waypoint's own renderers and testing library can call them
-// (decision 0002).
+// They are `package`, so only Waypoint's own renderers and testing library can call them.
 
 extension StackRouter {
     /// Writes the whole tree's logs to `makeHandler()` when the app gave no handler in the root's

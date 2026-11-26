@@ -23,18 +23,17 @@ import WaypointCore
 ///
 /// - When the router's path changes, the mirror shows the new path. While a push or pop is still
 ///   running, it holds the change and shows the newest path when the transition ends, because
-///   iOS 17 drops a path change that lands mid-push (decision 0002, section 6).
+///   iOS 17 drops a path change that lands mid-push.
 /// - When the screen shows fewer routes, the user went back: the mirror reports it to the router
 ///   with `rendererDidPop(toCount:)`.
 /// - When the screen shows more routes, a `NavigationLink(value:)` pushed something the router
 ///   can't read back. The router reports `rendererMismatch`, and the screen is redrawn from the
 ///   router.
 /// - When the mirror shows a push, it tells the router the push started, and when the push ends,
-///   so a second tap on the same row while the screen slides in pushes nothing (planning #344).
+///   so a second tap on the same row while the screen slides in pushes nothing.
 /// - When a push ends, and when the stack appears, the mirror checks that every route it
 ///   shows has a destination inside this stack. A route type with none is reported once as
-///   `missingDestination`, and the stack shows its missing-destination screen for it
-///   (planning #361).
+///   `missingDestination`, and the stack shows its missing-destination screen for it.
 ///
 /// Conformances:
 /// - `Observable`, so the stack redraws when `shown` changes.
