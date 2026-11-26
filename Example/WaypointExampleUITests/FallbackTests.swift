@@ -27,12 +27,12 @@ final class FallbackTests: XCTestCase {
     private static let missingRoute = NSPredicate(format: "label CONTAINS \"isn't in the stack\"")
     private static let alreadyPresenting = NSPredicate(format: "label CONTAINS 'already presents'")
 
-    // Settings tries each call in turn. Closing the tab's stack, which no fallback covers, reaches
-    // `onNavigationFailure`: the banner shows it, the screen stays, and Settings counts it. Opening
-    // sign in while it is up replaces the sheet, so one Cancel leaves nothing presented. Open
-    // Orders twice shows the duplicate push rule and its toggle. Going back to a screen that isn't
-    // in the stack pops to the root. The event log shows both recoveries.
-    func testSettingsTriesWhatTheRulesCover() {
+    // Each of Settings' tries is its own test, so the four run on different workers instead of one
+    // test taking about 100 s (planning #489).
+
+    // Closing the tab's stack, which no fallback covers, reaches `onNavigationFailure`: the banner
+    // shows it, the screen stays, and Settings counts it.
+    func testUncoveredCallIsReportedAndCounted() {
         let app = openSettings()
         let count = app.descendants(matching: .any)[Identifiers.failureCount]
         XCTAssertTrue(app.reveal(count))
@@ -50,7 +50,12 @@ final class FallbackTests: XCTestCase {
         let wait = expectation(for: counted, evaluatedWith: count)
         let waits = [wait]
         XCTAssertEqual(XCTWaiter.wait(for: waits, timeout: UITestSteps.timeout), .completed, count.label)
+    }
 
+    // Opening sign in while it is up replaces the sheet, so one Cancel leaves nothing presented,
+    // and the event log shows the recovery.
+    func testPresentWhilePresentingReplacesTheSheet() {
+        let app = openSettings()
         let presentTwice = app.buttons[Identifiers.tryPresentTwice]
         XCTAssertTrue(app.reveal(presentTwice))
         presentTwice.tap()
@@ -59,26 +64,38 @@ final class FallbackTests: XCTestCase {
         app.buttons[Identifiers.authCancel].tapWhenReady()
         XCTAssertTrue(signIn.waitForNonExistence(timeout: UITestSteps.timeout), "a second sign in stayed")
 
-        assertPushTwiceRule(in: app)
+        // The event log opens from Account's root, so this goes back from Settings first.
+        app.goBack()
+        XCTAssertTrue(app.navigationBars[Self.accountTitle].waitForExistence(timeout: UITestSteps.timeout))
+        app.openLabTool(.eventLog)
+        let replaced = recoveredEntries(in: app).matching(Self.alreadyPresenting).firstMatch
+        XCTAssertTrue(app.reveal(replaced), "the event log doesn't show the replaced sheet")
+    }
 
+    // Open Orders twice shows the duplicate push rule and its toggle.
+    func testPushTwiceFollowsTheDuplicatePushRule() {
+        let app = openSettings()
+        assertPushTwiceRule(in: app)
+    }
+
+    // Going back to a screen that isn't in the stack pops to the root, the banner names the
+    // missing screen, and the event log shows the recovery.
+    func testPopToMissingScreenPopsToRoot() {
+        let app = openSettings()
         let missingPop = app.buttons[Identifiers.tryMissingPop]
         XCTAssertTrue(app.reveal(missingPop))
         missingPop.tap()
         XCTAssertTrue(app.navigationBars[Self.accountTitle].waitForExistence(timeout: UITestSteps.timeout))
         XCTAssertFalse(app.navigationBars[Self.settingsTitle].exists, "the fallback left Settings open")
-        // The banner may still show the unrecovered call, so this waits for the popTo's own issue.
+        let banner = app.descendants(matching: .any)[Identifiers.navigationIssue]
         let popToIssue = expectation(for: Self.missingRoute, evaluatedWith: banner)
         let popToWaits = [popToIssue]
         let shown = XCTWaiter.wait(for: popToWaits, timeout: UITestSteps.timeout)
         XCTAssertEqual(shown, .completed, "the banner didn't show the issue: \(banner.label)")
 
-        // The log lists the newest call first, so the popTo comes before the replaced sheet: a row
-        // scrolled above the screen leaves the list, and `reveal` can't scroll back to it.
         app.openLabTool(.eventLog)
         let popped = recoveredEntries(in: app).matching(Self.missingRoute).firstMatch
         XCTAssertTrue(app.reveal(popped), "the event log doesn't show the recovered popTo")
-        let replaced = recoveredEntries(in: app).matching(Self.alreadyPresenting).firstMatch
-        XCTAssertTrue(app.reveal(replaced), "the event log doesn't show the replaced sheet")
     }
 
     // A real double tap can't show the duplicate push rule: iOS drops the second tap while the push
