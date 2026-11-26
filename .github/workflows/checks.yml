@@ -86,13 +86,13 @@ jobs:
 
       # The checks before the Swift build in scripts/test-linux.sh: they need bash, git, perl,
       # python3 and procps, which the runner has, so nothing is installed. PRIVATE_NAMES is a repo
-      # variable, visible to collaborators only, so the list of names the public text check refuses
-      # is never in the repository; the check skips that part when it is empty. This step and the
-      # ones around it run even when one of them failed, so each failure is reported in one run.
+      # secret, so the list of names the public text check refuses is never in the repository or
+      # the public run log; a fork's pull request gets it empty, and the check skips that part. This
+      # step and the ones around it run even when one of them failed, so each failure is reported.
       - name: Script checks
         if: ${{ !cancelled() }}
         env:
-          PRIVATE_NAMES: ${{ vars.PRIVATE_NAMES }}
+          PRIVATE_NAMES: ${{ secrets.PRIVATE_NAMES }}
         run: scripts/test-linux.sh --checks-only
 
       # The example app's coordinator files stay under 500 lines (CODE_STYLE.md).
