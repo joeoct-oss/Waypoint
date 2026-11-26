@@ -14,7 +14,7 @@ import Testing
 import WaypointCore
 @testable import WaypointExample
 
-// The Account tab, built by `AccountFactory` (planning #424): the pushed wish list lists the
+// The Account tab, built by `AccountFactory`: the pushed wish list lists the
 // products the store keeps, from the catalog the factory was given.
 struct AccountFactoryTests {
     private static let mugID = 2

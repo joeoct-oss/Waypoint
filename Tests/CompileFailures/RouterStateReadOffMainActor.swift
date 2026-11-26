@@ -6,7 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// Must not compile: a router's state is read on the main actor only (planning #278, P1).
+// Must not compile: a router's state is read on the main actor only.
 // expected-error: main actor-isolated property 'state' can not be referenced from a nonisolated context
 // swift-5: fails
 

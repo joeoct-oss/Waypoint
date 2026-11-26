@@ -18,8 +18,7 @@
     @testable import Waypoint
     @testable import WaypointCore
 
-    /// A stack coordinator's `root` and `destinations`, built with the screen builders
-    /// (planning #313).
+    /// A stack coordinator's `root` and `destinations`, built with the screen builders.
     @Suite("Coordinator screens")
     @MainActor
     struct CoordinatorScreensTests {

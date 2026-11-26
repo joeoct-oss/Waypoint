@@ -16,7 +16,7 @@ import Testing
 import WaypointCore
 @testable import WaypointExample
 
-// The main tabs (planning #424, step 6): `MainFactory` builds the main coordinator and each tab's
+// The main tabs: `MainFactory` builds the main coordinator and each tab's
 // coordinator, and the main coordinator is a `TabCoordinator` around one stack every tab shares.
 // Every tab's coordinator drives that one stack, so no tab holds a stack another tab owns, and a
 // launch into the Lab opens it on that stack.

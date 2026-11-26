@@ -10,7 +10,7 @@ import ExampleStore
 import SwiftUI
 import Waypoint
 
-// The wish list, the child flow Shop presents as a sheet (planning #462): the products the store
+// The wish list, the child flow Shop presents as a sheet: the products the store
 // keeps, and up to three suggestions under "You may also like". A suggestion's Save asks a guest to
 // sign in over the wish list, two sheets deep, and Done on Signed in reports `onCloseAll`, which
 // closes both in one change. Done closes the flow through its own router (`dismissFlow`), which

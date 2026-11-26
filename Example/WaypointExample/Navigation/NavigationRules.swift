@@ -10,7 +10,7 @@ import Observation
 import WaypointCore
 
 // The app's navigation rules, set once on the main tab router so every stack and presented flow
-// inherits them (planning #415). A `popTo` of a screen that isn't in the stack pops to the stack's
+// inherits them. A `popTo` of a screen that isn't in the stack pops to the stack's
 // root (`.popToRoot` for `routeNotInPath`), and a present while a flow is already up replaces it
 // (`.replacePresentation` for `alreadyPresenting`). Settings' Navigation rules section shows the
 // duplicate push rule, which it can change for testing, and the queued-call limit the app's

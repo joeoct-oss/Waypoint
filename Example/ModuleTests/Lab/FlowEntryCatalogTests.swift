@@ -13,7 +13,7 @@ import Testing
 // The Navigation Lab's catalog: twenty entries, each a flow of one kind on one branch. Only the
 // three flows built so far run a demo; every other entry opens its own placeholder, which names the
 // entry, until its flow is built. `LabTests.testBranchesOpenTheirPlaceholders` taps one
-// placeholder on each branch; this checks every entry (planning #447).
+// placeholder on each branch; this checks every entry.
 struct FlowEntryCatalogTests {
     private static let entryCount = 20
     private static let runnableEntries: Set<FlowEntry> = [

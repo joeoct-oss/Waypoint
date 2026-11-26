@@ -11,7 +11,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// Presenting and dismissing child flows, and the router tree (planning #299).
+/// Presenting and dismissing child flows, and the router tree.
 @Suite("Presentation in routers")
 @MainActor
 struct PresentationRouterTests {

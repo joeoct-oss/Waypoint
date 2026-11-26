@@ -12,7 +12,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// Renderer reports: what the user changes directly comes back to the router (planning #291).
+/// Renderer reports: what the user changes directly comes back to the router.
 @Suite("Renderer reports")
 @MainActor
 struct RendererReportTests {

@@ -10,7 +10,7 @@ import ExampleDesignSystem
 import Observation
 import WaypointCore
 
-// The Sheet story (planning #414): every presentation call from a button, on a stack router of the
+// The Sheet story: every presentation call from a button, on a stack router of the
 // story's own. Its screen picks the next sheet's size and whether a swipe closes it, then presents
 // a sheet or a full-screen cover. Each level presented can present another on top, ask the router
 // that presented it to `dismiss` it, close itself with `dismissFlow`, or close every level with the

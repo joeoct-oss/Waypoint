@@ -6,14 +6,14 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Checks scripts/package-xcodebuild.sh (planning #429) with a stand-in xcodebuild, so it runs on Linux and
+# Checks scripts/package-xcodebuild.sh with a stand-in xcodebuild, so it runs on Linux and
 # on the Mac without Xcode:
 #
 # - xcodebuild runs with Tuist's package project (`Waypoint.xcodeproj` and `Derived/`) moved aside;
 # - the project is back after a pass, a failure and a stop with TERM, and `--restore` puts back
 #   what a stopped run left aside;
 # - a committed `Waypoint.xcodeproj` is never moved, and xcodebuild doesn't run;
-# - xcodebuild gets `-skipMacroValidation`, so Understudy's untrusted macros build (planning #506).
+# - xcodebuild gets `-skipMacroValidation`, so Understudy's untrusted macros build.
 #
 # Each case runs in a copy of the working tree with its own history, so the clone is never touched.
 #

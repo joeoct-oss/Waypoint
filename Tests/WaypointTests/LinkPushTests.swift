@@ -15,7 +15,7 @@ import WaypointTestSupport
 @testable import Waypoint
 @testable import WaypointCore
 
-/// What a `WaypointLink` does when tapped, and how a system link is reported (planning #349).
+/// What a `WaypointLink` does when tapped, and how a system link is reported.
 @Suite("Link push")
 @MainActor
 struct LinkPushTests {

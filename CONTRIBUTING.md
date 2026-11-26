@@ -8,13 +8,13 @@ Tool versions (Tuist, SwiftLint and Periphery) are pinned in [`.mise.toml`](.mis
 
 ## Start with an issue
 
-Every change starts from an issue. Maintainers keep issues in the private Waypoint-planning repo, so this repo's own Issues tab is off until the package is public. Name the branch after the issue:
+Every change starts from an issue. Report a bug or ask for a change in this repo's Issues tab; maintainers plan the work privately and link it back to your issue. Name the branch after the issue:
 
 ```text
 <type>/<issue-number>-<short-kebab-description>
 ```
 
-The type is one lowercase word that names the kind of work. The list is open: `feature`, `fix`, `docs`, `test`, `refactor`, `chore`, `ci` and `spike` are common ones, and any other plain word that fits is fine. For example `feature/12-typed-routes` or `fix/31-sheet-dismiss-crash`. After the number comes a short plain-English phrase, two to five words, that a person understands at a glance. Leave out decision, plan and issue numbers and code ids: `docs/251-explain-coordinators-and-renderers`, not `docs/251-align-docs-with-decisions-0017-and-0018`.
+The type is one lowercase word that names the kind of work. The list is open: `feature`, `fix`, `docs`, `test`, `refactor`, `chore`, `ci` and `spike` are common ones, and any other plain word that fits is fine. For example `feature/12-typed-routes` or `fix/31-sheet-dismiss-crash`. After the number comes a short plain-English phrase, two to five words, that a person understands at a glance. Leave out decision, plan and issue numbers and code ids: `docs/251-explain-coordinators-and-renderers`, not `docs/251-align-docs-with-plan-17-and-18`.
 
 ## Test first
 
@@ -42,7 +42,7 @@ The deploy reads a Cloudflare API token (Account, Cloudflare Pages, Edit) and th
 
 ## Code style
 
-The code style lives in [CODE_STYLE.md](CODE_STYLE.md): braces and bodies, member order, wrapping, naming, conformance comments and `let` by default, each with an example and how it is checked. Once the lint setup lands (planning #324), `scripts/lint.sh` must pass before a pull request is reviewed.
+The code style lives in [CODE_STYLE.md](CODE_STYLE.md): braces and bodies, member order, wrapping, naming, conformance comments and `let` by default, each with an example and how it is checked. Once the lint setup lands, `scripts/lint.sh` must pass before a pull request is reviewed.
 
 Public symbols are documented in DocC. A change to the public API updates its article in the same pull request.
 
@@ -60,7 +60,7 @@ New source files start with this header:
 
 ## Pull requests
 
-- **One issue per pull request.** Put `Closes joeoct-oss/Waypoint-planning#<issue>` in the body, the full reference, because the issue lives in the planning repo, and copy the issue's labels.
+- **One issue per pull request.** Put `Closes #<issue>` in the body, or the full `owner/repo#<issue>` reference when the issue lives in another repo, and copy the issue's labels.
 - **Title:** one plain English sentence in the imperative that says what the change does for the package, with no prefix and no trailing period. For example: "Refuse a push when the route has no destination".
 - **Body:** fill in the template. Say what changed, why, and how it was tested, and flag any public API change.
 - **Changelog:** add a line to `CHANGELOG.md` under **Unreleased** for anything a package user would notice.

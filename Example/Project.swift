@@ -19,7 +19,7 @@ let destinations: Destinations = [
 let deploymentTargets = DeploymentTargets.iOS("17.0")
 
 // Every target shares one Swift package name, so the example's modules share their `package`
-// symbols with each other, the app and the tests, and with nothing else (planning #445). The UI
+// symbols with each other, the app and the tests, and with nothing else. The UI
 // tests compile the catalog's sources, which use `package`, so they take it too.
 let baseSettings: SettingsDictionary = [
     "SWIFT_VERSION": "6.0",
@@ -76,8 +76,7 @@ let appSettings: SettingsDictionary = [
 ]
 
 // The package comes through Tuist's package integration (`Tuist/Package.swift`), so Tuist hashes
-// its sources and a change in it runs the app's tests again under selective testing
-// (planning #429).
+// its sources and a change in it runs the app's tests again under selective testing.
 let appDependencies: [TargetDependency] = [
     .external(name: "WaypointCore"),
     .external(name: "Waypoint"),
@@ -95,7 +94,7 @@ let appDependencies: [TargetDependency] = [
     .target(name: "ExampleAccount"),
 ]
 
-// The shared parts of the app and its features as modules (planning #445), lowest first. Each is
+// The shared parts of the app and its features as modules, lowest first. Each is
 // a static framework built from one folder, main actor by default like the app, and depending only
 // on the modules below it, which `scripts/check-example-module-edges.sh` also checks. Static, like
 // the package's products, so only the app links them and Waypoint, and one copy of each type
@@ -241,7 +240,7 @@ let testSupport = Target.target(
     settings: .settings(base: moduleSettings)
 )
 
-// A unit test target per module that has tests (planning #445), from `ModuleTests/<folder>`. They
+// A unit test target per module that has tests, from `ModuleTests/<folder>`. They
 // run without the app, so selective testing skips a module's tests when nothing it uses changed.
 // They are main actor by default, as the modules are.
 func moduleTests(
@@ -401,11 +400,11 @@ let schemeTestTargets: [TestableTarget] = [
 ]
 
 // After every build, in Xcode or a script, `tuist inspect build` sends the build's timings to the
-// project's Tuist dashboard (Build Insights, planning #427), and after every test run in Xcode,
-// `tuist inspect test` sends its results (Test Insights, planning #456). Tuist adds that test
+// project's Tuist dashboard (Build Insights), and after every test run in Xcode,
+// `tuist inspect test` sends its results (Test Insights). Tuist adds that test
 // post-action only to schemes it generates, and this scheme is our own. Both run the Tuist that
 // mise pins, through `mise exec`: a Tuist found on the PATH, such as Homebrew's, sent builds from
-// other versions (planning #431). Without mise they use whatever Tuist there is. They never fail a
+// other versions. Without mise they use whatever Tuist there is. They never fail a
 // build or a test run: a Mac that isn't signed in to Tuist just sends nothing, and
 // WAYPOINT_TUIST_OFFLINE=1 sends nothing. They take the app's build settings, which they read.
 func insightsScript(_ command: String, skippedBy variables: [String]) -> String {
@@ -444,7 +443,7 @@ let testInsights = ExecutionAction.executionAction(
     target: "WaypointExample"
 )
 
-// A failed UI test keeps screenshots, not a screen recording (planning #489): with recordings, a
+// A failed UI test keeps screenshots, not a screen recording: with recordings, a
 // failing run's result bundle grew from about 10 MB to 200 MB, and uploading it to Tuist took
 // 6.5 minutes or timed out (measured 2026-11-25). The screenshots still show where a test failed.
 let testOptions = TestActionOptions.options(preferredScreenCaptureFormat: .screenshots)

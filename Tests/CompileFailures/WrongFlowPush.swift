@@ -6,7 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// Must not compile: a shop navigator refuses a settings route (planning #279, decision 0004).
+// Must not compile: a shop navigator refuses a settings route.
 // expected-error: requires the types 'ShopFlow' and 'PrivacyRoute.Flow' (aka 'SettingsFlow')
 
 import WaypointCore

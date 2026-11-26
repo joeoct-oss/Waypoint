@@ -13,7 +13,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// Outcomes and fallbacks (planning #333).
+/// Outcomes and fallbacks.
 @Suite("Fallbacks")
 @MainActor
 struct FallbackTests {

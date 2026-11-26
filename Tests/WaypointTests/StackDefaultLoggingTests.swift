@@ -16,7 +16,7 @@
     @testable import Waypoint
     @testable import WaypointCore
 
-    /// The SwiftUI stack makes the unified log the default (planning #328).
+    /// The SwiftUI stack makes the unified log the default.
     @Suite("Stack default logging")
     @MainActor
     struct StackDefaultLoggingTests {

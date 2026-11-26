@@ -6,8 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// Must not compile: a navigator used from background work must hop to the main actor
-// (planning #278, P1).
+// Must not compile: a navigator used from background work must hop to the main actor.
 // expected-error: main actor-isolated instance method 'push(_:trigger:else:file:line:)' cannot be called from outside of the actor
 // swift-5: fails
 
