@@ -38,6 +38,7 @@ TEMPLATE = ".github/pull_request_template.md"
 CHANGELOG = "CHANGELOG.md"
 UNRELEASED = "## Unreleased"
 # A release heading, such as "## 1.2.0 - 2026-12-01".
+MARKDOWN_HEADING = re.compile(r"^#{1,6}(\s|$)")
 VERSION_HEADING = re.compile(r"^## \d+\.\d+\.\d+\b")
 WHAT = "What changed and why"
 MERGE = "Merge method"
@@ -146,7 +147,7 @@ def added_changelog_errors(changelog, added_lines):
         (heading := heading_above(lines, number)) is not None
         and lines[heading - 1].strip() == UNRELEASED
         for number in added_lines
-        if lines[number - 1].strip() and not lines[number - 1].startswith("#")
+        if lines[number - 1].strip() and not MARKDOWN_HEADING.match(lines[number - 1])
     )
     errors = [
         f'{CHANGELOG} adds a line under "{lines[heading - 1].strip()}", which is already released'
@@ -435,6 +436,17 @@ def self_check_cases():
             "an edited Unreleased heading alone fails",
             changelog_errors(CHANGELOG_SAMPLE, [3, 5], [CHANGELOG], FILLED, SAMPLE_TEMPLATE),
             1,
+        ),
+        (
+            "an entry that starts with an issue number passes",
+            changelog_errors(
+                CHANGELOG_SAMPLE.replace("- New thing.", "#12: New thing."),
+                [7],
+                [CHANGELOG],
+                FILLED,
+                SAMPLE_TEMPLATE,
+            ),
+            0,
         ),
         (
             "a changelog that only loses lines fails",
