@@ -29,7 +29,16 @@ UI_BUNDLE = "WaypointExampleUITests"
 ROOT = Path(__file__).resolve().parent.parent
 FOLDER = ROOT / "Example" / UI_BUNDLE
 CLASS = re.compile(r"^\s*(?:final\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*XCTestCase\b", re.M)
+# Any class declaration, so a class's tests end where the next class starts, whatever it subclasses.
+DECLARED = re.compile(r"^\s*(?:(?:public|private|fileprivate|internal|final|open)\s+)*class\s+[A-Za-z_]", re.M)
 TEST = re.compile(r"^\s*(?:@MainActor\s+)?func\s+(test[A-Za-z0-9_]*)\s*\(", re.M)
+
+
+def count_tests(source, match):
+    """The tests between a class's declaration and the next class declaration."""
+    following = DECLARED.search(source, match.end())
+    end = following.start() if following else len(source)
+    return len(TEST.findall(source, match.end(), end))
 
 
 def test_classes(folder):
@@ -37,10 +46,8 @@ def test_classes(folder):
     classes = {}
     for path in sorted(folder.rglob("*.swift")):
         source = path.read_text(encoding="utf-8")
-        matches = list(CLASS.finditer(source))
-        for i, match in enumerate(matches):
-            end = matches[i + 1].start() if i + 1 < len(matches) else len(source)
-            count = len(TEST.findall(source, match.end(), end))
+        for match in CLASS.finditer(source):
+            count = count_tests(source, match)
             if count:
                 classes[match.group(1)] = classes.get(match.group(1), 0) + count
     return classes
@@ -71,12 +78,14 @@ def self_check():
         "    func helper() {}\n}\nprivate final class Bar: NSObject {}\n"
         "class Baz: XCTestCase {\n    func testThree() async throws {}\n}\n"
     )
-    found = {}
-    matches = list(CLASS.finditer(sample))
-    for i, match in enumerate(matches):
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(sample)
-        found[match.group(1)] = len(TEST.findall(sample, match.end(), end))
+    found = {match.group(1): count_tests(sample, match) for match in CLASS.finditer(sample)}
     assert found == {"Foo": 2, "Baz": 1}, f"reads the test classes and their tests: {found}"
+    hidden = (
+        "final class Foo: XCTestCase {\n    func testOne() {}\n}\n"
+        "class Bar: BaseTests {\n    func testTwo() {}\n}\n"
+    )
+    found = {match.group(1): count_tests(hidden, match) for match in CLASS.finditer(hidden)}
+    assert found == {"Foo": 1}, f"a test in a class that isn't an XCTestCase counts for no class: {found}"
     print("ok: UI test shards take every class once, balanced and the same every time")
 
 

@@ -29,7 +29,13 @@ trap 'rm -f "$log"' EXIT
 status=0
 "$@" 2>&1 | tee "$log" || status=$?
 if [[ "$status" == 0 ]]; then
-    warnings=$(grep -E "^$PWD/(Sources|Tests)/[^:]+:[0-9]+:[0-9]+: warning:" "$log" | sort -u || true)
+    # The checkout's path is matched as plain text, so a character such as `+` in it means itself.
+    warnings=$(awk -v root="$PWD/" '
+        index($0, root) == 1 {
+            rest = substr($0, length(root) + 1)
+            if (rest ~ /^(Sources|Tests)\/[^:]+:[0-9]+:[0-9]+: warning:/) print
+        }
+    ' "$log" | sort -u)
     if [[ -n "$warnings" ]]; then
         echo "error: warnings in Waypoint's own code, which count as errors:" >&2
         echo "$warnings" >&2
