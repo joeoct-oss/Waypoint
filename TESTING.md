@@ -175,7 +175,7 @@ Nothing to tear down. Leave `.build` in place: the next run reuses it.
 
 ### On pull requests (CI)
 
-GitHub Actions runs the checks on every pull request to `main` that is ready for review, and on every push to `main`, on GitHub's free standard runners (`.github/workflows/checks.yml`). Draft pull requests are skipped until they are marked ready, and a newer push cancels the older run. The checks run in stages, and each stage starts only when the one before it passed, so a failure stops the run before the slower stages:
+GitHub Actions runs the checks on every pull request to `main` that is ready for review, and on every push to `main`, on GitHub's free standard runners (`.github/workflows/checks.yml`). Draft pull requests are skipped until they are marked ready, and a newer push cancels the older run. The **Pull request rules** check (`.github/workflows/pr-rules.yml`) is separate: it also runs on drafts and again whenever the body is edited. The checks run in stages, and each stage starts only when the one before it passed, so a failure stops the run before the slower stages:
 
 1. **Fast checks** (about a minute): actionlint and zizmor on the workflows, the script checks (`scripts/test-linux.sh --checks-only`, with the repo secret `PRIVATE_NAMES`, which the public text check reads once it joins the script checks), the example app's coordinator size limit (`scripts/check-coordinator-size.sh`), dependency review when a package manifest or its pins changed, and whether the pull request is docs only (see [Which run is needed](#2-which-run-is-needed)).
 2. **SonarQube Cloud quality gate** (`scripts/sonar-scan.sh`); it passes without analyzing while that script isn't on the branch. CodeRabbit reviews beside it as an app.
