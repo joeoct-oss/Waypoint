@@ -43,49 +43,14 @@ TEST = re.compile(
 )
 
 
+# A line comment, a block comment, a multi-line string or a one-line string, whichever starts first.
+NOT_CODE = re.compile(r'//[^\n]*|/\*.*?\*/|""".*?"""|"(?:\\.|[^"\\\n])*"', re.S)
+
+
 def code_only(source):
     """The source with comments and string literals blanked out, so their braces and text don't
     count. Each blanked character becomes a space and line breaks stay, so positions still match."""
-    out = list(source)
-    i, n = 0, len(source)
-
-    def blank(a, b):
-        for k in range(a, b):
-            if out[k] != "\n":
-                out[k] = " "
-
-    while i < n:
-        if source.startswith("//", i):
-            j = source.find("\n", i)
-            j = n if j < 0 else j
-            blank(i, j)
-            i = j
-        elif source.startswith("/*", i):
-            depth, j = 1, i + 2
-            while j < n and depth:
-                if source.startswith("/*", j):
-                    depth, j = depth + 1, j + 2
-                elif source.startswith("*/", j):
-                    depth, j = depth - 1, j + 2
-                else:
-                    j += 1
-            blank(i, j)
-            i = j
-        elif source.startswith('"""', i):
-            j = source.find('"""', i + 3)
-            j = n if j < 0 else j + 3
-            blank(i, j)
-            i = j
-        elif source[i] == '"':
-            j = i + 1
-            while j < n and source[j] not in '"\n':
-                j += 2 if source[j] == "\\" else 1
-            j = min(j + 1, n)
-            blank(i, j)
-            i = j
-        else:
-            i += 1
-    return "".join(out)
+    return NOT_CODE.sub(lambda match: re.sub(r"[^\n]", " ", match.group(0)), source)
 
 
 def class_body(code, match):
