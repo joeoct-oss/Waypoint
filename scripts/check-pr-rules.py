@@ -226,7 +226,8 @@ def run():
     try:
         template = git("show", f"{base}:{TEMPLATE}")
     except subprocess.CalledProcessError:
-        template = open(TEMPLATE, encoding="utf-8").read()
+        with open(TEMPLATE, encoding="utf-8") as file:
+            template = file.read()
     changed = git("diff", "--name-only", f"{base}...{head}").split()
     added, numbers = added_by_file(base, head)
     messages = git("log", "--format=%B%x00", f"{base}..{head}").split("\0")
