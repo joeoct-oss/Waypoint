@@ -76,7 +76,7 @@ expect() {
     git -C "$work" add file.swift
     if (cd "$work" && PRIVATE_NAMES="$names" scan 2> "$work/log"); then got=passes; else got=fails; fi
     rm -rf "$work"
-    if [ "$got" != "$want" ]; then
+    if [[ "$got" != "$want" ]]; then
         echo "error: check-public-text self-check: expected '$text' to $want, it ${got%s}ed" >&2
         exit 1
     fi
