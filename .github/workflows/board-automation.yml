@@ -35,7 +35,9 @@ jobs:
           GH_TOKEN: ${{ secrets.WAYPOINT_PROJECT_TOKEN }}
           CONTENT_ID: ${{ github.event.pull_request.node_id }}
           IS_DRAFT: ${{ github.event.pull_request.draft }}
+        # The GraphQL variables ($project and the rest) are meant for GitHub, not the shell.
         run: |
+          # shellcheck disable=SC2016
           if [ "$IS_DRAFT" = "true" ]; then
             status_option="$STATUS_IN_PROGRESS"
           else
