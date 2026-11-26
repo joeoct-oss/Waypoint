@@ -40,7 +40,7 @@ View models that hold a navigator are `@MainActor`, like the views that own them
 
 Saving and restoring a path can happen off the main actor too: encode the path anywhere, decode it with the registry in `decoder.userInfo[.routeRegistry]`, then call `setPath` on the main actor. Configurations, fallback policies and descriptions can be built and read on any thread. Tests: [`CrossActorValueTests`](https://github.com/joeoct-oss/Waypoint/blob/main/Tests/WaypointCoreTests/Concurrency/CrossActorValueTests.swift).
 
-Awaiting a flow's result, such as `await router.present(child)` or `await router.push(child)`, resumes on the main actor and delivers the result exactly once.
+Awaiting a flow's result, such as `await router.present(child)` or `await router.push(child)`, delivers the result exactly once. As with any `await`, the code after it runs in the caller's own isolation, so a caller off the main actor does its UI work on the main actor.
 
 ### Calls made during a change
 

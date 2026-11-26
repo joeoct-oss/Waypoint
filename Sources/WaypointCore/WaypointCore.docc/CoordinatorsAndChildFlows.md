@@ -4,7 +4,7 @@ Group screens into flows, nest them, and get a result back when a flow ends.
 
 ## Overview
 
-> Note: Draft. The API in this article is planned, not built, and can still change: coordinators, flow results and flows built from routes.
+> Note: Draft. Part of the API in this article is built, as "Built so far" below lists. The rest is planned, not built, and can still change, such as flows built from routes.
 
 A coordinator is your own object that owns one router, the flow's dependencies and its logic. Screens report what happened through outputs, closures you pass in, and the coordinator decides where to go next. Screens never import Waypoint.
 

@@ -299,6 +299,6 @@ The journey log names each screen in both renderers: a SwiftUI screen by its vie
 
 A renderer of your own is any view that conforms to the kind's protocol. Choose it app-wide with `.custom(MyStackRenderer.self)`, or per coordinator with `typealias Renderer = MyStackRenderer`, the same way as the built-in ones. The renderer protocols and the calls a renderer makes on its router are public.
 
-Every renderer, built-in or your own, passes the same two suites: the sync-contract suite in `WaypointTesting`, which runs on Linux, and the drawing suite in `WaypointRendererTesting`, which runs on a simulator.
+Every renderer, built-in or your own, will pass the same two suites, which are planned: the sync-contract suite in `WaypointTesting`, which runs on Linux, and the drawing suite in `WaypointRendererTesting`, which runs on a simulator.
 
 What each built-in renderer does in its own framework is in <doc:SwiftUIRenderer> and <doc:UIKitRenderer>.
