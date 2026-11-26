@@ -77,7 +77,8 @@ extension StackRouter {
         file: StaticString,
         line: UInt
     ) {
-        let message = "navigator(for: \(asked).self) was asked of \(flowID), a stack declared for "
+        let message =
+            "navigator(for: \(asked).self) was asked of \(flowID), a stack declared for "
             + "\(declared). The navigator works, but check that the screen is in the flow you meant."
         let issue = NavigationIssue(kind: .flowMismatch, flow: flowID, message: message, file: file, line: line)
         tree.report(issue, level: .error)

@@ -130,7 +130,8 @@ struct FlowNavigatorTests {
         #expect(issue.kind == .flowMismatch)
         #expect(issue.flow == router.flowID)
         #expect(issue.line == line)
-        let expectedMessage = "navigator(for: ShopFlow.self) was asked of main, a stack declared for "
+        let expectedMessage =
+            "navigator(for: ShopFlow.self) was asked of main, a stack declared for "
             + "SettingsFlow. The navigator works, but check that the screen is in the flow you meant."
         #expect(issue.message == expectedMessage)
         #expect(outcome == .applied)

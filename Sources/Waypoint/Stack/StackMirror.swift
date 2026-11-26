@@ -257,7 +257,8 @@ final class StackMirror {
     /// Finds the route types on screen with no destination in this stack, and reports each one
     /// the first time it is found.
     private func checkDestinations() {
-        let entries = shown
+        let entries =
+            shown
             .filter { !destinations.contains($0.routeKey) && $0.routeKey != ChildFlowRoute.routeKey }
             .map { ($0.routeKey, missingIssue(for: $0)) }
         let missing = Dictionary(entries) { first, _ in

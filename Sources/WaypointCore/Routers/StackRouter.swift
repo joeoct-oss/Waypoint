@@ -748,7 +748,13 @@ public final class StackRouter: NavigationRouter {
         let isLive = { [weak self] in
             self?.isOnStack(screen) ?? false
         }
-        return tree.perform(on: self, file: file, line: line, trigger: trigger, isLive: isLive) { [unowned self] store in
+        return tree.perform(
+            on: self,
+            file: file,
+            line: line,
+            trigger: trigger,
+            isLive: isLive
+        ) { [unowned self] store in
             store.resolve(step(self, store), on: self, context)
         }
     }

@@ -20,7 +20,8 @@ package struct PreviewHelpView: View {
                 .waypointPreview(flow: LabShopFlow.self)
         }
         """
-    private static let explanation = "Without it, the wrapper finds no stack, so a tap fails with "
+    private static let explanation =
+        "Without it, the wrapper finds no stack, so a tap fails with "
         + "noRouterInScope. With it, the preview needs no app coordinator and never crashes."
 
     package var body: some View {

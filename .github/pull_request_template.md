@@ -12,7 +12,7 @@ Closes #
 
 ## Checklist
 
-- [ ] `scripts/lint.sh` passes (strict SwiftLint and swift-format, once the lint setup lands); required before review
+- [ ] `scripts/lint.sh` passes (swift-format and SwiftLint; CI's fast checks run it too); required before review
 - [ ] Labels copied from the issue (type, area, priority, test, runs)
 - [ ] Public symbols documented in DocC
 - [ ] Code follows `CODE_STYLE.md`, including a reason for every protocol conformance

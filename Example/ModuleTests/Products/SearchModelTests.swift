@@ -38,7 +38,7 @@ struct SearchModelTests {
         let results = model.results(for: "mug")
 
         let expected = [
-            Self.mugID,
+            Self.mugID
         ]
         #expect(results.map(\.id) == expected)
     }
@@ -56,7 +56,7 @@ struct SearchModelTests {
         let outcome = model.select(lamp)
 
         let expected = [
-            AnyRoute(ProductRoute(id: Self.lampID)),
+            AnyRoute(ProductRoute(id: Self.lampID))
         ]
         let declared = router.declaredFlow.map(ObjectIdentifier.init)
         #expect(declared == ObjectIdentifier(ShopFlow.self))
@@ -138,4 +138,3 @@ private final class IssueRecorder: LogHandler, Sendable {
         logged(message.text)
     }
 }
-

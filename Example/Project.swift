@@ -13,7 +13,7 @@ import ProjectDescription
 
 // iPhone only: the screens are designed for a compact width.
 let destinations: Destinations = [
-    .iPhone,
+    .iPhone
 ]
 
 let deploymentTargets = DeploymentTargets.iOS("17.0")
@@ -53,12 +53,12 @@ let appSources: SourceFilesList = [
     .glob(
         "WaypointExample/**",
         excluding: moduleFolders.map { "WaypointExample/\($0)/**" }
-    ),
+    )
 ]
 
 // The asset catalog holds the app icon: the identity's day icon, and its night icon in dark mode.
 let appResources: ResourceFileElements = [
-    "WaypointExample/Resources/**",
+    "WaypointExample/Resources/**"
 ]
 
 // The app has no accent color asset, so the empty name stops the catalog warning about a missing
@@ -119,14 +119,14 @@ func exampleModule(
 }
 
 let moduleSettings: SettingsDictionary = [
-    "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+    "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor"
 ]
 
 // Every unit test target is main actor by default, as the app and the modules are. The UI tests
 // keep Swift's own default: XCUITest code isn't app code, and the catalog they share with the app
 // is `nonisolated`.
 let unitTestSettings: SettingsDictionary = [
-    "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+    "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor"
 ]
 
 // What every feature may use: the shared modules and the package.
@@ -208,7 +208,7 @@ let exampleModules: [Target] = [
         "ExampleCart",
         folder: "Flows/Cart",
         dependencies: featureBase + [
-            .target(name: "ExampleAddresses"),
+            .target(name: "ExampleAddresses")
         ]
     ),
     exampleModule(
@@ -268,7 +268,7 @@ let exampleModuleTests: [Target] = [
         "ExampleServices",
         folder: "Services",
         dependencies: [
-            .target(name: "ExampleTestSupport"),
+            .target(name: "ExampleTestSupport")
         ]
     ),
     moduleTests(
@@ -327,11 +327,11 @@ let uiTestSources: SourceFilesList = [
 ]
 
 let uiTestDependencies: [TargetDependency] = [
-    .target(name: "WaypointExample"),
+    .target(name: "WaypointExample")
 ]
 
 let unitTestSources: SourceFilesList = [
-    "WaypointExampleTests/**",
+    "WaypointExampleTests/**"
 ]
 
 // The app's own unit tests run inside the app, so they reach its sources with `@testable import`.
@@ -386,7 +386,7 @@ let unitTests = Target.target(
 )
 
 let schemeBuildTargets: [TargetReference] = [
-    "WaypointExample",
+    "WaypointExample"
 ]
 
 let schemeTestTargets: [TestableTarget] = [
@@ -416,13 +416,13 @@ func insightsScript(_ command: String, skippedBy variables: [String]) -> String 
         """
     }
     let inspect = """
-    MISE="$(command -v mise || echo "$HOME/.local/bin/mise")"
-    if [ -x "$MISE" ]; then
-        "$MISE" exec -C "$SRCROOT" -- tuist inspect \(command) || true
-    elif command -v tuist >/dev/null; then
-        tuist inspect \(command) || true
-    fi
-    """
+        MISE="$(command -v mise || echo "$HOME/.local/bin/mise")"
+        if [ -x "$MISE" ]; then
+            "$MISE" exec -C "$SRCROOT" -- tuist inspect \(command) || true
+        elif command -v tuist >/dev/null; then
+            tuist inspect \(command) || true
+        fi
+        """
     return (skips + [inspect]).joined(separator: "\n")
 }
 
@@ -460,14 +460,15 @@ let scheme = Scheme.scheme(
     runAction: .runAction(executable: "WaypointExample")
 )
 
-let targets: [Target] = exampleModules + exampleModuleTests + [testSupport] + [
-    app,
-    unitTests,
-    uiTests,
-]
+let targets: [Target] =
+    exampleModules + exampleModuleTests + [testSupport] + [
+        app,
+        unitTests,
+        uiTests,
+    ]
 
 let schemes: [Scheme] = [
-    scheme,
+    scheme
 ]
 
 let project = Project(

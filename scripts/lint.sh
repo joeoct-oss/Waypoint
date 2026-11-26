@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+#
+#  lint.sh
+#  Waypoint
+#
+#  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
+#  Copyright © 2026 Yousef Mohamed. MIT License.
+#
+# Checks every Swift file against CODE_STYLE.md with the two tools that enforce it: swift-format
+# (.swift-format) for layout, and SwiftLint (.swiftlint.yml) for the house rules. Any finding of
+# either tool fails, with one exception: swift-format always writes empty braces as `{}`, and
+# CODE_STYLE.md asks for `{ }`, so its "remove 1 space" finding at the space inside `{ }` is
+# dropped. SwiftLint's `empty_braces_spaced` rule catches `{}` instead.
+# Runs in the cloud while working, and in CI's fast checks. scripts/format.sh fixes what the
+# tools can fix.
+#
+# Usage: scripts/lint.sh
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+# shellcheck source=scripts/lint-tools.sh
+source scripts/lint-tools.sh
+
+find_swiftlint
+check_swift_format
+
+failed=0
+
+echo "==> swift format lint"
+findings="$(swift format lint --strict --recursive --parallel "${LINT_PATHS[@]}" 2>&1 || true)"
+# Keeps every finding except "remove 1 space" at the space inside `{ }`. Bash only, since CI
+# runs this script in the Swift image, which has no Python or Perl.
+remaining=""
+while IFS= read -r finding; do
+    if [[ "$finding" == *"[Spacing] remove 1 space"* ]]; then
+        IFS=: read -r path line column _ <<< "$finding"
+        if [[ -f "$path" && "$line" =~ ^[0-9]+$ && "$column" =~ ^[0-9]+$ && "$column" -ge 2 ]]; then
+            text="$(sed -n "${line}p" "$path")"
+            if [[ "${text:column-2:3}" == "{ }" ]]; then
+                continue
+            fi
+        fi
+    fi
+    remaining+="$finding"$'\n'
+done <<< "$findings"
+remaining="${remaining%$'\n'}"
+remaining="${remaining#$'\n'}"
+if [[ -n "$remaining" ]]; then
+    echo "$remaining"
+    failed=1
+fi
+
+echo "==> swiftlint lint"
+"$SWIFTLINT" lint --strict --quiet --baseline .swiftlint-baseline.json || failed=1
+
+if [[ "$failed" -ne 0 ]]; then
+    echo "error: lint failed. scripts/format.sh fixes the layout findings; CODE_STYLE.md explains the rest." >&2
+    exit 1
+fi
+echo "==> Lint passed"

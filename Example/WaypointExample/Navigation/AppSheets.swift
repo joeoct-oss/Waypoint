@@ -22,22 +22,26 @@ package enum AppSheets {
         .large,
     ]
     private static let savedHeight: [SheetDetent] = [
-        .height(240),
+        .height(240)
     ]
 
-    package static let defaults = PresentationDefaults(sheet: SheetOptions(
-        detents: mediumAndLarge,
-        selectedDetent: .medium,
-        showsDragIndicator: true
-    ))
+    package static let defaults = PresentationDefaults(
+        sheet: SheetOptions(
+            detents: mediumAndLarge,
+            selectedDetent: .medium,
+            showsDragIndicator: true
+        )
+    )
     package static let filters = PresentationStyle.sheet(
         detents: mediumAndLarge,
         selected: .medium
     )
     package static let large = PresentationStyle.sheet(SheetOptions())
     package static let saved = PresentationStyle.sheet(detents: savedHeight)
-    package static let terms = PresentationStyle.sheet(SheetOptions(
-        showsDragIndicator: false,
-        allowsInteractiveDismiss: false
-    ))
+    package static let terms = PresentationStyle.sheet(
+        SheetOptions(
+            showsDragIndicator: false,
+            allowsInteractiveDismiss: false
+        )
+    )
 }

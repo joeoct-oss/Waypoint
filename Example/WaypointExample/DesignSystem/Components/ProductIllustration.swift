@@ -363,7 +363,7 @@ extension Color {
 
 #Preview {
     let columns = [
-        GridItem(.adaptive(minimum: 96)),
+        GridItem(.adaptive(minimum: 96))
     ]
     LazyVGrid(columns: columns) {
         ForEach(ProductArtwork.allCases, id: \.self) { artwork in

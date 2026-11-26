@@ -32,7 +32,7 @@ struct CartCoordinatorTests {
         cart.checkOut()
 
         let expected: [SignInReason] = [
-            .checkout,
+            .checkout
         ]
         #expect(gate.reasons == expected)
         #expect(cart.router.presented == nil)

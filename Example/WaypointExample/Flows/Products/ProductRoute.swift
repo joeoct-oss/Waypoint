@@ -30,7 +30,7 @@ package struct ProductRoute: TrackableScreen {
     package typealias Flow = ShopFlow
 
     package static let publicLogFields: Set<String> = [
-        "id",
+        "id"
     ]
 
     package let id: Int
@@ -59,7 +59,7 @@ package struct ProductRoute: TrackableScreen {
 //   journey shows the collection's name.
 package struct CollectionRoute: TrackableScreen {
     package static let publicLogFields: Set<String> = [
-        "id",
+        "id"
     ]
 
     package let id: String
@@ -80,7 +80,7 @@ package struct CollectionRoute: TrackableScreen {
 // - `Route`, so the related link can push it onto a Waypoint stack.
 package struct ProductReviewsRoute: Route {
     package static let publicLogFields: Set<String> = [
-        "productID",
+        "productID"
     ]
 
     package let productID: Int

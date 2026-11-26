@@ -12,6 +12,7 @@ All notable changes to Waypoint are listed here. The format follows [Keep a Chan
 
 ### Changed
 
+- swift-format and SwiftLint now enforce `CODE_STYLE.md`. `scripts/lint.sh` runs both and fails on any finding: run it in the cloud or on a Mac while working, and CI's **Fast checks** run it again on every pull request. `scripts/format.sh` fixes what the tools can fix. `.swift-format` holds the layout settings and `.swiftlint.yml` the rules, with a custom rule for each `CODE_STYLE.md` rule a regex can check; `CODE_STYLE.md` says which rules each tool checks and which stay with review. The code is reformatted to match, with no behaviour change, and the SwiftLint findings that were already in the code are listed in `.swiftlint-baseline.json` until they are fixed, so only new code must pass every rule.
 - The DocC articles and doc comments say in words what is planned and why, instead of citing private planning issues and decisions. Draft notes name the feature still to come. No API or behaviour changes.
 - The package's tests, the example app, the scripts and the root docs drop their citations of private planning issues and decisions too, and so does this changelog. A new script check, `scripts/check-public-text.sh`, keeps them out: `scripts/test-linux.sh` runs it with the other script checks, and it also fails on names listed in the `PRIVATE_NAMES` secret.
 - CONTRIBUTING, the pull request template and the issue forms welcome issues in this repo now that it is public; the forms' plan field is no longer required.

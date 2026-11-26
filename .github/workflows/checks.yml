@@ -3,8 +3,9 @@
 # analysis or Linux and macOS time.
 # 1. "Fast checks", seconds long: actionlint, zizmor, the script checks of scripts/test-linux.sh
 #    (--checks-only; it gets PRIVATE_NAMES for the public text check, which joins those checks in
-#    its own pull request), the coordinator size limit, dependency
-#    review when the package's dependencies changed, and which kinds of files changed.
+#    its own pull request), the coordinator size limit, lint (swift-format and SwiftLint, through
+#    scripts/lint.sh), dependency review when the package's dependencies changed, and which kinds
+#    of files changed.
 # 2. "SonarQube Cloud quality gate": scripts/sonar-scan.sh analyzes the code and waits for the
 #    gate. Until that script is on main, the job passes without analyzing anything.
 # 3. The Linux checks (ci.yml): build and tests with warnings as errors, the compile fixtures, the
@@ -100,6 +101,18 @@ jobs:
       - name: Size limits
         if: ${{ !cancelled() }}
         run: scripts/check-coordinator-size.sh
+
+      # CODE_STYLE.md, checked by swift-format and SwiftLint (scripts/lint.sh), as in the cloud
+      # while working. scripts/bootstrap.sh installs the SwiftLint that .mise.toml pins, with its
+      # sha256 checked, on the runner host, and the script runs in the Swift image the Linux
+      # checks pin, whose `swift format` is the version .mise.toml expects.
+      - name: Lint
+        if: ${{ !cancelled() }}
+        env:
+          IMAGE: swift:6.4.3@sha256:e0f67c4120502628d4ced5058df25d334332e21501ae1a0797fd0c0a96486e79
+        run: |
+          scripts/bootstrap.sh
+          docker run --rm --volume "$PWD:/package" --workdir /package "$IMAGE" scripts/lint.sh
 
       # Docs-only: every file the pull request changes matches TESTING.md's docs-only rule. A
       # rename counts as a deletion and an addition, so a source file moved to Markdown isn't

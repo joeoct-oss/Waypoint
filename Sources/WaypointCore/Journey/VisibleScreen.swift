@@ -168,14 +168,16 @@ struct VisibleScreen {
         let isSharedTabStack = role.isTab && stack.parentNode?.sharedStackTabName != nil
         let ownRootView = isSharedTabStack ? nil : stack.rootViewName
         let rootView = ownRootView ?? rootRoute.flatMap { views[$0.routeKey] }
-        let root = rootRoute.map { route in
-            ScreenReference(route: route, flow: stack.flowID, viewName: rootView, coordinator: owner)
-        } ?? ScreenReference(
-            rootNamed: rootName(of: stack, role: role),
-            flow: stack.flowID,
-            viewName: rootView,
-            coordinator: owner
-        )
+        let root =
+            rootRoute.map { route in
+                ScreenReference(route: route, flow: stack.flowID, viewName: rootView, coordinator: owner)
+            }
+            ?? ScreenReference(
+                rootNamed: rootName(of: stack, role: role),
+                flow: stack.flowID,
+                viewName: rootView,
+                coordinator: owner
+            )
         let pushedScreens = pushed.map { route in
             ScreenReference(route: route, flow: stack.flowID, viewName: views[route.routeKey], coordinator: owner)
         }

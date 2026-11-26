@@ -16,10 +16,6 @@ struct AppFactory {
     // The app's services, which the app coordinator clears for Clear all data.
     let services: AppServices
 
-    init(services: AppServices) {
-        self.services = services
-    }
-
     // The main tabs, opened as `launch` asks. Clear all data runs `onClearAllData`.
     func makeMain(
         launch: LaunchOptions,

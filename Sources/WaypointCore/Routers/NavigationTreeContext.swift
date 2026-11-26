@@ -451,7 +451,8 @@ final class NavigationTreeContext {
     /// The failure handlers hear the first one only. A handler that navigates would otherwise be
     /// refused again, call the handler again, and never return.
     private func refuseLoop(on router: some TreeNode, file: StaticString, line: UInt) -> NavigationOutcome {
-        let message = "More than \(maxQueuedChanges) calls were made while changes were applied, "
+        let message =
+            "More than \(maxQueuedChanges) calls were made while changes were applied, "
             + "which looks like an observer that navigates on every change. The rest were dropped."
         let issue = NavigationIssue(kind: .reentrantLoop, flow: router.flowID, message: message, file: file, line: line)
         let failure = NavigationFailure(issue: issue)

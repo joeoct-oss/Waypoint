@@ -62,13 +62,15 @@ extension PresentingRouter {
             node === router
         }
         if isAncestor {
-            let message = "\(name)'s router is \(flowID)'s own router or one above it, so it can't start "
+            let message =
+                "\(name)'s router is \(flowID)'s own router or one above it, so it can't start "
                 + "as \(flowID)'s child flow: a router can't be its own child. Give \(name) a router "
                 + "of its own: don't return a parent's router from makeRouter()."
             return IssueDraft(kind: .childRouterIsAncestor, flow: flowID, message: message)
         }
         guard ownsRouter, router.canJoinAnotherTree else {
-            let message = "\(name)'s router is already in another tree, such as a tab's or another "
+            let message =
+                "\(name)'s router is already in another tree, such as a tab's or another "
                 + "flow's, belongs to another coordinator, or ended with an earlier flow, so \(name) "
                 + "can't start as \(flowID)'s child flow. Start a new \(name), whose router Waypoint "
                 + "makes, or make a new router in \(name).makeRouter()."

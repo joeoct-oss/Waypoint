@@ -14,6 +14,7 @@ import ExampleStore
 import ExampleTestSupport
 import Testing
 import WaypointCore
+
 @testable import WaypointExample
 
 // The main tabs: `MainFactory` builds the main coordinator and each tab's
@@ -40,7 +41,7 @@ struct MainCoordinatorTests {
         #expect(main.cart.router === stack)
         #expect(main.account.router === stack)
         let expected = [
-            AnyRoute(ProductRoute(id: Self.lampID)),
+            AnyRoute(ProductRoute(id: Self.lampID))
         ]
         #expect(stack.state.path == expected)
     }
@@ -57,7 +58,7 @@ struct MainCoordinatorTests {
         main.shop.addToCart(lamp)
 
         let expected = [
-            Self.lampID,
+            Self.lampID
         ]
         #expect(main.router.selection == .cart)
         #expect(main.cart.products.map(\.id) == expected)

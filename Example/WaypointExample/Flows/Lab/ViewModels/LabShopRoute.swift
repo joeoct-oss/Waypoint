@@ -86,23 +86,23 @@ package enum NavigationStyle: String, CaseIterable, Identifiable {
         switch self {
         case .outputs:
             return """
-            // ProductView reports, the coordinator decides
-            ProductView(onBuy: { self.showCart() })
-            """
+                // ProductView reports, the coordinator decides
+                ProductView(onBuy: { self.showCart() })
+                """
         case .navigator:
             return """
-            // ProductModel, one flow only
-            let navigation: FlowNavigator<LabShopFlow>
-            func buy() {
-                navigation.push(LabCartRoute())
-            }
-            """
+                // ProductModel, one flow only
+                let navigation: FlowNavigator<LabShopFlow>
+                func buy() {
+                    navigation.push(LabCartRoute())
+                }
+                """
         case .wrappers:
             return """
-            // ProductView finds its own stack
-            @FlowNavigation(LabShopFlow.self) private var shop
-            Button("Add to cart") { shop.push(LabCartRoute()) }
-            """
+                // ProductView finds its own stack
+                @FlowNavigation(LabShopFlow.self) private var shop
+                Button("Add to cart") { shop.push(LabCartRoute()) }
+                """
         }
     }
 }

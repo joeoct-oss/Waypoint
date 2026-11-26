@@ -34,7 +34,8 @@ struct GuardedChangeTests {
         let base = SheetOptions.default
         let mediumAndLarge: [SheetDetent] = [.medium, .large]
         let large: [SheetDetent] = [.large]
-        let changed = base
+        let changed =
+            base
             .withDetents(mediumAndLarge, selected: .medium)
             .withFitsContentLimit(.medium)
             .withDragIndicator(true)
@@ -75,7 +76,8 @@ struct GuardedChangeTests {
     func logConfigurationChangesThroughWithFunctions() {
         let base = LogConfiguration.default
         let issuesOnly: Set<LogCategory> = [.issues]
-        let changed = base
+        let changed =
+            base
             .withMinimumLevel(.debug)
             .withCategories(issuesOnly)
             .withPrivateValuesRevealed(true)

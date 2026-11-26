@@ -174,10 +174,10 @@ final class StackTests: XCTestCase {
     }
 }
 
-private extension XCUIApplication {
+extension XCUIApplication {
     // Whether the screen titled `title` is still on top, and `other` still gone, once the stack's
     // transition hold has passed, so a held change that lands and is then undone fails.
-    func staysOn(_ title: String, never other: String) -> Bool {
+    fileprivate func staysOn(_ title: String, never other: String) -> Bool {
         RunLoop.current.run(until: Date().addingTimeInterval(UITestSteps.settleTime))
         return navigationBars[title].exists && !navigationBars[other].exists
     }

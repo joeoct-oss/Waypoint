@@ -205,10 +205,11 @@ public struct RouteRegistry: Sendable {
     private func withCurrentKey<R: Route>(of type: R.Type) -> RouteRegistry {
         let key = R.routeKey
         let unstable: [RouteDecodingError] = key.isStable ? [] : [.unstableRouteKey(key)]
-        let duplicate: [RouteDecodingError] = entries[key].map { existing in
-            let types = [String(reflecting: existing.type), key.rawValue]
-            return [.duplicateRouteKey(key, types: types)]
-        } ?? []
+        let duplicate: [RouteDecodingError] =
+            entries[key].map { existing in
+                let types = [String(reflecting: existing.type), key.rawValue]
+                return [.duplicateRouteKey(key, types: types)]
+            } ?? []
         let added = [key: Entry(type: type, isCurrent: true)]
         return RouteRegistry(
             entries: entries.merging(added) { _, new in new },

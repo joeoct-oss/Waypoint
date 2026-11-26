@@ -198,9 +198,10 @@ final class JourneyTracker {
         _ origin: ChangeOrigin,
         _ change: JourneyChange
     ) -> JourneyEntry {
-        let screen = presentation.route.map { route in
-            ScreenReference(route: route, flow: presentation.flow)
-        } ?? ScreenReference(rootNamed: VisibleScreen.words(presentation.flow.name), flow: presentation.flow)
+        let screen =
+            presentation.route.map { route in
+                ScreenReference(route: route, flow: presentation.flow)
+            } ?? ScreenReference(rootNamed: VisibleScreen.words(presentation.flow.name), flow: presentation.flow)
         let journey = FlowJourney(
             flow: presentation.flow,
             screen: screen,

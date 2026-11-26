@@ -16,7 +16,7 @@ let package = Package(
     dependencies: [
         // Test doubles for the test targets only; no product depends on it, so apps never fetch
         // it.
-        .package(url: "https://github.com/joeoct-oss/Understudy", .upToNextMinor(from: "0.5.0")),
+        .package(url: "https://github.com/joeoct-oss/Understudy", .upToNextMinor(from: "0.5.0"))
     ],
     targets: [
         // UI-agnostic state engine. Foundation and Observation only, so it builds and tests on

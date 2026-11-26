@@ -80,7 +80,8 @@ extension StackRouter {
             return
         }
         let name = ViewTypeName.of(type(of: coordinator))
-        let message = "\(name).view is drawn in two places at once. Both drive \(flowID)'s one router, so "
+        let message =
+            "\(name).view is drawn in two places at once. Both drive \(flowID)'s one router, so "
             + "each place shows the other's pushes. Draw a coordinator's view in one place, and make "
             + "another \(name) for the second place."
         report(.coordinatorDrawnTwice, message, file: file, line: line)
@@ -158,7 +159,8 @@ extension StackRouter {
 
     /// The issue for a screen that shows more routes than the path holds.
     private func mismatchIssue(reported: Int, shown: Int, file: StaticString, line: UInt) -> NavigationIssue {
-        let message = "The screen shows \(reported) routes but the path holds \(shown), so the path was kept. "
+        let message =
+            "The screen shows \(reported) routes but the path holds \(shown), so the path was kept. "
             + "A NavigationLink(value:) inside a Waypoint stack does this: use WaypointLink or router.push instead."
         return NavigationIssue(kind: .rendererMismatch, flow: flowID, message: message, file: file, line: line)
     }
