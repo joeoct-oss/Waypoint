@@ -6,20 +6,23 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Splits the example app's UI test classes into shards for CI, so each macOS runner tests a part
-# with one simulator. Every class in Example/WaypointExampleUITests whose body has a `func test...`
-# goes to exactly one shard: the classes are taken from the most tests to the fewest, each to the
-# shard with the fewest tests so far (the lower shard on a tie), so the split is the same on every
-# runner and a new class joins a shard without anyone listing it.
-#
-# Prints one `-only-testing:WaypointExampleUITests/<Class>` argument per line for xcodebuild.
-# `--list` prints every shard with its classes and test counts instead. `--self-check` checks the
-# split on a made-up set of classes and exits. It fails when a test sits outside the body of an
-# XCTestCase class, such as in an extension, so no test is ever left out of every shard.
-#
-# Usage: scripts/ui-test-shards.py <total> <index from 1>
-#        scripts/ui-test-shards.py <total> --list
-#        scripts/ui-test-shards.py --self-check
+
+"""
+Splits the example app's UI test classes into shards for CI, so each macOS runner tests a part
+with one simulator. Every class in Example/WaypointExampleUITests whose body has a `func test...`
+goes to exactly one shard: the classes are taken from the most tests to the fewest, each to the
+shard with the fewest tests so far (the lower shard on a tie), so the split is the same on every
+runner and a new class joins a shard without anyone listing it.
+
+Prints one `-only-testing:WaypointExampleUITests/<Class>` argument per line for xcodebuild.
+`--list` prints every shard with its classes and test counts instead. `--self-check` checks the
+split on a made-up set of classes and exits. It fails when a test sits outside the body of an
+XCTestCase class, such as in an extension, so no test is ever left out of every shard.
+
+Usage: scripts/ui-test-shards.py <total> <index from 1>
+       scripts/ui-test-shards.py <total> --list
+       scripts/ui-test-shards.py --self-check
+"""
 
 import re
 import sys

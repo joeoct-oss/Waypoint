@@ -64,7 +64,7 @@ jobs:
           swift build --build-tests --force-resolved-versions $SWIFT_FLAGS
 
       - name: Check the compile fixtures
-        run: WAYPOINT_SWIFT_BUILD_FLAGS="$SWIFT_FLAGS" scripts/check-compile-failures.sh
+        run: WAYPOINT_SWIFT_BUILD_FLAGS="--force-resolved-versions $SWIFT_FLAGS" scripts/check-compile-failures.sh
 
       - name: Test, with warnings as errors
         run: |

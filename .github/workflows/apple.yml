@@ -76,7 +76,7 @@ jobs:
         run: swift build --build-tests --force-resolved-versions -Xswiftc -warnings-as-errors
 
       - name: Check the compile fixtures
-        run: WAYPOINT_SWIFT_BUILD_FLAGS="-Xswiftc -warnings-as-errors" scripts/check-compile-failures.sh
+        run: WAYPOINT_SWIFT_BUILD_FLAGS="--force-resolved-versions -Xswiftc -warnings-as-errors" scripts/check-compile-failures.sh
 
       - name: Test on the macOS host, with warnings as errors
         run: swift test --force-resolved-versions -Xswiftc -warnings-as-errors
