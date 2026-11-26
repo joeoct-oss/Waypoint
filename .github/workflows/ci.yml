@@ -5,13 +5,16 @@
 #   ready for review. A docs-only pull request (docs-only input) skips every job, and the gate
 #   reports a pass.
 # - "Linux build and tests" is the one required check: it passes only when every job below passed.
-# - Swift 6.4: one build with warnings as errors, which the compile fixtures and the tests reuse,
-#   with coverage on. The lines of Sources/WaypointCore the tests ran are kept as the "coverage"
-#   artifact (coverage.lcov), which the checks workflow uploads to Codecov.
+# - Swift 6.4: one build with warnings as errors, which the compile fixtures and the tests reuse.
+#   Then, in steps that never fail the job, the tests run again with coverage on, and the lines of
+#   Sources/WaypointCore they ran are kept as the "coverage" artifact (coverage.lcov), which the
+#   checks workflow uploads to Codecov. A coverage problem never blocks a pull request.
 # - The thread sanitizer runs in its own job beside it, since it rebuilds everything.
 # - Swift 6.2, the tools version in Package.swift: every test, warnings as errors.
 # - The script checks run in the checks workflow's fast checks, before this one. A run by hand of
-#   scripts/test-linux.sh runs the same steps as the three jobs together.
+#   scripts/test-linux.sh runs the build, fixtures, tests and thread sanitizer with the Swift
+#   installed, without coverage; to reproduce the Swift 6.2 job, run `swift test -Xswiftc
+#   -warnings-as-errors` in the swift:6.2 image this job pins.
 # Hardening: free GitHub-hosted Linux runners only. Every action is pinned to a full commit SHA and
 # every image to a digest, with the version in a comment; Dependabot bumps the actions, and the
 # images are bumped by hand. Each job reads the repo and nothing else, and no checkout keeps the
@@ -40,7 +43,7 @@ jobs:
     container:
       image: swift:6.4.3@sha256:e0f67c4120502628d4ced5058df25d334332e21501ae1a0797fd0c0a96486e79
     env:
-      SWIFT_FLAGS: -Xswiftc -warnings-as-errors --enable-code-coverage
+      SWIFT_FLAGS: -Xswiftc -warnings-as-errors
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -68,15 +71,18 @@ jobs:
           # shellcheck disable=SC2086
           swift test $SWIFT_FLAGS
 
-      # Only feeds the Codecov report, so a failed export or upload never fails the job.
+      # Only feeds the Codecov report, so a failed run, export or upload never fails the job.
       - name: Measure the coverage of WaypointCore
+        id: coverage
         continue-on-error: true
         run: |
           # shellcheck disable=SC2086
-          scripts/core-coverage.sh coverage.lcov $SWIFT_FLAGS
+          swift test $SWIFT_FLAGS --enable-code-coverage
+          # shellcheck disable=SC2086
+          scripts/core-coverage.sh coverage.lcov $SWIFT_FLAGS --enable-code-coverage
 
       - name: Keep the coverage report
-        if: ${{ !cancelled() && hashFiles('coverage.lcov') != '' }}
+        if: ${{ !cancelled() && steps.coverage.outcome == 'success' }}
         continue-on-error: true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
