@@ -1,7 +1,8 @@
 <!--
 Fill in every section. The required "Pull request rules" check holds the merge while a section
-is missing or still holds only this template's text. Write "not needed, because ..." instead of deleting a
-section or a line. The comments can stay; they don't show on the page.
+is missing, or while "What changed and why", "Merge method" or "Tests" still holds only this
+template's text. Write "not needed, because ..." instead of deleting a section or a line. The
+comments can stay; they don't show on the page.
 -->
 
 Closes <owner/repo>#<issue>
