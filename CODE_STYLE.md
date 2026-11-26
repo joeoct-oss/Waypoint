@@ -210,7 +210,7 @@ In coordinators, a function that builds a flow is named `make…Flow()` (`makeLo
 
 ## An example app coordinator file stays under 500 lines
 
-A coordinator in the example app decides navigation; it doesn't build screens or carry services. When its file grows past 500 lines, a flow of its own becomes a child flow, and code moves only to where it belongs, such as a factory or a type of its own, never into an extension file to pass the count. The limit fits an example app, where a feature's coordinator shows its whole navigation in one place. `wc -l` on the coordinator files checks it until the lint setup's rules land.
+A coordinator in the example app decides navigation; it doesn't build screens or carry services. When its file grows past 500 lines, a flow of its own becomes a child flow, and code moves only to where it belongs, such as a factory or a type of its own, never into an extension file to pass the count. The limit fits an example app, where a feature's coordinator shows its whole navigation in one place. `scripts/check-coordinator-size.sh` checks it in CI's fast checks.
 
 ## Every protocol conformance says why
 
