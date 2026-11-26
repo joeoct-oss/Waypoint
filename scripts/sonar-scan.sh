@@ -27,7 +27,7 @@ zip_sha256="4d0e8b2631974c90427a4085dd6ca8be7e3587de2055a69a96d020941e3a629e"
 binaries="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli"
 
 if [[ -z "${SONAR_TOKEN:-}" ]]; then
-    echo "::error::SONAR_TOKEN is not set. A pull request from a fork gets no secrets, so a maintainer pushes its branch to this repository to run the checks." >&2
+    echo "::error::SONAR_TOKEN is not set. A pull request from a fork gets no secrets, so this scan can't run on it." >&2
     exit 1
 fi
 
