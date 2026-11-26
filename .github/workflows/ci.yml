@@ -144,10 +144,11 @@ jobs:
       - name: Test, with warnings as errors
         run: swift test -Xswiftc -warnings-as-errors
 
+  # Skipped, not failed, when a newer push cancels the run, since that push's run replaces it.
   gate:
     name: Linux build and tests
     needs: [tests, tsan, lowest]
-    if: ${{ always() && !github.event.pull_request.draft }}
+    if: ${{ !cancelled() && !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     permissions: {}
