@@ -1,0 +1,282 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit reviews every pull request here on its free open-source plan. It only reviews:
+# nothing writes commits, edits the PR description or comments on issues. The rules it checks
+# live in CODE_STYLE.md and TESTING.md (read through knowledge_base); the path instructions
+# below only add what a reviewer can check in a diff and those files don't say.
+language: en-US
+tone_instructions: >-
+  Plain, short English. Only blockers and should-fix items, each as one inline comment that
+  names the rule it breaks and why. Breaking a CODE_STYLE.md or TESTING.md rule is a should-fix
+  item. No praise, no recaps, no nitpicks the code style does not ask for.
+enable_free_tier: true
+
+reviews:
+  # chill, not quiet: quiet folds broken style rules into the review body as nitpicks, where no
+  # thread has to be resolved. The tone and path instructions keep the inline comments to
+  # blockers and should-fix items.
+  profile: chill
+  # Facts for the merge risk and security risk ratings in each review. They only rate the PR:
+  # automatic approvals are off, so they never approve or block a merge.
+  merge_risk_instructions: >-
+    Waypoint is a navigation package for SwiftUI apps; Orbit Shop in Example/ is its example
+    app. High risk: a breaking change to public API in Sources/WaypointCore, Sources/Waypoint
+    or Sources/WaypointUIKit; a change to Package.swift platforms, swift-tools-version or
+    dependencies; a change to how a router, coordinator or flow orders, delivers or cancels
+    navigation. Moderate risk: concurrency or isolation changes in Sources/; a change to a
+    workflow, scripts/test-linux.sh, scripts/test-mac.sh, scripts/flaky-tests.py or
+    Example/quarantine.json, which decide whether tests block a merge. Low risk: changes only
+    to Tests/, Example/, docs, docs-theme/ or CHANGELOG.md that keep public behaviour the same.
+  security_risk_instructions: >-
+    Waypoint runs inside apps as a library: it holds navigation state in memory, makes no
+    network calls and stores nothing on its own. Deep links and system links arrive from
+    outside the app, so code that parses a URL or turns one into navigation is a trust
+    boundary. CI is the other one: every workflow job is read-only unless it says why. A change
+    that gives a job more permissions, sends app or user data anywhere, reads the environment
+    or files from package code, or adds a dependency is high risk; source and test changes
+    inside those limits are minimal.
+  # Keep the PR description as the author wrote it. Never put "@coderabbitai summary" in it.
+  high_level_summary: false
+  high_level_summary_in_walkthrough: false
+  # The walkthrough comment can't be turned off, so it stays small and folded.
+  collapse_walkthrough: true
+  changed_files_summary: false
+  sequence_diagrams: false
+  estimate_code_review_effort: false
+  # Issues live in a private repo that CodeRabbit can't read.
+  assess_linked_issues: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  review_status: false
+  # The "CodeRabbit" status is pending while the review runs, and a review that stops on an
+  # error fails it, so once it is a required check nothing merges unreviewed.
+  commit_status: true
+  fail_commit_status: true
+  # Use "@coderabbitai configuration" to see the resolved config when needed.
+  review_info: false
+  # No "Prompt for AI Agents" block under every inline comment.
+  enable_prompt_for_ai_agents: false
+  # A maintainer reviews every PR; no automatic slop labelling.
+  slop_detection:
+    enabled: false
+  auto_review:
+    enabled: true
+    drafts: false
+    # Review every push; the default pauses after 5 reviewed commits.
+    auto_pause_after_reviewed_commits: 0
+  # Nothing pushes commits or opens pull requests on its own.
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "off"
+    title:
+      mode: warning
+      requirements: >-
+        One plain imperative sentence that says exactly what changes, with no prefix, no
+        issue or ticket number and no jargon.
+    # Advisory only: a breaking API change must be recorded for package users.
+    custom_checks:
+      - name: "Breaking change recorded"
+        mode: warning
+        instructions: >-
+          Fail if the PR removes or renames a public or open declaration under Sources/,
+          changes a public signature, argument label or default argument, removes a public
+          protocol conformance, adds a protocol requirement without a default, adds a case to
+          a public enum, or raises a platform minimum or swift-tools-version in Package.swift,
+          and CHANGELOG.md gains no entry under Unreleased that says it is breaking. Additions
+          alone pass.
+  # Generated or build output; nothing in it is reviewable by reading. The vendored docs site
+  # scripts are third-party code copied as released.
+  path_filters:
+    - "!**/Package.resolved"
+    - "!**/.build/**"
+    - "!**/.swiftpm/**"
+    - "!docs-theme/vendor/**"
+  path_instructions:
+    - path: "Sources/**/*.swift"
+      instructions: >-
+        Swift 6 language mode with strict concurrency. Code must build with Swift 6.2 through
+        the newest release, on iOS 17 and macOS 14; Sources/WaypointCore must also build and
+        test on Linux, so it imports Foundation and Observation only. Flag: an API newer than
+        the platform floor in Package.swift without an availability check; @unchecked Sendable
+        or nonisolated(unsafe) without a comment naming what guards the state; @preconcurrency
+        on a conformance; a mutable global or static var; an unstructured Task where async let,
+        a task group or the caller's own task would do; a semaphore or other blocking wait on
+        async work; a Task in deinit that captures self. Flag a breaking change to public API
+        that CHANGELOG.md does not record as breaking. Raise a concurrency issue only with a
+        realistic sequence that triggers it. Clean code, each as an inline should-fix finding
+        (major severity), never a nitpick: a function longer than about 40 lines, or nested
+        more than three levels deep, that reads better split into named functions; a name that
+        doesn't say what it holds or does; the same logic written twice where one named
+        function or type would serve both; a boolean or bare literal argument whose meaning
+        isn't clear at the call site; dead code and commented-out code. Raise each only when
+        the fix is concrete.
+    - path: "{Tests,Example/ModuleTests,Example/WaypointExampleTests}/**/*.swift"
+      instructions: >-
+        Unit tests, Swift Testing only. Report each test that breaks TESTING.md or CODE_STYLE.md
+        ("Every test names the promise it pins", "Each test picks its own test double") as an
+        inline should-fix finding (major severity), never as a nitpick. Each test pins one
+        promise the code makes to its user and reaches the code only the way that user does:
+        flag @testable imports, checks on private state, internal order, counts or timing, a
+        sleep that waits for an event, and a test that repeats another test's promise. A spy
+        that checks an effect the user relies on is fine.
+    - path: "Example/WaypointExampleUITests/**/*.swift"
+      instructions: >-
+        XCUITest UI tests of the example app. Flag a fixed sleep or a wait without a timeout,
+        a query by index or by position instead of an accessibility identifier, and a test
+        that reads app state any way other than through the screen. Report each as an inline
+        should-fix finding (major severity).
+    - path: "Example/quarantine.json"
+      instructions: >-
+        The quarantined UI tests (TESTING.md). Flag an entry without an issue link, more than 3
+        entries, or an entry older than 7 days.
+    - path: ".github/workflows/**"
+      instructions: >-
+        Actions are pinned to a full commit SHA with the version in a comment, images to a
+        digest, each job gets only the permissions it uses, no checkout keeps the token, and
+        only free GitHub-hosted runners are used: Linux, and the standard macOS labels for the
+        Apple checks, never a larger (-large, -xlarge) or self-hosted runner. A download
+        follows HTTPS only and is checked against a checksum. Report each security problem as
+        an inline should-fix finding (major severity): pull_request_target or workflow_run
+        that checks out or runs the pull request's code; an expression from the event (a
+        title, body, branch name, commit message or label) expanded straight inside run:
+        instead of through env:; permissions: write-all or a write permission the job doesn't
+        use; an action pinned to a tag or branch; a checkout without persist-credentials:
+        false; a secret passed to a step that doesn't need it. Flag a change that renames a
+        job that is a required check, or that lets a later stage of checks.yml start before
+        an earlier one passed. Flag a new pinned commit of codecov/codecov-action: the org's
+        Actions policy allows exactly one commit, so the PR must say the allow list was
+        updated too. Don't repeat actionlint's syntax and expression-type findings: CI runs it.
+    - path: "**/*.{yml,yaml}"
+      instructions: >-
+        Settings files: Dependabot, Codecov (codecov.yml), the Swift Package Index (.spi.yml),
+        CodeRabbit (.coderabbit.yaml), the issue templates and the workflows. Each opens with
+        a comment that says what the file is for and why each choice was made; flag a changed
+        setting whose comment no longer matches it. Flag a key the tool's schema doesn't have
+        or a value of the wrong type, since these tools often ignore an unknown key without an
+        error. Flag a change that adds anything paid, that turns on a pull request comment or
+        annotation from Codecov (CodeRabbit's review is the one set of comments on a PR), or
+        that lowers Codecov's patch target or project threshold.
+    - path: ".coderabbit.yaml"
+      instructions: >-
+        Check every key against the schema in the first line (schema.v2.json). Flag a change
+        that turns on high_level_summary, a finishing touch, automatic approvals, the poem,
+        issue enrichment or anything else that writes commits, edits the PR description or
+        comments on issues; that removes a path from review without saying why it can't be
+        reviewed by reading; or that turns off a linter without naming the CI job that runs
+        it instead.
+    - path: "sonar-project.properties"
+      instructions: >-
+        Flag a change that moves test code into sonar.sources or package code into
+        sonar.tests, that excludes a file or a rule to make an issue go away instead of fixing
+        it (an exclusion needs a comment that says why the rule doesn't apply), or that drops
+        a language folder from the analysis.
+    - path: "**/*.sh"
+      instructions: >-
+        Bash scripts, run on Linux CI and on the Mac. Report each broken rule as an inline
+        should-fix finding (major severity), and post every ShellCheck finding of warning or
+        error level inline. The file starts with #!/usr/bin/env bash, the file header (file
+        name, Waypoint, "Created by Yousef Mohamed" and the MIT copyright line), a comment that
+        says what the script does and how to run it, and set -euo pipefail. Flag GNU-only or
+        BSD-only flags where the script runs on both, unquoted expansions, eval or bash -c on
+        an argument or other outside input, rm -rf on a variable not checked to be non-empty
+        (use "${dir:?}"), cd without a check, a loop over ls output, a download that doesn't
+        use HTTPS and a pinned checksum, a temporary file not made with mktemp, an error
+        message not sent to stderr, and an exit status that hides a failure.
+    - path: "**/*.py"
+      instructions: >-
+        Python 3 scripts that use only the standard library. Report each broken rule as an
+        inline should-fix finding (major severity), and post every Ruff finding inline. The
+        file starts with #!/usr/bin/env python3, the file header and a module docstring that
+        says what the script does and how to run it. Flag: a third-party import; eval, exec or
+        pickle on any input; subprocess with shell=True or a command built by joining strings;
+        a subprocess call whose failure is ignored; a bare except or one that swallows the
+        error; a file opened without with or without encoding="utf-8"; a mutable default
+        argument; a script that exits 0 after a failure or prints an error to stdout.
+    - path: "**/*.md"
+      instructions: >-
+        Docs for package users and contributors, in plain short English. Flag: a fact the PR
+        changes in code, a workflow or a script that this doc still states the old way; a fact
+        stated here that has another home (CODE_STYLE.md for code style, TESTING.md for how
+        tests run, the script or workflow for a limit), instead of a link to it; a relative
+        link or anchor that points to a file or heading that doesn't exist; a code sample that
+        uses API the package doesn't have; a mention of a private repo, a plan, a decision or
+        a planning issue number; a heading level that skips a level.
+    - path: "CHANGELOG.md"
+      instructions: >-
+        Keep a Changelog format. New user-facing changes go under Unreleased, in plain words
+        a package user understands; breaking changes say they are breaking.
+  tools:
+    # No SwiftLint config in the package yet; the profile-generated rules disagree with
+    # CODE_STYLE.md. Turn it on with the repo's own config once that lands.
+    swiftlint:
+      enabled: false
+    markdownlint:
+      enabled: false
+    languagetool:
+      enabled: false
+    # actionlint and zizmor run pinned in CI's fast checks; a second run here would post the same
+    # findings again. yamllint's default line length disagrees with the workflows, and actionlint
+    # already validates them.
+    actionlint:
+      enabled: false
+    zizmor:
+      enabled: false
+    yamllint:
+      enabled: false
+    # CI's actionlint checks only the scripts inside workflows, so scripts/*.sh are checked here.
+    shellcheck:
+      enabled: true
+    # Python scripts have no linter in CI, so Ruff runs here.
+    ruff:
+      enabled: true
+    gitleaks:
+      enabled: true
+    github-checks:
+      enabled: true
+
+chat:
+  art: false
+  auto_reply: true
+
+knowledge_base:
+  # The homes of the rules the review checks. Keep any AGENTS.md or CLAUDE.md consistent with
+  # them, since CodeRabbit reads those by default too.
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - CODE_STYLE.md
+      - TESTING.md
+  learnings:
+    scope: local
+  issues:
+    scope: local
+  pull_requests:
+    scope: local
+  automatic_linking_mode: disabled
+
+# Issues and plans live in a private repo, so CodeRabbit leaves issues here alone.
+issue_enrichment:
+  auto_enrich:
+    enabled: false
+  planning:
+    enabled: false
