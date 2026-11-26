@@ -41,7 +41,6 @@ extension StackRouter {
     ///   - file: The calling file, where an issue points. Leave the default.
     ///   - line: The calling line, where an issue points. Leave the default.
     /// - Returns: The flow's result, once it ends, or `.cancelled` when it never started.
-    @discardableResult
     public func present<Child: FlowCoordinating>(
         _ child: Child,
         style: PresentationStyle = .sheet,
@@ -76,7 +75,6 @@ extension StackRouter {
     ///   - line: The calling line, where an issue points. Leave the default.
     ///   - makeChild: Builds the coordinator of the presented flow.
     /// - Returns: The flow's result, once it ends, or `.cancelled` when it never started.
-    @discardableResult
     public func present<Child: FlowCoordinating>(
         style: PresentationStyle = .sheet,
         trigger: String? = nil,
@@ -104,7 +102,6 @@ extension StackRouter {
     ///
     /// A push that fails, is ignored or is skipped as a double tap returns `.cancelled` at once.
     /// Cancelling the awaiting task behaves as for ``present(_:style:trigger:else:file:line:)``.
-    @discardableResult
     package func pushFlow<Child: FlowCoordinating>(
         trigger: String?,
         else fallback: NavigationFallback?,
@@ -132,7 +129,6 @@ extension TabRouter {
     ///   - file: The calling file, where an issue points. Leave the default.
     ///   - line: The calling line, where an issue points. Leave the default.
     /// - Returns: The flow's result, once it ends, or `.cancelled` when it never started.
-    @discardableResult
     public func present<Child: FlowCoordinating>(
         _ child: Child,
         style: PresentationStyle = .sheet,
@@ -158,7 +154,6 @@ extension TabRouter {
     ///   - line: The calling line, where an issue points. Leave the default.
     ///   - makeChild: Builds the coordinator of the presented flow.
     /// - Returns: The flow's result, once it ends, or `.cancelled` when it never started.
-    @discardableResult
     public func present<Child: FlowCoordinating>(
         style: PresentationStyle = .sheet,
         trigger: String? = nil,

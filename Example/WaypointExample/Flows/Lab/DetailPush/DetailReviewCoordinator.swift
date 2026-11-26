@@ -13,9 +13,10 @@ import Waypoint
 
 // Write a review, the child flow the Lab's Detail push flow pushes on its own stack from a product
 // (planning #313). Its screens follow the product on the same stack: the rating first, then the
-// note the rating pushes on the review flow's own router. Post review finishes the flow with the
-// stars, which pops back to the product. Back past the rating ends it, which the Detail push flow
-// gets as `.cancelled`.
+// note the rating pushes on the review flow's own router. The note's Post review finishes the
+// flow with the stars from the view itself, with `@FinishFlow(DetailReviewCoordinator.self)`,
+// which pops back to the product. Back past the rating ends it, which the Detail push flow gets as
+// `.cancelled`.
 //
 // Conformances:
 // - `FlowCoordinator`, so the Detail push flow pushes it with `push(_:onFinish:)` and gets the
@@ -56,23 +57,16 @@ package final class DetailReviewCoordinator: FlowCoordinator {
     }
 
     package func makeNoteScreen(_ route: DetailReviewNoteRoute) -> some View {
-        factory.makeDetailReviewNote(
-            rating: route.rating,
-            onPost: { self.post(rating: route.rating) }
-        )
-        .screenChrome(
-            title: "Your review",
-            kind: .swiftUI,
-            router: router,
-            route: AnyRoute(route)
-        )
+        factory.makeDetailReviewNote(rating: route.rating)
+            .screenChrome(
+                title: "Your review",
+                kind: .swiftUI,
+                router: router,
+                route: AnyRoute(route)
+            )
     }
 
     package func showNote(rating: Int) {
         router.push(DetailReviewNoteRoute(rating: rating))
-    }
-
-    package func post(rating: Int) {
-        finish(with: rating)
     }
 }

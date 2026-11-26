@@ -56,6 +56,24 @@ enum NavigatorLookup {
         return DismissFlowAction(navigator: router.rootScreenNavigator)
     }
 
+    /// The action that finishes the nearest flow of `flow` above the view, for
+    /// `@FinishFlow(flow)`.
+    static func finishFlow<Flow: FlowCoordinating>(
+        _ flow: Flow.Type,
+        _ router: StackRouter?,
+        site: WrapperSite,
+        report: @escaping @MainActor (NavigationIssue) -> Void
+    ) -> FinishFlowAction<Flow.Output> {
+        let wrapper = "@FinishFlow(\(ViewTypeName.of(flow)).self)"
+        let missing = StackNavigator(missing: missingStackMessage(wrapper, site), report: report)
+        return FinishFlowAction(
+            router: router,
+            coordinator: flow,
+            wrapper: "\(wrapper) in \(site.callSite)",
+            missing: missing
+        )
+    }
+
     /// The navigator a destination closure gets: one for the screen showing `route`, which does
     /// nothing once that screen is popped, or, outside a Waypoint stack, one that fails every
     /// call.

@@ -6,24 +6,8 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-import Observation
 import WaypointCore
 import WaypointTestSupport
-
-/// Returns once `condition` holds, waking each time the observable state it reads changes, as a
-/// renderer does. It never sleeps or polls.
-@MainActor
-func until(_ condition: @escaping @MainActor () -> Bool) async {
-    while !condition() {
-        await withCheckedContinuation { continuation in
-            withObservationTracking {
-                _ = condition()
-            } onChange: {
-                continuation.resume()
-            }
-        }
-    }
-}
 
 /// How a test ends a child flow, so the `await` and `onFinish:` forms can be compared on each.
 ///

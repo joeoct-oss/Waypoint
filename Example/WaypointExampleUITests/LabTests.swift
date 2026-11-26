@@ -119,8 +119,8 @@ final class LabTests: XCTestCase {
 
     // Write a review pushes a child flow on the Detail push stack, after the product. Back from the
     // review's first screen leaves the flow without a review, and the flow can be pushed again,
-    // with its first screen drawn. Post review then pops back to the product, which shows the
-    // stars.
+    // with its first screen drawn. Post review, which finishes the flow from its view with
+    // `@FinishFlow`, then pops back to the product, which shows the stars.
     func testPushedReviewFlowOnTheSameStack() {
         let app = openDetailPush()
         let product = openLampProduct(in: app)

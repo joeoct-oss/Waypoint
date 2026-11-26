@@ -23,10 +23,12 @@ import Waypoint
 // or "Signed out" after Sign out.
 //
 // The main tab router presents the accounts flow, a child flow `AuthFactory` builds, so it joins
-// the app's one navigation tree and the gate gets the account it finishes with. An action inside a
-// sheet can open the flow over that sheet instead (`requireAccount(for:over:then:done:)`), two
-// levels deep: the sheet's router presents it, the action runs as soon as the reader signs in, and
-// the flow shows Signed in, whose Done the caller runs to close both sheets. The sheet itself is
+// the app's one navigation tree, and the gate awaits the account it finishes with:
+// `await tabs.present(style:) { auth }` returns `.finished(account)` or `.cancelled`. An action
+// inside a sheet can open the flow over that sheet instead (`requireAccount(for:over:then:done:)`),
+// two levels deep: the sheet's router presents it with the `onFinish:` form, the action runs as
+// soon as the reader signs in, and the flow shows Signed in, whose Done the caller runs to close
+// both sheets. The sheet itself is
 // still SwiftUI's, bound to the router, until Waypoint draws presented flows.
 //
 // Conformances:
@@ -49,7 +51,7 @@ package final class AccountGate: SheetAccountGating, SessionAccountGating {
     private var heldAction: (() -> Void)?
     // `var` because signing in sets it, and `runHeldAction()` reads it once the sheet closes.
     private var didSignIn: Bool
-    // `var` because `showSignIn(for:then:)` sets it with the flow the tab router presents, and
+    // `var` because `makeTabsAuth(for:)` sets it with the flow the tab router presents, and
     // `finishAuth()` clears it once the sheet has slid away, so the sheet still draws meanwhile.
     private var presentedAuth: AuthCoordinator?
     // `var` for the same reason as `presentedAuth`: the sizes the presenting router gives the
@@ -109,15 +111,9 @@ package final class AccountGate: SheetAccountGating, SessionAccountGating {
         then action: (() -> Void)? = nil
     ) {
         hold(action, for: reason)
-        let auth = factory.makeAuth(reason: reason)
-        let outcome = tabs.present(auth, style: AppSheets.large, trigger: Self.signInTrigger) { result in
-            self.authEnded(with: result)
+        Task {
+            await signInOverTabs(for: reason)
         }
-        guard outcome.didChange else {
-            return
-        }
-        authSheetOptions = tabs.state.presentation.map { tabs.sheetOptions(for: $0) }
-        presentedAuth = auth
     }
 
     // Like `requireAccount(for:then:)`, but a guest gets the accounts flow over `presenter`, the
@@ -199,6 +195,24 @@ package final class AccountGate: SheetAccountGating, SessionAccountGating {
             return
         }
         finishAuth()
+    }
+
+    // Presents the accounts flow over the tabs and waits for the account it finishes with. The
+    // gate starts the task itself, so no screen going away cancels it. A present the tab router
+    // refuses, such as over another sheet, builds nothing and returns `.cancelled` at once.
+    private func signInOverTabs(for reason: SignInReason) async {
+        let result = await tabs.present(style: AppSheets.large, trigger: Self.signInTrigger) {
+            self.makeTabsAuth(for: reason)
+        }
+        authEnded(with: result)
+    }
+
+    // Builds the accounts flow once the tab router presents it, and keeps it for `MainTabView`.
+    private func makeTabsAuth(for reason: SignInReason) -> AuthCoordinator {
+        let auth = factory.makeAuth(reason: reason)
+        authSheetOptions = AppSheets.large.sheetOptions
+        presentedAuth = auth
+        return auth
     }
 
     private func hold(
