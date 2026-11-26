@@ -176,12 +176,9 @@ final class LabTests: XCTestCase {
 
         // The toast first: it shows for 4 s from the call, and on a loaded Mac the pop below can
         // take longer than that, so it would be gone by the time the test looked for it.
-        let toast = app.descendants(matching: .any)[Identifiers.recoveredToast]
-        XCTAssertTrue(toast.waitForExistence(timeout: UITestSteps.timeout))
-        XCTAssertTrue(
-            toast.label.contains("recovered routeNotInPath by=popToRoot"),
-            "toast says \(toast.label)"
-        )
+        let recovered = "recovered routeNotInPath by=popToRoot"
+        let toast = app.message(Identifiers.recoveredToast, containing: recovered)
+        XCTAssertTrue(toast.waitForExistence(timeout: UITestSteps.timeout), "no \"\(recovered)\" toast")
 
         let product = app.descendants(matching: .any)[Identifiers.detailProduct]
         XCTAssertTrue(product.waitForNonExistence(timeout: UITestSteps.timeout))
