@@ -11,7 +11,7 @@ import Testing
 import WaypointCore
 import WaypointTestSupport
 
-/// State values: saving, restoring, presentation styles and descriptions (planning #298, see the
+/// State values: saving, restoring, presentation styles and descriptions (see the
 /// Descriptions article).
 @Suite("Navigation state")
 struct StateTests {

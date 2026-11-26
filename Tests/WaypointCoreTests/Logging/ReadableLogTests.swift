@@ -11,8 +11,8 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// The readable console format, one line per change with the stack after it (planning #334,
-/// planning #377), the stack and tree views, and `debugTree()`.
+/// The readable console format, one line per change with the stack after it, the stack and tree
+/// views, and `debugTree()`.
 @Suite("Readable log")
 @MainActor
 struct ReadableLogTests {

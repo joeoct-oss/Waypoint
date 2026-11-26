@@ -6,7 +6,7 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-// Must not compile: a route must be safe to send to any thread (planning #278, P2).
+// Must not compile: a route must be safe to send to any thread.
 // expected-error: stored property 'cart' of 'Sendable'-conforming struct 'CartRoute' has non-Sendable type 'Cart'
 // swift-5: warns
 

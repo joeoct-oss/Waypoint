@@ -17,7 +17,7 @@ import Understudy
 import Waypoint
 import WaypointTestSupport
 
-/// Awaiting a pushed flow's result with `await router.push(child)` (planning #314).
+/// Awaiting a pushed flow's result with `await router.push(child)`.
 ///
 /// SwiftUI cancels a screen's `.task` when a pushed screen or a full-screen cover hides it. The
 /// tests that cancel the awaiting task do what SwiftUI does then.

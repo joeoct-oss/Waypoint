@@ -12,7 +12,7 @@ import WaypointTestSupport
 
 @testable import WaypointCore
 
-/// `StackRouter`: stack calls, their outcomes and the issues they report (planning #299).
+/// `StackRouter`: stack calls, their outcomes and the issues they report.
 @Suite("Stack router")
 @MainActor
 struct StackRouterTests {
