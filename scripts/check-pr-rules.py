@@ -30,12 +30,15 @@ Usage: check-pr-rules.py             reads PR_BODY, PR_AUTHOR, HEAD_REF, BASE_SH
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 
 TEMPLATE = ".github/pull_request_template.md"
 CHANGELOG = "CHANGELOG.md"
 UNRELEASED = "## Unreleased"
+# A release heading, such as "## 1.2.0 - 2026-12-01".
+VERSION_HEADING = re.compile(r"^## \d+\.\d+\.\d+\b")
 WHAT = "What changed and why"
 MERGE = "Merge method"
 TESTS = "Tests"
@@ -49,7 +52,7 @@ AI_TOOLS = r"(claude|anthropic|copilot|codex|cursor|chatgpt|openai|gemini|devin)
 ATTRIBUTION = [
     re.compile(r"co-authored-by:.*" + AI_TOOLS, re.IGNORECASE),
     re.compile(r"^\s*claude-session:", re.IGNORECASE),
-    re.compile(r"generated (with|by)\W*" + AI_TOOLS, re.IGNORECASE),
+    re.compile(r"generated (with|by)\W*(github\W+)?" + AI_TOOLS, re.IGNORECASE),
     re.compile(r"claude\.ai/code/session", re.IGNORECASE),
 ]
 # The two credit lines at the top of a body: an HTML comment and a "Requested by" line.
@@ -134,7 +137,7 @@ def heading_above(lines, number):
 
 def added_changelog_errors(changelog, added_lines):
     lines = changelog.splitlines()
-    new_headings = {number for number in added_lines if lines[number - 1].startswith("## ")}
+    new_headings = {number for number in added_lines if VERSION_HEADING.match(lines[number - 1])}
     headings = [
         heading_above(lines, number) for number in added_lines if lines[number - 1].strip()
     ]
@@ -194,24 +197,52 @@ def attribution_errors(body, commit_messages, added):
     return sorted(set(errors))
 
 
+GIT = shutil.which("git") or "git"
+
+
 def git(*args):
-    return subprocess.run(["git", *args], check=True, capture_output=True, text=True).stdout
+    # The arguments are this script's own, plus commit ids from the pull request event.
+    return subprocess.run(  # noqa: S603
+        [GIT, *args], check=True, capture_output=True, text=True
+    ).stdout
 
 
-def added_by_file(base, head):
+def added_lines(patch):
+    """The lines a -U0 patch of one file adds, each with its line number in the new file.
+
+    Lines inside a hunk are content, even when they look like a header, so the hunk's own
+    counts decide where it ends."""
+    added = []
+    number = 0
+    old_left = new_left = 0
+    for line in patch.splitlines():
+        if old_left == 0 and new_left == 0:
+            hunk = re.match(r"@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", line)
+            if hunk:
+                old_left = int(hunk.group(1) or 1)
+                number = int(hunk.group(2))
+                new_left = int(hunk.group(3) or 1)
+            continue
+        if line.startswith("+"):
+            added.append((number, line[1:]))
+            number += 1
+            new_left -= 1
+        elif line.startswith("-"):
+            old_left -= 1
+    return added
+
+
+def added_by_file(base, head, changed):
+    """Maps each changed file to its added lines and their numbers. Names come from git's
+    NUL-separated list, so no quoted name is lost."""
     added = {}
     added_numbers = {}
-    path = None
-    number = 0
-    for line in git("diff", "--unified=0", "--no-color", f"{base}...{head}").splitlines():
-        if line.startswith("+++ "):
-            path = line[6:] if line.startswith("+++ b/") else None
-        elif line.startswith("@@"):
-            number = int(re.match(r"@@ -\S+ \+(\d+)", line).group(1))
-        elif line.startswith("+") and path is not None:
-            added.setdefault(path, []).append(line[1:])
-            added_numbers.setdefault(path, []).append(number)
-            number += 1
+    for path in changed:
+        patch = git("diff", "--unified=0", "--no-color", f"{base}...{head}", "--", path)
+        lines = added_lines(patch)
+        if lines:
+            added_numbers[path] = [number for number, _ in lines]
+            added[path] = [text for _, text in lines]
     return added, added_numbers
 
 
@@ -229,8 +260,8 @@ def run():
     except subprocess.CalledProcessError:
         with open(TEMPLATE, encoding="utf-8") as file:
             template = file.read()
-    changed = git("diff", "--name-only", f"{base}...{head}").split()
-    added, numbers = added_by_file(base, head)
+    changed = [f for f in git("diff", "--name-only", "-z", f"{base}...{head}").split("\0") if f]
+    added, numbers = added_by_file(base, head, changed)
     messages = git("log", "--format=%B%x00", f"{base}..{head}").split("\0")
     changelog = git("show", f"{head}:{CHANGELOG}") if CHANGELOG in changed else ""
     checks = {
@@ -246,11 +277,14 @@ def run():
         if errors:
             failed = True
             for error in errors:
-                print(f"::error title={name}::{error}")
+                print(f"::error title={name}::{error}", file=sys.stderr)
         else:
             print(f"{name}: passes")
     if failed:
-        print(f"Fix the body or the branch, as {TEMPLATE} asks. Editing the body reruns this.")
+        print(
+            f"Fix the body or the branch, as {TEMPLATE} asks. Editing the body reruns this.",
+            file=sys.stderr,
+        )
     return 1 if failed else 0
 
 
@@ -311,6 +345,11 @@ The new case pins that an empty body fails.
 PLANNING_ISSUE = "planning" + " #12"
 PLANNING_REPO = "Waypoint-" + "planning"
 DECISION = "decision" + " 0012"
+# The attribution samples are built in pieces too, so the file adds no attribution itself.
+FOOTER = "_Generated " + "by [Claude Code](https://x)_"
+COPILOT = "Generated " + "by GitHub Copilot"
+TRAILER = "Co-Authored-" + "By: Claude <noreply@anthropic.com>"
+SESSION = "Claude-" + "Session: x"
 
 CHANGELOG_SAMPLE = """# Changelog
 
@@ -367,6 +406,17 @@ def self_check():
             0,
         ),
         (
+            "a heading that isn't a version doesn't pass as a release",
+            changelog_errors(
+                CHANGELOG_SAMPLE.replace("### Added", "## Notes"),
+                [5],
+                [CHANGELOG],
+                FILLED,
+                SAMPLE_TEMPLATE,
+            ),
+            2,
+        ),
+        (
             "no entry with a package change fails",
             changelog_errors("", [], ["Sources/A.swift"], FILLED, SAMPLE_TEMPLATE),
             1,
@@ -390,15 +440,16 @@ def self_check():
         ("the credit lines pass", attribution_errors(FILLED, ["Add a check"], {}), 0),
         (
             "a footer in the body fails",
-            attribution_errors(FILLED + "\n_Generated by [Claude Code](https://x)_\n", [], {}),
+            attribution_errors(FILLED + f"\n{FOOTER}\n", [], {}),
             1,
         ),
         (
             "a co-author trailer fails",
-            attribution_errors("", ["Fix\n\nCo-Authored-By: Claude <noreply@anthropic.com>"], {}),
+            attribution_errors("", [f"Fix\n\n{TRAILER}"], {}),
             1,
         ),
-        ("a session line fails", attribution_errors("", ["Fix\n\nClaude-Session: x"], {}), 1),
+        ("a session line fails", attribution_errors("", [f"Fix\n\n{SESSION}"], {}), 1),
+        ("a vendor-first footer fails", attribution_errors(COPILOT, [], {}), 1),
         (
             "a planning reference in a file fails",
             attribution_errors("", [], {"README.md": [f"See {PLANNING_ISSUE}."]}),
@@ -420,11 +471,22 @@ def self_check():
             0,
         ),
     ]
+    patch = "--- a/n.md\n+++ b/n.md\n@@ -0,0 +1,2 @@\n+++ looks like a header\n+second\n"
+    cases.append(
+        (
+            "an added line that looks like a header is still content",
+            [] if added_lines(patch) == [(1, "++ looks like a header"), (2, "second")] else ["x"],
+            0,
+        )
+    )
     failed = 0
     for name, errors, expected in cases:
         if len(errors) != expected:
             failed += 1
-            print(f"self-check failed: {name}: expected {expected} errors, got {errors}")
+            print(
+                f"self-check failed: {name}: expected {expected} errors, got {errors}",
+                file=sys.stderr,
+            )
     if failed:
         return 1
     print(f"self-check: {len(cases)} cases pass")

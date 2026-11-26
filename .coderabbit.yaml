@@ -82,9 +82,9 @@ reviews:
     resolve_merge_conflict:
       enabled: false
   # CodeRabbit approves a PR once its blocking findings are resolved and no pre-merge check
-  # fails, and requests changes otherwise. Main's ruleset requires one approving review, so a PR
-  # it hasn't reviewed, such as one whose review was rate limited, waits instead of merging
-  # (Yousef, 2026-11-26).
+  # fails, and requests changes otherwise. Main's ruleset requires one approving review and
+  # dismisses an approval when new commits are pushed, so a PR it hasn't reviewed at its head,
+  # such as one whose review was rate limited, waits instead of merging (Yousef, 2026-11-26).
   auto_approvals:
     enabled: true
   # The pull request rules as checks (Yousef, 2026-11-26). The required "Pull request rules"
@@ -168,12 +168,13 @@ reviews:
       - name: "Tests pin promises"
         mode: warning
         instructions: >-
-          Fail if an added or changed Swift test has no display name that states the promise
-          it pins (@Test("...")), imports with @testable, reads private or internal state,
-          checks internal call order or counts the user can't observe, or sleeps to wait for an
-          event (Task.sleep, sleep, usleep, Thread.sleep). A spy that checks an effect the user
-          relies on is fine. Also fail if the PR changes code under Sources/, adds or changes
-          no test, and the description doesn't say why no test is needed.
+          Fail if an added or changed Swift Testing test has no display name that states the
+          promise it pins (@Test("...")); XCUITest UI tests are named by their methods. Also
+          fail if any added or changed test imports with @testable, reads private or internal
+          state, checks internal call order or counts the user can't observe, or sleeps to wait
+          for an event (Task.sleep, sleep, usleep, Thread.sleep). A spy that checks an effect
+          the user relies on is fine. Also fail if the PR changes code under Sources/, adds or
+          changes no test, and the description doesn't say why no test is needed.
       # Advisory only: a breaking API change must be recorded for package users.
       - name: "Breaking change recorded"
         mode: warning
