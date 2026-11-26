@@ -8,7 +8,7 @@
 
 import XCTest
 
-// The shop's stack runs on Waypoint's SwiftUI renderer (planning #265). These check that pushes and
+// The shop's stack runs on Waypoint's SwiftUI renderer. These check that pushes and
 // pops draw for real, that what the user does by hand comes back to the router, that a change
 // landing while a push still animates is not lost, which needs the transition hold on iOS 17, that
 // a double tap pushes once, that a Waypoint link pushes through the router, that Shop's banner
@@ -37,14 +37,14 @@ final class StackTests: XCTestCase {
     ]
 
     // How long a mid-transition test waits for its final screen, counted from the launch, so it
-    // covers the app starting, the launch push and the held change on a busy Mac (planning #419). A
+    // covers the app starting, the launch push and the held change on a busy Mac. A
     // lost change never shows the final screen, so a longer wait can't turn a lost change into a
     // pass.
     private static let launchSettleTimeout: TimeInterval = 20
 
     // A product pushes on Shop and hides the tab bar, and its route trail comes from the stack
     // router: main, shop, then the product, on the bar's subtitle from iOS 26 and on the strip
-    // below the bar before that (planning #406). Back shows the tab bar again. The "Nebula nights"
+    // below the bar before that. Back shows the tab bar again. The "Nebula nights"
     // banner pushes its collection on the same stack, and a product in it pushes above the
     // collection, so Back walks the collection and then the shop.
     func testPushAndBack() {
@@ -68,7 +68,7 @@ final class StackTests: XCTestCase {
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
     }
 
-    // A fast double tap on a row pushes the product once (planning #344): one Back returns to the
+    // A fast double tap on a row pushes the product once: one Back returns to the
     // shop. Without the duplicate push rule, the second tap pushes the lamp again and Back shows
     // the lamp.
     func testDoubleTapPushesOnce() {
@@ -100,7 +100,7 @@ final class StackTests: XCTestCase {
         XCTAssertTrue(app.navigationBars[Self.shopTitle].waitForExistence(timeout: UITestSteps.timeout))
     }
 
-    // The lamp's page links to the mug with a `WaypointLink` (planning #349). The tap pushes
+    // The lamp's page links to the mug with a `WaypointLink`. The tap pushes
     // through the
     // router: the mug shows, nothing is reported, and Back walks the router's path, the lamp and
     // then the shop.

@@ -12,7 +12,7 @@ import ExampleStore
 import ExampleTestSupport
 import Testing
 
-// One checkout's draft (planning #424): the order it places has the cart's products, the chosen
+// One checkout's draft: the order it places has the cart's products, the chosen
 // address and the card, placing it empties the cart, and with no address it can't be placed.
 struct CheckoutBuilderTests {
     private static let lampID = 1

@@ -14,8 +14,7 @@ import SwiftUI
 // What Shop and Search use, from `AppServices.productsDependencies(gate:launch:)`: the catalog
 // they list, the store that keeps the wish list, the window's account gate for Save, and the
 // window's link settings for the products stacks, and the Cart feature's cart screen, which Go to
-// cart pushes on Shop. The app hands in the cart screen, so this feature never names Cart's types
-// (planning #445).
+// cart pushes on Shop. The app hands in the cart screen, so this feature never names Cart's types.
 package struct ProductsDependencies {
     package let catalog: any ProductCatalog
     package let store: LocalStore

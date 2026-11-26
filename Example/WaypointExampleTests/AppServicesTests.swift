@@ -17,7 +17,7 @@ import Testing
 import WaypointCore
 @testable import WaypointExample
 
-// The app's one container (planning #424): every feature gets its services from it, so they share
+// The app's one container: every feature gets its services from it, so they share
 // one copy of each, and Clear all data resets all of them. Each test runs on a store of its own, so
 // it never reads or changes the app's data.
 struct AppServicesTests {

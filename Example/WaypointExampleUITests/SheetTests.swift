@@ -8,8 +8,8 @@
 
 import XCTest
 
-// The app's sheets take their sizes and swipe-to-close from Waypoint's `SheetOptions`
-// (planning #412): the filters are presented with their own sizes, which the event log shows, and
+// The app's sheets take their sizes and swipe-to-close from Waypoint's `SheetOptions`:
+// the filters are presented with their own sizes, which the event log shows, and
 // a bare `.sheet` takes the app's defaults and can grow to large. The locked terms sheet is checked
 // on the way through Create account, in `JourneyTests.testSignUpInSheet`.
 // A sheet's size is read from where its navigation bar sits on the screen.
@@ -102,7 +102,7 @@ final class SheetTests: XCTestCase {
     }
 
     // Drags a medium sheet up by its grabber until its top sits above `largeTopShare`, at most
-    // `maxTaps` times, and says whether it got there (planning #426). On iOS 27.2 one `swipeUp()`
+    // `maxTaps` times, and says whether it got there. On iOS 27.2 one `swipeUp()`
     // on the sheet's navigation bar often leaves the sheet at medium, since the bar takes the
     // swipe.
     private func growToLarge(

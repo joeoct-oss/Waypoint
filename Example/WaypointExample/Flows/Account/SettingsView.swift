@@ -12,7 +12,7 @@ import SwiftUI
 
 // Settings (AU-05, AU-06): App (Appearance and Notifications), Developer (the Navigation Lab for
 // trying every demo flow, and Clear all data, which asks to confirm next to the button), About (the
-// version) and, for a signed-in reader, Sign out. Navigation rules (planning #415) shows the
+// version) and, for a signed-in reader, Sign out. Navigation rules shows the
 // duplicate push rule, which it can change for testing, and, for a signed-in reader, a button that
 // pushes Orders twice in a row to try it. It shows the queued-call limit and how many calls failed
 // with no fallback, and tries the two calls the app's fallbacks recover and one no fallback covers.

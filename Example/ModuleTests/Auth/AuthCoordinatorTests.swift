@@ -13,7 +13,7 @@ import ExampleTestSupport
 import Testing
 import Waypoint
 
-// The accounts flow, built by `AuthFactory` (planning #424): Create account keeps what the reader
+// The accounts flow, built by `AuthFactory`: Create account keeps what the reader
 // typed when they go back a step, and its last step signs the new account in and finishes the flow
 // with it.
 struct AuthCoordinatorTests {
