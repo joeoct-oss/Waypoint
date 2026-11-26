@@ -64,6 +64,9 @@ if [ "$part" != swift ]; then
     scripts/ui-test-shards.py --self-check
     scripts/ui-test-shards.py 3 --list
 
+    echo "==> Checking the public text for private references"
+    scripts/check-public-text.sh
+
     if [ "$part" = checks ]; then
         echo "==> Linux script checks passed"
         exit 0
