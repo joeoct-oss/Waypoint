@@ -46,8 +46,12 @@ TEST = re.compile(
 )
 
 
-# A line comment, a block comment, a multi-line string or a one-line string, whichever starts first.
-NOT_CODE = re.compile(r'//[^\n]*|/\*.*?\*/|""".*?"""|"(?:\\.|[^"\\\n])*"', re.S)
+# A line comment, a block comment, a raw string (`#"..."#`, closed by as many `#`), a multi-line
+# string or a one-line string, whichever starts first. A nested block comment ends at its first
+# `*/`; a brace after that makes the count below disagree, so the check in main() fails loudly.
+NOT_CODE = re.compile(
+    r'//[^\n]*|/\*.*?\*/|(#+)".*?"\1|""".*?"""|"(?:\\.|[^"\\\n])*"', re.S
+)
 
 
 def code_only(source):
@@ -145,6 +149,10 @@ def self_check():
     found = {match.group(1): count_tests(code, match) for match in CLASS.finditer(code)}
     assert found == {"A": 0, "B": 1}, f"a test in an extension counts for no class: {found}"
     assert len(TEST.findall(code)) == 2, "the whole-folder count still sees the extension's test"
+    raw = 'final class Foo: XCTestCase {\n    let text = #"a " } // "#\n    func testOne() {}\n}\n'
+    code = code_only(raw)
+    found = {match.group(1): count_tests(code, match) for match in CLASS.finditer(code)}
+    assert found == {"Foo": 1}, f"a raw string's quote and brace don't end the class: {found}"
     print("ok: UI test shards take every class once, balanced and the same every time")
 
 
@@ -168,8 +176,9 @@ def main(argv):
     if every_test != sum(classes.values()):
         print(
             f"error: {every_test} UI tests in {FOLDER}, but only {sum(classes.values())} sit in the "
-            "body of a class that subclasses XCTestCase; the shards would leave the others out, so "
-            "move each one into its class's body",
+            "body of a class that subclasses XCTestCase; the shards would leave the others out. Move "
+            "each into its class's body; if it is there, a nested block comment or an unusual "
+            "string may hide where the class ends",
             file=sys.stderr,
         )
         return 1
