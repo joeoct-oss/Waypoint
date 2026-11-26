@@ -367,7 +367,8 @@ CHANGELOG_SAMPLE = """# Changelog
 """
 
 
-def self_check():
+def self_check_cases():
+    """Each case is (name, errors found, errors expected): the table the self-check runs."""
     cases = [
         ("a filled-in body passes the template", template_errors(FILLED, SAMPLE_TEMPLATE), 0),
         ("the bare template fails", template_errors(SAMPLE_TEMPLATE, SAMPLE_TEMPLATE), 3),
@@ -486,7 +487,12 @@ def self_check():
             0,
         )
     )
+    return cases
+
+
+def self_check():
     failed = 0
+    cases = self_check_cases()
     for name, errors, expected in cases:
         if len(errors) != expected:
             failed += 1
