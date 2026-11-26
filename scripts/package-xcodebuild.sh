@@ -6,7 +6,7 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Runs xcodebuild on the package's own `Waypoint-Package` scheme (planning #429). The example app takes the
+# Runs xcodebuild on the package's own `Waypoint-Package` scheme. The example app takes the
 # package through Tuist's package integration, so Tuist writes the package's project,
 # `Waypoint.xcodeproj` and `Derived/`, into the package root whenever it generates the app. While
 # that project sits next to `Package.swift`, xcodebuild opens it and finds no `Waypoint-Package`
@@ -14,7 +14,7 @@
 # given, and puts them back when it ends, pass, fail or stop. Putting them back matters: an app
 # workspace whose package project is gone builds against stale package products.
 #
-# It also passes `-skipMacroValidation` (planning #506): the test targets take Understudy, whose
+# It also passes `-skipMacroValidation`: the test targets take Understudy, whose
 # macros xcodebuild refuses to build until someone trusts them in Xcode, which no script run can.
 #
 # Usage: scripts/package-xcodebuild.sh <xcodebuild arguments>

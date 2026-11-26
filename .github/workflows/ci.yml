@@ -2,7 +2,7 @@
 # side by side: the script checks, which need no Swift, on the runner host, and the Swift part in
 # the swift:6.4 container. A first short job only lists the changed files (and runs the two
 # Markdown checks on a docs only pull request), so every other job starts as soon as it ends.
-# Every job runs on Tuist runners (`tuist-linux`, planning #433), not GitHub-hosted runners, so CI uses the
+# Every job runs on Tuist runners (`tuist-linux`), not GitHub-hosted runners, so CI uses the
 # Tuist account's Linux minutes instead of GitHub Actions minutes. Built to use few of them:
 # - draft pull requests are skipped; the check runs when a PR is ready for review and on every push after that,
 # - a pull request that changes only docs (TESTING.md's docs only rule: *.md, *.docc/**, docs-theme/**)
