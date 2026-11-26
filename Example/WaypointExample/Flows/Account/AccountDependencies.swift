@@ -17,7 +17,7 @@ import SwiftUI
 // wish list, the saved addresses, the window's account gate and navigation rules, the issue and
 // event logs Settings and the Lab show, what the Navigation Lab's demos use, the window's
 // navigation tree as text, and the Products feature's wish list screen. The app hands in the wish
-// list screen, so this feature never names Products' types (planning #445).
+// list screen, so this feature never names Products' types.
 package struct AccountDependencies {
     package let catalog: any ProductCatalog
     package let session: Session

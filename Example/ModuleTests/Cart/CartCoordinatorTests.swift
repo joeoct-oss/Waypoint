@@ -14,7 +14,7 @@ import ExampleTestSupport
 import Testing
 import WaypointCore
 
-// The Cart tab, built by `CartFactory` (planning #424): Check out asks a guest to sign in first,
+// The Cart tab, built by `CartFactory`: Check out asks a guest to sign in first,
 // opens checkout at the address step for a signed-in reader, and each checkout starts from a new
 // draft.
 struct CartCoordinatorTests {

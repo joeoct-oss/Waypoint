@@ -4,7 +4,7 @@ Login, tabs, a detail push, a sheet and a deep link, in one small SwiftUI app.
 
 ## Overview
 
-> Note: Draft. The API in this article is planned, not built, and can still change: coordinators, flow results, sheets and `show`, tabs, roots and links.
+> Note: Draft. Stack, tab and flow coordinators and flow results are built, as listed in the coordinators article in WaypointCore. The rest of the API in this article is planned, not built, and can still change: sheets and `show`, tabs, roots and links.
 
 These five flows cover what most apps need. They build on each other: the app starts at login, switches to tabs, pushes a product, opens a filter sheet and answers a link. The coordinators here are the same ones a UIKit app uses: see <doc:ExampleFlowsInUIKit>.
 

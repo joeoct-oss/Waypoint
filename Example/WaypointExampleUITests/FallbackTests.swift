@@ -8,7 +8,7 @@
 
 import XCTest
 
-// What the app does when a navigation call can't happen (planning #415). The main tab router sets
+// What the app does when a navigation call can't happen. The main tab router sets
 // two fallbacks every flow inherits: a `popTo` of a screen that isn't in the stack pops to the
 // root, and a present while a flow is up replaces it. Each recovery shows in the issue banner over
 // the tabs and as a recovered entry in the Lab's event log, and Settings counts a call no fallback
@@ -39,7 +39,7 @@ final class FallbackTests: XCTestCase {
         XCTAssertFalse(count.label.contains(Self.oneFailure), count.label)
         // Revealed before the tap like every other row here: on a loaded Mac the row once sat with
         // only its top 2 pt above the window's bottom edge, XCTest counted it as tappable, and the
-        // tap landed on the edge instead of the button (planning #479).
+        // tap landed on the edge instead of the button.
         let unrecovered = app.buttons[Identifiers.tryUnrecovered]
         XCTAssertTrue(app.reveal(unrecovered))
         unrecovered.tap()

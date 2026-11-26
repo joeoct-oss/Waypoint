@@ -17,7 +17,7 @@ import WaypointTestSupport
 
 @testable import Waypoint
 
-/// A view finishing the flow it is in with `@FinishFlow` (planning #314, decision 0004).
+/// A view finishing the flow it is in with `@FinishFlow`.
 @Suite("Finishing a flow from a view", .timeLimit(.minutes(1)))
 @MainActor
 struct FinishFlowTests {

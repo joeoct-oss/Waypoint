@@ -4,7 +4,7 @@ Write one coordinator for each flow, in SwiftUI views or UIKit view controllers,
 
 ## Overview
 
-> Note: Draft. A stack or flow coordinator's screens and `view`, drawn by the SwiftUI stack renderer, are built. The SwiftUI renderer for presented flows, tabs and the root comes next, and the UIKit stack renderer with them. UIKit tabs and presented flows follow. Names and signatures of what isn't built can still change until then.
+> Note: Draft. A stack or flow coordinator's screens and `view`, drawn by the SwiftUI stack renderer, are built. The SwiftUI renderer for presented flows, tabs and the root is planned, and so is the UIKit stack renderer. UIKit tabs and presented flows follow. Names and signatures of what isn't built can still change until then.
 
 An app writes one coordinator for each flow, whichever kind of app it is. The coordinator says what its screens are, and a renderer draws them. Waypoint has two renderers for each kind of coordinator, one in SwiftUI and one in UIKit, and picks the best one by default. An app can choose another one for the whole app or for one coordinator, or bring its own.
 
@@ -182,7 +182,7 @@ public struct Flow<R: Route, C: FlowCoordinator>: Destinations {
 }
 ```
 
-An entry with no `onResult:`, whose result goes to a call that awaits the route, is designed with flow results, together with how that call is written. Until then every `Flow(...)` entry names its handler, so no result is lost.
+An entry with no `onResult:`, whose result goes to a call that awaits the route, is not built yet, nor is how that call is written. Until then every `Flow(...)` entry names its handler, so no result is lost.
 
 `RootCoordinator` and `FlowCoordinator` follow the same shape, each with its own router and renderer. Which requirements live in `WaypointCore`, which has no UI, and which in `Waypoint`, which adds the screens, is settled: `FlowCoordinating` in the core holds the router, `Output` and `finish(with:)`, and `FlowCoordinator` in `Waypoint` adds the screens, as `StackCoordinator` does. The core part stays testable on Linux. The `presentation:` parameter declares how `router.show(_:)` shows the route, built with SwiftUI sheets and full-screen covers: see "Declared presentation" in the core's presentation article.
 
@@ -299,6 +299,6 @@ The journey log names each screen in both renderers: a SwiftUI screen by its vie
 
 A renderer of your own is any view that conforms to the kind's protocol. Choose it app-wide with `.custom(MyStackRenderer.self)`, or per coordinator with `typealias Renderer = MyStackRenderer`, the same way as the built-in ones. The renderer protocols and the calls a renderer makes on its router are public.
 
-Every renderer, built-in or your own, passes the same two suites: the sync-contract suite in `WaypointTesting`, which runs on Linux, and the drawing suite in `WaypointRendererTesting`, which runs on a simulator.
+Every renderer, built-in or your own, will pass the same two suites, which are planned: the sync-contract suite in `WaypointTesting`, which runs on Linux, and the drawing suite in `WaypointRendererTesting`, which runs on a simulator.
 
 What each built-in renderer does in its own framework is in <doc:SwiftUIRenderer> and <doc:UIKitRenderer>.

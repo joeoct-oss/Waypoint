@@ -10,7 +10,7 @@ import ExampleAuth
 import ExampleServices
 import Testing
 
-// What Sign in and Create account show of a call to the auth service (planning #462): a failed
+// What Sign in and Create account show of a call to the auth service: a failed
 // call shows its message and the form isn't busy once the call ends, and the reader moving on
 // clears the message.
 struct AuthFormTests {

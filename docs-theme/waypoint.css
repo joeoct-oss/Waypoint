@@ -75,7 +75,7 @@ code {
     font-variant-ligatures: none;
 }
 
-/* Layout: a narrow sidebar, calmer type and one centered reading column (planning #339). */
+/* Layout: a narrow sidebar, calmer type and one centered reading column. */
 
 /* Sidebar: 280 px instead of about a third of the window. DocC sets its width inline. */
 @media (min-width: 1024px) {
@@ -112,7 +112,7 @@ h2.nav-title::after {
 
 /*
  * One reading column, centered, with matching margins on both sides. 900 px, padding included,
- * holds a 100-column code line at 13 px without sideways scrolling (planning #359).
+ * holds a 100-column code line at 13 px without sideways scrolling.
  */
 .documentation-hero__content,
 .doc-content .container,
@@ -209,7 +209,7 @@ main .contenttable .title {
     padding-top: 24px !important;
 }
 
-/* Landing page module cards: one row per module, picture beside the text, core first (planning #341). */
+/* Landing page module cards: one row per module, picture beside the text, core first. */
 .TopicsLinkCardGrid .row.with-columns {
     display: flex !important;
     flex-direction: column !important;
@@ -274,7 +274,7 @@ main .contenttable .title {
     }
 }
 
-/* Color scheme: a sun and moon toggle in the navigation bar (waypoint.js) replaces the footer picker (planning #342). */
+/* Color scheme: a sun and moon toggle in the navigation bar (waypoint.js) replaces the footer picker. */
 footer.footer:has(.color-scheme-toggle) {
     display: none !important;
 }

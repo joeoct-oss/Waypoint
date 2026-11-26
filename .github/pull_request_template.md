@@ -1,6 +1,6 @@
-Closes joeoct-oss/Waypoint-planning#
+Closes #
 
-**Plan:** <link to plans/planning-<issue>-<slug>.md in Waypoint-planning, or "not needed">
+**Plan:** <link to the plan, or "not needed">
 
 ## What changed
 
@@ -12,7 +12,7 @@ Closes joeoct-oss/Waypoint-planning#
 
 ## Checklist
 
-- [ ] `scripts/lint.sh` passes (strict SwiftLint and swift-format, see planning #324); required before review
+- [ ] `scripts/lint.sh` passes (strict SwiftLint and swift-format, once the lint setup lands); required before review
 - [ ] Labels copied from the issue (type, area, priority, test, runs)
 - [ ] Public symbols documented in DocC
 - [ ] Code follows `CODE_STYLE.md`, including a reason for every protocol conformance

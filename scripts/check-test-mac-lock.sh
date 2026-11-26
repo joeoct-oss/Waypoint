@@ -6,7 +6,7 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Checks the run lock of scripts/test-mac.sh (planning #420) with stand-in tools, so it runs on Linux and
+# Checks the run lock of scripts/test-mac.sh with stand-in tools, so it runs on Linux and
 # on the Mac without Xcode or a simulator:
 #
 # - a second run while one holds the lock stops at once and runs nothing;
@@ -16,13 +16,13 @@
 #
 # It also checks the phase timeline and the memory lines every report prints, that the release
 # reports step runs without parallel workers, and that a run removes only the simulator copies it
-# made, by UDID (planning #489).
+# made, by UDID.
 #
-# It also checks what the script hands Tuist: selective testing per tier (planning #429), the derived data
-# folder after `--` (planning #430), the branch through GITHUB_HEAD_REF and the `coverage` tier on `main`
-# (planning #431), the pull request through GITHUB_REF, and that the Build Insights
-# post-action runs the Tuist mise pins (planning #431), and when the caches are trusted (planning
-# #445): a clean run trusts none, records its tools when it passes, and a run whose tools differ
+# It also checks what the script hands Tuist: selective testing per tier, the derived data
+# folder after `--`, the branch through GITHUB_HEAD_REF and the `coverage` tier on `main`,
+# the pull request through GITHUB_REF, and that the Build Insights
+# post-action runs the Tuist mise pins, and when the caches are trusted:
+# a clean run trusts none, records its tools when it passes, and a run whose tools differ
 # from that record, or a branch that changes a file the test hashes don't cover, trusts none either.
 #
 # Each case runs `test-mac.sh quick --only` with its own lock path and temporary folder, so a
@@ -199,8 +199,8 @@ if grep -q "^tuist test WaypointExample" "$CALLS"; then
 else
     fail "the stand-in tuist ran, never the real one"
 fi
-# The example app's tests run through `tuist test` (planning #427): on the project simulator, into a
-# result bundle, with three parallel workers (planning #447).
+# The example app's tests run through `tuist test`: on the project simulator, into a
+# result bundle, with three parallel workers.
 TUIST_CALL=$(grep "^tuist test WaypointExample" "$CALLS" | head -1)
 for part in "--path Example" "--device waypoint-01" \
     "--os 27.2" "--skip-quarantine" \
@@ -213,7 +213,7 @@ for part in "--path Example" "--device waypoint-01" \
         fail "tuist test gets $part (call: $TUIST_CALL)"
     fi
 done
-# With the binary cache on (planning #441), `--destination simulator` matches the simulator slices
+# With the binary cache on, `--destination simulator` matches the simulator slices
 # that runs warm, and TUIST_WAYPOINT_BINARY_CACHE=1; with it off, `--no-binary-cache`. Which one
 # this run had depends on the clone's changes, so the log says; the plan cases below fix each
 # decision.
@@ -235,7 +235,7 @@ if [[ "$TUIST_CALL" != *"COMPILATION_CACHE_ENABLE_CACHING"* ]] && [[ ! -e "$WAYP
 else
     fail "a run that isn't clean keeps Xcode's compilation cache, and a run of one test records no tools"
 fi
-# `tuist test` sends its own results, so the scheme's Test Insights post-action must skip (planning #456).
+# `tuist test` sends its own results, so the scheme's Test Insights post-action must skip.
 if grep -q "^WAYPOINT_TUIST_TEST_RUN seen by tuist test: 1$" "$CALLS" &&
     [[ "$TUIST_CALL" == *" -- "*" WAYPOINT_TUIST_TEST_RUN=1"* ]]; then
     pass "tuist test tells the scheme's test post-action to skip"
@@ -247,7 +247,7 @@ if ! grep -q "^tuist cache" "$CALLS"; then
 else
     fail "a quick run doesn't warm the binary cache"
 fi
-# The derived data folder goes to xcodebuild after `--`, the way Tuist asks (planning #430).
+# The derived data folder goes to xcodebuild after `--`, the way Tuist asks.
 if [[ "${TUIST_CALL#* -- }" == *"-derivedDataPath $PWD/.build/example-derived-data"* &&
     "$TUIST_CALL" != *"--derived-data-path"* ]]; then
     pass "tuist test passes -derivedDataPath after --"
@@ -259,8 +259,7 @@ if grep -q "^selective testing: off, release reports selective testing off$" "$W
 else
     fail "the log says selective testing is off for the release reports step ($(grep '^selective' "$WORK/1.log"))"
 fi
-# The package comes through Tuist's package integration, which `tuist install` resolves first
-# (planning #429).
+# The package comes through Tuist's package integration, which `tuist install` resolves first.
 INSTALL_LINE=$(grep -m1 -n "^tuist install --path Example" "$CALLS" | cut -d: -f1 || true)
 TEST_LINE=$(grep -m1 -n "^tuist test" "$CALLS" | cut -d: -f1 || true)
 if [[ -n "$INSTALL_LINE" && -n "$TEST_LINE" && "$INSTALL_LINE" -lt "$TEST_LINE" ]]; then
@@ -289,7 +288,7 @@ else
     fail "WAYPOINT_TUIST_OFFLINE=1 turns Tuist's server features off"
 fi
 
-# 1c. Tuist's selective testing (planning #429) is on in quick and full runs whose changes Tuist's test
+# 1c. Tuist's selective testing is on in quick and full runs whose changes Tuist's test
 # hashes cover (the package's and the example app's sources), and off in a release run, after a
 # change to a file the hashes don't cover, and when there are no changes to judge. `--plan` prints
 # the decision without a run, in a copy of the working tree with its own one-commit history.
@@ -302,7 +301,7 @@ git -C "$TREE" init -q -b main
 git -C "$TREE" add -A
 git -C "$TREE" -c user.name=check -c user.email=check@example.invalid commit -q -m base
 
-# 1k. A clean run (planning #445) trusts no cache: it skips nothing, takes no binary, turns Xcode's
+# 1k. A clean run trusts no cache: it skips nothing, takes no binary, turns Xcode's
 # compilation cache off and builds in fresh derived data folders. Once green it records its tools,
 # so later runs with the same tools may trust the caches again; a failed one records nothing.
 clean_run() {
@@ -460,7 +459,7 @@ expect_retry "a release run retries a failed example test once" on release
 expect_retry "a quick run of one test with --only never retries" off quick \
     --only WaypointExampleUITests/StackTests/testPushAndBack
 
-# 1c2. Tuist's binary cache (planning #441): quick and full runs may use it; release, coverage,
+# 1c2. Tuist's binary cache: quick and full runs may use it; release, coverage,
 # offline runs and runs for a pull request build from source; green full and coverage runs warm it; the release reports step
 # never uses it.
 expect_cache() {
@@ -474,7 +473,7 @@ expect_cache() {
         fail "$name (plan: ${got:-none})"
     fi
 }
-# 1c1b. A stress run (planning #508) runs every test on 4 workers with no retry, uses no binary cache,
+# 1c1b. A stress run runs every test on 4 workers with no retry, uses no binary cache,
 # warms none, and repeats each quarantined entry that still counts.
 expect_retry "a stress run never retries" off stress
 expect_cache "a stress run builds from source and doesn't warm the cache" \
@@ -557,7 +556,7 @@ expect_cache "an offline full run builds from source and doesn't warm" \
 # A pull request's run report shows its coverage, which cached package modules would leave out.
 expect_cache "a full run for a pull request builds from source and warms" \
     "binary cache off, warm binary cache true" full WAYPOINT_PULL_REQUEST=42 STUB_PR_BRANCH=main
-# The package's own test steps send their result bundles to Tuist's Test Insights (planning #457),
+# The package's own test steps send their result bundles to Tuist's Test Insights,
 # except offline, and a failed send never fails the step.
 expect_package_insights() {
     local name="$1" want="$2" got
@@ -587,7 +586,7 @@ else
     fail "the release reports step never uses the binary cache"
 fi
 
-# 1d. Tuist is told the branch each run tests (planning #431), through GITHUB_HEAD_REF: the branch the clone
+# 1d. Tuist is told the branch each run tests, through GITHUB_HEAD_REF: the branch the clone
 # is on; on a merge batch's detached commit, the batch's branches in merge order; on any other
 # detached commit, nothing.
 expect_branch() {
@@ -765,7 +764,7 @@ else
 fi
 : >"$CALLS"
 
-# 1e. A coverage run (planning #431) runs on `main`'s own unchanged commit only, runs every example test,
+# 1e. A coverage run runs on `main`'s own unchanged commit only, runs every example test,
 # and marks the commit complete only after they pass.
 expect_plan "a coverage run on main runs every example test" off coverage
 batch_commit checkout -q feature/first-part
@@ -829,7 +828,7 @@ else
 fi
 : >"$CALLS"
 
-# 1i. The Tuist version check (planning #434) compares the pin with Tuist's latest stable release, ignores
+# 1i. The Tuist version check compares the pin with Tuist's latest stable release, ignores
 # canaries and release candidates, tells a new major version apart, and never fails. The daily
 # coverage run prints it.
 TAGS="$WORK/tuist-tags"
@@ -873,7 +872,7 @@ else
 fi
 : >"$CALLS"
 
-# 1g. The release reports step collects no coverage (planning #431): the Debug step measured its tests.
+# 1g. The release reports step collects no coverage: the Debug step measured its tests.
 if sed -n '/^release_reports_on() {/,/^}/p' scripts/test-mac.sh |
     grep -q 'TUIST_COVERAGE_ENABLED=0 TUIST_COVERAGE_UPLOAD=0 judged_example_tests_on'; then
     pass "the release reports step runs with coverage off"
@@ -881,7 +880,7 @@ else
     fail "the release reports step runs with coverage off"
 fi
 
-# 1h. The release reports step builds into its own derived data (planning #431): Tuist reads coverage from
+# 1h. The release reports step builds into its own derived data: Tuist reads coverage from
 # one products folder and took the Release one when both sat in the example app's derived data.
 # An example run removes Release products an older run left there.
 if sed -n '/^release_reports_on() {/,/^}/p' scripts/test-mac.sh |
@@ -902,8 +901,8 @@ else
 fi
 : >"$CALLS"
 
-# 1f. The Build and Test Insights post-actions run the Tuist that mise pins (planning #431), not one on
-# the PATH, and the test one skips runs `tuist test` already reports (planning #456).
+# 1f. The Build and Test Insights post-actions run the Tuist that mise pins, not one on
+# the PATH, and the test one skips runs `tuist test` already reports.
 if grep -q '"$MISE" exec -C "$SRCROOT" -- tuist inspect \\(command)' Example/Project.swift &&
     ! grep -q 'activate -C "$SRCROOT"' Example/Project.swift &&
     grep -q 'insightsScript("build", skippedBy: \["WAYPOINT_TUIST_OFFLINE"\])' Example/Project.swift &&
@@ -914,7 +913,7 @@ else
     fail "the Build and Test Insights post-actions run Tuist through mise exec"
 fi
 # A failed UI test keeps screenshots, not a screen recording, so a failing run's result bundle stays
-# small enough to upload (planning #489).
+# small enough to upload.
 if grep -q '^let testOptions = TestActionOptions.options(preferredScreenCaptureFormat: .screenshots)$' Example/Project.swift; then
     pass "a failed UI test keeps screenshots, not a screen recording"
 else
@@ -997,7 +996,7 @@ else
 fi
 
 # 2b. A run turned away at the run lock leaves Tuist's package project where the run holding the
-# lock put it, since that run may be in a package step (planning #429); the holder puts it back when it
+# lock put it, since that run may be in a package step; the holder puts it back when it
 # ends. Both runs go in the copy of the working tree, so the clone's own folders are never touched.
 ASIDE="$TREE/.build/tuist-package-project"
 (cd "$TREE" && run_script STUB_SECONDS=4) >"$WORK/2c.log" 2>&1 &
@@ -1115,7 +1114,7 @@ else
 fi
 
 # 8. The report prints the phase timeline, each step with the clock time it started, and the
-# memory at the start and the end (planning #489).
+# memory at the start and the end.
 : >"$CALLS"
 run_script >"$WORK/8.log" 2>&1 || true
 if grep -Eq '^==> [0-9]{2}:[0-9]{2}:[0-9]{2} ' "$WORK/8.log" &&

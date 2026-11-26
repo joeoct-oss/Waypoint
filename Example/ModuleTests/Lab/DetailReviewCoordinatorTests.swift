@@ -12,7 +12,7 @@ import ExampleTestSupport
 import Testing
 import Waypoint
 
-// The Lab's Write a review flow, pushed on the Detail push stack (planning #313): its screens
+// The Lab's Write a review flow, pushed on the Detail push stack: its screens
 // follow the product on the parent's stack, finishing with the stars pops back to the product, and
 // the Detail push flow keeps the stars a posted review gave. Post review finishes from the note
 // view with `@FinishFlow`, which the Lab's UI test drives (`LabTests`).

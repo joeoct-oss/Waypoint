@@ -19,7 +19,7 @@ import Waypoint
 //
 // The routes it names are `stepTypes`, which the screen chrome reads from the environment and the
 // app's window sets (`TrailSteps.all`), so this file names no feature's routes and the features can
-// live in their own modules (planning #445). A route left out reads by its type name.
+// live in their own modules. A route left out reads by its type name.
 package struct RouterTrail {
     package static let tabsName = "main"
     private static let unnamedRoot = "flow"

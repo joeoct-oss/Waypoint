@@ -17,7 +17,7 @@
 
     @testable import WaypointOSLog
 
-    /// The unified log and signpost handler (planning #328).
+    /// The unified log and signpost handler.
     @Suite("OSLog handler")
     @MainActor
     struct OSLogHandlerTests {

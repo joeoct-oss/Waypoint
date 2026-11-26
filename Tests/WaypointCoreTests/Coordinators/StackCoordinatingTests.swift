@@ -13,7 +13,7 @@ import WaypointTestSupport
 @testable import WaypointCore
 
 /// `StackCoordinating` and the router table: a coordinator's router is made on the first read,
-/// named, registered and released with the coordinator (planning #313).
+/// named, registered and released with the coordinator.
 @Suite("Stack coordinators and the router table")
 @MainActor
 struct StackCoordinatingTests {

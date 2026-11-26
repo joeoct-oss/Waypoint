@@ -11,8 +11,8 @@ import ExampleStore
 import SwiftUI
 import Waypoint
 
-// Write a review, the child flow the Lab's Detail push flow pushes on its own stack from a product
-// (planning #313). Its screens follow the product on the same stack: the rating first, then the
+// Write a review, the child flow the Lab's Detail push flow pushes on its own stack from a product.
+// Its screens follow the product on the same stack: the rating first, then the
 // note the rating pushes on the review flow's own router. The note's Post review finishes the
 // flow with the stars from the view itself, with `@FinishFlow(DetailReviewCoordinator.self)`,
 // which pops back to the product. Back past the rating ends it, which the Detail push flow gets as
