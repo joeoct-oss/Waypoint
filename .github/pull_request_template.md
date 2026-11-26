@@ -33,7 +33,7 @@ needed. -->
 
 ## Docs and CHANGELOG
 
-- [ ] `CHANGELOG.md` updated under **Unreleased**, or no entry because ... (only when nothing under `Sources/` or `Package.swift` changes)
+- [ ] `CHANGELOG.md` updated under **Unreleased** (a release PR moves those entries under its version), or no entry because ... (only when `CHANGELOG.md`, `Sources/` and `Package.swift` are all unchanged)
 - [ ] Every doc that states what this changes is updated in this pull request, or none does
 - [ ] Every new public symbol has a doc comment
 

@@ -1,0 +1,40 @@
+# Fails a pull request that breaks a yes-or-no pull request rule (Yousef, 2026-11-26): the
+# template filled in, one issue per PR, a CHANGELOG entry under Unreleased, and no AI or tool
+# attribution or private planning references. scripts/check-pr-rules.py holds the rules and
+# checks itself first. It reruns when the body is edited, so fixing the body clears it with no
+# new push. CodeRabbit's pre-merge checks of the same names explain a failure in words.
+# The same file is in every package repo. It runs no package code.
+name: Pull request rules
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+permissions: {}
+
+concurrency:
+  group: pr-rules-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-rules:
+    name: Pull request rules
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check the script itself
+        run: python3 scripts/check-pr-rules.py --self-check
+      - name: Check the pull request
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/check-pr-rules.py
