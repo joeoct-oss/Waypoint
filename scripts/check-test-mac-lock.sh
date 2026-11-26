@@ -21,7 +21,9 @@
 # It also checks what the script hands Tuist: selective testing per tier (planning #429), the derived data
 # folder after `--` (planning #430), the branch through GITHUB_HEAD_REF and the `coverage` tier on `main`
 # (planning #431), the pull request through GITHUB_REF, and that the Build Insights
-# post-action runs the Tuist mise pins (planning #431).
+# post-action runs the Tuist mise pins (planning #431), and when the caches are trusted (planning
+# #445): a clean run trusts none, records its tools when it passes, and a run whose tools differ
+# from that record, or a branch that changes a file the test hashes don't cover, trusts none either.
 #
 # Each case runs `test-mac.sh quick --only` with its own lock path and temporary folder, so a
 # real run on the Mac is never touched.
@@ -47,6 +49,8 @@ cleanup() {
     rm -rf "$WORK"
 }
 trap cleanup EXIT
+# The tools of the last green clean run, so no case reads or writes the clone's own record.
+export WAYPOINT_TOOLCHAIN_RECORD="$WORK/toolchain"
 
 STUBS="$WORK/bin"
 mkdir -p "$STUBS"
@@ -88,6 +92,11 @@ fi
 EOF
 cat >"$STUBS/xcodebuild" <<'EOF'
 #!/usr/bin/env bash
+# The tools a run records answer at once, whatever the case's status and wait.
+if [[ "$*" == -version ]]; then
+    echo "Xcode ${STUB_XCODE_VERSION:-27.2}"
+    exit 0
+fi
 echo "xcodebuild $*" >>"$STUB_CALLS"
 # What the build prints, such as a compiler warning.
 [[ -z "${STUB_XCODEBUILD_OUTPUT:-}" ]] || echo "$STUB_XCODEBUILD_OUTPUT"
@@ -101,6 +110,10 @@ sleep "$1"
 EOF
 cat >"$STUBS/tuist" <<'EOF'
 #!/usr/bin/env bash
+if [[ "$*" == version ]]; then
+    echo "4.218.5"
+    exit 0
+fi
 echo "tuist $*" >>"$STUB_CALLS"
 if [[ "$1" == test ]]; then
     echo "GITHUB_REF seen by tuist test: ${GITHUB_REF:-}" >>"$STUB_CALLS"
@@ -200,14 +213,27 @@ for part in "--path Example" "--device waypoint-01" \
         fail "tuist test gets $part (call: $TUIST_CALL)"
     fi
 done
-# A quick run may take the package's modules from Tuist's binary cache (planning #441): Example/Tuist.swift
-# turns the cache's profile on through TUIST_WAYPOINT_BINARY_CACHE=1, and `--destination simulator`
-# matches the simulator slices that runs warm.
-if [[ "$TUIST_CALL" != *"--no-binary-cache"* && "$TUIST_CALL" == *" --destination simulator"* ]] &&
-    grep -q "^TUIST_WAYPOINT_BINARY_CACHE seen by tuist test: 1$" "$CALLS"; then
-    pass "a quick run's example step may use the binary cache"
+# With the binary cache on (planning #441), `--destination simulator` matches the simulator slices
+# that runs warm, and TUIST_WAYPOINT_BINARY_CACHE=1; with it off, `--no-binary-cache`. Which one
+# this run had depends on the clone's changes, so the log says; the plan cases below fix each
+# decision.
+if grep -q "^binary cache: on," "$WORK/1.log"; then
+    if [[ "$TUIST_CALL" != *"--no-binary-cache"* && "$TUIST_CALL" == *" --destination simulator"* ]] &&
+        grep -q "^TUIST_WAYPOINT_BINARY_CACHE seen by tuist test: 1$" "$CALLS"; then
+        pass "an example step with the binary cache on asks for simulator binaries"
+    else
+        fail "an example step with the binary cache on asks for simulator binaries (call: $TUIST_CALL)"
+    fi
+elif [[ "$TUIST_CALL" == *"--no-binary-cache"* ]] &&
+    grep -q "^TUIST_WAYPOINT_BINARY_CACHE seen by tuist test: 0$" "$CALLS"; then
+    pass "an example step with the binary cache off passes --no-binary-cache"
 else
-    fail "a quick run's example step may use the binary cache (call: $TUIST_CALL)"
+    fail "an example step with the binary cache off passes --no-binary-cache (call: $TUIST_CALL)"
+fi
+if [[ "$TUIST_CALL" != *"COMPILATION_CACHE_ENABLE_CACHING"* ]] && [[ ! -e "$WAYPOINT_TOOLCHAIN_RECORD" ]]; then
+    pass "a run that isn't clean keeps Xcode's compilation cache, and a run of one test records no tools"
+else
+    fail "a run that isn't clean keeps Xcode's compilation cache, and a run of one test records no tools"
 fi
 # `tuist test` sends its own results, so the scheme's Test Insights post-action must skip (planning #456).
 if grep -q "^WAYPOINT_TUIST_TEST_RUN seen by tuist test: 1$" "$CALLS" &&
@@ -275,6 +301,53 @@ printf '#!/usr/bin/env bash\n' >"$TREE/scripts/check-compile-failures.sh"
 git -C "$TREE" init -q -b main
 git -C "$TREE" add -A
 git -C "$TREE" -c user.name=check -c user.email=check@example.invalid commit -q -m base
+
+# 1k. A clean run (planning #445) trusts no cache: it skips nothing, takes no binary, turns Xcode's
+# compilation cache off and builds in fresh derived data folders. Once green it records its tools,
+# so later runs with the same tools may trust the caches again; a failed one records nothing.
+clean_run() {
+    (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" STUB_CALLS="$CALLS" \
+        WAYPOINT_RUN_LOCK="$LOCK" WAYPOINT_SIMULATOR=waypoint-01 WAYPOINT_BASE=HEAD "$@" \
+        scripts/test-mac.sh quick --ui --clean)
+}
+STALE_CLEAN="$TREE/.build/clean-example-derived-data/stale"
+mkdir -p "$STALE_CLEAN"
+echo "old tools" >"$WAYPOINT_TOOLCHAIN_RECORD"
+: >"$CALLS"
+if clean_run STUB_STATUS=1 >"$WORK/1k-fail.log" 2>&1; then
+    fail "a failing clean run fails"
+elif [[ "$(cat "$WAYPOINT_TOOLCHAIN_RECORD")" == "old tools" ]]; then
+    pass "a failing clean run records no tools"
+else
+    fail "a failing clean run records no tools"
+fi
+rm -f "$WAYPOINT_TOOLCHAIN_RECORD"
+mkdir -p "$STALE_CLEAN"
+: >"$CALLS"
+CLEAN_CALL=""
+if clean_run >"$WORK/1k.log" 2>&1; then
+    CLEAN_CALL=$(grep "^tuist test WaypointExample" "$CALLS" | head -1)
+fi
+for part in "--no-selective-testing" "--no-binary-cache" \
+    "-derivedDataPath $TREE/.build/clean-example-derived-data" "COMPILATION_CACHE_ENABLE_CACHING=NO"; do
+    if [[ "$CLEAN_CALL" == *" $part"* ]]; then
+        pass "a clean run's tuist test gets $part"
+    else
+        fail "a clean run's tuist test gets $part (log: $(tail -3 "$WORK/1k.log"); call: $CLEAN_CALL)"
+    fi
+done
+if [[ -n "$CLEAN_CALL" && ! -e "$STALE_CLEAN" ]]; then
+    pass "a clean run empties its derived data folder first"
+else
+    fail "a clean run empties its derived data folder first"
+fi
+if [[ -s "$WAYPOINT_TOOLCHAIN_RECORD" ]] && grep -q "^xcode: Xcode 27.2" "$WAYPOINT_TOOLCHAIN_RECORD" &&
+    grep -q "^tuist: 4.218.5$" "$WAYPOINT_TOOLCHAIN_RECORD"; then
+    pass "a green clean run records its tools"
+else
+    fail "a green clean run records its tools (log: $(tail -3 "$WORK/1k.log"))"
+fi
+: >"$CALLS"
 # GITHUB_HEAD_REF is unset: CI sets it, and it would win over the branch the script works out.
 plan_of() {
     (cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
@@ -334,6 +407,40 @@ if [[ "$got" == *"selective testing on, release reports selective testing off"* 
 else
     fail "a full run's release reports step never skips its tests (plan: ${got:-none})"
 fi
+
+# Selective testing trusts a pass only under the tools of the last green clean run: other tools, or
+# no record, and every test runs, with no binary either.
+RECORDED_TOOLS=$(cat "$WAYPOINT_TOOLCHAIN_RECORD")
+touch "$TREE/Sources/WaypointCore/SelectiveProbe.swift"
+got=$(plan_of full || true)
+if [[ "$got" == *", toolchain same, clean false"* && "$got" == *"selective testing on,"* ]]; then
+    pass "a run with the recorded tools may skip passed tests"
+else
+    fail "a run with the recorded tools may skip passed tests (plan: ${got:-none})"
+fi
+got=$(STUB_XCODE_VERSION=27.3 plan_of full || true)
+if [[ "$got" == *"selective testing off,"* && "$got" == *"binary cache off,"* &&
+    "$got" == *", toolchain changed,"* ]]; then
+    pass "a run after an Xcode update skips nothing and takes no binary"
+else
+    fail "a run after an Xcode update skips nothing and takes no binary (plan: ${got:-none})"
+fi
+rm "$WAYPOINT_TOOLCHAIN_RECORD"
+got=$(plan_of full || true)
+if [[ "$got" == *"selective testing off,"* && "$got" == *"binary cache off,"* &&
+    "$got" == *", toolchain unrecorded,"* ]]; then
+    pass "a run with no recorded tools skips nothing and takes no binary"
+else
+    fail "a run with no recorded tools skips nothing and takes no binary (plan: ${got:-none})"
+fi
+printf '%s\n' "$RECORDED_TOOLS" >"$WAYPOINT_TOOLCHAIN_RECORD"
+got=$(plan_of full --clean || true)
+if [[ "$got" == *"selective testing off,"* && "$got" == *"binary cache off,"* && "$got" == *", clean true"* ]]; then
+    pass "a clean full run skips nothing and takes no binary"
+else
+    fail "a clean full run skips nothing and takes no binary (plan: ${got:-none})"
+fi
+rm "$TREE/Sources/WaypointCore/SelectiveProbe.swift"
 
 # 1c1. A failed example test runs once more in every tier, except `--only`.
 expect_retry() {
@@ -428,10 +535,19 @@ else
 fi
 : >"$CALLS"
 
-expect_cache "a quick run uses the binary cache and doesn't warm it" \
+# The binary cache is used only when the branch's changes are all ones the hashes cover.
+touch "$TREE/Sources/WaypointCore/SelectiveProbe.swift"
+expect_cache "a quick run that changes the package uses the binary cache and doesn't warm it" \
     "binary cache on, warm binary cache false" quick
-expect_cache "a full run uses the binary cache and warms it" \
+expect_cache "a full run that changes the package uses the binary cache and warms it" \
     "binary cache on, warm binary cache true" full
+rm "$TREE/Sources/WaypointCore/SelectiveProbe.swift"
+expect_cache "a full run with no changes to judge builds from source" \
+    "binary cache off, warm binary cache true" full
+echo "// probe" >>"$TREE/Example/Project.swift"
+expect_cache "a full run that changes the example app's manifest builds from source" \
+    "binary cache off, warm binary cache true" full
+git -C "$TREE" checkout -q -- Example/Project.swift
 expect_cache "a release run builds from source and doesn't warm" \
     "binary cache off, warm binary cache false" release
 expect_cache "a coverage run builds from source and warms" \
@@ -534,7 +650,7 @@ expect_pull_request() {
     shift 2
     got=$(cd "$TREE" && env -u GITHUB_HEAD_REF PATH="$STUBS:$PATH" TMPDIR="$WORK" WAYPOINT_BASE=HEAD \
         "${@:2}" scripts/test-mac.sh "$1" --plan 2>/dev/null | grep '^plan:' || true)
-    if [[ "$got" == *", tuist pull request $want" ]]; then
+    if [[ "$got" == *", tuist pull request $want, "* ]]; then
         pass "$name"
     else
         fail "$name (plan: ${got:-none})"

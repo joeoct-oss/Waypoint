@@ -25,8 +25,11 @@
 //
 // The binary cache's default profile is `none`, so `tuist generate` for work in Xcode keeps the
 // package's sources editable. `scripts/test-mac.sh` sets TUIST_WAYPOINT_BINARY_CACHE=1 for the runs
-// that may take the package's modules as prebuilt binaries (planning #441): Tuist uses one only
-// when it was built from exactly the same sources, build settings and Xcode.
+// that may take prebuilt binaries (planning #441): Tuist uses one only when it was built from
+// exactly the same sources, build settings and Xcode. The profile decides `tuist generate` only:
+// `tuist test` takes as a binary every target outside the tests it runs, the example app's modules
+// included, whatever the profile says (planning #445; on 2026-11-25 a one-line edit in
+// `Flows/Cart` on `main` built only `ExampleCart` from source).
 
 import ProjectDescription
 
