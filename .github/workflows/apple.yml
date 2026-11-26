@@ -22,9 +22,10 @@
 # self-hosted Mac. Every action is pinned to a full commit SHA with the version in a comment, each
 # job reads the repo and nothing else, and no checkout keeps the token. The runner label and the
 # Xcode version are pinned and bumped by hand, so a changed image fails loudly. Tuist is the one
-# .mise.toml pins, checked against its checksum (scripts/install-tuist.sh), and runs offline: no
-# Tuist account, no binary cache and no Xcode compilation cache, so nothing a cache holds reaches
-# a run.
+# .mise.toml pins, checked against its checksum (scripts/install-tuist.sh). It signs in with
+# GitHub's identity token (`id-token: write`, the two jobs that generate the project), since the
+# project names its Tuist account, but takes no binary cache and no Xcode compilation cache, so
+# nothing a cache holds reaches a run.
 name: Apple platform checks
 
 on:
@@ -115,6 +116,9 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      # Tuist signs in to the project's Tuist account with GitHub's identity token, which the
+      # generated project's settings need; no Tuist secret sits in the repo.
+      id-token: write
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -256,6 +260,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
