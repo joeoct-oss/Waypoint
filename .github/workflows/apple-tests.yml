@@ -6,8 +6,9 @@
 # Dependabot pull request; adding it again starts another run.
 # - The caller job is named "Apple platform checks", as in the checks workflow, so the gate reports
 #   as "Apple platform checks / Apple builds and tests" either way. Its concurrency group is the
-#   checks workflow's, so a newer run for the same pull request cancels this one, and a push
-#   cancels it from the checks workflow. Reviews that don't approve start nothing and cancel
+#   checks workflow's, one per pull request and commit, so a newer run for the same commit cancels
+#   this one, and a run for an older commit never cancels the current one's; a push cancels it from
+#   the checks workflow. Reviews that don't approve start nothing and cancel
 #   nothing.
 # Hardening: the pull request's code runs only inside apple.yml, with that workflow's grants. The
 # deciding job reads the pull request and its checks, nothing else.
@@ -79,7 +80,7 @@ jobs:
     needs: ready
     if: ${{ needs.ready.outputs.ready == 'true' }}
     concurrency:
-      group: apple-tests-${{ github.event.pull_request.number }}
+      group: apple-tests-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
       cancel-in-progress: true
     permissions:
       contents: read

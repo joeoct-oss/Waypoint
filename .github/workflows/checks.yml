@@ -348,20 +348,32 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: scripts/apple-tests-ready.sh "$REPO" "$NUMBER" "$HEAD_SHA"
 
-  # A push makes the Apple tests of the commit before it pointless, including a run apple-tests.yml
-  # started: a job in their concurrency group cancels them.
+  # A push makes the Apple tests of the commits before it pointless, including runs apple-tests.yml
+  # started, so this cancels them. Their concurrency groups are per commit, so a late decision for an
+  # older commit can never cancel the current commit's tests. It runs no code from the pull request.
   stop-old-apple-tests:
     name: Stop the Apple tests of an older commit
     if: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}
-    concurrency:
-      group: apple-tests-${{ github.event.pull_request.number }}
-      cancel-in-progress: true
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
-    permissions: {}
+    timeout-minutes: 5
+    permissions:
+      actions: write
     steps:
       - name: Stop them
-        run: echo "A newer commit was pushed, so the Apple tests of the one before it stop."
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          for status in queued in_progress waiting pending; do
+            gh api --paginate -X GET "repos/$REPO/actions/workflows/apple-tests.yml/runs" -f status="$status" \
+              --jq ".workflow_runs[] | select(.head_sha != \"$HEAD_SHA\")
+                | select(any(.pull_requests[]?; .number == $NUMBER)) | .id"
+          done | sort -u | while read -r run; do
+            echo "Cancelling run $run, which tests a commit before $HEAD_SHA."
+            gh api -X POST "repos/$REPO/actions/runs/$run/cancel" >/dev/null || true
+          done
 
   # A docs-only pull request goes straight through, so the gate reports a pass.
   apple:
@@ -371,7 +383,7 @@ jobs:
       ${{ !cancelled() && github.event_name == 'pull_request' && needs.fast.result == 'success'
       && (needs.fast.outputs.docs-only == 'true' || needs.ready.outputs.ready == 'true') }}
     concurrency:
-      group: apple-tests-${{ github.event.pull_request.number }}
+      group: apple-tests-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
       cancel-in-progress: true
     permissions:
       contents: read

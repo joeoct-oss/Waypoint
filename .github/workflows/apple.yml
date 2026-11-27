@@ -8,8 +8,8 @@
 #   apple-tests.yml when the approval or the label arrives. Drafts are skipped. A docs-only pull
 #   request (docs-only input) skips every job, and the gate reports a pass.
 # - Every caller names its job "Apple platform checks", so the gate always reports as
-#   "Apple platform checks / Apple builds and tests". A newer run for the same pull request
-#   cancels this one.
+#   "Apple platform checks / Apple builds and tests". A newer run for the same commit cancels
+#   this one, and a push cancels the runs of the commits before it.
 # - Built products: waits for the "Apple build" check on the head commit and finds the run that
 #   holds its test products. When they can't be fetched (an expired artifact), the rebuild job
 #   builds them again in this run.
