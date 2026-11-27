@@ -52,7 +52,13 @@ jobs:
           REPO: ${{ github.repository }}
           NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: scripts/apple-tests-ready.sh "$REPO" "$NUMBER" "$HEAD_SHA"
+          LABEL_ADDED: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [[ "$LABEL_ADDED" == "true" ]]; then
+            scripts/apple-tests-ready.sh "$REPO" "$NUMBER" "$HEAD_SHA" --label-added
+          else
+            scripts/apple-tests-ready.sh "$REPO" "$NUMBER" "$HEAD_SHA"
+          fi
 
       # Both paths of a rename count, as in the checks workflow's own decision.
       - name: Which files changed

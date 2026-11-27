@@ -12,22 +12,27 @@
 # label) ask it, so whichever of the two arrives last starts the tests. An approval counts while
 # it is its reviewer's latest decision on the head commit: a push dismisses it, and a later
 # comment-only review leaves it standing. A repeated approval of a head whose Apple tests are
-# running or passed starts nothing, so it doesn't cancel or repeat them; the label always starts
-# another run. Prints the reason, and writes ready=true or ready=false
+# running or passed starts nothing, so it doesn't cancel or repeat them, and neither does a label
+# left on the pull request; only adding the label (--label-added, from the Apple tests workflow's
+# labeled event) starts another run. Prints the reason, and writes ready=true or ready=false
 # to $GITHUB_OUTPUT when that is set. Reads GitHub with gh, so it needs GH_TOKEN.
 #
-# Usage: scripts/apple-tests-ready.sh <owner/repo> <pull request number> <head commit>
+# Usage: scripts/apple-tests-ready.sh <owner/repo> <pull request number> <head commit> [--label-added]
 
 set -euo pipefail
 
-if [[ $# -ne 3 ]]; then
-    echo "usage: scripts/apple-tests-ready.sh <owner/repo> <pull request number> <head commit>" >&2
+if [[ $# -lt 3 || $# -gt 4 || ( $# -eq 4 && "$4" != "--label-added" ) ]]; then
+    echo "usage: scripts/apple-tests-ready.sh <owner/repo> <pull request number> <head commit> [--label-added]" >&2
     exit 2
 fi
 repo="$1"
 number="$2"
 head="$3"
 label=run-apple-checks
+label_added=false
+if [[ $# -eq 4 ]]; then
+    label_added=true
+fi
 linux_gate="Linux checks / Linux build and tests"
 
 answer() {
@@ -59,23 +64,28 @@ approved=$(gh api --paginate "repos/$repo/pulls/$number/reviews" --jq '.[]
 
 # Read first, so a failed call stops the script instead of reading as no label.
 labels=$(gh api --paginate "repos/$repo/issues/$number/labels" --jq '.[].name')
-if grep -qx "$label" <<<"$labels"; then
-    answer true "Ready: the Linux gate passed and the pull request has the $label label."
-fi
-
 if [[ -n "$approved" ]]; then
-    # The Apple test jobs of the head: one still going, or a gate that passed, means they ran.
-    apple=$(gh api --paginate -X GET "repos/$repo/commits/$head/check-runs" -f filter=latest \
-        --jq '.check_runs[] | select(.name | startswith("Apple platform checks / "))
-            | [.name, .status, .conclusion // ""] | @tsv')
-    if awk -F'\t' 'NF >= 2 && $2 != "completed" { found = 1 } END { exit !found }' <<<"$apple"; then
-        answer false "Already running: the Apple tests of $head started before $approved approved it."
-    fi
-    if awk -F'\t' '$1 == "Apple platform checks / Apple builds and tests" && $3 == "success" { found = 1 }
-        END { exit !found }' <<<"$apple"; then
-        answer false "Already passed: the Apple tests of $head passed, so another approval starts nothing."
-    fi
-    answer true "Ready: the Linux gate passed and $approved approved $head."
+    why="$approved approved $head"
+elif grep -qx "$label" <<<"$labels"; then
+    why="the pull request has the $label label"
+else
+    answer false "Not yet: $head has no approval and no $label label."
 fi
 
-answer false "Not yet: $head has no approval and no $label label."
+# Adding the label always starts another run.
+if [[ "$label_added" == "true" ]]; then
+    answer true "Ready: the Linux gate passed and the $label label was just added."
+fi
+
+# The Apple test jobs of the head: one still going, or a gate that passed, means they ran.
+apple=$(gh api --paginate -X GET "repos/$repo/commits/$head/check-runs" -f filter=latest \
+    --jq '.check_runs[] | select(.name | startswith("Apple platform checks / "))
+        | [.name, .status, .conclusion // ""] | @tsv')
+if awk -F'\t' 'NF >= 2 && $2 != "completed" { found = 1 } END { exit !found }' <<<"$apple"; then
+    answer false "Already running: the Apple tests of $head are still going, so this starts nothing."
+fi
+if awk -F'\t' '$1 == "Apple platform checks / Apple builds and tests" && $3 == "success" { found = 1 }
+    END { exit !found }' <<<"$apple"; then
+    answer false "Already passed: the Apple tests of $head passed, so this starts nothing."
+fi
+answer true "Ready: the Linux gate passed and $why."
