@@ -13,8 +13,8 @@
 # - Swift 6.2, the tools version in Package.swift: every test, warnings as errors.
 # - The script checks run in the checks workflow's fast checks, before this one. A run by hand of
 #   scripts/test-linux.sh runs the build, fixtures, tests and thread sanitizer with the Swift
-#   installed, without coverage; to reproduce the Swift 6.2 job, run `swift test -Xswiftc
-#   -warnings-as-errors` in the swift:6.2 image this job pins.
+#   installed, without coverage; to reproduce the Swift 6.2 job, run `swift test
+#   --force-resolved-versions -Xswiftc -warnings-as-errors` in the swift:6.2 image this job pins.
 # Hardening: free GitHub-hosted Linux runners only. Every action is pinned to a full commit SHA and
 # every image to a digest, with the version in a comment; Dependabot bumps the actions, and the
 # images are bumped by hand. Each job reads the repo and nothing else, and no checkout keeps the
@@ -61,15 +61,15 @@ jobs:
       - name: Build the tests, with warnings as errors
         run: |
           # shellcheck disable=SC2086
-          swift build --build-tests $SWIFT_FLAGS
+          swift build --build-tests --force-resolved-versions $SWIFT_FLAGS
 
       - name: Check the compile fixtures
-        run: WAYPOINT_SWIFT_BUILD_FLAGS="$SWIFT_FLAGS" scripts/check-compile-failures.sh
+        run: WAYPOINT_SWIFT_BUILD_FLAGS="--force-resolved-versions $SWIFT_FLAGS" scripts/check-compile-failures.sh
 
       - name: Test, with warnings as errors
         run: |
           # shellcheck disable=SC2086
-          swift test $SWIFT_FLAGS
+          swift test --force-resolved-versions $SWIFT_FLAGS
 
       # Only feeds the Codecov report, so a failed run, export or upload never fails the job.
       - name: Measure the coverage of WaypointCore
@@ -77,7 +77,7 @@ jobs:
         continue-on-error: true
         run: |
           # shellcheck disable=SC2086
-          swift test $SWIFT_FLAGS --enable-code-coverage
+          swift test --force-resolved-versions $SWIFT_FLAGS --enable-code-coverage
           # shellcheck disable=SC2086
           scripts/core-coverage.sh coverage.lcov $SWIFT_FLAGS --enable-code-coverage
 
@@ -117,7 +117,7 @@ jobs:
           key: swift-6.4.3-tsan-${{ hashFiles('Package.swift', 'Package.resolved') }}
 
       - name: Test with the thread sanitizer
-        run: swift test --sanitize=thread
+        run: swift test --force-resolved-versions --sanitize=thread
 
   lowest:
     name: Tests on Swift 6.2
@@ -142,7 +142,7 @@ jobs:
           key: swift-6.2.4-${{ hashFiles('Package.swift', 'Package.resolved') }}
 
       - name: Test, with warnings as errors
-        run: swift test -Xswiftc -warnings-as-errors
+        run: swift test --force-resolved-versions -Xswiftc -warnings-as-errors
 
   # Skipped, not failed, when a newer push cancels the run, since that push's run replaces it.
   gate:

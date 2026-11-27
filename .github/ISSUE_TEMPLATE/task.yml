@@ -51,7 +51,7 @@ body:
     id: tests
     attributes:
       label: Tests
-      description: A table of behaviour, test name and where it runs (Linux (cloud) or Mac). Tests check what the app sees, never internals. Write "None, because ..." if no behaviour changes.
+      description: A table of behaviour, test name and where it runs (Linux (cloud), Mac or GitHub's macOS runners). Tests check what the app sees, never internals. Write "None, because ..." if no behaviour changes.
       value: |
         | Behaviour | Test | Runs on |
         |---|---|---|

@@ -1,5 +1,6 @@
 # Developer tool versions for Waypoint: the one place they are written.
-# Install them with scripts/bootstrap.sh. Upgrading a tool is a one-line change here.
+# Install them with scripts/bootstrap.sh. Upgrading a tool is a one-line change here, except where
+# a checksum below pins its download: change that checksum in the same commit.
 # swift-format is not listed: it ships with the Swift toolchain as `swift format`.
 
 [tools]
@@ -14,3 +15,7 @@ WAYPOINT_SWIFT_FORMAT = "6.4"
 # Update them together with the swiftlint version above.
 WAYPOINT_SWIFTLINT_LINUX_AMD64_SHA256 = "caeed6f4a679c35539ffaf124f6c4ab4a8416917f7d8796279dc52b74026059d"
 WAYPOINT_SWIFTLINT_LINUX_ARM64_SHA256 = "9ffa52f478e6d8eb485d37d14715ffac90abc81c58f3370d598bf75be05605f8"
+# Checksum of the Tuist release zip for macOS (tuist.zip), used by scripts/install-tuist.sh where
+# mise isn't installed, such as GitHub's macOS runners. Update it together with the tuist version
+# above, from the release's SHASUMS256.txt.
+WAYPOINT_TUIST_MACOS_SHA256 = "5a5431cadf2c276ed559f4cacc38748128307d224d3472bbef04e546c8952d39"

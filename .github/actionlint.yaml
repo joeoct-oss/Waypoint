@@ -1,0 +1,6 @@
+# actionlint's settings. `xcode-27` is GitHub's own standard macOS runner with Xcode 27, a public
+# preview that actionlint 1.7.9 doesn't list yet, so it is named here; it is not a self-hosted
+# runner, and this repo never uses one.
+self-hosted-runner:
+  labels:
+    - xcode-27
