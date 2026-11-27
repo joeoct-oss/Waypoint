@@ -1,5 +1,6 @@
 # Developer tool versions for Waypoint: the one place they are written.
-# Install them with scripts/bootstrap.sh. Upgrading a tool is a one-line change here.
+# Install them with scripts/bootstrap.sh. Upgrading a tool is a one-line change here, except where
+# a checksum below pins its download: change that checksum in the same commit.
 # swift-format is not listed: it ships with the Swift toolchain as `swift format`.
 
 [tools]
