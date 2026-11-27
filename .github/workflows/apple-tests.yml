@@ -11,8 +11,11 @@
 #   this one, and a run for an older commit never cancels the current one's; a push cancels it from
 #   the checks workflow. Reviews that don't approve start nothing and cancel
 #   nothing.
-# Hardening: the pull request's code runs only inside apple.yml, with that workflow's grants. The
-# deciding job reads the pull request and its checks, nothing else.
+# Hardening: the deciding job runs the pull request's own copy of scripts/apple-tests-ready.sh,
+# with a token that only reads the pull request and its checks; the tests run inside apple.yml,
+# with that workflow's grants. The script decides when the tests start, not whether a pull request
+# may merge: a pull request can change it, as it can change these workflows, so the merge rests
+# on the ruleset's approval and required checks, never on this decision.
 name: Apple tests
 
 on:
