@@ -15,9 +15,9 @@
 #      warnings as errors, the docs, and the example app with every test bundle, whose products it
 #      keeps for the Apple tests. One macOS runner, so a change that doesn't build on Apple's
 #      toolchain fails here without spending test time.
-# 3. The Apple tests (apple.yml), pull requests only, once the Linux checks passed and the head
-#    commit is approved (by CodeRabbit or a person) or carries the run-apple-checks label,
-#    whichever comes last (scripts/apple-tests-ready.sh). When the approval comes after the Linux
+# 3. The Apple tests (apple.yml), pull requests only, once every stage 2 check passed and the
+#    head commit is approved (by CodeRabbit or a person) or carries the run-apple-checks label,
+#    whichever comes last (scripts/apple-tests-ready.sh). When the approval comes after those
 #    checks, apple-tests.yml starts them instead. Both report as "Apple platform checks / Apple
 #    builds and tests". A push cancels the Apple tests still going for the pull request.
 # - A docs-only pull request (TESTING.md's rule, scripts/docs-only.sh: every changed file is a
@@ -320,10 +320,11 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-  # Are the Apple tests due: the Linux checks passed, so only the approval or the label is left.
+  # Are the Apple tests due: SonarQube, the Linux checks and the Apple build passed, so only the
+  # approval or the label is left.
   ready:
     name: Are the Apple tests due
-    needs: [fast, linux]
+    needs: [fast, sonar, linux, apple-build]
     if: ${{ github.event_name == 'pull_request' && needs.fast.outputs.docs-only != 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5

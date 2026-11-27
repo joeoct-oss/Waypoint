@@ -6,10 +6,11 @@
 #  Created by Yousef Mohamed <youseef.elserwey@gmail.com>.
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
-# Decides whether a pull request's Apple tests may start: the Linux gate passed on its head commit,
-# and the head commit is approved or the pull request has the run-apple-checks label. Both the
-# checks workflow (once the Linux gate passed) and the Apple tests workflow (on an approval or the
-# label) ask it, so whichever of the two arrives last starts the tests. An approval counts while
+# Decides whether a pull request's Apple tests may start: every code check of its head commit
+# passed (the SonarQube quality gate, the Linux gate and the Apple build), and the head commit is
+# approved or the pull request has the run-apple-checks label. Both the checks workflow (once
+# those checks passed) and the Apple tests workflow (on an approval or the label) ask it, so
+# whichever of the two arrives last starts the tests. An approval counts while
 # it is its reviewer's latest decision on the head commit: a push dismisses it, and a later
 # comment-only review leaves it standing. A repeated approval of a head whose Apple tests are
 # running or passed starts nothing, so it doesn't cancel or repeat them, and neither does a label
@@ -33,7 +34,8 @@ label_added=false
 if [[ $# -eq 4 ]]; then
     label_added=true
 fi
-linux_gate="Linux checks / Linux build and tests"
+# The code checks that run side by side before the Apple tests.
+gates=("SonarQube Cloud quality gate" "Linux checks / Linux build and tests" "Apple build")
 
 answer() {
     echo "$2"
@@ -49,11 +51,13 @@ if [[ "$current" != "$head" ]]; then
     answer false "Not the head: the pull request's head is now $current, not $head."
 fi
 
-linux=$(gh api -X GET "repos/$repo/commits/$head/check-runs" -f check_name="$linux_gate" \
-    -f filter=latest --jq '[.check_runs[] | select(.status == "completed")][0].conclusion // ""')
-if [[ "$linux" != "success" ]]; then
-    answer false "Not yet: \"$linux_gate\" hasn't passed on $head (${linux:-not finished})."
-fi
+for gate in "${gates[@]}"; do
+    result=$(gh api -X GET "repos/$repo/commits/$head/check-runs" -f check_name="$gate" \
+        -f filter=latest --jq '[.check_runs[] | select(.status == "completed")][0].conclusion // ""')
+    if [[ "$result" != "success" ]]; then
+        answer false "Not yet: \"$gate\" hasn't passed on $head (${result:-not finished})."
+    fi
+done
 
 # Each reviewer's latest approval or change request decides; a comment-only review doesn't.
 approved=$(gh api --paginate "repos/$repo/pulls/$number/reviews" --jq '.[]
@@ -74,7 +78,7 @@ fi
 
 # Adding the label always starts another run.
 if [[ "$label_added" == "true" ]]; then
-    answer true "Ready: the Linux gate passed and the $label label was just added."
+    answer true "Ready: the code checks passed and the $label label was just added."
 fi
 
 # The Apple test jobs of the head: one still going, or a gate that passed, means they ran.
@@ -88,4 +92,4 @@ if awk -F'\t' '$1 == "Apple platform checks / Apple builds and tests" && $3 == "
     END { exit !found }' <<<"$apple"; then
     answer false "Already passed: the Apple tests of $head passed, so this starts nothing."
 fi
-answer true "Ready: the Linux gate passed and $why."
+answer true "Ready: the code checks passed and $why."

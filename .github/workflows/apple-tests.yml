@@ -1,7 +1,8 @@
 # Starts a pull request's Apple tests (apple.yml) when its head commit is approved, by CodeRabbit
-# or a person, or when someone adds the run-apple-checks label, once the Linux gate on that commit
-# has passed. When the Linux gate hasn't passed yet, nothing starts here: the checks workflow
-# starts the tests itself once it passes (scripts/apple-tests-ready.sh decides both ways). The
+# or a person, or when someone adds the run-apple-checks label, once that commit's code checks
+# (SonarQube, the Linux gate and the Apple build) have passed. When they haven't yet, nothing
+# starts here: the checks workflow starts the tests itself once they pass
+# (scripts/apple-tests-ready.sh decides both ways). The
 # label is the fallback when no approval comes, such as a rate-limited CodeRabbit, an outage or a
 # Dependabot pull request; adding it again starts another run.
 # - The caller job is named "Apple platform checks", as in the checks workflow, so the gate reports
@@ -46,7 +47,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Did the Linux gate pass, with an approval or the label
+      - name: Did the code checks pass, with an approval or the label
         id: ready
         env:
           GH_TOKEN: ${{ github.token }}

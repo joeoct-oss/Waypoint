@@ -2,11 +2,12 @@
 # runners, which are free for a public repo: every test layer the Mac's `full` tier ran
 # (TESTING.md, "On pull requests (CI)"). The builds come first and apart, in the checks
 # workflow's "Apple build" job, so a change that doesn't compile spends no test time.
-# - It starts once a pull request's Linux gate passed and its head commit is approved (by
-#   CodeRabbit or a person) or carries the run-apple-checks label, whichever comes last
-#   (scripts/apple-tests-ready.sh). The checks workflow calls it when the Linux gate passes, and
-#   apple-tests.yml when the approval or the label arrives. Drafts are skipped. A docs-only pull
-#   request (docs-only input) skips every job, and the gate reports a pass.
+# - It starts once a pull request's code checks passed (SonarQube, the Linux gate and the Apple
+#   build) and its head commit is approved (by CodeRabbit or a person) or carries the
+#   run-apple-checks label, whichever comes last (scripts/apple-tests-ready.sh). The checks
+#   workflow calls it when those checks pass, and apple-tests.yml when the approval or the label
+#   arrives. Drafts are skipped. A docs-only pull request (docs-only input) skips every job, and
+#   the gate reports a pass.
 # - Every caller names its job "Apple platform checks", so the gate always reports as
 #   "Apple platform checks / Apple builds and tests". A newer run for the same commit cancels
 #   this one, and a push cancels the runs of the commits before it.
