@@ -7,17 +7,18 @@
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
 # Runs the Mac test layers in one of three tiers, so a run while working loads the Mac far less
-# than the run before a merge:
+# than a full run:
 #
 # - quick (the default, while working on a branch): the concurrency guard rail, the compile
 #   fixtures, the host build and unit tests with warnings as errors, and the package tests on the
 #   project simulator with warnings as errors. The example app's unit and UI tests join when the
 #   branch changes `Example/` or a renderer, or with --ui. Parts the branch can't affect are skipped.
-# - full (before every merge): every check, whatever changed. Adds the example app's unit and UI
-#   tests, the unified log tests under the thread sanitizer, the system link and missing
-#   destination UI tests again in the release configuration, and the check that Tuist's test
-#   hashes see every part of the package. Tuist's selective testing may skip an example test target that already passed
-#   on the same inputs, unless the branch changes a file those hashes don't cover.
+# - full: every check, whatever changed; no Mac run gates a merge, CI's Apple checks do. Adds the
+#   example app's unit and UI tests, the unified log tests under the thread sanitizer, the system
+#   link and missing destination UI tests again in the release configuration, and the check that
+#   Tuist's test hashes see every part of the package. Tuist's selective testing may skip an example
+#   test target that already passed on the same inputs, unless the branch changes a file those
+#   hashes don't cover.
 # - release (before a tag): full, plus a build for an iOS device with warnings as errors, and the
 #   package and example app tests again on the iOS 17 simulator. It never skips a test.
 # - stress (at night, on `main`, while a test is quarantined): every step of full, with 4 UI

@@ -7,14 +7,14 @@
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
 # Builds a merge batch: the latest `main` with each branch merged in, in the order given,
-# checked out detached in this clone, so one `scripts/test-mac.sh full` run covers every pull
-# request in it. A batch of one branch that already contains `main` is the branch's own head. Nothing is pushed. It prints the batch's commit and tree; after the batch's pull
-# requests merge, `main`'s tree must equal that tree (TESTING.md, Merge batches).
+# checked out detached in this clone, for one Mac run of several pull requests at once; no merge
+# needs it, since CI's checks gate a merge (TESTING.md, "Where each test runs"). A batch of one branch that already contains `main` is the branch's own head. Nothing is pushed. It prints the batch's commit and tree; when the batch's
+# pull requests merge, `--after-merge` can check that `main`'s tree equals that tree.
 #
 # It stops on the first branch that doesn't merge cleanly, names it, and puts the clone back on
 # the commit it was on. It refuses to start when the clone has changes.
 #
-# Before each of the batch's pull requests merges, `--before-merge` checks that nothing moved: the
+# When the batch's pull requests merge in its order, `--before-merge` checks that nothing moved: the
 # branch's head is still the tested one, and `main` is still the batch's `main` (the first pull
 # request) or the commit the pull request before it merged as. It exits 1 when either moved, and
 # the batch stops there. After the last one merges, `--after-merge` checks that `main` holds the

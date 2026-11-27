@@ -64,7 +64,7 @@ New source files start with this header:
 - **Title:** one plain English sentence in the imperative that says what the change does for the package, with no prefix and no trailing period. For example: "Refuse a push when the route has no destination".
 - **Body:** fill in every section of the [template](.github/pull_request_template.md). Flag any public API change. The required **Pull request rules** check ([`scripts/check-pr-rules.py`](scripts/check-pr-rules.py)) holds the merge until the body and branch meet the rules it lists, and reruns when the body is edited. CodeRabbit's pre-merge checks explain a failure in words and warn on the judgment calls; they are in [`.coderabbit.yaml`](.coderabbit.yaml).
 - **Changelog:** add a line to `CHANGELOG.md` under **Unreleased** for anything a package user would notice. When an entry is required, and when it can be skipped, is the "Docs and CHANGELOG" section of the [pull request template](.github/pull_request_template.md).
-- **Keep the branch current.** It must contain the latest `main` when its [merge batch](TESTING.md#merge-batches) is built.
+- **Keep the branch current.** When `main` moves, update the branch, so its CI checks run against the latest `main` before it merges.
 
 ## Review and merge
 
@@ -74,7 +74,7 @@ New source files start with this header:
 - **SonarQube Cloud** analyzes a pull request when the checks workflow runs [`scripts/sonar-scan.sh`](scripts/sonar-scan.sh), before the tests, and the tests start only once its quality gate passed (bugs, security, code quality and duplication on new code). Its settings are in [`sonar-project.properties`](sonar-project.properties).
 - **Codecov** reports `WaypointCore`'s coverage, once the checks workflow uploads it, as two statuses, the whole project and the changed lines, with no comment on the pull request. Its settings are in [`codecov.yml`](codecov.yml).
 - **Squash merge by default.** The commit title is the pull request title, and GitHub adds the number. When the branch's commits explain why the change was made, use a merge commit instead, so `main` keeps that history; give it the same title, the pull request title followed by `(#<number>)`. Never a rebase merge (it is turned off).
-- Pull requests merge one at a time, in **merge batches**: up to four ready pull requests are stacked on the latest `main` and one Mac `full` run covers them all, then they merge in the batch's order. Nothing merges without a green `full` run on a commit that contains the latest `main`. The steps are in [TESTING.md: Merge batches](TESTING.md#merge-batches).
+- Pull requests merge one at a time, once every CI check is green on a head that contains the latest `main`, the Apple platform checks included. No Mac run gates a merge; what the Mac still runs is in [TESTING.md: Which run is needed](TESTING.md#2-which-run-is-needed).
 - The branch is deleted after the merge.
 
 ## License
