@@ -65,7 +65,8 @@ jobs:
             scripts/apple-tests-ready.sh "$REPO" "$NUMBER" "$HEAD_SHA"
           fi
 
-      # Both paths of a rename count, as in the checks workflow's own decision.
+      # Both paths of a rename count, as in the checks workflow's own decision. The API lists at
+      # most 3,000 files, so a longer pull request is never docs-only here.
       - name: Which files changed
         id: changes
         if: ${{ steps.ready.outputs.ready == 'true' }}
@@ -74,8 +75,13 @@ jobs:
           REPO: ${{ github.repository }}
           NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          docs_only=$(gh api --paginate "repos/$REPO/pulls/$NUMBER/files" \
-            --jq '.[] | .filename, (.previous_filename // empty)' | scripts/docs-only.sh)
+          files=$(gh api --paginate "repos/$REPO/pulls/$NUMBER/files" \
+            --jq '.[] | .filename, (.previous_filename // empty)')
+          if (( $(gh api "repos/$REPO/pulls/$NUMBER" --jq '.changed_files') >= 3000 )); then
+            docs_only=false
+          else
+            docs_only=$(scripts/docs-only.sh <<<"$files")
+          fi
           echo "Docs-only: $docs_only"
           echo "docs-only=$docs_only" >> "$GITHUB_OUTPUT"
 
