@@ -1,6 +1,6 @@
-# Runs every check on a pull request to main and on a push to main, in stages: each stage starts
-# only when the one before it passed, so a failure stops the run before it spends Linux or macOS
-# time.
+# Runs every check on a pull request to main and on a push to main, in stages: every later stage
+# waits for the fast checks, and the Apple tests wait for every stage 2 check, so a failure stops
+# the run before it spends Linux or macOS time.
 # 1. "Fast checks", seconds long: actionlint, zizmor, the script checks of scripts/test-linux.sh
 #    (--checks-only; it gets PRIVATE_NAMES for the public text check), the coordinator size limit,
 #    lint (swift-format and SwiftLint, through scripts/lint.sh), dependency review when the
