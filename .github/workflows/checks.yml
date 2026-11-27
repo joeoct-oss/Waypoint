@@ -260,8 +260,8 @@ jobs:
           fail_ci_if_error: false
 
   # Builds everything the Apple tests run, beside the Linux checks, and keeps the example app's test
-  # products for them (scripts/build-example-tests.sh). Not a required check: the Apple gate fails
-  # when this build failed.
+  # products for them (scripts/build-example-tests.sh). Not a required check: when it fails, the
+  # Apple tests never start, so the Apple gate reports nothing and the pull request can't merge.
   apple-build:
     name: Apple build
     needs: fast
