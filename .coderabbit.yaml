@@ -255,8 +255,8 @@ reviews:
         setting whose comment no longer matches it. Flag a key the tool's schema doesn't have
         or a value of the wrong type, since these tools often ignore an unknown key without an
         error. Flag a change that adds anything paid, that turns on a pull request comment or
-        annotation from Codecov (CodeRabbit's review is the one set of comments on a PR), or
-        that lowers Codecov's patch target or project threshold.
+        annotation from Codecov (the AI reviews, CodeRabbit and Gitar on trial, are the only
+        comments on a PR), or that lowers Codecov's patch target or project threshold.
     - path: ".coderabbit.yaml"
       instructions: >-
         Check every key against the schema in the first line (schema.v2.json). Flag a change

@@ -1,7 +1,7 @@
 # Codecov reports the WaypointCore coverage that the Linux stage measures (the "coverage"
 # artifact, coverage.lcov), uploaded by the checks workflow's "Coverage to Codecov" job.
-# - Statuses only, no pull request comment or line annotations: CodeRabbit's review is the one
-#   set of comments on a PR.
+# - Statuses only, no pull request comment or line annotations: the AI reviews (CodeRabbit,
+#   and Gitar on trial) are the only comments on a PR.
 # - Coverage never drops: the project status fails on any drop from the base commit, and the
 #   patch status asks every changed line that the upload covers to be covered. The base isn't
 #   adjusted for removed lines, so any drop fails.
