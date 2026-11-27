@@ -360,6 +360,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       actions: write
+      contents: read
     steps:
       - name: Stop them
         env:
@@ -368,6 +369,13 @@ jobs:
           NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          # A late run for a push that is no longer the head stops nothing, so it can't cancel the
+          # tests of the commit after it.
+          current=$(gh api "repos/$REPO/commits/refs/pull/$NUMBER/head" --jq '.sha')
+          if [[ "$current" != "$HEAD_SHA" ]]; then
+            echo "$HEAD_SHA is no longer the head ($current is), so this stops nothing."
+            exit 0
+          fi
           for status in queued in_progress waiting pending; do
             gh api --paginate -X GET "repos/$REPO/actions/workflows/apple-tests.yml/runs" -f status="$status" \
               --jq ".workflow_runs[] | select(.head_sha != \"$HEAD_SHA\")
