@@ -1,29 +1,33 @@
-# Builds and tests the package and the example app with Apple's toolchain, on GitHub's standard
-# macOS runners, which are free for a public repo: every layer the Mac's `full` tier ran
-# (TESTING.md, "On pull requests (CI)").
-# - The checks workflow (checks.yml) calls it on pull requests to main once the Linux checks
-#   passed, so no macOS time goes to a change that already fails on Linux; drafts are skipped until
-#   they are ready for review. A docs-only pull request (docs-only input) skips every job, and the
-#   gate reports a pass.
-# - "Apple builds and tests" is its one gate: it passes only when every job below passed.
-# - Package on Apple: the host build and tests with warnings as errors and the compile fixtures,
-#   the unified log tests under the thread sanitizer, the package tests on an iPhone simulator,
-#   the build for an iOS device (the iOS 17 floor) and the docs build.
-# - Example app: generates the project with Tuist, builds the app and every test bundle once for
-#   the simulator, runs the example app's unit tests, checks Tuist's test hashes, and hands the
-#   built tests to the UI test shards.
+# Tests the package and the example app with Apple's toolchain, on GitHub's standard macOS
+# runners, which are free for a public repo: every test layer the Mac's `full` tier ran
+# (TESTING.md, "On pull requests (CI)"). The builds come first and apart, in the checks
+# workflow's "Apple build" job, so a change that doesn't compile spends no test time.
+# - It starts once a pull request's Linux gate passed and its head commit is approved (by
+#   CodeRabbit or a person) or carries the run-apple-checks label, whichever comes last
+#   (scripts/apple-tests-ready.sh). The checks workflow calls it when the Linux gate passes, and
+#   apple-tests.yml when the approval or the label arrives. Drafts are skipped. A docs-only pull
+#   request (docs-only input) skips every job, and the gate reports a pass.
+# - Every caller names its job "Apple platform checks", so the gate always reports as
+#   "Apple platform checks / Apple builds and tests". A newer run for the same pull request
+#   cancels this one.
+# - Built products: waits for the "Apple build" check on the head commit and finds the run that
+#   holds its test products. When they can't be fetched (an expired artifact), the rebuild job
+#   builds them again in this run.
+# - Package tests: the host tests and the compile fixtures with warnings as errors, the unified
+#   log tests under the thread sanitizer, and the package tests on an iPhone simulator.
 # - UI tests, shard 1 to 3: a third of the UI test classes each (scripts/ui-test-shards.py), on one
-#   simulator, from the example job's build. A failed test runs once more, and
+#   simulator, from the built products. A failed test runs once more, and
 #   scripts/judge-test-results.sh decides with Example/quarantine.json: a pass on the retry is
 #   flaky and doesn't block, a test that failed both tries blocks unless it is quarantined.
+# - Example app unit tests, once the package tests ended, from the built products.
 # - Release reports: the system link and missing destination UI tests again with the app built
-#   in Release, once the package job ended, so a run never holds more than 4 macOS jobs at once.
+#   in Release, once the unit tests ended, so a run never holds more than 4 macOS jobs at once.
 # Hardening: standard GitHub-hosted runners only, never a larger runner (those are billed) and no
 # self-hosted Mac. Every action is pinned to a full commit SHA with the version in a comment, each
 # job reads the repo and nothing else, and no checkout keeps the token. The runner label and the
 # Xcode version are pinned and bumped by hand, so a changed image fails loudly. Tuist is the one
 # .mise.toml pins, checked against its checksum (scripts/install-tuist.sh). It signs in with
-# GitHub's identity token (`id-token: write`, the two jobs that generate the project), since the
+# GitHub's identity token (`id-token: write`, only the jobs that generate the project), since the
 # project names its Tuist account, but takes no binary cache and no Xcode compilation cache, so
 # nothing a cache holds reaches a run.
 name: Apple platform checks
@@ -35,7 +39,6 @@ on:
         description: The change touches only docs no build reads, so every job is skipped
         type: boolean
         default: false
-  workflow_dispatch:
 
 permissions: {}
 
@@ -47,13 +50,92 @@ env:
   # in to Tuist.
   WAYPOINT_TUIST_OFFLINE: "1"
   TUIST_DISABLE_ANALYTICS: "1"
-  # The test products the example job builds and the shards run.
+  # The test products the "Apple build" job builds and the test jobs run.
   PRODUCTS: .build/WaypointExample.xctestproducts
 
 jobs:
-  package:
-    name: Package on Apple (Xcode 27.2)
+  products:
+    name: Built products
     if: ${{ !github.event.pull_request.draft && !inputs.docs-only }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      actions: read
+      checks: read
+    outputs:
+      run-id: ${{ steps.find.outputs.run-id }}
+    steps:
+      # The build starts beside the Linux checks, so it has usually ended by now; this waits for
+      # it when it hasn't, and fails when it failed, since there is nothing to test.
+      - name: Wait for the Apple build and find its products
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=""
+          conclusion=""
+          suite=""
+          for _ in $(seq 1 80); do
+            build=$(gh api -X GET "repos/$REPO/commits/$HEAD_SHA/check-runs" \
+              -f check_name="Apple build" -f filter=latest \
+              --jq '.check_runs[0] // {} | [.status // "", .conclusion // "", .check_suite.id // ""] | @tsv')
+            IFS=$'\t' read -r status conclusion suite <<<"$build"
+            if [[ "$status" == "completed" ]]; then
+              break
+            fi
+            echo "The Apple build on $HEAD_SHA is ${status:-not started}; checking again in 30 s."
+            sleep 30
+          done
+          if [[ "$status" != "completed" || "$conclusion" != "success" ]]; then
+            echo "::error::The Apple build on $HEAD_SHA didn't pass (${conclusion:-${status:-not started}}), so there is nothing to test."
+            exit 1
+          fi
+          run=$(gh api -X GET "repos/$REPO/actions/runs" -f check_suite_id="$suite" \
+            --jq '.workflow_runs[0].id')
+          if gh api "repos/$REPO/actions/runs/$run/artifacts" \
+            --jq '.artifacts[] | select(.name == "example-test-products" and (.expired | not)) | .id' |
+            grep -q .; then
+            echo "The test products are in run $run."
+            echo "run-id=$run" >> "$GITHUB_OUTPUT"
+          else
+            echo "Run $run has no test products any more, so this run builds them again."
+            echo "run-id=" >> "$GITHUB_OUTPUT"
+          fi
+
+  rebuild:
+    name: Build the test products again (Xcode 27.2)
+    needs: products
+    if: ${{ needs.products.outputs.run-id == '' }}
+    runs-on: xcode-27
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Tuist
+        run: scripts/install-tuist.sh "$RUNNER_TEMP/tuist"
+
+      - name: Build the app and its tests
+        run: scripts/build-example-tests.sh "$SIMULATOR" "$SIMULATOR_OS"
+
+      - name: Hand the built tests to the test jobs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: example-test-products
+          path: .build/example-test-products.tar
+          retention-days: 30
+          if-no-files-found: error
+
+  package:
+    name: Package tests (Xcode 27.2)
+    needs: products
     runs-on: xcode-27
     timeout-minutes: 45
     permissions:
@@ -70,10 +152,6 @@ jobs:
           swift --version
           sysctl -n hw.ncpu hw.memsize machdep.cpu.brand_string
           xcrun simctl list runtimes available
-
-      # One build with warnings as errors serves the fixtures and the tests.
-      - name: Build the tests on the macOS host, with warnings as errors
-        run: swift build --build-tests --force-resolved-versions -Xswiftc -warnings-as-errors
 
       - name: Check the compile fixtures
         run: WAYPOINT_SWIFT_BUILD_FLAGS="--force-resolved-versions -Xswiftc -warnings-as-errors" scripts/check-compile-failures.sh
@@ -96,19 +174,6 @@ jobs:
             -resultBundlePath .build/results/package.xcresult \
             CODE_SIGNING_ALLOWED=NO
 
-      # The deployment target is the iOS 17 floor, so an API newer than the floor fails here.
-      # Build only: the runners have no iOS 17 simulator.
-      - name: Build for an iOS device, with warnings as errors in Waypoint's own code
-        run: |
-          scripts/own-warnings-as-errors.sh scripts/package-xcodebuild.sh build -quiet \
-            -scheme Waypoint-Package \
-            -destination generic/platform=iOS \
-            CODE_SIGNING_ALLOWED=NO
-
-      # Build only: the docs site is deployed from the Mac.
-      - name: Build the docs
-        run: scripts/build-docs.sh
-
       - name: Keep the result bundle of a failed run
         if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -118,92 +183,15 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-  example:
-    name: Example app build and unit tests (Xcode 27.2)
-    if: ${{ !github.event.pull_request.draft && !inputs.docs-only }}
-    runs-on: xcode-27
-    timeout-minutes: 45
-    permissions:
-      contents: read
-      # Tuist signs in to the project's Tuist account with GitHub's identity token, which the
-      # generated project's settings need; no Tuist secret sits in the repo.
-      id-token: write
-    steps:
-      - name: Check out
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Install Tuist
-        run: scripts/install-tuist.sh "$RUNNER_TEMP/tuist"
-
-      - name: Generate the example app
-        run: |
-          tuist install --path Example
-          tuist generate --path Example --no-open
-
-      # Every test bundle the scheme runs, built once for the simulator. The Xcode compilation
-      # cache is off: its local proxy only runs on a Mac set up for it.
-      - name: Build the app and its tests
-        run: |
-          udid=$(scripts/find-ci-simulator.sh "$SIMULATOR" "$SIMULATOR_OS")
-          xcodebuild build-for-testing -quiet \
-            -workspace Example/WaypointExample.xcworkspace \
-            -scheme WaypointExample \
-            -destination "id=$udid" \
-            -derivedDataPath .build/example-derived-data \
-            -testProductsPath "$PRODUCTS" \
-            -skipMacroValidation \
-            COMPILATION_CACHE_ENABLE_CACHING=NO \
-            WAYPOINT_TUIST_OFFLINE=1 WAYPOINT_TUIST_TEST_RUN=1
-
-      # A tar keeps the bundle's symbolic links and file modes, which the artifact's zip doesn't.
-      - name: Pack the built tests
-        run: tar -C .build -cf .build/example-test-products.tar WaypointExample.xctestproducts
-
-      - name: Hand the built tests to the shards
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: example-test-products
-          path: .build/example-test-products.tar
-          # As long as GitHub lets a failed shard be re-run on its own, which never builds again.
-          retention-days: 30
-          if-no-files-found: error
-
-      # Every test bundle but the UI tests: the app's own unit tests and each module's.
-      - name: Run the example app's unit tests
-        run: |
-          udid=$(scripts/find-ci-simulator.sh "$SIMULATOR" "$SIMULATOR_OS")
-          bundle=.build/results/example-unit.xcresult
-          status=0
-          xcodebuild test-without-building -quiet \
-            -testProductsPath "$PRODUCTS" \
-            -destination "id=$udid" \
-            -skip-testing:WaypointExampleUITests \
-            -parallel-testing-enabled NO \
-            -retry-tests-on-failure -test-iterations 2 \
-            -resultBundlePath "$bundle" || status=$?
-          scripts/judge-test-results.sh "$status" "$bundle"
-
-      - name: Check that Tuist's test hashes see every part
-        run: scripts/check-selective-testing-hashes.sh
-
-      - name: Keep the result bundle of a failed run
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: example-unit-results
-          path: .build/results
-          retention-days: 7
-
   ui:
     name: UI tests, shard ${{ matrix.shard }} of 3 (Xcode 27.2)
-    needs: example
-    if: ${{ !github.event.pull_request.draft && !inputs.docs-only }}
+    needs: [products, rebuild]
+    if: ${{ !cancelled() && needs.products.result == 'success' && needs.rebuild.result != 'failure' }}
     runs-on: xcode-27
     timeout-minutes: 30
     permissions:
       contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -214,11 +202,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # From the checks run's "Apple build", or from this run when the rebuild job built them.
       - name: Fetch the built tests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: example-test-products
           path: .build
+          run-id: ${{ needs.products.outputs.run-id || github.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Unpack the built tests
         run: tar -C .build -xf .build/example-test-products.tar
@@ -262,14 +253,63 @@ jobs:
           path: .build/results
           retention-days: 7
 
+  # After the package tests, so the run holds at most 4 macOS jobs: the package tests, this job
+  # or the release reports, beside the 3 shards.
+  example:
+    name: Example app unit tests (Xcode 27.2)
+    needs: [products, rebuild, package]
+    if: ${{ !cancelled() && needs.products.result == 'success' && needs.rebuild.result != 'failure' }}
+    runs-on: xcode-27
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch the built tests
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: example-test-products
+          path: .build
+          run-id: ${{ needs.products.outputs.run-id || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Unpack the built tests
+        run: tar -C .build -xf .build/example-test-products.tar
+
+      # Every test bundle but the UI tests: the app's own unit tests and each module's.
+      - name: Run the example app's unit tests
+        run: |
+          udid=$(scripts/find-ci-simulator.sh "$SIMULATOR" "$SIMULATOR_OS")
+          bundle=.build/results/example-unit.xcresult
+          status=0
+          xcodebuild test-without-building -quiet \
+            -testProductsPath "$PRODUCTS" \
+            -destination "id=$udid" \
+            -skip-testing:WaypointExampleUITests \
+            -parallel-testing-enabled NO \
+            -retry-tests-on-failure -test-iterations 2 \
+            -resultBundlePath "$bundle" || status=$?
+          scripts/judge-test-results.sh "$status" "$bundle"
+
+      - name: Keep the result bundle of a failed run
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: example-unit-results
+          path: .build/results
+          retention-days: 7
+
   # A system link and a route with no destination in its stack must be reported in release builds
-  # too, so their UI tests run again with the app and the tests built in Release. It waits for the
-  # package job, so the run holds at most 4 macOS jobs: the package job or this one, the example
-  # job, then the 3 shards.
+  # too, so their UI tests run again with the app and the tests built in Release.
   release-reports:
     name: Release reports (Xcode 27.2)
-    needs: package
-    if: ${{ !github.event.pull_request.draft && !inputs.docs-only }}
+    needs: [products, example]
+    if: ${{ !cancelled() && needs.products.result == 'success' }}
     runs-on: xcode-27
     timeout-minutes: 45
     permissions:
@@ -318,10 +358,11 @@ jobs:
           path: .build/results
           retention-days: 7
 
-  # Skipped, not failed, when a newer push cancels the run, since that push's run replaces it.
+  # Skipped, not failed, when a newer run cancels this one, since that run replaces it. The
+  # rebuild job is skipped when the products came from the checks run.
   gate:
     name: Apple builds and tests
-    needs: [package, example, ui, release-reports]
+    needs: [products, rebuild, package, ui, example, release-reports]
     if: ${{ !cancelled() && !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -331,13 +372,20 @@ jobs:
       - name: Check that every job passed
         env:
           DOCS_ONLY: ${{ inputs.docs-only }}
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+          REBUILD: ${{ needs.rebuild.result }}
+          RESULTS: >-
+            ${{ needs.products.result }} ${{ needs.package.result }} ${{ needs.ui.result }}
+            ${{ needs.example.result }} ${{ needs.release-reports.result }}
         run: |
           if [[ "$DOCS_ONLY" == "true" ]]; then
             echo "Docs-only change: no build reads these files, so the checks were skipped."
             exit 0
           fi
-          echo "Job results: $RESULTS"
+          echo "Job results: $RESULTS, rebuild: $REBUILD"
+          if [[ "$REBUILD" != "success" && "$REBUILD" != "skipped" ]]; then
+            echo "::error::The test products couldn't be built again ($REBUILD)."
+            exit 1
+          fi
           for result in $RESULTS; do
             if [[ "$result" != "success" ]]; then
               echo "::error::An Apple check didn't pass: $RESULTS."
