@@ -15,6 +15,7 @@ import ExampleTestSupport
 import Foundation
 import Testing
 import WaypointCore
+
 @testable import WaypointExample
 
 // The app's one container: every feature gets its services from it, so they share
@@ -90,7 +91,7 @@ struct AppServicesTests {
         // A checkout opened now reads the cart from the store both factories share.
         let checkout = cartFactory.makeCheckoutBuilder()
         let expected = [
-            Self.lampID,
+            Self.lampID
         ]
         #expect(checkout.products.map(\.id) == expected)
     }

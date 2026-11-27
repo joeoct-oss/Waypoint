@@ -152,7 +152,7 @@ struct JourneyTests {
         tabs.select(.profile)
 
         let expectedJourney = [
-            "Profile",
+            "Profile"
         ]
         #expect(tabs.screenVisit?.screen.title == "Profile")
         #expect(tabs.screenVisit?.journey.map(\.title) == expectedJourney)
@@ -508,7 +508,8 @@ struct JourneyTests {
         router.push(ItemRoute(id: 3, title: "Orbit Lamp"), trigger: "related")
 
         let last = try #require(handler.journeyTexts.last)
-        let expectedStart = "screen_viewed screen=\"Product 3\" display=\"Orbit Lamp\" previous=\"Product list\" "
+        let expectedStart =
+            "screen_viewed screen=\"Product 3\" display=\"Orbit Lamp\" previous=\"Product list\" "
             + "source=\"Main\" how=push origin=app flow=main depth=2 trigger=related after_ms=0 at=JourneyTests.swift:"
         #expect(last.hasPrefix(expectedStart))
         #expect(handler.journeyBoxes.isEmpty)

@@ -45,7 +45,7 @@ struct AuthCoordinatorTests {
             onShowTerms: { }
         )
         let expectedPath = [
-            AnyRoute(CreateAccountRoute(step: .details)),
+            AnyRoute(CreateAccountRoute(step: .details))
         ]
         #expect(auth.router.state.path == expectedPath)
         #expect(details.draft.name == Self.name)
@@ -80,7 +80,7 @@ struct AuthCoordinatorTests {
         auth.continueCreatingAccount(after: .checkEmail)
 
         let expected: [FlowResult<Account>] = [
-            .finished(account),
+            .finished(account)
         ]
         #expect(results.values == expected)
         #expect(session.account == account)

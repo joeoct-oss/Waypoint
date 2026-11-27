@@ -1,0 +1,219 @@
+# SwiftLint for Waypoint: it enforces CODE_STYLE.md, the one home for the rules, wherever a
+# Swift file can show a rule is broken. swift-format (.swift-format) owns layout. scripts/lint.sh
+# runs both, and scripts/format.sh fixes what they can fix.
+# - SwiftLint's default rules are on, except the ones turned off below, each with its reason, and
+#   so are the opt-in rules CODE_STYLE.md names. Turning off another rule needs a reason in its
+#   pull request.
+# - Every warning is an error. The findings that were in the code when this file landed are in
+#   .swiftlint-baseline.json, which only shrinks.
+# - The custom rules are regexes over one file at a time. What they can't see, CODE_STYLE.md
+#   leaves to review.
+# - The version is pinned in .mise.toml: an upgrade that changes the rules is its own PR.
+
+strict: true
+
+included:
+  - Sources
+  - Tests
+  - Example
+  - Package.swift
+
+excluded:
+  - .build
+  - .tools
+  - Example/Derived
+  - Example/Tuist/.build
+
+opt_in_rules:
+  # The opt-in rules CODE_STYLE.md names. SwiftLint's default rules are on as well.
+  - missing_docs
+  - type_contents_order
+  - multiline_parameters
+  - multiline_arguments
+  - multiline_arguments_brackets
+
+disabled_rules:
+  # Layout belongs to swift-format, which writes these differently: a trailing comma after the
+  # last element of a wrapped collection, and the brace of a wrapped condition on its own line.
+  - trailing_comma
+  - opening_brace
+  # SwiftUI's and Waypoint's own calls take a labelled callback and a trailing content closure,
+  # such as `.sheet(isPresented:onDismiss:) { }` and `push(onFinish:) { }`.
+  - multiple_closures_with_trailing_closure
+
+line_length:
+  warning: 120
+  ignores_urls: true
+  ignores_comments: true
+
+# CODE_STYLE.md: "A type reads like a story, in this order".
+type_contents_order:
+  order:
+    - case
+    - [type_alias, associated_type]
+    - subtype
+    - type_property
+    - [instance_property, ib_inspectable, ib_outlet]
+    - [initializer, deinitializer]
+    - view_life_cycle_method
+    - type_method
+    - [ib_action, other_method, subscript]
+
+# `let _ = f()` is how a SwiftUI view body calls a function: `_ = f()` doesn't build there.
+redundant_discardable_let:
+  ignore_swiftui_view_bodies: true
+
+# Public members of a type that conforms to a protocol need a doc comment too.
+missing_docs:
+  excludes_inherited_types: false
+
+# CODE_STYLE.md: "A wrapped call puts each argument on its own line".
+multiline_arguments:
+  first_argument_location: next_line
+
+custom_rules:
+  # CODE_STYLE.md: "Empty braces have one space inside".
+  empty_braces_spaced:
+    name: 'empty_braces_spaced'
+    regex: '\{\}'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Write empty braces as `{ }` with one space.'
+    severity: error
+
+  # CODE_STYLE.md: "No one-line type bodies".
+  no_single_line_type_body:
+    name: 'no_single_line_type_body'
+    regex: '^[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|indirect|nonisolated)[ \t]+)*(?:enum|struct|class|actor|protocol|extension)\b(?=[^{\n]*\{[ \t]*[^ \t}\n][^\n]*\}[ \t]*(?://[^\n]*)?$)'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Put each member of this type on its own line.'
+    severity: error
+
+  # CODE_STYLE.md: "No one-line type bodies".
+  one_case_per_line:
+    name: 'one_case_per_line'
+    regex: '^[ \t]*(?:indirect[ \t]+)?case[ \t]+(?!let\b|var\b|\.)[A-Za-z_`][\w`]*(?:\([^)\n]*\))?(?:[ \t]*=[ \t]*[^,\n]+)?[ \t]*,'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Declare one enum case per line.'
+    severity: error
+
+  # CODE_STYLE.md: "Every body goes on its own lines".
+  no_single_line_function_body:
+    name: 'no_single_line_function_body'
+    regex: '^[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|lazy|weak|unowned|dynamic)(?:\(set\))?[ \t]+)*(?:func|init[?!]?|deinit|subscript|var)\b[^{\n]*\{(?![ \t]*(?:get\b|set\b|nonmutating\b|\}))[^\n]*\}[ \t]*(?://[^\n]*)?$'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Put this body on its own lines.'
+    severity: error
+
+  # CODE_STYLE.md: "Every body goes on its own lines".
+  no_single_line_statement_body:
+    name: 'no_single_line_statement_body'
+    regex: '^[ \t]*(?:\}[ \t]*)?(?:if|guard|for|while|else|repeat|do|catch|defer|switch)\b[^\n]*\{(?![ \t]*\})[^\n]*\}[ \t]*(?://[^\n]*)?$'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Put this body on its own lines.'
+    severity: error
+
+  # CODE_STYLE.md: "A blank line between member groups".
+  blank_line_before_member_with_body:
+    name: 'blank_line_before_member_with_body'
+    regex: '^(?![ \t]*(?://|/\*|\*|#|```)|[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)+$)[ \t]*(?=[^ \t\n])(?:[^/\n]|/(?!/))*?(?<![{ \t])[ \t]*(?://[^\n]*)?\n(?=(?:[ \t]*(?://|/\*|\*)[^\n]*\n|[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)+\n)*[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:(?:func[ \t]|init[?!]?[(<]|deinit\b|subscript[(<]|(?:struct|enum|actor|extension|protocol)[ \t]+\w|class[ \t]+[A-Z])[^\n]*|var[ \t][^=\n]*)\{[ \t]*(?://[^\n]*)?$)'
+    excluded_match_kinds: [string]
+    message: 'Add a blank line before this member.'
+    severity: error
+
+  # CODE_STYLE.md: "A blank line between member groups".
+  blank_line_between_member_groups:
+    name: 'blank_line_between_member_groups'
+    regex: '(?:^(?![ \t]*(?://|/\*|\*|#|```)|[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)+$)[ \t]*(?=[^ \t\n])[^\n]*\}[ \t]*(?://[^\n]*)?\n|^(?![ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:func[ \t]))[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:let|var|case|associatedtype|typealias|func|init|deinit|subscript|struct|enum|class|actor|protocol|extension)\b(?:[^/\n]|/(?!/))*?(?<![{ \t])[ \t]*(?://[^\n]*)?\n)(?=(?:[ \t]*(?://|/\*|\*)[^\n]*\n|[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)+\n)*[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:func[ \t]))|(?:^(?![ \t]*(?://|/\*|\*|#|```)|[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)+$)[ \t]*(?=[^ \t\n])[^\n]*\}[ \t]*(?://[^\n]*)?\n|^(?![ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:init[?!]?[(<]|deinit\b))[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:let|var|case|associatedtype|typealias|func|init|deinit|subscript|struct|enum|class|actor|protocol|extension)\b(?:[^/\n]|/(?!/))*?(?<![{ \t])[ \t]*(?://[^\n]*)?\n)(?=(?:[ \t]*(?://|/\*|\*)[^\n]*\n|[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)+\n)*[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:init[?!]?[(<]|deinit\b))|(?:^(?![ \t]*(?://|/\*|\*|#|```)|[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)+$)[ \t]*(?=[^ \t\n])[^\n]*\}[ \t]*(?://[^\n]*)?\n|^(?![ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:subscript[(<]))[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:let|var|case|associatedtype|typealias|func|init|deinit|subscript|struct|enum|class|actor|protocol|extension)\b(?:[^/\n]|/(?!/))*?(?<![{ \t])[ \t]*(?://[^\n]*)?\n)(?=(?:[ \t]*(?://|/\*|\*)[^\n]*\n|[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)+\n)*[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:subscript[(<]))|(?:^(?![ \t]*(?://|/\*|\*|#|```)|[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)+$)[ \t]*(?=[^ \t\n])[^\n]*\}[ \t]*(?://[^\n]*)?\n|^(?![ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:(?!)))[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:let|var|case|associatedtype|typealias|func|init|deinit|subscript|struct|enum|class|actor|protocol|extension)\b(?:[^/\n]|/(?!/))*?(?<![{ \t])[ \t]*(?://[^\n]*)?\n)(?=(?:[ \t]*(?://|/\*|\*)[^\n]*\n|[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)+\n)*[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|mutating|nonmutating|convenience|required|nonisolated|indirect|dynamic|lazy|weak|unowned)(?:\(set\))?[ \t]+)*(?:(?:struct|enum|actor|extension|protocol)[ \t]+\w|class[ \t]+[A-Z]))'
+    excluded_match_kinds: [string]
+    message: 'Add a blank line between these member groups.'
+    severity: error
+
+  # CODE_STYLE.md: "Comments wrap at 100 columns".
+  comment_line_length:
+    name: 'comment_line_length'
+    regex: '^(?![^\n]*https?://)(?!// expected-error: )(?=[^\n]{101})[ \t]*//'
+    match_kinds: [comment, doccomment]
+    message: 'Wrap this comment at 100 columns.'
+    severity: error
+
+  # CODE_STYLE.md: "No collection literal inside a call's arguments".
+  no_literal_in_argument:
+    name: 'no_literal_in_argument'
+    regex: '^(?![ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|static|class|override|final|nonisolated|convenience|required|mutating|indirect)[ \t]+)*(?:func|init|subscript|case|enum)\b)[^\n]*(?:[\w)\]?!>]\((?:[^()\[\n]*,)?[ \t]*(?:\w+[ \t]*:[ \t]*)?|(?:==|!=)[ \t]*)\[(?!(?:any[ \t]+)?[A-Z]\w*(?:\.[A-Z]\w*)*(?:<[^>\n]*>)?\??(?:[ \t]*:[ \t]*[A-Z]\w*(?:\.[A-Z]\w*)*(?:<[^>\n]*>)?\??)?\])'
+    excluded_match_kinds: [comment, doccomment, string]
+    excluded: ['Package.swift']
+    message: 'Name this collection with a `let` first, then pass the name.'
+    severity: error
+
+  # CODE_STYLE.md: "A switch case's body goes on its own line".
+  case_body_on_own_line:
+    name: 'case_body_on_own_line'
+    regex: '^[ \t]*(?:case[ \t]+(?=[.("''0-9_\[-]|let\b|var\b|is\b)(?:[^:(\n]|\([^()\n]*(?:\([^()\n]*\)[^()\n]*)*\))*|default[ \t]*):[ \t]*[^ \t\n/][^\n]*$'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Put the body of this case on its own line.'
+    severity: error
+
+  # CODE_STYLE.md: "A switch case's body is one call to a named function".
+  case_body_one_line:
+    name: 'case_body_one_line'
+    regex: '^[ \t]*(?:case[ \t]+(?=[.("''0-9_\[-]|let\b|var\b|is\b)[^\n]*|default[ \t]*):[ \t]*(?://[^\n]*)?\n[ \t]*\S[^\n]*\n[ \t]*(?!case\b|default\b|@unknown\b|\}|$)\S'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Move this case''s work into a function and call it.'
+    severity: error
+
+  # CODE_STYLE.md: "A switch case's body is one call to a named function".
+  case_body_is_call:
+    name: 'case_body_is_call'
+    regex: '^[ \t]*(?:case[ \t]+(?=[.("''0-9_\[-]|let\b|var\b|is\b)[^\n]*|default[ \t]*):[ \t]*(?://[^\n]*)?\n[ \t]*(?!(?:(?:try|await)[ \t]+)*[\w.?]+\([^\n]*\)[ \t]*(?://[^\n]*)?$)(?!(?:break|return|fallthrough|continue)\b)\S'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'A case body is one call to a named function.'
+    severity: error
+
+  # CODE_STYLE.md: "The example app is main actor by default".
+  no_main_actor_in_example:
+    name: 'no_main_actor_in_example'
+    regex: '(?<!Task \{ )@MainActor\b'
+    excluded_match_kinds: [comment, doccomment, string]
+    included: ['/Example/WaypointExample/', '/Example/WaypointExampleTests/']
+    message: 'The example app is main actor by default: remove `@MainActor`, or mark code that runs elsewhere `nonisolated` or `@concurrent`.'
+    severity: error
+
+  # CODE_STYLE.md: "`let` by default".
+  stored_var_needs_reason:
+    name: 'stored_var_needs_reason'
+    regex: '^(?![ \t]*//)[^\n]*\n(?:[ \t]*//(?![^\n]*`var` because)[^\n]*\n)*[ \t]*(?!@(?:State|Binding|Bindable|Environment|FocusState|Namespace|UIApplicationDelegateAdaptor|NSApplicationDelegateAdaptor|StackNavigation|FlowNavigation|DismissFlow|FinishFlow|TabSelection|RouteHint)\b)(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|final|static|class|override|nonisolated|weak|unowned|lazy)(?:\(set\))?[ \t]+)*var[ \t]+\w+(?:[ \t]*:[^{=\n]*)?(?:[ \t]*=[^{\n]*)?[ \t]*(?://[^\n]*)?$'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Say why this is a `var` in a comment above it that starts "`var` because".'
+    severity: error
+
+  # CODE_STYLE.md: "`let` by default".
+  no_public_stored_var:
+    name: 'no_public_stored_var'
+    regex: '^[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:public|open)(?:[ \t]+(?:internal|package)\(set\))?[ \t]+(?:(?:static|class|final|override|nonisolated)[ \t]+)*var[ \t]+\w+(?:[ \t]*:[^{=\n]*)?(?:[ \t]*=[^{\n]*)?[ \t]*(?://[^\n]*)?$'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Make this a `let`, or a computed `{ get }` property with a guarded set function.'
+    severity: error
+
+  # CODE_STYLE.md: "`let` by default".
+  no_static_stored_var:
+    name: 'no_static_stored_var'
+    regex: '^[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]+)*(?:(?:public|internal|private|fileprivate|package|open|nonisolated(?:\(unsafe\))?)[ \t]+)*(?:static|class)[ \t]+var[ \t]+\w+(?:[ \t]*:[^{=\n]*)?(?:[ \t]*=[^{\n]*)?[ \t]*(?://[^\n]*)?$'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Use `static let`, or a computed `static var`.'
+    severity: error
+
+  # CODE_STYLE.md: "`let` by default".
+  no_lazy_var:
+    name: 'no_lazy_var'
+    regex: '\blazy[ \t]+var\b'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Set this in `init` instead of `lazy var`.'
+    severity: error
+
+  # CODE_STYLE.md: "`let` by default".
+  no_mutating_func:
+    name: 'no_mutating_func'
+    regex: '\bmutating[ \t]+func\b'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: 'Return a new value from a non-mutating function instead.'
+    severity: error

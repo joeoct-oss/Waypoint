@@ -73,7 +73,8 @@ public struct RouteKey: NavigationValue, NavigationDescribable {
     /// The name with every `(unknown context at $…).` part removed.
     private static func removingUnknownContexts(from name: String) -> String {
         guard let start = name.range(of: "(unknown context at "),
-            let end = name[start.upperBound...].range(of: ").") else {
+            let end = name[start.upperBound...].range(of: ").")
+        else {
             return name
         }
         return removingUnknownContexts(from: String(name[..<start.lowerBound] + name[end.upperBound...]))

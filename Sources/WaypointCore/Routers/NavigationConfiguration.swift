@@ -114,7 +114,8 @@ public struct NavigationConfiguration: Sendable {
     func validated() -> (configuration: NavigationConfiguration, problem: String?) {
         let fallbackLimit = NavigationConfiguration.default.maxQueuedChanges
         guard maxQueuedChanges >= 1 else {
-            let problem = "maxQueuedChanges must be at least 1, so \(maxQueuedChanges) was not used. "
+            let problem =
+                "maxQueuedChanges must be at least 1, so \(maxQueuedChanges) was not used. "
                 + "The tree uses \(fallbackLimit)."
             return (withMaxQueuedChanges(fallbackLimit), problem)
         }

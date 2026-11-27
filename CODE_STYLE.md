@@ -2,13 +2,20 @@
 
 The rules every Swift file in Waypoint follows: sources, tests, DocC snippets and examples. This file is their one home. [CONTRIBUTING](CONTRIBUTING.md) explains how a change is made and links here.
 
-swift-format formats the code and SwiftLint enforces these rules. Once the lint setup lands, `scripts/lint.sh` must pass before a pull request is reviewed. Until then, review checks them by hand. Each rule says how it is checked.
+swift-format formats the code and SwiftLint enforces these rules. Each rule says how it is checked: by a tool, by a script, or in review when no tool can judge it.
+
+## How the tools check the rules
+
+- `scripts/lint.sh` runs both tools and fails on any finding. Run it while you work; CI's fast checks run it again on every pull request, so it must pass before a pull request is reviewed. `scripts/format.sh` fixes what the tools can fix, such as indentation and wrapping, and `scripts/bootstrap.sh` installs the pinned SwiftLint.
+- swift-format uses its default rules, with the changes in [`.swift-format`](.swift-format): 120-column lines, 4-space indentation, one argument per line when a call wraps, and no `OnlyOneTrailingClosureArgument`, because SwiftUI's and Waypoint's own calls take a labelled callback and a trailing content closure. It is the toolchain's `swift format`, at the major and minor version `.mise.toml` names.
+- SwiftLint runs its default rules, the opt-in rules and custom rules this file names, every warning as an error, from [`.swiftlint.yml`](.swiftlint.yml), which gives each turned-off rule its reason. The version is pinned in `.mise.toml`.
+- The findings already in the code when the tools were turned on are listed in [`.swiftlint-baseline.json`](.swiftlint-baseline.json), so they don't fail the check while they are fixed. The list only shrinks: new code never adds to it. A change that fixes a finding first makes `scripts/lint.sh` pass, then regenerates the list with `swiftlint lint --write-baseline .swiftlint-baseline.json`, and review checks that the diff only removes entries.
 
 ## Empty braces have one space inside: `{ }`, never `{}`
 
 This applies to empty types, protocols, functions, initialisers and closures, in code, tests, DocC snippets and examples. For example `enum ShopFlow: NavigationFlow { }` and `init() { }`. Empty collection literals (`[]`, `[:]`) are not braces and are unchanged.
 
-The rule is enforced by the lint setup (custom SwiftLint rule `empty_braces_spaced`, plus a fix-up after `swift format`, which always writes `{}`). Until the lint setup lands, review checks it by hand.
+Enforced by the custom SwiftLint rule `empty_braces_spaced`. `swift format` always writes `{}`, so `scripts/format.sh` puts the space back after it, and `scripts/lint.sh` ignores swift-format's finding at the space inside `{ }`.
 
 ## No one-line type bodies
 
@@ -32,7 +39,7 @@ struct ProductRoute: Route {
 
 Not `enum AppRoot: NavigationRoot { case login, main }` or `struct ProductRoute: Route { let id: Int }`. A type with an empty body stays on one line as `{ }`. The same applies in prose: describe the type in words instead of writing a one-line declaration in inline code.
 
-The rule is enforced by two custom SwiftLint rules in the lint setup (`no_single_line_type_body` and `one_case_per_line`). swift-format keeps the expanded form, so the two tools agree. Until the lint setup lands, review checks it by hand.
+Enforced by the custom SwiftLint rules `no_single_line_type_body` and `one_case_per_line`. swift-format keeps the expanded form, so the two tools agree.
 
 ## Every body goes on its own lines
 
@@ -49,7 +56,7 @@ Not `init(link: DeepLinkParameters) throws { id = try link.int("id") }`. Three e
 - accessor lists in signature-only API listings stay on one line: `{ get }`, `{ get set }`, `{ get nonmutating set }`;
 - a closure passed as an argument may stay on one line when its body is one short expression, such as `.tabItem { Label("Home", systemImage: "house") }`, `Button("Close") { dismissFlow() }` or `LoginView(onLoggedIn: { self.showMainFlow() })`. A closure with more than one statement goes on its own lines. Why: SwiftUI modifiers and callbacks read as one phrase, and expanding every one of them would triple the length of view code without making it clearer.
 
-Enforced by the custom SwiftLint rules `no_single_line_function_body` and `no_single_line_statement_body` in the lint setup. Until the lint setup lands, review checks it by hand.
+Enforced by the custom SwiftLint rules `no_single_line_function_body` and `no_single_line_statement_body`.
 
 ## A blank line between member groups
 
@@ -74,7 +81,7 @@ func showProduct(_ id: Int) {
 }
 ```
 
-Enforced by the custom SwiftLint rules `blank_line_before_member_with_body` and `blank_line_between_member_groups` in the lint setup. Until the lint setup lands, review checks it by hand.
+Enforced by the custom SwiftLint rules `blank_line_before_member_with_body` and `blank_line_between_member_groups`.
 
 ## Document every member of a type, or none
 
@@ -91,7 +98,7 @@ public enum Trigger: Sendable {
 }
 ```
 
-Not two bare cases next to one documented one. Public API documents everything, because every public symbol needs a doc comment anyway. Examples and internal types may document nothing. Public API is enforced by SwiftLint's `missing_docs` in the lint setup, which already requires a doc comment on every public member. Internal and example types are checked in review, because a regex can't count the members of a type.
+Not two bare cases next to one documented one. Public API documents everything, because every public symbol needs a doc comment anyway. Examples and internal types may document nothing. Public API is enforced by SwiftLint's `missing_docs`, which already requires a doc comment on every public member. Internal and example types are checked in review, because a regex can't count the members of a type.
 
 ## A type reads like a story, in this order
 
@@ -131,7 +138,7 @@ public struct LogConfiguration: Sendable {
 }
 ```
 
-Enforced by SwiftLint's `type_contents_order` in the lint setup, with the order above. It can't tell stored from computed properties or judge which members are related, so review checks those.
+Enforced by SwiftLint's `type_contents_order`, with the order above. It can't tell stored from computed properties or judge which members are related, so review checks those.
 
 ## Comments wrap at 100 columns
 
@@ -149,11 +156,11 @@ Every comment line, `//` and `///`, ends by column 100, indentation and the slas
 
 Why: 100 columns reads comfortably in an editor beside a second file, in a side-by-side diff and on the documentation site.
 
-Enforced by `scripts/check-comment-width.sh`, which `scripts/test-linux.sh` runs, and by the custom SwiftLint rule `comment_line_length` in the lint setup. swift-format's `lineLength` covers code only, because it does not rewrap comments.
+Enforced by `scripts/check-comment-width.sh`, which `scripts/test-linux.sh` runs, and by the custom SwiftLint rule `comment_line_length` in Swift files. swift-format's `lineLength` covers code only, because it does not rewrap comments.
 
 ## A wrapped parameter list puts each parameter on its own line
 
-When a function, initializer or subscript doesn't fit on one line (120 characters), `(` ends the first line, each parameter goes on its own line, and `)` starts the last line, followed by the rest of the signature. Never some parameters on one line and the rest on the next. Enforced by swift-format's `lineBreakBeforeEachArgument` and SwiftLint's `multiline_parameters` in the lint setup.
+When a function, initializer or subscript doesn't fit on one line (120 characters), `(` ends the first line, each parameter goes on its own line, and `)` starts the last line, followed by the rest of the signature. Never some parameters on one line and the rest on the next. Enforced by swift-format's `lineBreakBeforeEachArgument` and SwiftLint's `multiline_parameters`.
 
 ## A wrapped call puts each argument on its own line
 
@@ -168,7 +175,7 @@ var root: some View {
 }
 ```
 
-Enforced by swift-format's `lineBreakBeforeEachArgument` and SwiftLint's `multiline_arguments` and `multiline_arguments_brackets` in the lint setup. Review checks the named calls.
+Enforced by swift-format's `lineBreakBeforeEachArgument` and SwiftLint's `multiline_arguments` and `multiline_arguments_brackets`. Review checks the named calls.
 
 ## No collection literal inside a call's arguments
 
@@ -183,7 +190,7 @@ let guestTabs: [MainTab] = [.home, .shop]
 let tabs = TabRouter(tabs: guestTabs, selection: .home, popsToRootOnReselect: false)
 ```
 
-`Package.swift` is the one exception: SwiftPM's manifest format lists targets and dependencies inline, and tools and people expect that shape. Enforced by the `no_literal_in_argument` custom rule in the lint setup.
+`Package.swift` is the one exception: SwiftPM's manifest format lists targets and dependencies inline, and tools and people expect that shape. Enforced by the `no_literal_in_argument` custom rule.
 
 ## A switch case's body goes on its own line
 
@@ -198,11 +205,11 @@ case .main:
 }
 ```
 
-Not `case .login: makeLoginFlow()`. A comment may follow the label on the same line. The rule is enforced by the custom SwiftLint rule `case_body_on_own_line` in the lint setup. Until the lint setup lands, review checks it by hand.
+Not `case .login: makeLoginFlow()`. A comment may follow the label on the same line. The rule is enforced by the custom SwiftLint rule `case_body_on_own_line`.
 
 ## A switch case's body is one call to a named function
 
-Split the work into small functions, so each `case` body is a single line that calls one. `break`, `return`, `continue` and `fallthrough` are allowed when there is nothing to do. Not a view or controller built inline, an assignment, or several statements: move them into a function and call it. Enforced by the custom SwiftLint rules `case_body_one_line` and `case_body_is_call` in the lint setup. Until the lint setup lands, review checks it by hand.
+Split the work into small functions, so each `case` body is a single line that calls one. `break`, `return`, `continue` and `fallthrough` are allowed when there is nothing to do. Not a view or controller built inline, an assignment, or several statements: move them into a function and call it. Enforced by the custom SwiftLint rules `case_body_one_line` and `case_body_is_call`.
 
 ## Names say what coordination code does
 
@@ -238,7 +245,7 @@ The example app and its unit tests set Swift 6.2's default actor isolation to th
 - A closure that UIKit or SwiftUI may call off the main actor, such as a dynamic `UIColor { traits in … }` provider (SwiftUI resolves colors on its render thread) or an attribute transformer, is made in `nonisolated` code. Made in main-actor code, it is inferred main actor, and the runtime traps when the system calls it elsewhere. The compiler can't see this, so review checks it, and the UI tests catch it.
 - The one place `@MainActor` is still written: a task that nonisolated code sends back to the main actor, `Task { @MainActor in … }`, as the log handlers do.
 
-The package writes every isolation explicitly (`@MainActor` on routers, `nonisolated` where it applies), because a library can't rely on its clients' defaults. The UI test target keeps Swift's own default, since XCUITest code isn't app code. `scripts/check-example-isolation.sh` checks the example app on every Linux and Mac run until the lint setup takes it over as the custom SwiftLint rule `no_main_actor_in_example`.
+The package writes every isolation explicitly (`@MainActor` on routers, `nonisolated` where it applies), because a library can't rely on its clients' defaults. The UI test target keeps Swift's own default, since XCUITest code isn't app code. Enforced by the custom SwiftLint rule `no_main_actor_in_example`, and by `scripts/check-example-isolation.sh` on every Linux and Mac run.
 
 ## Each test picks its own test double
 
@@ -275,7 +282,7 @@ Immutability catches logic errors before they happen at run time:
 - No `inout` parameters for our own types, no `lazy var`, no stored `static var` or global `var`.
 - Every remaining `var`, stored or local, has a comment above it that starts "`var` because" and names what changes it. Computed properties, protocol requirements and property wrappers (`@State`) are not stored `var`s and need no reason.
 - Tests too: collect calls with a `Spy` from [Understudy](https://github.com/joeoct-oss/Understudy) (`Spy<Value, Void>()`, read back with `calls`) and act once with `Once` instead of captured `var`s.
-- Enforced by the custom SwiftLint rules `stored_var_needs_reason`, `no_public_stored_var`, `no_lazy_var`, `no_mutating_func` and `no_static_stored_var` in the lint setup.
+- Enforced by the custom SwiftLint rules `stored_var_needs_reason`, `no_public_stored_var`, `no_lazy_var`, `no_mutating_func` and `no_static_stored_var`. Review checks `inout` parameters for our own types and that decoding goes through the guarded initializer.
 
 For example:
 

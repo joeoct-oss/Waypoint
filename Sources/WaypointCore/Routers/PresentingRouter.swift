@@ -127,7 +127,8 @@ extension PresentingRouter {
 
     /// An issue for `dismissFlow` on a flow that nobody presented.
     private func notPresentedDraft() -> IssueDraft {
-        let message = "\(flowID) is not presented, so dismissFlow() has nothing to dismiss. "
+        let message =
+            "\(flowID) is not presented, so dismissFlow() has nothing to dismiss. "
             + "Only a presented flow can dismiss itself."
         return IssueDraft(kind: .notPresented, flow: flowID, message: message)
     }

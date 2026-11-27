@@ -311,9 +311,10 @@ extension RouterTable.Entry {
 extension TreeNode {
     /// Whether `node` is this router or one inside its tree.
     func contains(_ node: any TreeNode) -> Bool {
-        self === node || childNodes.contains { child in
-            child.contains(node)
-        }
+        self === node
+            || childNodes.contains { child in
+                child.contains(node)
+            }
     }
 }
 
@@ -404,7 +405,8 @@ extension RouterTable {
         line: UInt
     ) {
         let name = ViewTypeName.of(type(of: child))
-        let message = "Another \(name) was made while a lazy start built its \(name), and read its "
+        let message =
+            "Another \(name) was made while a lazy start built its \(name), and read its "
             + "router first, so that router is in a tree of its own and never joins this flow. Make "
             + "only the child in the start's closure."
         let issue = NavigationIssue(

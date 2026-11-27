@@ -108,7 +108,8 @@ struct FinishFlowTests {
 
         let failure = try #require(outcome.failure)
         #expect(failure.issue.kind == .noRouterInScope)
-        let expectedMessage = "@FinishFlow(ReviewFlowCoordinator.self) in ReviewView.swift:12 found no "
+        let expectedMessage =
+            "@FinishFlow(ReviewFlowCoordinator.self) in ReviewView.swift:12 found no "
             + "ReviewFlowCoordinator flow above its view, so nothing finished. Use it in a screen of "
             + "ReviewFlowCoordinator's flow, or call finish(with:) on the coordinator."
         #expect(failure.issue.message == expectedMessage)
@@ -128,7 +129,8 @@ struct FinishFlowTests {
 
         let failure = try #require(outcome.failure)
         #expect(failure.issue.kind == .noRouterInScope)
-        let expectedMessage = "@FinishFlow(ReviewFlowCoordinator.self) in ReviewView.swift:12 found no "
+        let expectedMessage =
+            "@FinishFlow(ReviewFlowCoordinator.self) in ReviewView.swift:12 found no "
             + "Waypoint stack above its view. Show the view inside a WaypointStack, or add "
             + ".waypointPreview() in its preview."
         #expect(failure.issue.message == expectedMessage)

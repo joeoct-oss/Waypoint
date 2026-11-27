@@ -4,7 +4,7 @@ Thank you for helping. This guide covers how changes are made: tests first, wher
 
 ## Setup
 
-Tool versions (Tuist, SwiftLint and Periphery) are pinned in [`.mise.toml`](.mise.toml). On a Mac, run `brew install mise`, then `scripts/bootstrap.sh`. On Linux, `scripts/bootstrap.sh` alone installs the pinned SwiftLint into `.tools/bin`, because Tuist and Periphery only run on macOS. swift-format is the toolchain's `swift format`, so it needs no install.
+Tool versions (Tuist, SwiftLint and Periphery) are pinned in [`.mise.toml`](.mise.toml). On a Mac, run `brew install mise`, then `scripts/bootstrap.sh`. On Linux, `scripts/bootstrap.sh` alone installs the pinned SwiftLint into `.tools/bin`, because Tuist and Periphery only run on macOS, and `scripts/lint.sh` runs it when it is missing. swift-format is the toolchain's `swift format`, so it needs no install.
 
 ## Start with an issue
 
@@ -42,7 +42,7 @@ The deploy reads a Cloudflare API token (Account, Cloudflare Pages, Edit) and th
 
 ## Code style
 
-The code style lives in [CODE_STYLE.md](CODE_STYLE.md): braces and bodies, member order, wrapping, naming, conformance comments and `let` by default, each with an example and how it is checked. Once the lint setup lands, `scripts/lint.sh` must pass before a pull request is reviewed.
+The code style lives in [CODE_STYLE.md](CODE_STYLE.md): braces and bodies, member order, wrapping, naming, conformance comments and `let` by default, each with an example and how it is checked. Run `scripts/lint.sh` (swift-format and SwiftLint) before you push, and `scripts/format.sh` to fix what the tools can fix; CI's fast checks run the lint again, so it must pass before a pull request is reviewed.
 
 Public symbols are documented in DocC. A change to the public API updates its article in the same pull request.
 

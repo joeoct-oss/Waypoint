@@ -110,7 +110,8 @@ final class SheetTests: XCTestCase {
         in app: XCUIApplication
     ) -> Bool {
         for _ in 0..<UITestSteps.maxTaps {
-            let grabber = bar
+            let grabber =
+                bar
                 .coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
                 .withOffset(CGVector(dx: 0, dy: Self.grabberOffset))
             let top = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: Self.dragEndShare))

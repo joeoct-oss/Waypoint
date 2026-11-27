@@ -69,7 +69,8 @@ extension StackRouter {
         line: UInt
     ) -> NavigationOutcome {
         let name = ViewTypeName.of(coordinator)
-        let message = "\(wrapper) found no \(name) flow above its view, so nothing finished. Use it "
+        let message =
+            "\(wrapper) found no \(name) flow above its view, so nothing finished. Use it "
             + "in a screen of \(name)'s flow, or call finish(with:) on the coordinator."
         let issue = NavigationIssue(kind: .noRouterInScope, flow: flowID, message: message, file: file, line: line)
         tree.report(issue, level: .error)

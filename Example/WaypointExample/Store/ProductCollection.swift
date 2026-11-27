@@ -21,7 +21,7 @@ package nonisolated struct ProductCollection: Hashable, Identifiable {
         productIDs: nebulaNightsProducts
     )
     package static let all = [
-        nebulaNights,
+        nebulaNights
     ]
 
     private static let nebulaNightsProducts = [

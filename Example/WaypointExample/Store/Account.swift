@@ -6,7 +6,6 @@
 //  Copyright © 2026 Yousef Mohamed. MIT License.
 //
 
-
 // A signed-in reader. The mock auth service makes one when the reader signs in or creates an
 // account, and the local store keeps it between launches.
 //
