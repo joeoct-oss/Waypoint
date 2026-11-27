@@ -1,5 +1,5 @@
 {
-  "originHash" : "6110ecf9dc3b704b2cbfc152ad0f42416762b96aaeb231a1f4f93d3833289cc1",
+  "originHash" : "3a7af4253a575c8f5db91b64b01174938492f577a3a75e8622d79fc58a722732",
   "pins" : [
     {
       "identity" : "swift-syntax",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/joeoct-oss/Understudy",
       "state" : {
-        "revision" : "7a1848a2d33e1dcdfef92e8d9ba276ed10e2c4eb",
-        "version" : "0.5.0"
+        "revision" : "22ec0a08c9ee7097a277ae225f2ddd39d2646d4b",
+        "version" : "1.0.1"
       }
     }
   ],
