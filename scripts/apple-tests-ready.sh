@@ -38,6 +38,12 @@ answer() {
     exit 0
 }
 
+# A late event for an older commit starts nothing, so it can't cancel the current head's tests.
+current=$(gh api "repos/$repo/pulls/$number" --jq '.head.sha')
+if [[ "$current" != "$head" ]]; then
+    answer false "Not the head: the pull request's head is now $current, not $head."
+fi
+
 linux=$(gh api -X GET "repos/$repo/commits/$head/check-runs" -f check_name="$linux_gate" \
     -f filter=latest --jq '[.check_runs[] | select(.status == "completed")][0].conclusion // ""')
 if [[ "$linux" != "success" ]]; then
