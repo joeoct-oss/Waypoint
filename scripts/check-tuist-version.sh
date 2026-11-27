@@ -8,7 +8,7 @@
 #
 # Says whether a newer stable Tuist than the one `.mise.toml` pins is out. The project runs
 # the latest stable Tuist unless the new version is breaking: a newer minor or patch version gets a
-# bump pull request with the usual Mac gate, and a new major version goes to Yousef first
+# bump pull request whose CI checks must pass before it merges, and a new major version goes to Yousef first
 # (TESTING.md). Canaries and release candidates never count.
 #
 # It only reports: it exits 0 whatever it finds, and when it can't reach GitHub. The daily
