@@ -81,7 +81,7 @@ Find the row for the moment you are at. Run every command in its row, Linux firs
 | The issue's tests name iOS 17 | as above | as above, plus `WAYPOINT_SIMULATOR=waypoint-02 scripts/test-mac.sh quick --all` |
 | The issue's tests name iPad | as above | as above, plus `WAYPOINT_SIMULATOR=waypoint-03 scripts/test-mac.sh quick --all` |
 
-A pull request is **docs only** when every file it changes matches `*.md`, `*.docc/**` or `docs-theme/**`, or is `Example/quarantine.json` (`scripts/docs-only.sh`): CI skips its builds and tests, and its Linux and Apple gates still report a pass ([On pull requests (CI)](#on-pull-requests-ci)). Its Linux check still proves that `Example/quarantine.json` keeps the quarantine's rules ([Flaky tests and quarantine](#flaky-tests-and-quarantine)).
+A pull request is **docs only** when every file it changes matches `*.md`, `*.docc/**` or `docs-theme/**`, or is `Example/quarantine.json` (the rule in `.github/workflows/checks.yml`'s **Which files changed** step): CI skips its builds and tests, and its Linux and Apple gates still report a pass ([On pull requests (CI)](#on-pull-requests-ci)). Its Linux check still proves that `Example/quarantine.json` keeps the quarantine's rules ([Flaky tests and quarantine](#flaky-tests-and-quarantine)).
 
 **Nothing merges without green CI checks** on its head commit, run against `main` as it was when they started: the required checks in "Protect main", including the Linux gate, and the Apple platform checks (green as `scripts/judge-test-results.sh` decides it, a flaky UI test that passed on its retry included, [Flaky tests and quarantine](#flaky-tests-and-quarantine)). When `main` has moved since, update the branch so the checks run again. Pull requests merge one at a time. The Mac's own runs (the iOS 17 and iPad rows, the nightly stress and daily coverage runs, and `release` before a tag) cover what GitHub's runners don't have, and none of them gates a merge. A `quick` run, of any kind, is for working on a branch and never counts for a merge.
 
@@ -121,7 +121,7 @@ The Mac has a fixed pool of three simulators. Use them by name only.
    git merge-base --is-ancestor origin/main HEAD && echo "contains main"
    ```
 
-   Pass: `git status --porcelain` prints nothing, and the last command prints `contains main`. Write down the commit from `git rev-parse HEAD`. For a merge gate, when it doesn't print `contains main`, stop: the branch must take `main` first.
+   Pass: `git status --porcelain` prints nothing, and the last command prints `contains main`. Write down the commit from `git rev-parse HEAD`. When it doesn't print `contains main`, write that down: the run doesn't include the latest `main`.
 
 ### Run
 
@@ -204,7 +204,7 @@ Every step runs on the Mac, from the root of the Waypoint package clone, which t
    git merge-base --is-ancestor origin/main HEAD && echo "contains main"
    ```
 
-   Pass: `git status --porcelain` prints nothing before the checkout, and the last command prints `contains main` (for a merge gate; while working, write down that it doesn't). Write down the commit from `git rev-parse HEAD`. When `git status --porcelain` prints anything, the clone has changes that aren't yours: stop and report them. Never stash, reset or delete them.
+   Pass: `git status --porcelain` prints nothing before the checkout, and the last command prints `contains main` (when it doesn't, write that down). Write down the commit from `git rev-parse HEAD`. When `git status --porcelain` prints anything, the clone has changes that aren't yours: stop and report them. Never stash, reset or delete them.
 
 ### Run
 
@@ -297,7 +297,7 @@ Find the first row that matches what the log says. Do what it says, once. Beside
 | `error: no simulator named <name>`, or `Creating simulator` | Not a test result: a simulator is missing | Stop the run if it is still going. Don't delete what was created. Report the name. |
 | `error: no iOS simulator runtime installed` | Not a test result: Xcode lacks a runtime | Stop. Report it. |
 | `Unable to boot`, `Failed to install`, `Failed to launch`, `Test runner never began executing`, `Lost connection to the test runner` | Not a test result: the simulator misbehaved | Shut your simulator down by name, then run the same command once more. A second failure: report it as a simulator failure. |
-| `FAIL:` from `scripts/check-selective-testing-hashes.sh` | A real failure: a hash or cache key misses a change, or moves without one, so the caches can't be trusted | No retry. Report the `FAIL:` lines. No pull request merges on a Mac run that skips or reuses anything until it is fixed; until then, gates run with `--clean`. |
+| `FAIL:` from `scripts/check-selective-testing-hashes.sh` | A real failure: a hash or cache key misses a change, or moves without one, so the caches can't be trusted | No retry. Report the `FAIL:` lines. Until it is fixed, Mac runs use `--clean`, so none of them skips or reuses anything. CI's checks don't use Tuist's selective testing, so the merge gate is unaffected. |
 | A build error about the build's own state, not the code: a module or `package` symbol "not found" or "inaccessible" in code that has it, `Undefined symbol` for code that exists, or a stale module file | Maybe not a test result: something an earlier build left | Run the same command once with `--clean`. Green: report it as a cache failure with both logs, and that clean run counts. Red again: it is a real failure, so report it as one. |
 | The run was stopped as hung | Not a test result | Teardown, then report the last `==> ` line and the time it started. No retry. |
 | Anything else | Unknown | Stop. Report the last 30 lines of the log. |
@@ -328,7 +328,7 @@ A UI test that sometimes fails and sometimes passes on the same code is **flaky*
 
    A quarantined test still runs. When it fails both tries, its failure is listed and doesn't fail the run. At most 3 tests are quarantined at once, each with an open issue: when the list is full, the test stays out and still fails the run when it fails both tries, and its issue says so. That pull request is docs only ([Which run is needed](#2-which-run-is-needed)) and merges like any other.
 
-   - **A red run stays red.** A test quarantined after a run doesn't turn that run green: the batch runs `full` again.
+   - **A red run stays red.** A test quarantined after a run doesn't turn that run green: the quarantine change goes in a pull request whose CI checks run again, and a Mac run that found it runs again.
    - **No issue, no quarantine.** When the flaky-test issue can't be opened (the package repo's Issues tab is off), the flake goes in the run's report, and its issue opens once it can. Until then the test can't be quarantined.
    - **Days are the Mac's.** `since` and the 7 days are dates in the Mac's time zone, which is the one the script reads.
 5. **7 days at most.** An entry counts on the day in `since` and the 6 days after it. From the 7th day after `since`, runs ignore it and print `Quarantine expired: <test>`, so the test blocks again. The reporter then opens a pull request that removes the entry. The Linux check only warns about an expired entry, so an unrelated pull request stays green. A test whose entry expired is quarantined again only after a fix for it merges: a new entry for the same flake would only stretch the 7 days.
@@ -342,7 +342,7 @@ A UI test that sometimes fails and sometimes passes on the same code is **flaky*
 
 ## 7. Report the result
 
-Every run ends with one report, passed or failed, in this shape. For a merge gate it goes in the pull request's **Tests** section.
+Every Mac run ends with one report, passed or failed, in this shape. A run for one pull request posts it in that pull request's **Tests** section.
 
 ```text
 Result: passed | failed | not run (<why>)
@@ -358,7 +358,7 @@ Quarantine: none | <each quarantined test, until when, and whether it failed in 
 Selective testing: off | on: <the targets `tuist test` listed under "Testing the following targets", or "none: no tests to run">
 Caches: toolchain <same | changed | unrecorded>, binary cache <on | off>, clean <yes | no>
 Tuist run report: on pull request <n> | none (<why>)
-Batch: none | <the merge-batch.sh line>
+Batch: none | <the merge-batch.sh line, for a run of several branches>
 Step times: <the table from the end of the log, Mac only>
 Slowest tests: <the slowest-test lists from the end of the log, Mac only>
 Teardown: simulators shut down, locks gone, clone back on main | <what is left>
