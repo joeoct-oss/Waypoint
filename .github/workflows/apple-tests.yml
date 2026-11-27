@@ -45,9 +45,12 @@ jobs:
       ready: ${{ steps.ready.outputs.ready }}
       docs-only: ${{ steps.changes.outputs.docs-only }}
     steps:
+      # The full history, so the docs-only decision can diff against the base, as the checks
+      # workflow does.
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Did the code checks pass, with an approval or the label
@@ -65,23 +68,16 @@ jobs:
             scripts/apple-tests-ready.sh "$REPO" "$NUMBER" "$HEAD_SHA"
           fi
 
-      # Both paths of a rename count, as in the checks workflow's own decision. The API lists at
-      # most 3,000 files, so a longer pull request is never docs-only here.
+      # The same decision as the checks workflow's: a rename counts as a deletion and an addition,
+      # so a source file moved to Markdown isn't docs-only.
       - name: Which files changed
         id: changes
         if: ${{ steps.ready.outputs.ready == 'true' }}
         env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          files=$(gh api --paginate "repos/$REPO/pulls/$NUMBER/files" \
-            --jq '.[] | .filename, (.previous_filename // empty)')
-          if (( $(gh api "repos/$REPO/pulls/$NUMBER" --jq '.changed_files') >= 3000 )); then
-            docs_only=false
-          else
-            docs_only=$(scripts/docs-only.sh <<<"$files")
-          fi
+          changed=$(git diff --no-renames --name-only "$BASE" HEAD)
+          docs_only=$(scripts/docs-only.sh <<<"$changed")
           echo "Docs-only: $docs_only"
           echo "docs-only=$docs_only" >> "$GITHUB_OUTPUT"
 
