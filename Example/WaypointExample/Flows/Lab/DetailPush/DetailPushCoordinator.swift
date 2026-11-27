@@ -154,18 +154,18 @@ package final class DetailPushCoordinator: StackCoordinator {
     // Debug builds only: a recovered call shows its one-line description for a few seconds.
     private func showToast(for outcome: NavigationOutcome, title: String) {
         #if DEBUG
-        guard outcome.recoveredIssue != nil else {
-            return
-        }
-        toast = RecoveredToastContent(title: title, outcome: outcome.description)
-        toastTimer?.cancel()
-        toastTimer = Task { [weak self] in
-            try? await Task.sleep(for: Self.toastDuration)
-            guard !Task.isCancelled else {
+            guard outcome.recoveredIssue != nil else {
                 return
             }
-            self?.hideToast()
-        }
+            toast = RecoveredToastContent(title: title, outcome: outcome.description)
+            toastTimer?.cancel()
+            toastTimer = Task { [weak self] in
+                try? await Task.sleep(for: Self.toastDuration)
+                guard !Task.isCancelled else {
+                    return
+                }
+                self?.hideToast()
+            }
         #endif
     }
 

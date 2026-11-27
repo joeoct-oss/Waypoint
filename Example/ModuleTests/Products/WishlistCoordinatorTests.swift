@@ -32,7 +32,7 @@ struct WishlistCoordinatorTests {
         wishlist.save(lamp)
 
         let expected: [SignInReason] = [
-            .save,
+            .save
         ]
         #expect(gate.reasons == expected)
         #expect(wishlist.productIDs.isEmpty)
@@ -52,7 +52,7 @@ struct WishlistCoordinatorTests {
         wishlist.save(lamp)
 
         let expected = [
-            Self.lampID,
+            Self.lampID
         ]
         #expect(wishlist.productIDs == expected)
         #expect(store.wishlistProductIDs == expected)

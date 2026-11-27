@@ -16,7 +16,7 @@ import WaypointCore
 package struct SheetDemoRoute: TrackableScreen {
     package static let screenName = "Sheet level"
     package static let publicLogFields: Set<String> = [
-        "level",
+        "level"
     ]
 
     package let level: Int
@@ -33,13 +33,13 @@ package enum SheetDemoSize: CaseIterable, Hashable {
     case fitsContent
 
     private static let mediumDetents = [
-        SheetDetent.medium,
+        SheetDetent.medium
     ]
     private static let largeDetents = [
-        SheetDetent.large,
+        SheetDetent.large
     ]
     private static let fitsContentDetents = [
-        SheetDetent.fitsContent,
+        SheetDetent.fitsContent
     ]
 
     package var title: String {

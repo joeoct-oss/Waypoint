@@ -15,7 +15,7 @@ import WaypointCore
 package struct CreateAccountRoute: TrackableScreen {
     package static let screenName = "Create account"
     package static let publicLogFields: Set<String> = [
-        "step",
+        "step"
     ]
 
     package let step: CreateAccountStep

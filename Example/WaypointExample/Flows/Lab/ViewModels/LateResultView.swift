@@ -15,7 +15,8 @@ import SwiftUI
 // screen shows what it returned, read from the demo coordinator so it appears as soon as it
 // arrives. The screen reports Open product.
 package struct LateResultView: View {
-    private static let steps = "Reviews take a moment to load. Close the product first: the push that "
+    private static let steps =
+        "Reviews take a moment to load. Close the product first: the push that "
         + "follows finds no flow and does nothing."
 
     package let demos: LabDemoCoordinator

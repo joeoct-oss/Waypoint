@@ -118,7 +118,8 @@ struct StateTests {
         let main = NavigationTree(root: .tabs(FlowID("main"), selection: "shop", tabs: tabTrees))
         let tree = NavigationTree(root: .root(FlowID("app"), current: "main", child: main))
 
-        let expected = "root(app) current=main > tabs(main) selection=shop > "
+        let expected =
+            "root(app) current=main > tabs(main) selection=shop > "
             + "stack(shop)[ProductRoute(id: <private>)] + sheet SettingsRoute flow=filter"
         #expect(tree.description == expected)
     }

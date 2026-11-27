@@ -307,8 +307,9 @@ reviews:
         Keep a Changelog format. New user-facing changes go under Unreleased, in plain words
         a package user understands; breaking changes say they are breaking.
   tools:
-    # No SwiftLint config in the package yet; the profile-generated rules disagree with
-    # CODE_STYLE.md. Turn it on with the repo's own config once that lands.
+    # CI's fast checks run SwiftLint through scripts/lint.sh, with the repo's config and its
+    # baseline of findings still to fix; a second run here would post findings again, and those
+    # in the baseline as new.
     swiftlint:
       enabled: false
     # No CI job runs these two, on purpose. markdownlint's defaults (line length, list style)

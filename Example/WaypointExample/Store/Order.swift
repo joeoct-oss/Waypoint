@@ -42,10 +42,10 @@ package nonisolated struct Order: Hashable, Codable, Identifiable {
         2,
     ]
     private static let mug = [
-        2,
+        2
     ]
     private static let throwBlanket = [
-        3,
+        3
     ]
 
     // How many orders are still on their way, for Account's Orders row.

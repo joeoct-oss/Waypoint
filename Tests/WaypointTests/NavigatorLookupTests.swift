@@ -65,7 +65,8 @@ struct NavigatorLookupTests {
 
         let failure = try #require(outcome.failure)
         #expect(failure.issue.kind == .noRouterInScope)
-        let expectedMessage = "@StackNavigation in ProductView.swift:12 found no Waypoint stack above "
+        let expectedMessage =
+            "@StackNavigation in ProductView.swift:12 found no Waypoint stack above "
             + "its view. Show the view inside a WaypointStack, or add .waypointPreview() in its preview."
         #expect(failure.issue.message == expectedMessage)
         #expect(reported.callCount == 1)
@@ -84,7 +85,8 @@ struct NavigatorLookupTests {
 
         let failure = try #require(outcome.failure)
         #expect(failure.issue.kind == .noRouterInScope)
-        let expectedMessage = "@FlowNavigation(SettingsFlow.self) in ProductView.swift:12 found no "
+        let expectedMessage =
+            "@FlowNavigation(SettingsFlow.self) in ProductView.swift:12 found no "
             + "SettingsFlow stack above its view. Declare one with WaypointStack(flow: SettingsFlow.self), "
             + "or add .waypointPreview(flow: SettingsFlow.self) in its preview."
         #expect(failure.issue.message == expectedMessage)

@@ -12,6 +12,7 @@ import ExampleNavigation
 import ExampleTestSupport
 import Testing
 import WaypointCore
+
 @testable import WaypointExample
 
 // The Account tab, built by `AccountFactory`: the pushed wish list lists the
@@ -45,7 +46,7 @@ struct AccountFactoryTests {
         let products = AccountFactory(dependencies: dependencies).wishlistProducts()
 
         let expected = [
-            Self.mugID,
+            Self.mugID
         ]
         #expect(products.map(\.id) == expected)
     }

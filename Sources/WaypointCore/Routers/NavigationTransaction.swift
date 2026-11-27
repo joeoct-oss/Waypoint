@@ -321,11 +321,12 @@ public struct NavigationTransaction {
 
     /// The issue for a step on a value that names no router.
     private func missingDraft() -> IssueDraft {
-        missingTarget ?? IssueDraft(
-            kind: .noRouterInScope,
-            flow: FlowID("unknown"),
-            message: "This transaction names no router."
-        )
+        missingTarget
+            ?? IssueDraft(
+                kind: .noRouterInScope,
+                flow: FlowID("unknown"),
+                message: "This transaction names no router."
+            )
     }
 
     /// The issue for a stack step on a container.

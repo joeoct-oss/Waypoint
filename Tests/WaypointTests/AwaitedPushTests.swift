@@ -9,13 +9,14 @@
 // Not guarded by `canImport(SwiftUI)`: the push forms use only the core, so these run on Linux
 // too. The fixture's screen exists only where SwiftUI is.
 
-#if canImport(SwiftUI)
-    import SwiftUI
-#endif
 import Testing
 import Understudy
 import Waypoint
 import WaypointTestSupport
+
+#if canImport(SwiftUI)
+    import SwiftUI
+#endif
 
 /// Awaiting a pushed flow's result with `await router.push(child)`.
 ///

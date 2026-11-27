@@ -20,7 +20,8 @@ import SwiftUI
 package struct SettingsView: View {
     private static let rulesTitle = "Navigation rules"
     private static let pushesTwiceTitle = "Allow the same push twice"
-    private static let rulesFooter = "By default a second push of the screen already on its way is "
+    private static let rulesFooter =
+        "By default a second push of the screen already on its way is "
         + "skipped, so Open Orders twice opens it once. Of the last three calls, the first two fail and "
         + "the app's fallbacks recover them; the last one has no fallback, so it counts as not "
         + "recovered. The issue banner and the Lab's event log show each one."

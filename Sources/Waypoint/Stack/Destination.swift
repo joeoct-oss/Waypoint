@@ -84,7 +84,11 @@
             let stackRouter = router
             let flows = flowRouters
             return view.navigationDestination(for: R.self) { route in
-                let navigator = NavigatorLookup.destination(stackRouter, route: route, report: NavigationIssueLog.report)
+                let navigator = NavigatorLookup.destination(
+                    stackRouter,
+                    route: route,
+                    report: NavigationIssueLog.report
+                )
                 content(route, navigator)
                     .stackRouterEnvironment(stackRouter, flows: flows)
                     .pushedTabBar()

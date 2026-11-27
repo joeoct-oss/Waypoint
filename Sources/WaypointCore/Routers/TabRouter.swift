@@ -625,7 +625,8 @@ extension TabRouter: TransactionParticipant {
         }
         working = nil
         let previous = committed
-        let routersChanged = next.tabRouters.count != previous.tabRouters.count
+        let routersChanged =
+            next.tabRouters.count != previous.tabRouters.count
             || next.tabRouters.contains { tab, router in
                 previous.tabRouters[tab] !== router
             }
