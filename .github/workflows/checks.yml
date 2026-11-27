@@ -316,7 +316,7 @@ jobs:
       - name: Keep the built tests for the Apple tests
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: example-test-products
+          name: example-test-products-${{ github.sha }}
           path: .build/example-test-products.tar
           retention-days: 30
           if-no-files-found: error

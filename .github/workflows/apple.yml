@@ -67,13 +67,16 @@ jobs:
       run-id: ${{ steps.find.outputs.run-id }}
     steps:
       # The build starts beside the Linux checks, so it has usually ended by now; this waits for
-      # it when it hasn't, and fails when it failed, since there is nothing to test.
+      # it when it hasn't, and fails when it failed, since there is nothing to test. The products
+      # are named after the merge commit they were built from, so they are used only when this run
+      # tests the same one.
       - name: Wait for the Apple build and find its products
         id: find
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PRODUCTS_NAME: example-test-products-${{ github.sha }}
         run: |
           status=""
           conclusion=""
@@ -96,12 +99,12 @@ jobs:
           run=$(gh api -X GET "repos/$REPO/actions/runs" -f check_suite_id="$suite" \
             --jq '.workflow_runs[0].id')
           if gh api "repos/$REPO/actions/runs/$run/artifacts" \
-            --jq '.artifacts[] | select(.name == "example-test-products" and (.expired | not)) | .id' |
+            --jq ".artifacts[] | select(.name == \"$PRODUCTS_NAME\" and (.expired | not)) | .id" |
             grep -q .; then
             echo "The test products are in run $run."
             echo "run-id=$run" >> "$GITHUB_OUTPUT"
           else
-            echo "Run $run has no test products any more, so this run builds them again."
+            echo "Run $run has no $PRODUCTS_NAME (they expired, or main moved since that build), so this run builds them again."
             echo "run-id=" >> "$GITHUB_OUTPUT"
           fi
 
@@ -129,7 +132,7 @@ jobs:
       - name: Hand the built tests to the test jobs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: example-test-products
+          name: example-test-products-${{ github.sha }}
           path: .build/example-test-products.tar
           retention-days: 30
           if-no-files-found: error
@@ -207,7 +210,7 @@ jobs:
       - name: Fetch the built tests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: example-test-products
+          name: example-test-products-${{ github.sha }}
           path: .build
           run-id: ${{ needs.products.outputs.run-id || github.run_id }}
           github-token: ${{ github.token }}
@@ -274,7 +277,7 @@ jobs:
       - name: Fetch the built tests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: example-test-products
+          name: example-test-products-${{ github.sha }}
           path: .build
           run-id: ${{ needs.products.outputs.run-id || github.run_id }}
           github-token: ${{ github.token }}
