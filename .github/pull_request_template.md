@@ -30,7 +30,7 @@ needed. -->
 - [ ] Each new or changed test names the promise it pins and reaches the code only the way its user does: no `@testable`, private state, internal counts or sleeps
 - [ ] The tests were written first and failed before the change, or no test is needed (say why above)
 - [ ] UI tests added or updated for visible behaviour, or not needed, because ...
-- [ ] The merge gate in [TESTING.md](https://github.com/joeoct-oss/Waypoint/blob/main/TESTING.md#2-which-run-is-needed) passed: Linux on the head commit (CI's **Linux checks**, re-run when `main` moved), and the Mac `full` run on the pull request's [merge batch](https://github.com/joeoct-oss/Waypoint/blob/main/TESTING.md#merge-batches), with its report and batch line below
+- [ ] The merge gate in [TESTING.md](https://github.com/joeoct-oss/Waypoint/blob/main/TESTING.md#2-which-run-is-needed) passed: every CI check green on the head commit, the Linux gate and the Apple platform checks included, re-run when `main` moved
 
 ## Docs and CHANGELOG
 

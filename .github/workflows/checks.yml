@@ -24,8 +24,8 @@
 #   Markdown file, a DocC catalog file or a docs-theme file, or the only one is
 #   Example/quarantine.json) runs stage 1 and SonarQube and skips the builds and tests: the Linux
 #   and Apple gates still report a pass, so it can merge.
-# - CodeRabbit reviews beside this workflow as an app. The branch name check and the board
-#   automation stay in workflows of their own.
+# - CodeRabbit reviews beside this workflow as an app, and Gitar too, on a trial and advice only.
+#   The branch name check and the board automation stay in workflows of their own.
 # - Drafts are skipped until they are ready for review. A newer push cancels the run still going
 #   for the same PR. Runs on main are never cancelled.
 # Hardening: free GitHub-hosted runners only (standard Linux, and standard macOS for the Apple
