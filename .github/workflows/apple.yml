@@ -66,6 +66,21 @@ jobs:
     outputs:
       run-id: ${{ steps.find.outputs.run-id }}
     steps:
+      # A push cancels the Apple tests of the commit before it, except where the token can't cancel
+      # runs (fork and Dependabot pull requests); this stops such a run before any macOS job.
+      - name: Is this still the pull request's head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          current=$(gh api "repos/$REPO/commits/refs/pull/$NUMBER/head" --jq '.sha')
+          if [[ "$current" != "$HEAD_SHA" ]]; then
+            echo "::error::$HEAD_SHA is no longer the pull request's head ($current is), so its tests are pointless."
+            exit 1
+          fi
+
       # The build starts beside the Linux checks, so it has usually ended by now; this waits for
       # it when it hasn't, and fails when it failed, since there is nothing to test. The products
       # are named after the merge commit they were built from, so they are used only when this run
