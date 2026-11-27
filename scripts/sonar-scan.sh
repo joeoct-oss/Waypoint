@@ -7,7 +7,7 @@
 #  Copyright © 2026 Yousef Mohamed. MIT License.
 #
 # Runs SonarQube Cloud's analysis and waits for its quality gate: exits non-zero when the gate
-# fails, so the checks workflow runs no test after it. Settings are in sonar-project.properties.
+# fails, which fails the required "SonarQube Cloud quality gate" check. Settings are in sonar-project.properties.
 # - The scanner comes from SonarSource's download site at a pinned version, and both the download
 #   and the scanner jar in it are checked against their SHA-256.
 # - A pull request is always compared with main. Waypoint has no release yet, so no version is
