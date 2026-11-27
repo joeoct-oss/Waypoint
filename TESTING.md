@@ -34,7 +34,7 @@ There are three places a test can run:
 | One import check (no app file or docs snippet imports both `Waypoint` and `WaypointCore`) | `scripts/check-single-import.sh` | ✅ | ✅ every tier |
 | Mac test script's run lock | `scripts/check-test-mac-lock.sh` | ✅ | |
 | The package's xcodebuild wrapper (moves Tuist's package project aside and back) | `scripts/check-package-xcodebuild.sh` | ✅ | |
-| Tuist's test hashes see every part of the package | `scripts/check-selective-testing-hashes.sh` | | ✅ `full` and `release`, and the Apple stage |
+| Tuist's test hashes see every part of the package | `scripts/check-selective-testing-hashes.sh` | | ✅ `full` and `release`, and the Apple build (`checks.yml`) |
 | Merge batches and the slowest-test list | `scripts/check-merge-batch.sh` | ✅ | |
 | Flaky-test verdict and the quarantine's rules ([Flaky tests and quarantine](#flaky-tests-and-quarantine)) | `scripts/check-flaky-tests.sh` | ✅ | |
 | UI test shards: every UI test class lands in exactly one shard | `scripts/ui-test-shards.py`, with a self-check | ✅ | |
@@ -45,7 +45,7 @@ There are three places a test can run:
 | Unified log tests | `Tests/WaypointOSLogTests` | | ✅ thread sanitizer in `full` and `release`, and the Apple stage |
 | Example app unit tests (Swift Testing: view models, the services container and the store) | `Example/ModuleTests/<module>` (one target per module, without the app) and `Example/WaypointExampleTests` (inside the app) | | ✅ simulator, with the UI tests |
 | Example app UI tests (XCUITest) | `Example/WaypointExampleUITests`, run through `tuist test` on 3 simulator copies at once | | ✅ simulator |
-| iOS device build | `Waypoint-Package` for `generic/platform=iOS` | | ✅ `release` only, and the Apple stage |
+| iOS device build | `Waypoint-Package` for `generic/platform=iOS` | | ✅ every pull request's Apple build (`checks.yml`), and `release` |
 
 The core's own tests pin the Observation, main actor and `Sendable` behaviour it relies on, so a difference between Linux and Apple platforms fails a test that names the behaviour: `observationFiresOncePerCall` and `observationFiresOncePerTransaction` for Observation, and the `Concurrency` suites (`BackgroundNavigationTests`, `CrossActorValueTests`) for actors and `Sendable` values (the separate checks of Swift itself were removed). The slowest package tests, the `Navigation wrappers` and `Coordinator screens` suites at up to 4 s each on the Mac, draw a real `UIWindow` and wait for SwiftUI, which is what they test; the same lookups without a window run in `NavigatorLookupTests` in milliseconds.
 
