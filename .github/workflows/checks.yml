@@ -1,19 +1,29 @@
-# Runs every check on a pull request to main and on a push to main, in stages: each stage starts
-# only when the one before it passed, so a failure stops the run before it spends a SonarQube
-# analysis or Linux and macOS time.
+# Runs every check on a pull request to main and on a push to main, in stages: every later stage
+# waits for the fast checks, and the Apple tests wait for every stage 2 check, so a failure stops
+# the run before it spends Linux or macOS time.
 # 1. "Fast checks", seconds long: actionlint, zizmor, the script checks of scripts/test-linux.sh
 #    (--checks-only; it gets PRIVATE_NAMES for the public text check), the coordinator size limit,
 #    lint (swift-format and SwiftLint, through scripts/lint.sh), dependency review when the
 #    package's dependencies changed, and which kinds of files changed.
-# 2. "SonarQube Cloud quality gate": scripts/sonar-scan.sh analyzes the code and waits for the
-#    gate. Until that script is on main, the job passes without analyzing anything.
-# 3. The Linux checks (ci.yml): build and tests with warnings as errors, the compile fixtures, the
-#    thread sanitizer, the lowest Swift, and the coverage of WaypointCore, which the Codecov job
-#    below uploads. On pull requests and on main.
-# 4. Once the Linux checks passed: the Apple checks (apple.yml), on pull requests only.
-# - A docs-only pull request (TESTING.md's rule: every changed file is a Markdown file, a DocC
-#   catalog file, a docs-theme file or Example/quarantine.json) runs stages 1 and 2 and skips the
-#   tests: the Linux and Apple gates still report a pass, so it can merge.
+# 2. Once the fast checks passed, side by side:
+#    - "SonarQube Cloud quality gate": scripts/sonar-scan.sh analyzes the code and waits for the
+#      gate. Until that script is on main, the job passes without analyzing anything.
+#    - The Linux checks (ci.yml): build and tests with warnings as errors, the compile fixtures,
+#      the thread sanitizer, the lowest Swift, and the coverage of WaypointCore, which the Codecov
+#      job below uploads once SonarQube passed. On pull requests and on main.
+#    - "Apple build", pull requests only: the package for the macOS host and an iOS device with
+#      warnings as errors, the docs, and the example app with every test bundle, whose products it
+#      keeps for the Apple tests. One macOS runner, so a change that doesn't build on Apple's
+#      toolchain fails here without spending test time.
+# 3. The Apple tests (apple.yml), pull requests only, once every stage 2 check passed and the
+#    head commit is approved (by CodeRabbit or a person) or carries the run-apple-checks label,
+#    whichever comes last (scripts/apple-tests-ready.sh). When the approval comes after those
+#    checks, apple-tests.yml starts them instead. Both report as "Apple platform checks / Apple
+#    builds and tests". A push cancels the Apple tests still going for the pull request.
+# - A docs-only pull request (TESTING.md's rule, scripts/docs-only.sh: every changed file is a
+#   Markdown file, a DocC catalog file or a docs-theme file, or the only one is
+#   Example/quarantine.json) runs stage 1 and SonarQube and skips the builds and tests: the Linux
+#   and Apple gates still report a pass, so it can merge.
 # - CodeRabbit reviews beside this workflow as an app, and Gitar too, on a trial and advice only.
 #   The branch name check and the board automation stay in workflows of their own.
 # - Drafts are skipped until they are ready for review. A newer push cancels the run still going
@@ -131,10 +141,7 @@ jobs:
             changed=$(git diff --no-renames --name-only "$BASE" HEAD)
             echo "Changed files:"
             echo "$changed"
-            if [[ -n "$changed" ]] &&
-              ! grep -qvE '(\.md$|\.docc/|^docs-theme/|^Example/quarantine\.json$)' <<<"$changed"; then
-              docs_only=true
-            fi
+            docs_only=$(scripts/docs-only.sh <<<"$changed")
           fi
           echo "Docs-only: $docs_only"
           echo "docs-only=$docs_only" >> "$GITHUB_OUTPUT"
@@ -208,7 +215,7 @@ jobs:
 
   linux:
     name: Linux checks
-    needs: [fast, sonar]
+    needs: fast
     permissions:
       contents: read
     uses: ./.github/workflows/ci.yml # zizmor: ignore[self-repository]
@@ -252,12 +259,146 @@ jobs:
           use_oidc: true
           fail_ci_if_error: false
 
-  apple:
-    name: Apple platform checks
-    needs: [fast, linux]
-    if: github.event_name == 'pull_request'
+  # Builds everything the Apple tests run, beside the Linux checks, and keeps the example app's test
+  # products for them (scripts/build-example-tests.sh). Not a required check: when it fails, the
+  # Apple tests never start, so the Apple gate reports nothing, which holds the merge once that
+  # gate is required.
+  apple-build:
+    name: Apple build
+    needs: fast
+    if: ${{ github.event_name == 'pull_request' && needs.fast.outputs.docs-only != 'true' }}
+    runs-on: xcode-27
+    timeout-minutes: 60
     permissions:
       contents: read
+      id-token: write
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+      WAYPOINT_TUIST_OFFLINE: "1"
+      TUIST_DISABLE_ANALYTICS: "1"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Show the tools
+        run: |
+          xcodebuild -version
+          swift --version
+          sysctl -n hw.ncpu hw.memsize machdep.cpu.brand_string
+
+      - name: Build the tests on the macOS host, with warnings as errors
+        run: swift build --build-tests --force-resolved-versions -Xswiftc -warnings-as-errors
+
+      # Build only: the runners have no iOS 17 simulator.
+      - name: Build for an iOS device, with warnings as errors in Waypoint's own code
+        run: |
+          scripts/own-warnings-as-errors.sh scripts/package-xcodebuild.sh build -quiet \
+            -scheme Waypoint-Package \
+            -destination generic/platform=iOS \
+            CODE_SIGNING_ALLOWED=NO
+
+      # Build only: the docs site is deployed from the Mac.
+      - name: Build the docs
+        run: scripts/build-docs.sh
+
+      - name: Install Tuist
+        run: scripts/install-tuist.sh "$RUNNER_TEMP/tuist"
+
+      - name: Build the example app and its tests
+        run: scripts/build-example-tests.sh "iPhone 17" "27.2"
+
+      - name: Check that Tuist's test hashes see every part
+        run: scripts/check-selective-testing-hashes.sh
+
+      # Kept 30 days, so an approval that comes days later still finds them.
+      - name: Keep the built tests for the Apple tests
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: example-test-products-${{ github.sha }}
+          path: .build/example-test-products.tar
+          retention-days: 30
+          if-no-files-found: error
+
+  # Are the Apple tests due: SonarQube, the Linux checks and the Apple build passed, so only the
+  # approval or the label is left.
+  ready:
+    name: Are the Apple tests due
+    needs: [fast, sonar, linux, apple-build]
+    if: ${{ github.event_name == 'pull_request' && needs.fast.outputs.docs-only != 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+    outputs:
+      ready: ${{ steps.ready.outputs.ready }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Is the head commit approved or labelled
+        id: ready
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: scripts/apple-tests-ready.sh "$REPO" "$NUMBER" "$HEAD_SHA"
+
+  # A push makes the Apple tests of the commits before it pointless, including runs apple-tests.yml
+  # started, so this cancels them. Their concurrency groups are per commit, so a late decision for an
+  # older commit can never cancel the current commit's tests. It runs no code from the pull request.
+  stop-old-apple-tests:
+    name: Stop the Apple tests of an older commit
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Stop them
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # A late run for a push that is no longer the head stops nothing, so it can't cancel the
+          # tests of the commit after it.
+          current=$(gh api "repos/$REPO/commits/refs/pull/$NUMBER/head" --jq '.sha')
+          if [[ "$current" != "$HEAD_SHA" ]]; then
+            echo "$HEAD_SHA is no longer the head ($current is), so this stops nothing."
+            exit 0
+          fi
+          for status in queued in_progress waiting pending; do
+            gh api --paginate -X GET "repos/$REPO/actions/workflows/apple-tests.yml/runs" -f status="$status" \
+              --jq ".workflow_runs[] | select(.head_sha != \"$HEAD_SHA\")
+                | select(any(.pull_requests[]?; .number == $NUMBER)) | .id"
+          done | sort -u | while read -r run; do
+            echo "Cancelling run $run, which tests a commit before $HEAD_SHA."
+            gh api -X POST "repos/$REPO/actions/runs/$run/cancel" >/dev/null || true
+          done
+
+  # A docs-only pull request goes straight through, so the gate reports a pass.
+  apple:
+    name: Apple platform checks
+    needs: [fast, ready]
+    if: >-
+      ${{ !cancelled() && github.event_name == 'pull_request' && needs.fast.result == 'success'
+      && (needs.fast.outputs.docs-only == 'true' || needs.ready.outputs.ready == 'true') }}
+    concurrency:
+      group: apple-tests-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      actions: read
+      checks: read
       id-token: write
     uses: ./.github/workflows/apple.yml # zizmor: ignore[self-repository]
     with:

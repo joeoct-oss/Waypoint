@@ -1,7 +1,7 @@
 # Builds and tests the package on Linux, where WaypointCore builds and tests and the renderer
 # targets compile empty (TESTING.md, "Where each test runs").
 # - The checks workflow (checks.yml) calls it on pull requests to main and on pushes to main, once
-#   its fast checks and SonarQube Cloud's quality gate passed; drafts are skipped until they are
+#   its fast checks passed, beside SonarQube Cloud's quality gate; drafts are skipped until they are
 #   ready for review. A docs-only pull request (docs-only input) skips every job, and the gate
 #   reports a pass.
 # - "Linux build and tests" is the one required check: it passes only when every job below passed.

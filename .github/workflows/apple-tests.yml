@@ -1,0 +1,98 @@
+# Starts a pull request's Apple tests (apple.yml) when its head commit is approved, by CodeRabbit
+# or a person, or when someone adds the run-apple-checks label, once that commit's code checks
+# (SonarQube, the Linux gate and the Apple build) have passed. When they haven't yet, nothing
+# starts here: the checks workflow starts the tests itself once they pass
+# (scripts/apple-tests-ready.sh decides both ways). The
+# label is the fallback when no approval comes, such as a rate-limited CodeRabbit, an outage or a
+# Dependabot pull request; adding it again starts another run.
+# - The caller job is named "Apple platform checks", as in the checks workflow, so the gate reports
+#   as "Apple platform checks / Apple builds and tests" either way. Its concurrency group is the
+#   checks workflow's, one per pull request and commit, so a newer run for the same commit cancels
+#   this one, and a run for an older commit never cancels the current one's; a push cancels it from
+#   the checks workflow. Reviews that don't approve start nothing and cancel
+#   nothing.
+# Hardening: the deciding job runs the pull request's own copy of scripts/apple-tests-ready.sh,
+# with a token that only reads the pull request and its checks; the tests run inside apple.yml,
+# with that workflow's grants. The script decides when the tests start, not whether a pull request
+# may merge: a pull request can change it, as it can change these workflows, so the merge rests
+# on the ruleset's approval and required checks, never on this decision.
+name: Apple tests
+
+on:
+  pull_request_review:
+    types: [submitted]
+  pull_request:
+    branches: [main]
+    types: [labeled]
+
+permissions: {}
+
+jobs:
+  ready:
+    name: Are the Apple tests due
+    if: >-
+      ${{ github.event.pull_request.base.ref == 'main' && !github.event.pull_request.draft && (
+      (github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+      && github.event.review.commit_id == github.event.pull_request.head.sha)
+      || (github.event_name == 'pull_request' && github.event.label.name == 'run-apple-checks')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+    outputs:
+      ready: ${{ steps.ready.outputs.ready }}
+      docs-only: ${{ steps.changes.outputs.docs-only }}
+    steps:
+      # The full history, so the docs-only decision can diff against the base, as the checks
+      # workflow does.
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Did the code checks pass, with an approval or the label
+        id: ready
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          LABEL_ADDED: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [[ "$LABEL_ADDED" == "true" ]]; then
+            scripts/apple-tests-ready.sh "$REPO" "$NUMBER" "$HEAD_SHA" --label-added
+          else
+            scripts/apple-tests-ready.sh "$REPO" "$NUMBER" "$HEAD_SHA"
+          fi
+
+      # The same decision as the checks workflow's: a rename counts as a deletion and an addition,
+      # so a source file moved to Markdown isn't docs-only.
+      - name: Which files changed
+        id: changes
+        if: ${{ steps.ready.outputs.ready == 'true' }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          changed=$(git diff --no-renames --name-only "$BASE" HEAD)
+          docs_only=$(scripts/docs-only.sh <<<"$changed")
+          echo "Docs-only: $docs_only"
+          echo "docs-only=$docs_only" >> "$GITHUB_OUTPUT"
+
+  apple:
+    name: Apple platform checks
+    needs: ready
+    if: ${{ needs.ready.outputs.ready == 'true' }}
+    concurrency:
+      group: apple-tests-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+      id-token: write
+    uses: ./.github/workflows/apple.yml # zizmor: ignore[self-repository]
+    with:
+      docs-only: ${{ needs.ready.outputs.docs-only == 'true' }}
