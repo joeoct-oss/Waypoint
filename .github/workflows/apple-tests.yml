@@ -3,8 +3,9 @@
 # (SonarQube, the Linux gate and the Apple build) have passed. When they haven't yet, nothing
 # starts here: the checks workflow starts the tests itself once they pass
 # (scripts/apple-tests-ready.sh decides both ways). The
-# label is the fallback when no approval comes, such as a rate-limited CodeRabbit, an outage or a
-# Dependabot pull request; adding it again starts another run.
+# label is the fallback when no approval comes, such as a rate-limited CodeRabbit or an outage;
+# a clean Dependabot pull request gets CodeRabbit's approval like any other. Adding the label
+# again starts another run.
 # - The caller job is named "Apple platform checks", as in the checks workflow, so the gate reports
 #   as "Apple platform checks / Apple builds and tests" either way. Its concurrency group is the
 #   checks workflow's, one per pull request and commit, so a newer run for the same commit cancels
