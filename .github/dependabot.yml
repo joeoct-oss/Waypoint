@@ -1,6 +1,9 @@
 # Keeps the actions in the workflows and the packages in Package.swift current. Each ecosystem gets
 # one grouped pull request a month. The example app's Tuist packages and the tools in .mise.toml
-# are bumped by hand.
+# are bumped by hand. Dependabot's pull requests read SONAR_TOKEN from the repo's Dependabot
+# secrets, since they get none of its Actions secrets. Their titles stay Dependabot's own: a
+# grouped title can't be changed, and a commit-message prefix would only add one. CodeRabbit's
+# title check passes dependabot/ branches instead (.coderabbit.yaml).
 version: 2
 updates:
   - package-ecosystem: github-actions

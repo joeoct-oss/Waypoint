@@ -85,14 +85,20 @@ reviews:
   # fails, and requests changes otherwise. Main's ruleset requires one approving review and
   # dismisses an approval when new commits are pushed, so a PR it hasn't reviewed at its head,
   # such as one whose review was rate limited, waits instead of merging (Yousef, 2026-11-26).
+  # The author can't approve with "@coderabbitai approve": that would meet the required review
+  # with no review at all, as in Understudy. A Dependabot pull request needs no such comment:
+  # its title passes the title check, so CodeRabbit approves it once its review is clean.
   auto_approvals:
     enabled: true
+    allow_author_approval: false
   # The pull request rules as checks (Yousef, 2026-11-26). The required "Pull request rules"
   # job (.github/workflows/pr-rules.yml, scripts/check-pr-rules.py) decides the four yes-or-no
   # rules exactly and reruns when the body is edited. The checks of the same names here explain
-  # a failure in words and only warn, like the judgment calls: in error mode a model's misreading
-  # would withhold the approval until a push or a comment. Dependabot's own PRs carry no
-  # template and pass. Linked issue assessment stays off, since the issues live in a private repo.
+  # a failure in words and only warn, like the judgment calls, so none fails the CodeRabbit
+  # check. A failed warning still withholds the approval, as on Dependabot's PR 400 on
+  # 2026-11-28, where only the title check failed and the review came as a comment. Dependabot's
+  # own PRs carry no template and pass, the title check included. Linked issue assessment stays
+  # off, since the issues live in a private repo.
   pre_merge_checks:
     # The built-in docstring check is retired; "Public symbols documented" below replaces it.
     # The built-in description check takes no instructions, so "PR template filled in" checks
@@ -101,11 +107,14 @@ reviews:
       mode: "off"
     issue_assessment:
       mode: "off"
+    # Dependabot writes its own titles ("Bump … in the actions group"), which no setting can
+    # make plain, and a failed title check withholds the approval its pull requests need.
     title:
       mode: warning
       requirements: >-
-        One plain imperative sentence that says exactly what changes, with no prefix, no
-        issue or ticket number and no jargon.
+        Pass if the PR's head branch starts with dependabot/. Otherwise the title is one plain
+        imperative sentence that says exactly what changes, with no prefix, no issue or ticket
+        number and no jargon.
     custom_checks:
       - name: "PR template filled in"
         mode: warning
