@@ -95,8 +95,9 @@ reviews:
   # job (.github/workflows/pr-rules.yml, scripts/check-pr-rules.py) decides the four yes-or-no
   # rules exactly and reruns when the body is edited. The checks of the same names here explain
   # a failure in words and only warn, like the judgment calls, so none fails the CodeRabbit
-  # check. Dependabot's own PRs carry no template and pass, the title check included. Linked
-  # issue assessment stays off, since the issues live in a private repo.
+  # check. Dependabot's own PRs pass the title check and the four rule checks, which skip
+  # dependabot/ branches; the judgment checks still run on them. Linked issue assessment stays
+  # off, since the issues live in a private repo.
   pre_merge_checks:
     # The built-in docstring check is retired; "Public symbols documented" below replaces it.
     # The built-in description check takes no instructions, so "PR template filled in" checks
