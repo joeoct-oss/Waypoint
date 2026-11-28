@@ -14,7 +14,8 @@
 # - A pull request is always compared with main. Waypoint has no release yet, so no version is
 #   passed and new code on main is everything since the first analysis.
 # - Needs SONAR_TOKEN and Java 17 or later (on GitHub's Ubuntu runners). Pull requests from forks
-#   get no secrets, so they stop here.
+#   get no secrets, so they stop here. Dependabot's pull requests get the Dependabot secrets
+#   instead of the Actions secrets, so SONAR_TOKEN is in both.
 #
 # Usage: SONAR_TOKEN=... scripts/sonar-scan.sh
 
@@ -28,7 +29,7 @@ zip_sha256="4d0e8b2631974c90427a4085dd6ca8be7e3587de2055a69a96d020941e3a629e"
 binaries="https://binaries.sonarsource.com/Distribution/sonar-scanner-cli"
 
 if [[ -z "${SONAR_TOKEN:-}" ]]; then
-    echo "::error::SONAR_TOKEN is not set. A pull request from a fork gets no secrets, so this scan can't run on it." >&2
+    echo "::error::SONAR_TOKEN is not set. A pull request from a fork gets no secrets, so this scan can't run on it; a Dependabot pull request reads it from the Dependabot secrets." >&2
     exit 1
 fi
 
